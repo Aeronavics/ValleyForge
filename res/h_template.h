@@ -1,20 +1,38 @@
 /********************************************************************************************************************************
+ *
  *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *
  *  PROJECT:		<<<TC_INSERTS_PROJECT_NAME_HERE>>>
+ *
  *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *
  *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
+ *
  *  MCU:		<<<TC_INSERTS_MICRO_HERE>>>
+ *
  *  UAV ASPECT:		<<<TC_INSERTS_ASPECT_HERE>>>
- * This is part of the UAV Project.
- * 															
+ *
+ *	This is the header file which matches...									
  * 
  ********************************************************************************************************************************/
 
+// Only include this header file once.
+#ifndef __<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__
+#define __<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__
 
-#ifndef <<<TC_INSERTS_PROJECT_NAME_HERE>>>_H_
-#define <<<TC_INSERTS_PROJECT_NAME_HERE>>>_H_
+// INCLUDE REQUIRED HEADER FILES.
 
-// Function Prototypes go here
+// Include the required IO header file.
+#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
+// DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-#endif /*<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H_*/
+// DECLARE PUBLIC GLOBAL VARIABLES.
+
+// DEFINE PUBLIC FUNCTION PROTOTYPES.
+
+int main(void);
+
+#endif /*__<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__*/
+
+// ALL DONE.

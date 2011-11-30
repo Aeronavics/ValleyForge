@@ -1,23 +1,39 @@
 /********************************************************************************************************************************
+ *
  *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *
  *  PROJECT:		<<<TC_INSERTS_PROJECT_NAME_HERE>>>
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>				
+ *
+ *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *
  *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
- *  MCU:		<<<TC_INSERTS_MICRO_HERE>>> 
+ *
+ *  MCU:		<<<TC_INSERTS_MICRO_HERE>>>
+ *
  *  UAV ASPECT:		<<<TC_INSERTS_ASPECT_HERE>>>
- * This is part of the UAV Project.
- * 																
- * 																
- * 																
+ *
+ *	Description goes here...
+ *
  ********************************************************************************************************************************/
 
-#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
+// INCLUDE THE MATCHING HEADER FILE.
+
 #include <<<TC_INSERTS_H_FILE_NAME_HERE>>>
 
-int main (void)
+// DEFINE PRIVATE TYPES AND STRUCTS.
+
+// DECLARE PRIVATE GLOBAL VARIABLES.
+
+// DEFINE PRIVATE FUNCTION PROTOTYPES.
+
+// IMPLEMENT PUBLIC FUNCTIONS.
+
+int main(void)
 {
-    
-    
-    
-    
+	// All done.
+	return 0;
 }
+
+// IMPLEMENT PRIVATE FUNCTIONS.
+
+// ALL DONE.
