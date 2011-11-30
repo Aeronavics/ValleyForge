@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_audio-player_mp3_evk1105.ewp</path>
+	</project>
+</workspace>

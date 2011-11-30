@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_cdc_device_unit_tests_evk1101.ewp</path>
+	</project>
+</workspace>

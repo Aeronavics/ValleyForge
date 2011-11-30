@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_utils_stdio_stdio_serial_uc3-l0_stdio-demo.ewp</path>
+	</project>
+</workspace>

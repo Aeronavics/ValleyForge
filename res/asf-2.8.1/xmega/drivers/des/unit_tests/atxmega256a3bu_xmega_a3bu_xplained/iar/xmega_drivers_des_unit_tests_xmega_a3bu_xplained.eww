@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_drivers_des_unit_tests_xmega_a3bu_xplained.ewp</path>
+	</project>
+</workspace>

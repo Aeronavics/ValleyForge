@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_pwm4_example_uc3c_ek.ewp</path>
+	</project>
+</workspace>

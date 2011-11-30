@@ -1,0 +1,31 @@
+adc/                                      : the name of the controller is usually used as the directory name.
+|-- adc.c                                 : the implementation of the software driver API.
+|-- adc.h                                 : the software driver API.
+|-- readme.html                           : the documentation entry point for this module.
+|
+|-- example1                              : the example directory holds one example of usage of this software driver API.
+|   |
+|   |-- atxmega128a1_xplain              : this directory holds the ATxmega128A1 build files for the AVRXPLAIN-A1 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- conf_adc.h                    : Chip specific ADC configuration file
+|   |   |-- conf_board.h                  : Board specific configuration file
+|   |   |-- conf_clock.h                  : Clock specific configuration file
+|   |   |-- conf_intlvl.h                 : Interrupt Level configuration file
+|   |   |-- conf_sleepmgr.h               : Sleep management configuration file
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- atxmega128a1_xplain-adc_example1.elf  : target downloadable elf file. Use JTAGICE mkII or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- atxmega128a1_xplain-adc_example1.ewp : IAR EWAVR project file.
+|   |       `-- atxmega128a1_xplain-adc_example1.eww : IAR EWAVR workspace file.
+|   |
+|   |-- doc                               : this directory holds all automatically-generated documentation.
+|   |   |-- html
+|   |   |-- ...
+|   |   `...
+|   |
+|   |-- adc_example1.c                    : the implementation of the example1.
+|   `-- readme.html                       : the entry point of all automatically-generated documentation.
+`.

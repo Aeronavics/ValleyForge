@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SCRIPT=`readlink -f $0`					# find the directory the script is in
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')
+cp $TCPATH/res/Defaults/config.cfg $TCPATH/var/config.cfg
+rm -rf $TCPATH/res/avr32comp/*
+rmdir $TCPATH/res/avr32comp
+

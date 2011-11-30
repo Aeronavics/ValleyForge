@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_basic_clock_example1_xplain.ewp</path>
+	</project>
+</workspace>

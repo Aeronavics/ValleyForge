@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_applications_xmega-a3bu_avrsbpr1-demo.ewp</path>
+	</project>
+</workspace>

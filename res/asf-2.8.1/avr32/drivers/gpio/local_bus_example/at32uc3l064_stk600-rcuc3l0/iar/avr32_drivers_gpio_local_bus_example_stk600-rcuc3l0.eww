@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_gpio_local_bus_example_stk600-rcuc3l0.ewp</path>
+	</project>
+</workspace>

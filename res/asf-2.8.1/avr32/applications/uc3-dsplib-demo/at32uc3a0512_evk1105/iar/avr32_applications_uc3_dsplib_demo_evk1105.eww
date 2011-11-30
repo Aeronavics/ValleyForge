@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_uc3_dsplib_demo_evk1105.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,91 @@
+#!/bin/bash
+
+############################################################################################################################
+### Name:		uavstart											####
+### Author:		Zac Frank											####
+### Date Created:	15.11.11											####
+### Type:		Bash Script											####
+###															####
+### Purpose:		This script is the starting script for the uavtoolchain. It gives the user some options as to 	####
+###			what they would like to do, then calls other scripts depending on the user's input. 		####
+############################################################################################################################
+
+CYAN="\033[0;36m"
+NO_COLOUR="\033[0m"
+YELLOW="\033[1;33m"
+RED="\033[0;31m"
+BLUE="\033[0;34m"
+UNDERLINED="\033[4m"
+
+
+clear							# clear the terminal display. This makes things nice and tidy.
+
+SCRIPT=`readlink -f $0`					# find the directory the script is in
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')
+
+echo -e '\E[37;44m'"\033[1m\n\n ***********  Welcome to the UAV \aToolchain Interface  ************${NO_COLOUR}\n " 			# Welcome message
+
+startup=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_startup | cut -d '=' -f2)			# check config file for state of key "startup"
+
+if [ "$startup" == "start" ]; then								# if it is "start" then
+    bash $TCPATH/bld/Other/askForInfo $TCPATH							# run the script asking if the user wants to enter their personal info
+elif [ "$startup" == "later" ]; then				
+    echo -e "${YELLOW}\nTo set up your details, navigate through Edit -> User Info\n${NO_COLOUR}"			# remind the user they should set up their info sometime
+fi
+
+
+
+curr=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)			# extract current project directory
+if [ "$curr" == "none" ]; then								# if the value is the default "none" then
+    if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then					# if there are no projects at all
+	echo -e "${YELLOW}You currently have no projects"					# inform the user that they have no projects
+    else
+	echo -e "${YELLOW}\nNone of your projects are currently set to be the active project. \nTo set an active project, navigate through Edit -> Change Default Project\n${NO_COLOUR}"
+    fi
+elif [ ! -d $TCPATH/src/$curr ]; then							# If the active project doesn't actually exist (i.e they've deleted it manually
+    echo -e "${YELLOW}\n Your active project doesn't exist. Please set a project to be active through Edit -> Change Default Project\n${NO_COLOUR}"
+else 										# if curr= something else
+  echo -e "${YELLOW}Your active project is $curr\n"					# inform the user what their active project currently is
+fi
+
+
+while :										# while loop in case user gives invalid input, we can restart the prompt process
+do
+
+  echo -e  "${YELLOW}Please indicate what you would like to do:\n${NO_COLOUR}"
+  # The section below uses the \033[4mC\033[0m\t wrapping to underline the "C"
+  echo -e "\t${BLUE}${UNDERLINED}C${NO_COLOUR}${BLUE}reate \t ${UNDERLINED}E${NO_COLOUR}${BLUE}dit \t ${UNDERLINED}D${NO_COLOUR}${BLUE}elete\n${NO_COLOUR}" #Give options with first letter underlined
+
+  read input						# read user input and store it in new variable input
+
+  case "$input" in					# if input is .....  then .....
+
+    "C" | "c" )						# if input is "C" or "c"
+      bash $TCPATH/bld/Create/Create $TCPATH		# run the create script
+      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question.
+    ;;
+
+    "D" | "d" )
+      bash $TCPATH/bld/Delete/Delete $TCPATH		# run the delete script
+      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question.
+    ;;
+
+    "E" | "e" )
+      bash $TCPATH/bld/Edit/Edit $TCPATH		# run the edit script
+      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question
+    ;;
+
+    "Exit"|"EXIT"|"exit")				# if input is one of these
+      echo -e '\E[37;44m'"\033[1m******    Closing UAV Toolchain Interface...    *******${NO_COLOUR}\n"
+      exit						# exit the script, return to terminal
+    ;;
+
+    *)								# any other response
+      echo -e "${RED}Invalid choice. Try again or type exit to quit\n${NO_COLOUR}"	# inform the user that their response was incorrect and DON'T break
+    ;;
+
+  esac				# end case
+done				# ask the user which option they would like again as they obviously didn't get it right last time.
+echo -e "\n"
+echo -e '\E[37;44m'"\033[1m******    Closing UAV Toolchain Interface...    *******${NO_COLOUR}\n"

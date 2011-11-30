@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_basic_twi_master_example_evk1105.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_uc3-l0_xplained-demo_at32uc3l064_uc3_l0_xplained.ewp</path>
+	</project>
+</workspace>

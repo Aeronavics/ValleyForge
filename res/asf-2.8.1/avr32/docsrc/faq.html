@@ -1,0 +1,121 @@
+<!doctype HTML public "-//W3C//DTD HTML 4.0 Frameset//EN">
+<html>
+   <head>
+      <link rel="stylesheet" type="text/css" href="./AVR32_ns.css">
+   </head>
+	 <body>
+	 <div id="container">
+ <div id="header"></div>
+ <div id="wrapper">
+ <div id="content">
+
+<p align="left" class="whs2"><a href="../readme.html"<font color="red"></font>Back to main page</a></p>
+<h1 align="center" class="whs1">AVR Software Framework: FAQ<br>
+</h1>
+
+<p align="center" class="whs2">Copyright &copy; 2010 Atmel Corporation</p>
+
+<p>&nbsp;</p>
+
+<hr align="left" width="50%" class="whs4">
+
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#installation">AVR32 - How to install the Software Framework</a></li>
+<li><a href="#release_note">AVR32 -How do I know the changes from one release of the Software Framework to the next</a></li>
+<li><a href="#header_files">AVR32 -Why do I have hundreds of errors trying to compile some software framework examples</a></li>
+<li><a href="#a32s_standard_make_method">AVR32 - How to simply create an AVR32Studio project from the Software Framework</a></li>
+<li><a href="#cp_update">AVR32 -How to update the Control Panel firmware of the EVK1100</a></li>
+<li><a href="#a32s_asm">AVR32 -How do I compile .S assembly files in a Managed Make project of AVR32Studio 1.0.0</a></li>
+<li><a href="#gcc_warning">AVR32 -What is the meaning of the warning "LD `allocated section not in segment'"</a></li>
+<li><a href="#bin_to_hex">General -How do I include a binary file into my source code</a></li>
+</ul>
+
+<hr align="left" width="50%" class="whs4">
+
+<A NAME="INSTALLATION"></A>
+<h2>AVR32 - How to install the Software Framework</h2>
+Check the <a href="./installation.html">installation page</a>.
+
+<p>&nbsp;</p>
+
+<A NAME="RELEASE_NOTE"></A>
+<h2>AVR32 - How do I know the changes from one release of the Software Framework to the next</h2>
+For an overview, content, list of new features, bug fixes and known bugs, check
+the <a href="../../readme.html">release note on the main page</a>.
+
+<p>&nbsp;</p>
+
+<A NAME="HEADER_FILES"></A>
+<h2>AVR32 - Why do I have hundreds of errors trying to compile some software framework examples</h2>
+<p>The main reason is probably that the UC3 header files in the GCC or IAR delivery are out of date.</p>
+Check the header files patch procedure on the <a href="./installation.html#header files patches">installation page</a>.
+
+<p>&nbsp;</p>
+
+<A NAME="A32S_STANDARD_MAKE_METHOD"></A>
+<h2>AVR32 - How to use AVR32 Studio and the software framework</h2>
+The software framework is already included into AVR32Studio. To run any examples, click on File -> New -> Examples... and select the example that can run on your kit.</p>
+To add some modules in a project, use the "Software Framework " menu once the project is selected. <br>
+It is also possible to use the standalone version (zip format) using this method: <a href="./doc32115.pdf"> AVR32769: How to Compile the standalone AVR32
+Software Framework in AVR32 Studio V2.</a>
+<p>&nbsp;</p>
+
+<A NAME="CP_UPDATE"></A>
+<h2>AVR32 - How to update the Control Panel firmware of the EVK1100</h2>
+<p>The Control Panel firmware on the EVK1100 is named "EVK1100 control panel".</p>
+<p>It is part of the UC3A software framework package and can be found under <i>X.Y.Z-AT32UC3A/applications/EVK1100-CONTROL-PANEL/</i>.</p>
+<p>A default .elf file is provided (named <i>uc3a0512-ctrlpanel.elf</i>) in the UC3A Software Framework package and can be found under <i>X.Y.Z-AT32UC3A/applications/EVK1100-CONTROL-PANEL/AT32UC3A0512_EVK1100/GCC/</i>.</p>
+<h4>To reprogram the default .elf file to target, follow these steps:</h4>
+<OL>
+<li>Open a cygwin command line window and go under <i>X.Y.Z-AT32UC3A/applications/EVK1100-CONTROL-PANEL/AT32UC3A0512_EVK1100/GCC/</i>.</li>
+<li>Plug the JTAG-ICE mkII to the JTAG connector of the EVK1100 board and type the command:</li>
+<b><code>avr32program program uc3a0512-ctrlpanel.elf -e -v -R -r -finternal@0x80000000,512Kb</code></b>
+</OL>
+<h4>To program a new version of the .elf file to target, follow these steps:</h4>
+<OL>
+<li>Open a cygwin command line window and go under <i>X.Y.Z-AT32UC3A/applications/EVK1100-CONTROL-PANEL/AT32UC3A0512_EVK1100/GCC/</i>.</li>
+<li>Plug the JTAG-ICE mkII to the JTAG connector of the EVK1100 board and type the command:</li>
+<b><code>make program reset run</code></b>
+<p>This will compile and link the Control Panel, program it to target, reset the target then run the new firmware.
+</OL>
+<p>The firmware is now updated.</p>
+<h4>Updating the web server files</h4>
+You now also have to update the webserver files that are located on the external dataflash: look at the scenario
+"f. Restoring the default file system content of the Control Panel" described in
+the <a href="../applications/evk1100-control-panel/at32uc3a0512_evk1100/doc/html/">Control Panel documentation</a>.
+
+<p>&nbsp;</p>
+
+
+<A NAME="GCC_WARNING"></A>
+<h2>AVR32 - What is the meaning of the warning "LD `allocated section not in segment'"</h2>
+<p>This warning is a known issue and it doesn't prevent the firmware from running on target correctly.</p>
+<h4>Explanation:</h4>
+<p>When using the default linker scripts provided with avr32-gcc, the ELF LOAD
+program headers are generated automatically from the output sections, including
+BSS and the stack which are only allocated areas.</p>
+<p>In its current revision, avr32program programs allocated LOAD program headers
+that do not have to be filled with data from the ELF file, which is wasting programming time.</p>
+<p>This behavior of avr32program will be changed in a future release, but until
+this is achieved, the linker scripts provided with the software framework are
+changed to place the allocated-only output sections in NULL ELF program headers
+ignored by avr32program, hence the warnings when linking.</p>
+
+<p>&nbsp;</p>
+
+<A NAME="BIN_TO_HEX"></A>
+<h2>AVR32 - How do I include a binary file into my source code</h2>
+<p>This can be done using command line tools to convert a binary file into a hexadecimal table.<br />
+Open a shell and make sure you have the following tools available: <i>od</i> and <i>sed</i>. If you have
+Cygwin (<a href="http://www.cygwin.com/">http://www.cygwin.com/</a>) installed, these tools should
+be present by default.</p>
+<p>Type the following command line, where <i>binary</i> corresponds to the path of the binary file you want to convert.</p>
+<b><code>od -A d -t x1 -w16 <i>binary</i> | sed -e 's/[0-9]*//' -e 's/[\ ]*\([0-9a-f]\+\)/0x\1, /g'</code></b>
+<p>This command will output raw hexadecimal data which can be paste in your project and used as a <b>unsigned char</b> table.</p>
+
+<hr align="center" width="50%" class="whs4">
+
+</div></div>
+   </body>
+</html>

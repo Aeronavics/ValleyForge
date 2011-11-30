@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_calendar_example1_uc3_l0_xplained.ewp</path>
+	</project>
+</workspace>

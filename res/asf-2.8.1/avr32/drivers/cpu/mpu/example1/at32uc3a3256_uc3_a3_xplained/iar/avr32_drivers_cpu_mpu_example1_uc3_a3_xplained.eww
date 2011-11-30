@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_cpu_mpu_example1_uc3_a3_xplained.ewp</path>
+	</project>
+</workspace>

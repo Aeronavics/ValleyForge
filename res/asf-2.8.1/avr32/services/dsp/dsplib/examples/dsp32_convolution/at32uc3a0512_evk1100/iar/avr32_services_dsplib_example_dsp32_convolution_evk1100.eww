@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_services_dsplib_example_dsp32_convolution_evk1100.ewp</path>
+	</project>
+</workspace>

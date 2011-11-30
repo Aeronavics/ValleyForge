@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_components_display_et024006dhu_example_uc3c_ek.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_components_memory_sdram_mt48lc16m16a2tg7e_example_uc3c_ek.ewp</path>
+	</project>
+</workspace>

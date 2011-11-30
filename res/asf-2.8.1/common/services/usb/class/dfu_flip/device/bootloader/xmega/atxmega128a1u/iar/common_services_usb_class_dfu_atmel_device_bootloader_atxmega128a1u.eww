@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_dfu_atmel_device_bootloader_atxmega128a1u.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_usart_usart_example_evk1105.ewp</path>
+	</project>
+</workspace>

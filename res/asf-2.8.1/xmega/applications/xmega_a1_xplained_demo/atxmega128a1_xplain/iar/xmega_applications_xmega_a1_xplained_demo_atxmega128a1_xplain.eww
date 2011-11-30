@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_applications_xmega_a1_xplained_demo_atxmega128a1_xplain.ewp</path>
+	</project>
+</workspace>

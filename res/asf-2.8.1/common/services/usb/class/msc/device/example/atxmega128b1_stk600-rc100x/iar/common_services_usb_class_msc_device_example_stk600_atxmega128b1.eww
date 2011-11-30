@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_msc_device_example_stk600_atxmega128b1.ewp</path>
+	</project>
+</workspace>

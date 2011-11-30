@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_hid_device_keyboard_unit_tests_uc3c_ek.ewp</path>
+	</project>
+</workspace>

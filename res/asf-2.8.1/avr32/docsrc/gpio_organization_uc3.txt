@@ -1,0 +1,88 @@
+gpio/                                     : the name of the controller is usually used as the directory name.
+|-- gpio.c                                : the implementation of the software driver API.
+|-- gpio.h                                : the software driver API.
+|-- readme.html                           : the documentation entry point for this module.
+|
+|-- local_bus_example                     : this directory holds one example of usage of this software driver API.
+|   |
+|   |-- at32uc3a0512_evk1100              : this directory holds the at32uc3A0512 build files for the EVK1100 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- uc3a0512-gpio_loca....elf : target downloadable elf file. Use avr32program (and JTAG-ICE MKII) or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |   `-- gdb_cmdfile.txt           : configuration file for the avr32-gdb program
+|   |   |                                   (Usage: avr32-gdb -x gdb_cmdfile.txt or ddd -debugger avr32-gdb --command=gdb_cmdfile.txt)
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- gpio_local_bus_example.ewd: IAR EWAVR32 debug configuration file.
+|   |       |-- gpio_local_bus_example.ewp: IAR EWAVR32 project file.
+|   |       `-- gpio_local_bus_example.eww: IAR EWAVR32 workspace file.
+|   |
+|   |-- at32uc3b0256_evk1101              : this directory holds the at32uc3b0256 build files for the EVK1101 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- uc3b0256-gpio_loca....elf : target downloadable elf file. Use avr32program (and JTAG-ICE MKII) or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |   `-- gdb_cmdfile.txt           : configuration file for the avr32-gdb program
+|   |   |                                   (Usage: avr32-gdb -x gdb_cmdfile.txt or ddd -debugger avr32-gdb --command=gdb_cmdfile.txt)
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- gpio_local_bus_example.ewd: IAR EWAVR32 debug configuration file.
+|   |       |-- gpio_local_bus_example.ewp: IAR EWAVR32 project file.
+|   |       `-- gpio_local_bus_example.eww: IAR EWAVR32 workspace file.
+|   |
+|   |-- at32uc3a3256_evk1104              : this directory holds the at32uc3a3256 build files for the EVK1104 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- uc3a3256-gpio_loca....elf : target downloadable elf file. Use avr32program (and JTAG-ICE MKII) or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |   `-- gdb_cmdfile.txt           : configuration file for the avr32-gdb program
+|   |   |                                   (Usage: avr32-gdb -x gdb_cmdfile.txt or ddd -debugger avr32-gdb --command=gdb_cmdfile.txt)
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- gpio_local_bus_example.ewd: IAR EWAVR32 debug configuration file.
+|   |       |-- gpio_local_bus_example.ewp: IAR EWAVR32 project file.
+|   |       `-- gpio_local_bus_example.eww: IAR EWAVR32 workspace file.
+|   |
+|   |-- at32uc3a0512_evk1105              : this directory holds the at32uc3A0512 build files for the EVK1105 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- uc3a0512-gpio_loca....elf : target downloadable elf file. Use avr32program (and JTAG-ICE MKII) or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |   `-- gdb_cmdfile.txt           : configuration file for the avr32-gdb program
+|   |   |                                   (Usage: avr32-gdb -x gdb_cmdfile.txt or ddd -debugger avr32-gdb --command=gdb_cmdfile.txt)
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- gpio_local_bus_example.ewd: IAR EWAVR32 debug configuration file.
+|   |       |-- gpio_local_bus_example.ewp: IAR EWAVR32 project file.
+|   |       `-- gpio_local_bus_example.eww: IAR EWAVR32 workspace file.
+|   |
+|   |-- at32uc3l064_stk600-rcuc3l0        : this directory holds the at32uc3l064 build files for the STK600+RCUC3L0 board.
+|   |   |-- doxyfile.doxygen              : the doxygen configuration file for documentation
+|   |   |-- gcc                           : this directory contains gcc-specific files.
+|   |   |   |-- Makefile                  : gcc make makefile.
+|   |   |   |-- uc3l064-gpio_local....elf : target downloadable elf file. Use avr32program (and JTAG-ICE MKII) or batchisp (and USB bootloader).
+|   |   |   |-- config.mk                 : make configuration file(included by Makefile), contains the list of src files and compilation/link options
+|   |   |   `-- gdb_cmdfile.txt           : configuration file for the avr32-gdb program
+|   |   |                                   (Usage: avr32-gdb -x gdb_cmdfile.txt or ddd -debugger avr32-gdb --command=gdb_cmdfile.txt)
+|   |   |
+|   |   `-- iar                           : this directory holds IAR-specific files.
+|   |       |-- gpio_local_bus_example.ewd: IAR EWAVR32 debug configuration file.
+|   |       |-- gpio_local_bus_example.ewp: IAR EWAVR32 project file.
+|   |       `-- gpio_local_bus_example.eww: IAR EWAVR32 workspace file.
+|   |
+|   |-- x-doc                             : this directory holds all automatically-generated documentation.
+|   |   |-- html
+|   |   |-- ...
+|   |   `...
+|   |
+|   |-- gpio_local_bus_example.c          : the implementation of the example.
+|   `-- readme.html                       : the entry point of all automatically-generated documentation.
+|-- peripheral_bus_example                : there can be several examples per software driver.
+|   |
+|   `... (same structure)
+`.

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_components_memory_data_flash_at45dbx_example_xplain.ewp</path>
+	</project>
+</workspace>

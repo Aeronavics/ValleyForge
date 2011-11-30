@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_hid_device_mouse_unit_tests_atxmega256a3bu_xmega_a3bu_xplained.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_uc3l-ek-touch-demo_example.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_components_audio_amp_tpa6130a2_example_evk1105.ewp</path>
+	</project>
+</workspace>

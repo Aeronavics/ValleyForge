@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_usb_class_cdc_device_example_stk600_atxmega256a3bu.ewp</path>
+	</project>
+</workspace>

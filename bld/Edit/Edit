@@ -1,0 +1,125 @@
+#!/bin/bash
+
+############################################################################################################################
+### Name:		Create												####
+### Author:		Zac Frank											####
+### Date Created:	15.11.11											####
+### Type:		Bash Script											####
+###															####
+### Purpose:		This script gets called by uavstart script, when the user chooses to select edit. This script	####
+###			will have a few purposes, all of which are not entirely clear at this stage. So far its only	####
+###			functionality is to change which project is the default						####
+############################################################################################################################
+
+
+# ********		SCRIPT BEGINS ON LINE 120 (subject to change)		********
+
+CYAN="\033[0;36m"
+NO_COLOUR="\033[0m"
+YELLOW="\033[1;33m"
+RED="\033[0;31m"
+BLUE="\033[0;34m"
+UNDERLINED="\033[4m"
+
+###################### FUNCTION ##########################
+### Name:		changeDefault			##
+### Inputs/Outputs:	None				##
+### Purpose:		Asks the user which project 	##
+###			they would like to set as the	##
+###			default and updates config.cfg.	##
+##########################################################
+
+changeDefault()
+{
+  					# as the edit script is stored in bld/Edit, we need to get out
+  if [ "$(ls -A $TCPATH/src)" ]; then						# check if there is anything in the directory src. If there is....							# enter src
+   echo -e "${YELLOW}What would you like your default project to be?"		# prompt user
+	echo -e "${BLUE} "    
+    ls $TCPATH/src
+									# show the projects available to be made the active one
+
+    while :								# while loop to repeat process in case of invalid response
+    do
+      read name								# await user input, input should be string corresponding to a project name
+
+      if [ "$name" == "exit" ]; then					# Pretty self explanatory
+	exit
+      fi
+
+      if [ -d $TCPATH/src/"$name" ] 						# if directory with name given exists, then...
+      then
+	echo -e "${CYAN}Setting default directory to $name"			# tell the user what you are about to do
+	sed -i "s/\(tc_curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# edit the value for key "curr" to the name the user has given.
+	
+	break								# a valid response has been given to "which project" so we need not ask this question again.
+      else											# if the given name doesn't match
+	    echo -e "${RED}This project doesn't seem to exist. Please enter its name again:${NO_COLOUR}"		# then we need to ask them to type it again
+	    ls	$TCPATH/src										# show the user all the available projects again
+      fi								# end if "does directory with given name exist"
+    done								# invalid response, loop back again
+  else									# if src folder is empty...
+    echo -e "${RED}\nNo Projects exist"					# Tell the user that this is the case 
+  fi
+}					# Exit function
+
+
+###################### FUNCTION ##########################
+### Name:		chooseEOption			##
+### Inputs/Outputs:	None				##
+### Purpose:		Asks the user what the would 	##
+###			like to edit today and calls 	##
+###			the relevant functions		##
+##########################################################
+
+chooseEOption ()
+{
+  while :						# while loop to repeat process in case of invalid response
+  do
+
+
+    echo -e "${YELLOW}What would you like to change?\n${NO_COLOUR}"		
+
+    # This section uses "\033[4mD\033[0m" to underline the first letter, in this case "D"
+    echo -e  "	    ${BLUE}${UNDERLINED}D${NO_COLOUR}${BLUE}efault Project\n\
+	    ${UNDERLINED}U${NO_COLOUR}${BLUE}ser Info\n\
+	    ${UNDERLINED}A${NO_COLOUR}${BLUE}nother thing${NO_COLOUR}"		# list 3 options, with first letter of each underlined.
+
+    read Eoption					# await user input, should be of form single letter
+
+    case "$Eoption" in					# read user input, test. If it is 
+
+	"D"|"d")					# D, then...
+	changeDefault					# call the function which changes the default project
+	break						# the question "what to change" has been answered successfully, we need to ask this question again
+      ;;
+
+      "U"|"u")														# U, then
+	echo -e "${CYAN}\nChanging User Info....${NO_COLOUR}"		
+	bash $TCPATH/bld/Other/infoWrite $TCPATH				# Run the script that will prompt the user to change the user variables in config.cfg. Add parameter containing ToolChain PATH
+	break
+      ;;
+
+      "L"|"l")														# Not yet implemented
+	echo -e "${CYAN}\n This option is currently not available. Come back later and a lolly scramble will commence${NO_COLOUR}"
+	break
+      ;;
+
+      "EXIT"|"exit"|"Exit"|"back"|"BACK"|"Back")			# Give the option of exiting the script
+	echo -e "${CYAN}Exiting...${NO_COLOUR}"
+	exit
+      ;;
+
+      *)												# any other response
+	echo -e "${RED}You must choose a valid response. Type exit or back to return to the start interface.${NO_COLOUR}"		# tell the user they're a muppet
+      ;;
+
+    esac							# end case
+
+  done								# no valid response has been given, return up and ask again
+}
+
+
+TCPATH="$1"					# Import Parameter of ToolChain Path
+chooseEOption					# call function to determine what the user wants to edit.
+
+						# exit script and return to uavstart

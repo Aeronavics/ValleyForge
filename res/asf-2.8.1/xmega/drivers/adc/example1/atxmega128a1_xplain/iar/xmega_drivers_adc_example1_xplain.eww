@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_drivers_adc_example1_xplain.ewp</path>
+	</project>
+</workspace>

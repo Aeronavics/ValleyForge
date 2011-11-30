@@ -1,0 +1,3 @@
+Micro=atmega64m1
+Platform=RTOS
+compiler=avr-gcc

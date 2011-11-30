@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_components_display_c42048a_example_xmega_b1_xplained.ewp</path>
+	</project>
+</workspace>

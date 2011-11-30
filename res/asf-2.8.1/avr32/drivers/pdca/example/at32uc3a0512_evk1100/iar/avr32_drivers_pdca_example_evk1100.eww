@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_pdca_example_evk1100.ewp</path>
+	</project>
+</workspace>

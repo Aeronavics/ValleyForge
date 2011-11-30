@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_drivers_pm_example1_evk1101.ewp</path>
+	</project>
+</workspace>

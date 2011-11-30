@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\common_services_basic_sleepmgr_example_evk1104.ewp</path>
+	</project>
+</workspace>

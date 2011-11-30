@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\xmega_drivers_lcd_example_stk600-rc064x_lcdx.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_uc3-a3_avrsbin1_visualizer.ewp</path>
+	</project>
+</workspace>

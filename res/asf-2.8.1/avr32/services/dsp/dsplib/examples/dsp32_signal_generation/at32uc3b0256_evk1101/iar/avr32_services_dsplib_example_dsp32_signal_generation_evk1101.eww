@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_services_dsplib_example_dsp32_signal_generation_evk1101.ewp</path>
+	</project>
+</workspace>

@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_services_freertos_lwIP_example_uc3_c2_xplained.ewp</path>
+	</project>
+</workspace>

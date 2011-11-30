@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_evk11xx-uc3b-virtual-com-port_example.ewp</path>
+	</project>
+</workspace>

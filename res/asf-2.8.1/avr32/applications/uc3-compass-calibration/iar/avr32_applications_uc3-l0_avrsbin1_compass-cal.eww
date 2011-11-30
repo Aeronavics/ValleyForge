@@ -1,0 +1,6 @@
+<workspace>
+	<batchBuild></batchBuild>
+	<project>
+		<path>$WS_DIR$\avr32_applications_uc3-l0_avrsbin1_compass-cal.ewp</path>
+	</project>
+</workspace>
