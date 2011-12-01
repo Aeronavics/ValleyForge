@@ -14,3 +14,7 @@ If the configuration file isn't there, then it should produce it, and populate i
 * On a related note, the configuration file for each 'component' at the moment stores a field called 'Micro' and a field called 'compiler'.  Firstly, the key 'Micro' should be called 'target' (as above).  Secondly, the field 'compiler' is redundant and should be removed.  If the toolchain needs to look up which compiler to use with which target (and thus where the compiler binary will be located), there should be a configuration file in the bld directory which allows looking up that (for example) the ATmega2560 target requires the avr-gcc compiler (along with any other settings that might be required).  Thirdly, the key names probably either shouldn't start with capital letters (cf 'Micro' and 'compiler'), or should ALL start with capital letters.
 
 * For the AVR32 architecture, the path which is stored in the configuration files is an absolute path rather than the path relative to the root toolchain directory.  This means that the configuration files for each component are currently not portable between computers.
+
+* The tar file res/avr32comp.tar and the corresponding unpacked folder res/avr32comp should probably be moved inside the folder res/avr32.
+
+* The directory res/Defaults should be renamed res/defaults.  Directory names with capital letters are inconvenient.  Oh, the same goes for all the directories in res.
