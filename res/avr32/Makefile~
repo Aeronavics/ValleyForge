@@ -1,7 +1,7 @@
 # Universal AVR32 Makefile for firmware without operating system.
 # Wolfgang Wieser 07/2008.
 
-PART = uc3c0512c
+PART = BUILD_WILL_INSERT_MICRO_HERE
 CFLAGS = -g -O2 -Wall -ffunction-sections
 LDFLAGS = -g -Wl,--gc-sections
 CC = ../res/avr32comp/bin/avr32-gcc
@@ -10,7 +10,7 @@ PROGRAMMER = ../res/avr32comp/bin/avr32program
 HEADERS =BUILD_WILL_INSERT_H_FILES_HERE
 PRJSRC =BUILD_WILL_INSERT_SOURCE_FILES_HERE
 OBJECTS = $(PRJSRC:.c=.o)
-TARGET =prog
+TARGET =BUILD_WILL_INSERT_PROJECT_NAME_HERE
 
 .PHONY: all run clean program reset cont erase
 

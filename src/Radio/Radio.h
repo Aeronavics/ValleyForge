@@ -1,16 +1,16 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE: 		Radio.h
  *
- *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
+ *  COMPONENT:		Radio
  *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *  AUTHOR: 		Zac Frank
  *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
+ *  DATE CREATED:	1.12.2011
  *
- *  MCU:		<<<TC_INSERTS_MICRO_HERE>>>
+ *  MCU:		ATmega64
  *
- *  PROJECT ASPECT:	<<<TC_INSERTS_ASPECT_HERE>>>
+ *  PROJECT ASPECT:	A few different bits
  *
  *	This is the header file which matches...									
  * 

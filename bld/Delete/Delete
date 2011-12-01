@@ -6,9 +6,9 @@
 ### Date Created:	15.11.11											 ####
 ### Type:		Bash Script											 ####
 ###															 ####
-### Purpose:		This script gets called by uavstart script, when the user chooses to delete an existing project. ####
-###			It deletes the project's src folder, and everything inside it. It also updates the 		 ####
-###			config file in var accordingly.	Can be used to delete all projects.				 ####
+### Purpose:		This script gets called by uavstart script, when the user chooses to delete an existing component. ####
+###			It deletes the component's src folder, and everything inside it. It also updates the 		 ####
+###			config file in var accordingly.	Can be used to delete all components.				 ####
 #############################################################################################################################
 
 
@@ -23,19 +23,19 @@ UNDERLINED="\033[4m"
 
 TCPATH="$1"				# IMPORT THE PATH VARIABLE 
 
-echo -e "${YELLOW}You have indicated you wish to delete a project."
+echo -e "${YELLOW}You have indicated you wish to delete a component."
 
-echo -e "${YELLOW}Which one of the following would you like to remove? (or type all to delete all projects)\n${NO_COLOUR}"
+echo -e "${YELLOW}Which one of the following would you like to remove? (or type all to delete all components)\n${NO_COLOUR}"
 
 TCPATH="$1"
 
-ls $TCPATH/src						# list all directories in the src folder
+ls $TCPATH/src					# list all directories in the src folder
 
 echo -e "\n"					# new line
 
 while : 					# while loop in case user gives invalid input
 do
-  read name					# ask for user input. User must enter the full name of the project correctly, not the first letter. Is case sensitive.
+  read name					# ask for user input. User must enter the full name of the component correctly, not the first letter. Is case sensitive.
 
   if [ "$name" == "exit" ]; then		# check to see if the input is the string "exit"
     exit					# if the user wants to exit, go back to the uavstart script
@@ -44,16 +44,16 @@ do
   if [ -d "$TCPATH/src/$name" ]				# check to see if there is a match to the user's input  
   then						# if there is one, then
 						# Ask the user for confirmation.
-    echo -e "\n${YELLOW}You have chosen to delete the Project \"$name\". This operation cannot be undone (very easily).\n Are you sure you want to do this? (Y/N)${NO_COLOUR}" 
+    echo -e "\n${YELLOW}You have chosen to delete the component \"$name\". This operation cannot be undone (very easily).\n Are you sure you want to do this? (Y/N)${NO_COLOUR}" 
     while :					# while loop in case user gives invalid input
     do
       read res					# user input: yes or no response
       case "$res" in				# check the user's response
 
 	"Y"|"y")				# if yes, then...
-	  echo -e "${CYAN}deleting Project $name...${NO_COLOUR}"	# tell the user the project will be deleted 
+	  echo -e "${CYAN}deleting component $name...${NO_COLOUR}"	# tell the user the component will be deleted 
 	  rm -rf $TCPATH/src/$name				# delete the folder corresponding to the given name and all its sub-components
-	  echo -e "${CYAN}\nRemaining Projects:${NO_COLOUR}"
+	  echo -e "${CYAN}\nRemaining components:${NO_COLOUR}"
 	  ls $TCPATH/src					# list the remaining directories
 	  break					# exit out of this while loop, a valid response to "are you sure" has been given.
 	;;
@@ -74,11 +74,11 @@ do
 
       esac						# Close case 
     done						# If we reach here we ask the yes/no question again.
-    break						# a valid input to "which project would you like to remove" has been given, so we can exit this loop.
+    break						# a valid input to "which component would you like to remove" has been given, so we can exit this loop.
 
   elif [ "$name" == "all"  ] 								# else, if the input given by the user matches the string "all"
   then											# then we want to wipe this directory clean.
-	echo -e "${YELLOW}\nYou have chosen to delete all Projects. This operation cannot be undone (very easily).\n Are you sure you want to do this? (Y/N)${NO_COLOUR}" 	# Ask for confirmation of this mass delete
+	echo -e "${YELLOW}\nYou have chosen to delete all components. This operation cannot be undone (very easily).\n Are you sure you want to do this? (Y/N)${NO_COLOUR}" 	# Ask for confirmation of this mass delete
 	
 	while :									# while loop in case user gives invalid input
 	do
@@ -86,10 +86,10 @@ do
 	  case "$res" in							# read user input, should be y or n
 
 	      "Y"|"y")								# if yes, then...
-		echo -e "${CYAN}deleting all Projects...\n${NO_COLOUR}"					# tell the user that all projects are being deleted
+		echo -e "${CYAN}deleting all components...\n${NO_COLOUR}"					# tell the user that all components are being deleted
 		rm -rf $TCPATH/src							# remove the src directory  (this is safer than removing all from inside the src directory)
 		mkdir $TCPATH/src							# recreate the src directory 
-		echo -e "${CYAN}All Projects deleted${NO_COLOUR}"					# tell the user that all projects have been deleted.
+		echo -e "${CYAN}All components deleted${NO_COLOUR}"					# tell the user that all components have been deleted.
 		break								# a valid response to "are you sure" has been given. We need not ask this question again.
 	      ;;
 
@@ -109,18 +109,18 @@ do
 
 	  esac									# end case
 	done									# if we reach here an invalid response has been given and we need to ask "are you sure" again
-	break									# a valid response to "which project" has been given and we need not ask this question again.
+	break									# a valid response to "which component" has been given and we need not ask this question again.
 
-    else										# if no valid response to "which project" has been given we need to ask this again.
-	echo "${RED}This project doesn't seem to exist. Please enter its name again:${NO_COLOUR}"		# inform the user that their response was unworthy
-	ls $TCPATH/src									# list all the subdirectories again so they can see the projects they have to choose from
-    fi											# end if "if project exists"
-done								# if we reach here and invalid response has been given and we need to prompt the user to enter the project name again
+    else										# if no valid response to "which component" has been given we need to ask this again.
+	echo "${RED}This component doesn't seem to exist. Please enter its name again:${NO_COLOUR}"		# inform the user that their response was unworthy
+	ls $TCPATH/src									# list all the subdirectories again so they can see the components they have to choose from
+    fi											# end if "if component exists"
+done								# if we reach here and invalid response has been given and we need to prompt the user to enter the component name again
 
-# This section updates the current actuve project
+# This section updates the current actuve component
     
 curr=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)	# we extract the value tc_curr= "SOMETHING" and assign it to our script value $curr
 
-if [ ! -d "$TCPATH/src/$curr" ]; then					# if the active project no longer exists, then we should change the name of the active project to "none"
-  sed -i "s/\(curr *= *\).*/\1none/" $TCPATH/var/config.cfg			# edit the config file to say that the active project is "none"
+if [ ! -d "$TCPATH/src/$curr" ]; then					# if the active component no longer exists, then we should change the name of the active component to "none"
+  sed -i "s/\(curr *= *\).*/\1none/" $TCPATH/var/config.cfg			# edit the config file to say that the active component is "none"
 fi

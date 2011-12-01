@@ -4,7 +4,7 @@
 PART = BUILD_WILL_INSERT_MICRO_HERE
 CFLAGS = -g -O2 -Wall -ffunction-sections
 LDFLAGS = -g -Wl,--gc-sections
-CC = ../res/avr32comp/bin/avr32-gcc
+CC = avr32-gcc
 PROGRAMMER = ../res/avr32comp/bin/avr32program
 
 HEADERS =BUILD_WILL_INSERT_H_FILES_HERE

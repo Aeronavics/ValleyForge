@@ -1,16 +1,16 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE: 		check.h
  *
- *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
+ *  COMPONENT:		check
  *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *  AUTHOR: 		Zac
  *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
+ *  DATE CREATED:	1.12.2011
  *
- *  MCU:		<<<TC_INSERTS_MICRO_HERE>>>
+ *  MCU:		AT32
  *
- *  PROJECT ASPECT:	<<<TC_INSERTS_ASPECT_HERE>>>
+ *  PROJECT ASPECT:	Frank
  *
  *	This is the header file which matches...									
  * 

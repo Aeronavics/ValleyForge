@@ -23,7 +23,7 @@ TCPATH="$1" 			# Import the ToolChain Path as a variable to be used.
 	    echo -e "${YELLOW}\nPlease enter your name:${NO_COLOUR}"
 	    read authname
 	    sed -i "s/\(tc_authname *= *\).*/\1$authname/" $TCPATH/var/config.cfg			# change the value of authname in our config file
-	    echo -e "\n${YELLOW}Please describe which aspect of the UAV Project you are working on:${NO_COLOUR}"
+	    echo -e "\n${YELLOW}Please describe which aspect of the ValleyForge Project you are working on:${NO_COLOUR}"
 	    read aspect
 	    sed -i "s/\(tc_aspect *= *\).*/\1$aspect/" $TCPATH/var/config.cfg			# change the value of aspect in our config file
 	    echo -e "${YELLOW}\n Thank you. That is all for now.\n${NO_COLOUR}"

@@ -7,7 +7,7 @@
 ### Type:		Bash Script											####
 ###															####
 ### Purpose:		This script builds the programs, calling make with certain parameters depending on the active	####
-###			project and its specifications (which micro, OS, etc.)				 		####
+###			component and its specifications (which micro, OS, etc.)				 	####
 ############################################################################################################################
 
 CYAN="\033[0;36m"
@@ -28,14 +28,13 @@ makeavr ()
 {  
     cp $TCPATH/res/avr/Makefile $TCPATH/tmp						# copy the makefile template to the tmp directory
     cd $TCPATH/tmp									# enter the temp directory for compilation
-    sed -i "s/\(MCU *= *\).*/\1$Micro/" $TCPATH/tmp/Makefile				# change makefile to use the correct Micro value
-    sed -i "s/\(CC *= *\).*/\1$compiler/" $TCPATH/tmp/Makefile				# change makefile to use the correct compiler
-    c_files=$(ls *.c $inS | sed ':a;N;$!ba;s/\n/ /g')
-    								# load the variable "s_files" with the names of all source (c) files in the directory
+    sed -i "s/\(MCU *= *\).*/\1$micro/" $TCPATH/tmp/Makefile				# change makefile to use the correct micro value
+    sed -i "s/\(CC *= *\).*/\1avr-gcc/" $TCPATH/tmp/Makefile				# change makefile to use the correct compiler
+    c_files=$(ls *.c $inS | sed ':a;N;$!ba;s/\n/ /g')					# load the variable "c_files" with the names of all source (c) files in the directory
     sed -i "s/\(PRJSRC *= *\).*/\1$c_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile
-    sed -i "s/\(PROJECTNAME *= *\).*/\1$name/" $TCPATH/tmp/Makefile			# change the output file's name to that of the project 
-    echo -e "${CYAN}\nBuilding project $name ...\n${NO_COLOUR}"						# Inform the user what's happening
-    make -C $TCPATH/tmp all							# run the make file
+    sed -i "s/\(PROJECTNAME *= *\).*/\1$name/" $TCPATH/tmp/Makefile			# change the output file's name to that of the component 
+    echo -e "${CYAN}\nBuilding component $name ...\n${NO_COLOUR}"			# Inform the user what's happening
+    make -C $TCPATH/tmp all								# run the make file
     if [ $? != 0 ]; then								# check for error in the make command. If there is an error, then
 	echo -e "\n${RED}Compilation error, exiting\n${NO_COLOUR}"					# inform the user
 	if [ "$retain" != "TRUE" ]; then
@@ -61,19 +60,19 @@ makeavr ()
 make32 ()
 {
     if [ ! -d $TCPATH/res/avr32comp ]; then						# If the avr32comp tar file has not been untared, then
-	echo -e "\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
+	echo -e "${CYAN}\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
 	tar -C $TCPATH/res -xf  $TCPATH/res/avr32comp.tar				# untar the avr32comp file
     fi
     cd $TCPATH/tmp
     cp $TCPATH/res/avr32/Makefile $TCPATH/tmp						# copy the makefile template to the tmp directory
-    sed -i "s^\(PART *= *\).*^\1$Micro^" $TCPATH/tmp/Makefile				# change makefile to use the correct value
-    sed -i "s^\(CC *= *\).*^\1$compiler^" $TCPATH/tmp/Makefile				# using "^" as delimiter because compiler is a path which contains default delimiter characters
+    sed -i "s^\(PART *= *\).*^\1$micro^" $TCPATH/tmp/Makefile				# change makefile to use the correct value
+    sed -i "s^\(CC *= *\).*^\1avr32-gcc^" $TCPATH/tmp/Makefile				# using "^" as delimiter because compiler is a path which contains default delimiter characters
     c_files=$(ls *.c $inS | sed ':a;N;$!ba;s/\n/ /g')
     sed -i "s/\(PRJSRC *= *\).*/\1$c_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile  
     h_files=$(ls -C *.h | sed ':a;N;$!ba;s/\n/ /g')								
     sed -i "s/\(HEADERS *= *\).*/\1$h_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile
-    sed -i "s/\(TARGET *= *\).*/\1$name/" $TCPATH/tmp/Makefile				# change the output file's name to that of the project  
-    echo -e "${CYAN}\nBuilding project $name ...\n${NO_COLOUR}"					# Inform the user what's happening
+    sed -i "s/\(TARGET *= *\).*/\1$name/" $TCPATH/tmp/Makefile				# change the output file's name to that of the component  
+    echo -e "${CYAN}\nBuilding component $name ...\n${NO_COLOUR}"					# Inform the user what's happening
     make -C $TCPATH/tmp	all								# run the make file
     if [ $? != 0 ]; then								# this checks the output of the make command, anything other than zero is an error
 	echo -e "\n${RED}Compilation error, exiting\n${NO_COLOUR}"
@@ -98,8 +97,9 @@ make32 ()
 
 rtos32 ()
 {
+    echo -e "${CYAN}\nNote: This is still in an experimental stage${NO_COLOUR}\n"
     if [ ! -d $TCPATH/res/avr32comp ]; then						# If the avr32comp tar file has not been untared, then
-	echo -e "\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
+	echo -e "${CYAN}\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
 	tar -C $TCPATH/res -xf  $TCPATH/res/avr32comp.tar				# untar the avr32comp file
     fi
     cp $TCPATH/src/$name/main.c $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
@@ -126,34 +126,34 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')				# make our path name that of ab
 rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
 
 PATH=$PATH:$TCPATH/res/avr32comp/bin
-									# first we want to check if any projects exist
+									# first we want to check if any components exist
 curr=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)	# read the value for curr
 if [ $# == 0 ]; then
-    if [ "$curr" == "none" ]; then					# if the current project variable is currently "none", then
-	echo -e "${RED}You currently have no projects${NO_COLOUR}"				# tell the user there is nothing to compile
+    if [ "$curr" == "none" ]; then					# if the current component variable is currently "none", then
+	echo -e "${RED}No components currently exist${NO_COLOUR}"	# tell the user there is nothing to compile
 	exit								# exit as there is nothing to do.
     else
-	proj=$curr				# make the project to be built the active project
-    fi						# end if "is current project 'none'"
+	comp=$curr				# make the component to be built the active component
+    fi						# end if "is current component 'none'"
 elif [ $# == 1 ]; then				# if there is exactly one argument
     if [ "$1" == "retain" ]; then		# if that one argument is the word "retain"	
-	proj=$curr				# make the project to be built the active project
+	comp=$curr				# make the component to be built the active component
 	retain=1				# set 
     elif [ "$1" == "all" ]; then
-	proj=$(ls -C $TCPATH/src)
+	comp=$(ls -C $TCPATH/src)
     elif [ "$1" == "clean" -a $curr != clean ]; then
 	echo -e "${RED}\nThis script automatically cleans after running." 
 	echo -e "To retain files built during compilation, type ./build retain ${NO_COLOUR}"
 	exit
     else
-	proj="$1"
+	comp="$1"
     fi
 else
-	proj="$1"
+	comp="$1"
     if [ "$2" == "retain" ]; then
 	retain="TRUE"
     elif [ "$2" == "clean" ]; then
-	echo -e "${RED}\nThis script automatically cleans after running. To retain files built during compilation, type ./build retain ${NO_COLOUR}"
+	echo -e "${RED}\nThis script automatically cleans after running. To retain files built during compilation, type \"./build retain\" ${NO_COLOUR}"
 	exit
     else
 	echo -e "${RED}Second Argument not recognised\n${NO_COLOUR}"
@@ -162,19 +162,19 @@ else
 fi									
 
 if [ "$1" != "all" ]; then
-    if [ ! -d "$TCPATH/src/$proj" ]; then								# Make sure the specified project actually exist, if it doesn't, exit.
-	echo -e "\n${RED}This project doesn't exist. Please check the name and try again\n${NO_COLOUR}"
+    if [ ! -d "$TCPATH/src/$comp" ]; then								# Make sure the specified component actually exist, if it doesn't, exit.
+	echo -e "\n${RED}This component doesn't exist. Please check the name and try again\n${NO_COLOUR}"
 	exit
     fi
 fi
 # We will only have made it this far if the above code hasn't made the script exit.
 
-for name in $proj 
+for name in $comp 
 do
-    # Now we will check the project directory for c files, the config file, and h files. The project cannot compile without any c files, and also requires the project.cfg file
+    # Now we will check the component directory for c files, the config file, and h files. The component cannot compile without any c files, and also requires the component.cfg file
     cd $TCPATH/src/$name						# couldn't figure out how to run the command below without this
 
-    count=`ls -1 *.c 2>/dev/null | wc -l`				# count how many c files there are in the project and store it in the variable "count"
+    count=`ls -1 *.c 2>/dev/null | wc -l`				# count how many c files there are in the component directory and store it in the variable "count"
 
 
     if [ $count == 0 ]						# if there are no c files, then
@@ -183,16 +183,33 @@ do
 	    exit									# quit to terminal
     fi 
 
-    count=`ls -1 *.cfg 2>/dev/null | wc -l`				# count how many cfg files there are in the project and store it in the variable "count"
+    count=`ls -1 *.cfg 2>/dev/null | wc -l`				# count how many cfg files there are in the component directory and store it in the variable "count"
     if [ $count == 0 ]						# if there are no cfg files, then
     then 
-	    echo -e "\n***\t${RED}No config file present in the project directory, cannnot compile.\t   ***\n${NO_COLOUR}"		# Tell the user there is nothing to compile
-	    exit													# quit to terminal
+	    echo -e "\n***\t${RED}No config file present in the component directory, cannnot compile.\t   ***\n${NO_COLOUR}"		# Tell the user there is nothing to compile
+	    echo -e "${YELLOW}\nWould you like to create one now?\n${NO_COLOUR}"
+	    read resp								# await user input, should by y or n
+
+		case "$resp" in							# check value of $resp. If value is...
+
+		"Y"|"y")								# yes, then we...
+		   # bash $TCPATH/bld/Create/comp_conf
+		    echo -e "This is not yet implemented"
+		    exit
+		;;
+
+		*)								# any other response
+		    echo -e "${CYAN}Exiting...${NO_COLOUR}"			# the input is invalid, let's loop back.
+		    exit
+		;;
+
+		esac								# close case
+	    
+	    												# quit to terminal
     fi 
 
-    Platform=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep Platform | cut -d '=' -f2)
-    Micro=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep Micro | cut -d '=' -f2)		# extract info about which micro to compile for
-    compiler=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep compiler | cut -d '=' -f2)		# extract info about which micro to compile for
+    platform=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep platform | cut -d '=' -f2)
+    micro=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep micro | cut -d '=' -f2)		# extract info about which micro to compile for
 
     if [ `ls -1 *.h 2>/dev/null | wc -l` != 0 ]; then						# if there are one or more, then 
 	inh="*.h"
@@ -204,28 +221,28 @@ do
 	    
   
 
-    if [ "$Platform" == "Bare_metal" ]; then
+    if [ "$platform" == "Bare_metal" ]; then
 
 	cp $TCPATH/src/$name/$a_files $TCPATH/tmp						# copy all h, c, and config files to the tmp directory
 
-	if [ "$Micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
+	if [ "$micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
 	    make32
-	elif [ "$Micro" == "atmega64m1" ]; then
+	elif [ "$micro" == "atmega64m1" ]; then
 	    makeavr
-	elif [ "$Micro" == "at90can128" ]; then
+	elif [ "$micro" == "at90can128" ]; then
 	    makeavr
-	elif [ "$Micro" == "atmega323" ]; then
+	elif [ "$micro" == "atmega323" ]; then
 	    makeavr
-	elif [ "$Micro" == "atmega2560" ]; then
+	elif [ "$micro" == "atmega2560" ]; then
 	    makeavr
 	else
 	    echo -e "\n${RED}This micro is currently not supported\n${NO_COLOUR}"
 	    exit
 	fi
     else
-	if [ "$Micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
+	if [ "$micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
 	    rtos32
-	elif [ "$Micro" == "atmega323" ]; then
+	elif [ "$micro" == "atmega323" ]; then
 	    cp $TCPATH/src/$name/$a_files $TCPATH/tmp
 	    makeavr
 	else
@@ -244,7 +261,7 @@ do
 
 done
 
-if [ "$1" == "all" ]; then						# IF multiple projects have been compiled
-    echo -e "${YELLOW}\nThe following projects compiled successfully: ${CYAN}${proj}\n${NO_COLOUR}"
+if [ "$1" == "all" ]; then						# IF multiple components have been compiled
+    echo -e "${YELLOW}\nThe following components compiled successfully: ${CYAN}${proj}\n${NO_COLOUR}"
 fi
 									# exit to terminal

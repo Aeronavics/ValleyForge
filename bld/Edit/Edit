@@ -8,7 +8,7 @@
 ###															####
 ### Purpose:		This script gets called by uavstart script, when the user chooses to select edit. This script	####
 ###			will have a few purposes, all of which are not entirely clear at this stage. So far its only	####
-###			functionality is to change which project is the default						####
+###			functionality is to change which component is the active						####
 ############################################################################################################################
 
 
@@ -22,25 +22,25 @@ BLUE="\033[0;34m"
 UNDERLINED="\033[4m"
 
 ###################### FUNCTION ##########################
-### Name:		changeDefault			##
+### Name:		changeActive			##
 ### Inputs/Outputs:	None				##
-### Purpose:		Asks the user which project 	##
+### Purpose:		Asks the user which component 	##
 ###			they would like to set as the	##
-###			default and updates config.cfg.	##
+###			active and updates config.cfg.	##
 ##########################################################
 
-changeDefault()
+changeActive()
 {
   					# as the edit script is stored in bld/Edit, we need to get out
   if [ "$(ls -A $TCPATH/src)" ]; then						# check if there is anything in the directory src. If there is....							# enter src
-   echo -e "${YELLOW}What would you like your default project to be?"		# prompt user
+   echo -e "${YELLOW}What would you like your active component to be?"		# prompt user
 	echo -e "${BLUE} "    
     ls $TCPATH/src
-									# show the projects available to be made the active one
+									# show the components available to be made the active one
 
     while :								# while loop to repeat process in case of invalid response
     do
-      read name								# await user input, input should be string corresponding to a project name
+      read name								# await user input, input should be string corresponding to a component name
 
       if [ "$name" == "exit" ]; then					# Pretty self explanatory
 	exit
@@ -48,17 +48,17 @@ changeDefault()
 
       if [ -d $TCPATH/src/"$name" ] 						# if directory with name given exists, then...
       then
-	echo -e "${CYAN}Setting default directory to $name"			# tell the user what you are about to do
+	echo -e "${CYAN}Setting active directory to $name"			# tell the user what you are about to do
 	sed -i "s/\(tc_curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# edit the value for key "curr" to the name the user has given.
 	
-	break								# a valid response has been given to "which project" so we need not ask this question again.
+	break								# a valid response has been given to "which component" so we need not ask this question again.
       else											# if the given name doesn't match
-	    echo -e "${RED}This project doesn't seem to exist. Please enter its name again:${NO_COLOUR}"		# then we need to ask them to type it again
-	    ls	$TCPATH/src										# show the user all the available projects again
+	    echo -e "${RED}This component doesn't seem to exist. Please enter its name again:${NO_COLOUR}"		# then we need to ask them to type it again
+	    ls	$TCPATH/src										# show the user all the available components again
       fi								# end if "does directory with given name exist"
     done								# invalid response, loop back again
   else									# if src folder is empty...
-    echo -e "${RED}\nNo Projects exist"					# Tell the user that this is the case 
+    echo -e "${RED}\nNo components exist"					# Tell the user that this is the case 
   fi
 }					# Exit function
 
@@ -80,7 +80,7 @@ chooseEOption ()
     echo -e "${YELLOW}What would you like to change?\n${NO_COLOUR}"		
 
     # This section uses "\033[4mD\033[0m" to underline the first letter, in this case "D"
-    echo -e  "	    ${BLUE}${UNDERLINED}D${NO_COLOUR}${BLUE}efault Project\n\
+    echo -e  "	    ${BLUE}${UNDERLINED}A${NO_COLOUR}${BLUE}ctive Component\n\
 	    ${UNDERLINED}U${NO_COLOUR}${BLUE}ser Info\n\
 	    ${UNDERLINED}A${NO_COLOUR}${BLUE}nother thing${NO_COLOUR}"		# list 3 options, with first letter of each underlined.
 
@@ -89,7 +89,7 @@ chooseEOption ()
     case "$Eoption" in					# read user input, test. If it is 
 
 	"D"|"d")					# D, then...
-	changeDefault					# call the function which changes the default project
+	changeActive					# call the function which changes the active component
 	break						# the question "what to change" has been answered successfully, we need to ask this question again
       ;;
 

@@ -6,9 +6,9 @@
 ### Date Created:	15.11.11											####
 ### Type:		Bash Script											####
 ###															####
-### Purpose:		This script gets called by uavstart script, when the user chooses to create a new project. 	####
-###			It creates a new folder in /src/ given the name of the project specified by the user, and 	####
-###			sets the default project depending on the user's input.	Also adds a cfg to the new project.	####
+### Purpose:		This script gets called by uavstart script, when the user chooses to create a new component. 	####
+###			It creates a new folder in /src/ given the name of the component specified by the user, and 	####
+###			sets the default component depending on the user's input. Also adds a cfg to the new component.	####
 ############################################################################################################################
 
 
@@ -27,7 +27,7 @@ UNDERLINED="\033[4m"
 ### Inputs/Outputs:	None				##
 ### Purpose:		Creates Scource Files templates ##
 ###			for the user to build their 	##
-###			project on.			##
+###			component on.			##
 ##########################################################
 createTemplate ()
 {
@@ -36,15 +36,15 @@ createTemplate ()
     todaydate=$(date +"%-d.%-m.%Y")								# create a variable string containing the date
     echo -e "\n${CYAN}Creating Template Files...${NO_COLOUR}\n"							
     cp $TCPATH/res/c_template.c $TCPATH/src/$name/$name.c					# copy c template to new folder directory
-    cp $TCPATH/res/h_template.h $TCPATH/src/$name/$name.h					# copy h template to new project directory
+    cp $TCPATH/res/h_template.h $TCPATH/src/$name/$name.h					# copy h template to new component directory
     for i in c h										# edit c file template, then h file template
     do
 	sed -i 's/<<<TC_INSERTS_FILE_NAME_HERE>>>/'$name'.'$i'/g' $TCPATH/src/$name/$name.$i		# replace the placeholders in the templates with the specified names given by the various variables
-	sed -i 's/<<<TC_INSERTS_PROJECT_NAME_HERE>>>/'$name'/g' $TCPATH/src/$name/$name.$i		# in both the c and h templates
+	sed -i 's/<<<TC_INSERTS_COMPONENT_NAME_HERE>>>/'$name'/g' $TCPATH/src/$name/$name.$i		# in both the c and h templates
 	sed -i "s/<<<TC_INSERTS_AUTHOR_NAME_HERE>>>/$authname/g" $TCPATH/src/$name/$name.$i
 	sed -i 's/<<<TC_INSERTS_DATE_HERE>>>/'$todaydate'/g' $TCPATH/src/$name/$name.$i
 	sed -i "s/<<<TC_INSERTS_ASPECT_HERE>>>/$aspect/g" $TCPATH/src/$name/$name.$i
-	sed -i 's/<<<TC_INSERTS_MICRO_HERE>>>/'$Micro'/g' $TCPATH/src/$name/$name.$i
+	sed -i 's/<<<TC_INSERTS_MICRO_HERE>>>/'$micro'/g' $TCPATH/src/$name/$name.$i
     done
     sed -i 's^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^'$ioheader'^g' $TCPATH/src/$name/$name.c			# insert io header name depending on micro architecture here
     sed -i 's^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^'\"$name.h'\"^g' $TCPATH/src/$name/$name.c			# insert name of h file into the c file
@@ -58,7 +58,7 @@ createTemplate ()
 ### Inputs/Outputs:	None				##
 ### Purpose:		Asks the user which Micro 	##
 ###			they are using and set the	##
-###			value $Micro accordingly.	##
+###			value $micro accordingly.	##
 ##########################################################
 
 chooseMicro ()
@@ -67,55 +67,50 @@ chooseMicro ()
   do
 
 
-  echo -e "\n${YELLOW}You chose Create. Which microprocessor would you like to code for?\n${NO_COLOUR}"
+  echo -e "\n${YELLOW}You chose Create. Which target would you like to code for?\n${NO_COLOUR}"
 
 
   # The section below uses the \033[4m1.\033[0m\t wrapping to underline the "1."
-  echo -e  "	  ${BLUE}${UNDERLINED}1.${NO_COLOUR}${BLUE}\tATmega64M1\n\
-	  ${UNDERLINED}2.${NO_COLOUR}${BLUE}\tAT90CAN128\n\
-	  ${UNDERLINED}3.${NO_COLOUR}${BLUE}\tAT32UC3C0512C\n\
-	  ${UNDERLINED}4.${NO_COLOUR}${BLUE}\tATmega2560\n\
-	  ${UNDERLINED}5.${NO_COLOUR}${BLUE}\tOMAP4430\n${NO_COLOUR}"  			#Gives a list of 4 micros with the options 1,2,3,4
+  echo -e  "	  ${BLUE}${UNDERLINED}1.${NO_COLOUR}${BLUE}\tATmega64M1 (STK600)\n\
+	  ${UNDERLINED}2.${NO_COLOUR}${BLUE}\tAT90CAN128 (STK600)\n\
+	  ${UNDERLINED}3.${NO_COLOUR}${BLUE}\tAT32UC3C0512C (STK600)\n\
+	  ${UNDERLINED}4.${NO_COLOUR}${BLUE}\tATmega2560 (STK600)\n\
+	  ${UNDERLINED}5.${NO_COLOUR}${BLUE}\tOMAP4430 (PandaBoard)\n${NO_COLOUR}"  			#Gives a list of 4 micros with the options 1,2,3,4
 
-  read Micro						#user input required, should be a number 1-4
+  read micro						#user input required, should be a number 1-4
 
-  case "$Micro" in					# read value of variable $Micro, to match to responses below
+  case "$micro" in					# read value of variable $micro, to match to responses below
 
     "1")
-      Micro="ATmega64"					#changes value of micro from number to a string
+      micro="ATmega64"					#changes value of micro from number to a string
       mic_code="atmega64m1"
-      compiler="avr-gcc"
       ioheader="<avr/io.h>"
       break						#exits out of while loop as has found a valid response
     ;;
     "2")
-      Micro="ATCAN90"
+      micro="ATCAN90"
       mic_code="at90can128"
-      compiler="avr-gcc"
       ioheader="<avr/io.h>"
       break
     ;;
 
     "3")
-      Micro="AT32"
+      micro="AT32"
       mic_code="uc3c0512c"
-      compiler="$TCPATH/res/avr32comp/bin/avr32-gcc"
       ioheader="<avr32/io.h>"
       break
     ;;
 
     "4")
-      Micro="ATmega2560"
+      micro="ATmega2560"
       mic_code="atmega2560"
-      compiler="avr-gcc"
       ioheader="<avr/io.h>"
       break
     ;;
 
     "5")
-     Micro="OMAP4300"
+     micro="OMAP4300"
      mic_code="na"
-     compiler="na"	# [][]: need to get this done
      ioheader="na"
       break
     ;;
@@ -151,9 +146,9 @@ choosePlatform ()
   do
 
 
-    echo -e "\n${YELLOW}You chose the $Micro. What Platform would you like to code for?\n${NO_COLOUR}"
+    echo -e "\n${YELLOW}You chose the $micro. What Platform would you like to code for?\n${NO_COLOUR}"
     
-    if [ "$Micro" == "OMAP4300" ]; then
+    if [ "$micro" == "OMAP4300" ]; then
  # The section below uses the \033[4mB\033[0m\t wrapping to underline the "B"
 	echo -e  "	    ${BLUE}${UNDERLINED}R${NO_COLOUR}${BLUE}TOS"
 	echo -e  "	    ${UNDERLINED}L${NO_COLOUR}${BLUE}inux${NO_COLOUR}"	# 3 options, Bare_metal, RTOS, Linux first letter of each underlined
@@ -162,14 +157,14 @@ choosePlatform ()
 	echo -e  "	    ${UNDERLINED}R${NO_COLOUR}${BLUE}TOS${NO_COLOUR}"
     fi
 
-    read Platform			# User input, should type one letter (b,r,l) to decide which Platform to code on
+    read platform			# User input, should type one letter (b,r,l) to decide which platform to code on
 
-    case "$Platform" in			# read variable, if it is
+    case "$platform" in			# read variable, if it is
 
       "B"|"b")
-	if [ "$Micro" != "OMAP4300" ]; then		# B won't be a visible option for the OMAP anyway, but if they press it, remind them that's not allowed
+	if [ "$micro" != "OMAP4300" ]; then		# B won't be a visible option for the OMAP anyway, but if they press it, remind them that's not allowed
 	    echo -e "${CYAN}Bare Metal it is...${NO_COLOUR}"
-	    Platform="Bare_metal"			# set variable platform to be used later 
+	    platform="Bare_metal"			# set variable platform to be used later 
 	    break
 	else
 	    echo -e "\n${RED}Not running bare metal on the OMAP\n${NO_COLOUR}"	# tell them they can't run bare metal on the OMAP
@@ -177,13 +172,13 @@ choosePlatform ()
       ;;
 
       "R"|"r")
-	Platform="RTOS"
+	platform="RTOS"
 	break
       ;;
 
       "L"|"l")
-	if [ "$Micro" == "OMAP4300" ]; then		# we only run linux on the OMAP 4300
-	    Platform="Linux"
+	if [ "$micro" == "OMAP4300" ]; then		# we only run linux on the OMAP 4300
+	    platform="Linux"
 	    break
 	else
 	    echo -e "\n${RED}Not running linux on these processors\n${NO_COLOUR}"
@@ -209,10 +204,10 @@ choosePlatform ()
 #	*********************   SCRIPT  STARTS HERE 	****************
 
 TCPATH="$1"								# import the ToolChain PATH from the start script
-chooseMicro								# sets the variable $Micro  (see above)
-choosePlatform								# sets the variable $Platform	(see above)
+chooseMicro								# sets the variable $micro  (see above)
+choosePlatform								# sets the variable $platform	(see above)
 
-echo -e "\n${YELLOW}You chose to code on $Platform. What will be the name of your project? (no spaces)\n${NO_COLOUR}"	# Name given will be name of folder in src
+echo -e "\n${YELLOW}You chose to code on $platform. What will be the name of your component? (no spaces)\n${NO_COLOUR}"	# Name given will be name of folder in src
 
 
 while : 								# while loop to repeat process in case user gives invalid input
@@ -227,7 +222,7 @@ do
 	echo -e "\n${RED}This name is reserved. You may not use it\n${NO_COLOUR}"
 
     elif [[ $name == *\ * ]]; then									# if the name has a space in it
-	echo -e "${RED}\nYour project name may not contain any spaces. Please specify another name\n${NO_COLOUR}"		# then tell the user
+	echo -e "${RED}\nYour component name may not contain any spaces. Please specify another name\n${NO_COLOUR}"		# then tell the user
 
     
 
@@ -236,10 +231,10 @@ do
 	echo -e "${RED}This name is already taken. Please specify another name, or type exit to quit${NO_COLOUR}"
     else									# if folder name is available, then
 	if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then				# if the directory src is currently empty
-	    curr=$name								# then set the variable $curr (relating to the current active project) to the same as name. This gets used later.
-	    sed -i "s/\(curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# change the value of in config.cfg in var to the name of this project.		# go back to the src folder so we can create the project folder
+	    curr=$name								# then set the variable $curr (relating to the current active component) to the same as name. This gets used later.
+	    sed -i "s/\(curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# change the value of in config.cfg in var to the name of this component.		# go back to the src folder so we can create the component folder
 	else
-	    echo -e "${YELLOW}Would you like this to be your default project? (Y/n)${NO_COLOUR}"  	# If yes, then the value curr in config.cfg in var gets changed to the name of this project.
+	    echo -e "${YELLOW}Would you like this to be your default working component? (Y/n)${NO_COLOUR}"  	# If yes, then the value curr in config.cfg in var gets changed to the name of this component.
 	    while :								# while loop to repeat process in case user gives invalid input
 	    do
 		read yorn								# await user input, should by y or n
@@ -247,8 +242,8 @@ do
 		case "$yorn" in							# check value of $yorn. If value is...
 
 		"Y"|"y")								# yes, then we...
-		    curr=$name							# set the value curr to equal the project name
-		    sed -i "s/\(tc_curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# change the value of curr in our config file to be the new project
+		    curr=$name							# set the value curr to equal the component name
+		    sed -i "s/\(tc_curr *= *\).*/\1$name/" $TCPATH/var/config.cfg			# change the value of curr in our config file to be the new component
 		    break								# escape the while loop as we have received a valid response.
 		;;
 
@@ -267,8 +262,8 @@ do
 	fi									# end if "if directory src is currently empty"
 
 	mkdir $TCPATH/src/$name									# create new folder in src with the name typed in above	
-	echo -e "Micro=$mic_code\nPlatform=$Platform\ncompiler=$compiler" > $TCPATH/src/$name/$name.cfg				# create a file named as the project.cfg, containing data about the project to be used in building it. 
-	echo -e "${YELLOW}Would you like template files to be created for you? (Y/n)${NO_COLOUR}"  	# If yes, then the value curr in config.cfg in var gets changed to the name of this project.
+	echo -e "micro=$mic_code\nplatform=$platform" > $TCPATH/src/$name/$name.cfg				# create a file named as the component.cfg, containing data about the component to be used in building it. 
+	echo -e "${YELLOW}Would you like template files to be created for you? (Y/n)${NO_COLOUR}"  	# If yes, then the value curr in config.cfg in var gets changed to the name of this component.
 	    while :								# while loop to repeat process in case user gives invalid input
 	    do
 		read yorn								# await user input, should by y or n
@@ -291,12 +286,12 @@ do
 		esac									# close case
 	    done	
 
-	echo -e "\n${YELLOW}Your project working directory can now be found under $TCPATH/src/$name\n"	# tell the user where the project src file is 
-	echo -e "${YELLOW}Your current project is $curr${NO_COLOUR}"						# tell the user what their active project is.
+	echo -e "\n${YELLOW}Your component working directory can now be found under $TCPATH/src/$name\n"	# tell the user where the component src file is 
+	echo -e "${YELLOW}Your active component is $curr${NO_COLOUR}"						# tell the user what their active component is.
 	break;										# get out of the while loop, all is well
-    fi											# end if "if project folder already exists"
+    fi											# end if "if component folder already exists"
 
-done											# Let's ask the user again what they want to call their project
+done											# Let's ask the user again what they want to call their component
 
 
 # now let's go back to the uavstart module, where we should just exit out of straight away too.
