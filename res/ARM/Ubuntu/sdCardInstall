@@ -1,0 +1,162 @@
+#!/bin/bash
+
+############################################################################################################################
+### Name:		sdCardInstall											####
+### Author:		Paul Bowler											####
+### Date Created:	30.11.2011											####
+### Type:		Bash Script											####
+###															####
+### Purpose:		This script prepares the SD card and extracts the Ubuntu image onto it.		 		####
+############################################################################################################################
+
+CYAN="\033[0;36m"
+DEFAULT="\033[0m"
+YELLOW="\033[1;33m"
+RED="\033[0;31m"
+BLUE="\033[0;34m"
+UNDERLINED="\033[4m"
+BOLD="\033[1m"
+
+######################################## FUNCTION ########################################
+### Name:		requestImageName						##
+### Inputs/Outputs:	None								##
+### Purpose:		Requests the user to input the name of the Ubuntu image and	##
+###			and reads this name into a variable 'imageName'			##
+##########################################################################################
+function requestImageName {
+  echo -e "${YELLOW}Please enter the name of the Ubuntu image you wish to install, including any file extensions.\n${DEFAULT}"	#Request the name of the Ubuntu image for installation
+  read imageName
+}
+
+######################################## FUNCTION ########################################
+### Name:		requestDriveLetter						##
+### Inputs/Outputs:	None								##
+### Purpose:		Requests the user to input the 'drive letter' of the device to 	##
+###			which the Ubuntu iamge will be extracted. Stores this letter in	##
+###			the variable 'driveLetter'					##
+##########################################################################################
+function requestDriveLetter {
+  echo -e "${YELLOW}Please enter the drive letter of SD Card you wish to install the Ubuntu image on.\nThis is of the form 'sd*', where * is the drive letter\n${DEFAULT}"	#Request the name of the Ubuntu image for installation
+  read driveLetter
+}
+
+######################################## FUNCTION ########################################
+### Name:		unmountSDCard							##
+### Inputs/Outputs:	None								##
+### Purpose:		Reminds the user to unmount the device to which the are 	##
+###			extracting the Ubuntu image.					##
+##########################################################################################
+function unmountSDCard {
+  echo -e "${YELLOW}\nPlease make sure the SD card you wish to install the image to (sd$driveLetter) has been unmounted from system.\nPress any key to continue.\n${DEFAULT}"	#Remind the user that they need to unmount the USB key
+  read
+}
+
+######################################## FUNCTION ########################################
+### Name:		removeTempFiles							##
+### Inputs/Outputs:	None								##
+### Purpose:		Restores or renames the backup zipped image and deletes the 	##
+### 			temporary unzipped image file.					##
+##########################################################################################
+function removeTempFiles {
+  if [ -e $fileName ]; then					#Check to see if there is an unzipped image that needs to be removed
+    rm -f $fileName						#Remove the unzipped image if there is one present
+  fi
+  mv $TCPATH/$imageName.backup $TCPATH/$imageName		#restore the backed up image
+  if [ $? -eq 1 ]; then						#Check to see if the restoration process was successful	
+    errorExit "Couldn't restore the backup file! Aborting now."	#...if not, print an error and exit.
+  fi
+}
+
+######################################## FUNCTION ########################################
+### Name:		errorExit							##
+### Inputs/Outputs:	Returns 1 to signal an error.					##
+### Purpose:		When an unrecoverable error occurs, the function prints an	##
+###			appropriate error message to terminal and exits with a return	##
+###			value of 1.							##
+##########################################################################################
+function errorExit {
+  echo -e "${BOLD}${RED}$1${DEFAULT}" 1>&2	#Print the error notification
+  exit 1
+}
+
+######################################## FUNCTION ########################################
+### Name:		backupImage							##
+### Inputs/Outputs:	None								##
+### Purpose:		Function checks to make sure user has provided a valid image	##
+###			file name and then copies image.img.gz file to 			##
+###			image.img.gz.backup						##
+##########################################################################################
+function backupImage {
+  SCRIPT=`readlink -f $0`						
+  SCRIPTPATH=`dirname $SCRIPT`						#find the directory this script is in
+  TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')				#make our path name that of above it
+  
+  echo -e "${CYAN}Making a backup copy of image...${DEFAULT}"		#alert user to what script is doing currently...
+  if [ -e $imageName ]; then						#Check to make sure the user has provided a valid image name
+    cp "$TCPATH/$imageName" "$TCPATH/$imageName.backup"			#Make a backup copy of the image if name is valid
+    echo -e "${CYAN}done!\n${DEFAULT}"
+  else
+    errorExit "Invalid image name provided! Aborting now."		#...if image name is not valid, print an error.
+  fi
+}
+
+######################################## FUNCTION ########################################
+### Name:		unzipImage							##
+### Inputs/Outputs:	None								##
+### Purpose:		Function unzips the image file.					##
+##########################################################################################
+function unzipImage {  
+  echo -e "${CYAN}Unzipping the image...${YELLOW}"			#alert user to what script is doing currently...note: Make the colour yellow (not default) in case gzip asks to overwrite an existing file!
+  gunzip $imageName							#Unzip the the image
+  if [ $? -eq 1 ]; then							#Check to see if the process was a success or not..	
+    removeTempFiles							#Rename the temporary backup file and remove the unzipped image that might have been produced.
+    errorExit "Couldn't unzip the image! Aborting now."			#Print an error and exit if unsuccessful
+  else
+    echo -e "${CYAN}done!\n${DEFAULT}"
+  fi
+}
+
+######################################## FUNCTION ########################################
+### Name:		extractImage							##
+### Inputs/Outputs:	None								##
+### Purpose:		Function extracts the image to the specified device		##
+##########################################################################################
+function extractImage {  
+  echo -e "${CYAN}Unpacking image to SD-Card...${DEFAULT}"		#alert user to what script is doing currently...
+  fileName=$(echo $imageName | cut -f  -3 -d.)				#Truncate the image name (xxx.img.gz) to remove the .gz file extension
+  sudo dd bs=4M if=$fileName of=/dev/sd$driveLetter 			#Unpack the image to the SD-Card
+  if [ $? -eq 1 ]; then							#Test to see if the unpacking process return an error
+    removeTempFiles							#Rename the temporary backup file and remove the unzipped image that might have been produced.
+    errorExit "Couldn't unpack the image! Aborting now."		#Print an error and exit if unsuccessful
+  else
+    echo -e "${CYAN}done!\n${DEFAULT}"
+  fi
+}
+
+######################################## FUNCTION ########################################
+### Name:		synchroniseDrive						##
+### Inputs/Outputs:	None								##
+### Purpose:		Function synchronises the drive to ensure no data is left in 	##
+###			buffer.								##
+##########################################################################################
+function synchroniseDrive {
+  echo -e "${CYAN}Synchronising drive...${DEFAULT}"			#alert user to what script is doing currently...
+  sync 									#synchronise the drive to ensure no data left in the system buffer
+  echo -e "${CYAN}done!\n${DEFAULT}"
+}
+
+#'Main'
+clear
+echo -e ${BOLD}${BLUE}"\n***SD-Card Preparation Tool***\nPrepares an SD-Card for a Linux installation on an OMAP4 device!\n\n${DEFAULT}"		# Announce the tool
+requestImageName				#request an image name from the user
+requestDriveLetter				#request a drive letter from the user
+#unmountSDCard					#remind the user to unmount the device (Not necessary?)
+echo -e "${YELLOW}\nTool will now extract $imageName to the device at sd$driveLetter!\nPress any key to continue...\n${DEFAULT}"			#Confirm what the tool will extract and where it will extract it to
+read
+backupImage					#make a backup copy of the img.gz file
+unzipImage					#unzip the image to the working directory
+extractImage					#extract the image to the device
+synchroniseDrive				#synchronise the drive
+removeTempFiles					#Rename the temporary backup file and remove the unzipped image that might have been produced.
+echo -e "${YELLOW}Safe to remove SD-Card after unmounting it...${DEFAULT}"										#Tell the user they are able to remove the device
+exit 0						#exit successfully if the script arrives at this point!
