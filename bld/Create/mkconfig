@@ -1,4 +1,0 @@
-#!/bin/bash
-
-cd ../../var
-echo -e "curr =none\nstartup =start\nauthname =none\naspect =none" > $config.cfg

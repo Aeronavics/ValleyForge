@@ -1,9 +1,58 @@
 #!/bin/bash
 
-SCRIPT=`readlink -f $0`					# find the directory the script is in
+###########################################################################################################################
+###															###
+### Name:		resettc												###
+###															###
+### Author:		Zac Frank											###
+###															###
+### Date Created:	17-11-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Resets the toolchain to its default parameters.  Note that this doesn't touch the contents of	###
+###			the src folder.										 	###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')
-cp $TCPATH/res/Defaults/config.cfg $TCPATH/var/config.cfg
-rm -rf $TCPATH/res/avr32comp/*
-rmdir $TCPATH/res/avr32comp
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+DEFAULT_USER_CONFIG_FILE="bld/default_user_config.cfg"
+USER_CONFIG_FILE="var/config.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Make sure we can find the default user configuration file.
+if [ -r $TCPATH/$DEFAULT_USER_CONFIG_FILE ]; then
+	# Set the user configuration back to the defaults.
+	echo -e "${BOLD_CYAN}Reverting user configuration to defaults...\n${NO_COLOUR}"
+	cp $TCPATH/$DEFAULT_USER_CONFIG_FILE $TCPATH/$USER_CONFIG_FILE
+else
+	# Something is terribly, terribly wrong.
+	echo -e "${BOLD_RED}FATAL - Default user configuration file not found.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Delete the unpacked AVR32 compiler (it will be unpacked again next time it is needed).
+echo -e "${BOLD_CYAN}Removing unpacked AVR32 compiler...\n${NO_COLOUR}"
+rm -rf $TCPATH/res/arv32/avr32comp
+
+# Indicate that we're done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+
+# All done.
+exit 0
+
 

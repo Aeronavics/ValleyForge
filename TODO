@@ -13,12 +13,6 @@ If the configuration file isn't there, then it should produce it, and populate i
 
 * On a related note, the configuration file for each 'component' at the moment stores a field called 'Micro' and a field called 'compiler'.  Firstly, the key 'Micro' should be called 'target' (as above).  Secondly, the field 'compiler' is redundant and should be removed.  If the toolchain needs to look up which compiler to use with which target (and thus where the compiler binary will be located), there should be a configuration file in the bld directory which allows looking up that (for example) the ATmega2560 target requires the avr-gcc compiler (along with any other settings that might be required).  Thirdly, the key names probably either shouldn't start with capital letters (cf 'Micro' and 'compiler'), or should ALL start with capital letters.
 
-* For the AVR32 architecture, the path which is stored in the configuration files is an absolute path rather than the path relative to the root toolchain directory.  This means that the configuration files for each component are currently not portable between computers.
-
-* The tar file res/avr32comp.tar and the corresponding unpacked folder res/avr32comp should probably be moved inside the folder res/avr32.
-
-* The directory res/Defaults should be renamed res/defaults.  Directory names with capital letters are inconvenient.  Oh, the same goes for all the directories in res.
-
 * The thing that is currently called 'Aspect' is stored in var/config.cfg, making it specific to the user.  I don't think this will neccesarily be that helpful, mostly because one person might be working on different bits of the project.  More helpful would be if each component also had a field called 'Sub-System' perhaps. The only real place it would be used (as I see it at the moment, though that could change) would be adding it into the top of each source file (in the same place where the 'Aspect' is at the moment).  So two different components might be part of the same 'sub-system' even though different people are working on them.
 
 * The symbols <<<TC_INSERTS_PROJECT_NAME_HERE>>> and <<<TC_INSERTS_IO_FILE_NAME_HERE>>> do not seem to be getting resolved when you create a new component and the template.h file is used to create a new header file.
@@ -32,6 +26,5 @@ the toolchain should then set 'tc_current' variable to 'none'.  Hence, you'd onl
 
 * The string which yields that white-on-blue text '\E[37;44m'"\033[1m should be replaced with a variable the same as the other colours.
 
-* Running the bld/build script with the parameters 'help', '-h' or '--help' should spit out some kind of information on what parameters the script accepts.  I think it is reasonable for us to say that "help" is not considered an acceptable component name.
 
 

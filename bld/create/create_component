@@ -1,0 +1,390 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		create_component										###
+###															###
+### Author:		Zac Frank											###
+###															###
+### Date Created:	15.11.11											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script gets called by VFstart script, when the user chooses to create a new component. 	###
+###			It creates a new folder in src given the name of the component specified by the user, and 	###
+###			sets the component configuration depending on the user's input. 				###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+TEMPLATE_C_FILE="res/c_template.c"
+TEMPLATE_H_FILE="res/h_template.h"
+USER_CONFIG_FILE="var/config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		create_template							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Creates template source files for the user to build their 	###
+###			software from.						     	###
+###											###
+###########################################################################################
+
+create_template ()
+{
+	# Populate a variable with the users information, from the configuration file.
+	AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
+	ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
+
+	# Populate a string with the current date.
+	DATE=$(date +"%-d.%-m.%Y")
+
+	# Create the actual files by coping the templates into the source directory.
+	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
+	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$NAME/$NAME.c
+	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$NAME/$NAME.h
+
+	# Preprocess the template source files to file in appropriate fields.
+	echo -e "${CYAN}Preprocessing template files...\n${NO_COLOUR}"
+
+	# Iterate through the file extensions to be preprocessed.
+	for EXT in c h
+	do
+		# Replace each instance of a placeholder in the template files with the corresponding information.
+
+		sed -i 's/<<<TC_INSERTS_FILE_NAME_HERE>>>/'$NAME'.'$EXT'/g' $TCPATH/src/$NAME/$NAME.$EXT		
+		sed -i 's^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^'\"$NAME.h'\"^g' $TCPATH/src/$NAME/$NAME.$EXT
+		sed -i 's^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^'\"$NAME.c'\"^g' $TCPATH/src/$NAME/$NAME.$EXT
+
+		sed -i 's/<<<TC_INSERTS_COMPONENT_NAME_HERE>>>/'$NAME'/g' $TCPATH/src/$NAME/$NAME.$EXT
+		sed -i "s/<<<TC_INSERTS_AUTHOR_NAME_HERE>>>/$AUTHOR/g" $TCPATH/src/$NAME/$NAME.$EXT
+		sed -i 's/<<<TC_INSERTS_DATE_HERE>>>/'$DATE'/g' $TCPATH/src/$NAME/$NAME.$EXT
+		sed -i "s/<<<TC_INSERTS_ASPECT_HERE>>>/$ASPECT/g" $TCPATH/src/$NAME/$NAME.$EXT
+
+		sed -i 's/<<<TC_INSERTS_MICRO_HERE>>>/'$TARGET'/g' $TCPATH/src/$NAME/$NAME.$EXT
+		sed -i 's^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^'$IOHEADER'^g' $TCPATH/src/$NAME/$NAME.$EXT
+    	done
+	
+	# All done.
+	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		choose_target							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Asks the user which target they are using and sets the value	###
+###			$TARGET accordingly.						###
+###											###
+###########################################################################################
+
+choose_target()
+{
+	# Prompt the user.
+	echo -e "${GREEN}Which target would you like to code for? \n${NO_COLOUR}"
+	
+	# List the possible build configurations.
+	BCONFS=`declare -F | grep -o -e "bconf_.*"`
+	
+	# Iterate through the possible build configurations
+	for BCONF in $BCONFS; do
+		# Extract the name of the target from the configuration and add it to a list of possible targets.
+		TARGETS="`echo $BCONF | cut -d '_' -f 2` $TARGETS"
+	done
+
+	# Sort the list of targets and search for duplicates.
+	TARGETS="`echo $TARGETS | tr " " "\n" | sort -u -r | tr "\n" " "`"
+
+	# Create a menu of choices and have the user select one.
+	select TARGET in $TARGETS
+	do
+		# Check if the selected target is actually valid.
+		TARGET=$(echo "$TARGETS" | grep -w -o "$TARGET")
+		if [ -z "$TARGET" ]; then
+			# The selected target was not in the list of targets, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			echo -e "${CYAN}Selected target $TARGET.\n${NO_COLOUR}"
+			break
+		fi
+	done
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		choose_platform							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Asks the user which platform (operating system) they wish to	###
+###			use and sets the value $PLATFORM accordingly.			###
+###											###
+###########################################################################################
+
+choose_platform()
+{
+	# Prompt the user.
+	echo -e "${GREEN}Which platform would you like to code for? \n${NO_COLOUR}"
+	
+	# List the possible build configurations.
+	BCONFS=`declare -F | grep -o -e "bconf_.*"`
+	
+	# Iterate through the possible build configurations
+	for BCONF in $BCONFS; do
+		# Check if this configuration is specific to our chosen target.
+		if [ "$TARGET" == `echo $BCONF | cut -d '_' -f 2` ]; then
+			# This configuration matches the current target.
+	
+			# Extract the name of the platform from the configuration and add it to a list of possible platforms.
+			PLATFORMS="`echo $BCONF | cut -d '_' -f 3` $PLATFORMS"
+		fi
+			# Else, the configuration is for some other target, so we ignore it.
+	done
+
+	# Sort the list of platforms and search for platforms.
+	PLATFORMS="`echo $PLATFORMS | tr " " "\n" | sort -u -r | tr "\n" " "`"
+
+	# Create a menu of choices and have the user select one.
+	select PLATFORM in $PLATFORMS
+	do
+		# Check if the selected platform is actually valid.
+		PLATFORM=$(echo "$PLATFORMS" | grep -w -o "$PLATFORM")
+		if [ -z "$PLATFORM" ]; then
+			# The selected platform was not in the list of platforms, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			echo -e "${CYAN}Selected platform $PLATFORM.\n${NO_COLOUR}"
+			break
+		fi
+	done
+
+	# All done.
+	return
+}
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to create components and update their configurations.
+
+Options:
+	-h --help			Show this message.
+	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
+	-n --name <Component Name>	Specify the name of a component to create/update.
+	-t --target <Target Name>	Specify the name of the target for this component.
+	-p --platform <Platform Name>	Specify the name of the platform for this component.
+EOF
+	# All done.
+	return
+}
+
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+NAME=
+BATCHMODE=
+TARGET=
+PLATFORM=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hbn:t:p:"
+LONGOPTS="help,batch,name:,target:,platform:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-b|--batch)
+			# Select batch mode.
+			BATCHMODE=1
+			;;
+		-n|--name)
+			# Specify the name of the component to create.
+			shift
+			NAME="$1"
+			;;
+		-t|--target)
+			# Specify the target of the component to create.
+			shift
+			NAME="$1"
+			;;
+		-p|--platform)
+			# Specify the platform of the component to create.
+			shift
+			NAME="$1"
+			;;
+		--)
+			# We're done parsing options.  We ignore anything else.
+			shift
+			break
+			;;
+		*)
+			# We ignore anything else.
+			shift
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
+
+# Check if we have been supplied the name of the component to create and that we're not in batch mode.
+if [ -z $NAME ] && [ ! $BATCHMODE ]; then
+	# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+	while :
+	do
+		# We will need to prompt the user for the name of the component to create.
+		echo -e -n "${GREEN}Enter a name for the component to be created: (No spaces) ${NO_COLOUR}"
+		read 
+
+		# Check the user actually entered something.
+		if [ -z "$REPLY" ]; then
+			# We'll just prompt again.
+			continue
+
+		# Check if the user actually just wants to exit without creating anything.
+		elif [ "$REPLY" == "exit" ]; then
+			# Exit the script.
+			exit 0
+
+		# Check if the name is a reserved word.
+		elif [ "$REPLY" == "none" ] || [ "$REPLY" == "--retain" ] || [ "$REPLY" == "-r" ] || [ "$REPLY" == "--all" ] ||\
+		     [ "$REPLY" == "all" ] || [ "$REPLY" == "-a" ] || [ "$REPLY" == "--help" ] || [ "$REPLY" == "-h" ] ||\
+		     [ "$REPLY" == "--clean" ] || [ "$REPLY" == "-c" ]; then
+			# The name is a reserved word, and thus invalid.  Prompt the user to choose a more suitable name.
+			echo -e "${RED}The component name '$REPLY' is an invalid name.  Please choose another name.\n${NO_COLOUR}"
+
+		# Check if the component name contains spaces.
+		elif [[ $name == *\ * ]]; then
+			# The name contains spaces, which is invalid. Prompt the user to choose a more suitable name.
+			echo -e "${RED}The component name must not contain spaces.  Please choose another name.\n${NO_COLOUR}"
+
+		# Check to see if this name is already taken.
+		elif [ -d "$TCPATH/src/$REPLY" ]; then
+			# The name provided is already taken.  Prompt the user to choose an available name.
+			echo -e "${RED}The component '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
+
+		else
+			# The name is probably legit, so we move on.
+			NAME=$REPLY
+			break
+		fi
+	done
+fi
+
+# Check if we have been supplied the target type and that we're not in batch mode.
+if [ -z $TARGET ] && [ ! $BATCHMODE ]; then
+	# We haven't been given a target type, so we need the user to select one.
+	choose_target
+fi
+
+# Check if we have been supplied the platform type and that we're not in batch mode.
+if [ -z $PLATFORM ] && [ ! $BATCHMODE ]; then
+	# We haven't been given the platform type, so we need the user to select one.
+	choose_platform
+fi
+
+# CREATE THE COMPONENT.
+
+# Check if the specified component does not exist yet.
+if [ ! -d "$TCPATH/src/$NAME" ]; then
+	# This is a new component, so we will need to create a directory for it.
+	echo -e "${CYAN}Creating component directory (src/$NAME)...\n${NO_COLOUR}"
+	NEW=1
+	mkdir $TCPATH/src/$NAME
+fi
+
+# TODO - We should check that this actually worked, and if it didn't, bail.
+
+# Create the configuration file for the component, overriding any existing configuration file.
+echo -e "${CYAN}Creating configuration file (src/$NAME/$NAME.cfg)...\n${NO_COLOUR}"
+echo -e "# Configuration file for component $NAME.\n\nTARGET=$TARGET\nPLATFORM=$PLATFORM\n" > $TCPATH/src/$NAME/$NAME.cfg
+
+# TODO - We should actually check if this works.
+
+# POST-NEW-COMPONENT OPTIONS.
+
+# We only ask the user questions if we're not in batch mode.
+if [ ! $BATCHMODE ] && [ $NEW ]; then
+	# Ask if the user wants to set this as the current component.
+	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+
+	# If they responded YES, then set the current component.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# We want to set this as the current component.
+		sed -i "s^\(tc_curr *= *\).*^\1$NAME^" $TCPATH/$USER_CONFIG_FILE
+
+		# TODO - We should actually check if we can find the config file first.
+	fi
+
+	# Ask if the user wants template files to be created.
+	echo -e -n "${GREEN}Do you wish for template files to be created for the component? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+
+	# If they responded YES, then create the template files.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Create the template files.
+		create_template
+	fi
+
+	# Explain to the user what they should do now.
+	echo -e "${BOLD_WHITE}The working directory for component $NAME can now be found at src/$NAME.\n${NO_COLOUR}"
+fi
+
+# All done.
+echo -e "${CYAN}All done.\n${NO_COLOUR}"
+exit 0
+

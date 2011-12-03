@@ -67,7 +67,7 @@ do
   case "$input" in					# if input is .....  then .....
 
     "C" | "c" )						# if input is "C" or "c"
-      bash $TCPATH/bld/Create/Create $TCPATH		# run the create script
+      bash $TCPATH/bld/create/create_component		# run the create script
       break						# once we've returned, we can exit the while loop, as we have received a valid response to our question.
     ;;
 
