@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# PARSE THE BUILD CONFIGURATIONS FILE.
+
+# Indicate we are reading the configuration file.
+echo -e "${CYAN}Reading build configuration file...\n${NO_COLOUR}"
+
+# First check that the build configuration file actually exists.
+if [ ! -r $TCPATH/$BUILD_CONFIG_FILE ]; then
+	# The build configuration file is missing, so we aren't going to be able to do anything.
+	echo -e "${BOLD_RED}FATAL - Build configuration file ($BUILD_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Then read the contents of the file.
+source $TCPATH/$BUILD_CONFIG_FILE
+
+# Establish how many configurations were read.
+COUNT=`declare -F | grep -o -e "bconf_.*" | wc -l`
+
+# If no valid configurations were read, then there is no point in going any further.
+if [ $COUNT == 0 ]; then
+	# Report there were no configurations found, and exit.
+	echo -e "${BOLD_RED}FATAL - No valid build configurations were found in the build configuration file.\n${NO_COLOUR}"
+	exit 1
+else
+	# Indicate how many build configurations were found.	
+	echo -e "${CYAN}Read in $COUNT build configurations.\n${NO_COLOUR}"
+fi
