@@ -1,267 +1,493 @@
 #!/bin/bash
 
-############################################################################################################################
-### Name:		Build												####
-### Author:		Zac Frank											####
-### Date Created:	17.11.11											####
-### Type:		Bash Script											####
-###															####
-### Purpose:		This script builds the programs, calling make with certain parameters depending on the active	####
-###			component and its specifications (which micro, OS, etc.)				 	####
-############################################################################################################################
+###########################################################################################################################
+###															###
+### Name:		build												###
+###															###
+### Author:		Zac Frank											###
+###															###
+### Date Created:	17-11-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script builds the components being developed with the toolchain, calling make with certain ###
+###			parameters depending on the active component and its specifications (target, platform, etc.) 	###
+###															###
+###########################################################################################################################
 
-CYAN="\033[0;36m"
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+BUILD_CONFIG_FILE="build_configs.cfg"
+TMP_SRC_DIR="tmp/tmp_src"
+OUTPUT_DIR="bin"
+
+# Define the colours used for interface output.
+
 NO_COLOUR="\033[0m"
-YELLOW="\033[1;33m"
+
 RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
 BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+
+BOLD_RED="\033[1;31m"
+BOLD_GREEN="\033[1;32m"
+BOLD_YELLOW="\033[1;33m"
+BOLD_BLUE="\033[1;34m"
+BOLD_CYAN="\033[1;36m"
+BOLD_WHITE="\033[1;37m"
+
 UNDERLINED="\033[4m"
 
-######################################## FUNCTION ########################################
-### Name:		makeavr								##
-### Inputs/Outputs:	None								##
-### Purpose:		Copies avr makefile into tmp directory, edits it, and uses it 	##
-### 			to compile the files that are already there.		     	##
-##########################################################################################
+######################################## FUNCTION #########################################
+###											###
+### Name:		makeavr								###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Copies AVR makefile into tmp directory, edits it, and uses it 	###
+### 			to compile the files that are already there.		     	###
+###											###
+###########################################################################################
 
-makeavr () 
-{  
-    cp $TCPATH/res/avr/Makefile $TCPATH/tmp						# copy the makefile template to the tmp directory
-    cd $TCPATH/tmp									# enter the temp directory for compilation
-    sed -i "s/\(MCU *= *\).*/\1$micro/" $TCPATH/tmp/Makefile				# change makefile to use the correct micro value
-    sed -i "s/\(CC *= *\).*/\1avr-gcc/" $TCPATH/tmp/Makefile				# change makefile to use the correct compiler
-    c_files=$(ls *.c $inS | sed ':a;N;$!ba;s/\n/ /g')					# load the variable "c_files" with the names of all source (c) files in the directory
-    sed -i "s/\(PRJSRC *= *\).*/\1$c_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile
-    sed -i "s/\(PROJECTNAME *= *\).*/\1$name/" $TCPATH/tmp/Makefile			# change the output file's name to that of the component 
-    echo -e "${CYAN}\nBuilding component $name ...\n${NO_COLOUR}"			# Inform the user what's happening
-    make -C $TCPATH/tmp all								# run the make file
-    if [ $? != 0 ]; then								# check for error in the make command. If there is an error, then
-	echo -e "\n${RED}Compilation error, exiting\n${NO_COLOUR}"					# inform the user
-	if [ "$retain" != "TRUE" ]; then
-	    rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
-	fi
-	exit										# exit the script as there was a build error
-    fi
-    avr-objcopy -O ihex $TCPATH/tmp/$name.out $TCPATH/bin/$name.hex   			# copy the output file into the bin directory
-    if [ "$retain" != "TRUE" ]; then
-	    rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
-    fi	
+makeavr() 
+{ 
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Get the list of names of source files.
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c $inS | sed ':a;N;$!ba;s/\n/ /g')
+								
+	# Update the working makefile with the appropriate values for this component.	
+	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	
+	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s/\(PROJECTNAME *= *\).*/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+    
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all			
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+	else
+		# The compilation worked, so now just copy across the output binaries.
+		$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.out $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+		echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	fi										
+
+	# All done.
+	return
 }
 
+######################################## FUNCTION #########################################
+###											###
+### Name:		make32								###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Copies AVR32 makefile into tmp directory, edits it, and uses it	###
+### 			to compile the files that are already there.		     	###
+###											###
+###########################################################################################
 
-
-######################################## FUNCTION ########################################
-### Name:		make32								##
-### Inputs/Outputs:	None								##
-### Purpose:		Copies avr32 makefile into tmp directory, edits it, and uses it	##
-### 			to compile the files that are already there.		     	##
-##########################################################################################
-
-make32 ()
+make32()
 {
-    if [ ! -d $TCPATH/res/avr32comp ]; then						# If the avr32comp tar file has not been untared, then
-	echo -e "${CYAN}\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
-	tar -C $TCPATH/res -xf  $TCPATH/res/avr32comp.tar				# untar the avr32comp file
-    fi
-    cd $TCPATH/tmp
-    cp $TCPATH/res/avr32/Makefile $TCPATH/tmp						# copy the makefile template to the tmp directory
-    sed -i "s^\(PART *= *\).*^\1$micro^" $TCPATH/tmp/Makefile				# change makefile to use the correct value
-    sed -i "s^\(CC *= *\).*^\1avr32-gcc^" $TCPATH/tmp/Makefile				# using "^" as delimiter because compiler is a path which contains default delimiter characters
-    c_files=$(ls *.c $inS | sed ':a;N;$!ba;s/\n/ /g')
-    sed -i "s/\(PRJSRC *= *\).*/\1$c_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile  
-    h_files=$(ls -C *.h | sed ':a;N;$!ba;s/\n/ /g')								
-    sed -i "s/\(HEADERS *= *\).*/\1$h_files/" $TCPATH/tmp/Makefile			# change the value of the key "PRJSRC" in the makefile
-    sed -i "s/\(TARGET *= *\).*/\1$name/" $TCPATH/tmp/Makefile				# change the output file's name to that of the component  
-    echo -e "${CYAN}\nBuilding component $name ...\n${NO_COLOUR}"					# Inform the user what's happening
-    make -C $TCPATH/tmp	all								# run the make file
-    if [ $? != 0 ]; then								# this checks the output of the make command, anything other than zero is an error
-	echo -e "\n${RED}Compilation error, exiting\n${NO_COLOUR}"
-	if [ "$retain" != "TRUE" ]; then
-	    rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
-	fi
-	exit
-    fi											# run the make file
-    avr32-objcopy -O ihex $TCPATH/tmp/$name.elf $TCPATH/bin/$name.hex  	# copy the output file into the bin directory
-    if [ "$retain" != "TRUE" ]; then
-	rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
-    fi
+	# Check if the AVR32 compiler has been uncompressed already.
+	inflate_avr32cc
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Get the list of names of source and header files.
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c $inS | sed ':a;N;$!ba;s/\n/ /g')
+	H_FILES=$(ls -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h | sed ':a;N;$!ba;s/\n/ /g')
+								
+	# Update the working makefile with the appropriate values for this component.	
+	sed -i "s^\(PART *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	
+	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(HEADERS *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(TARGET *= *\).*^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+    
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all			
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+	else
+		# The compilation worked, so now just copy across the output binaries.
+		$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.elf $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+		echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	fi										
+
+	# All done.
+	return
 }
 
+######################################## FUNCTION #########################################
+###											###
+### Name:		32rtos								###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Compiles AT32 rtos						###
+### 										     	###
+###########################################################################################
 
-######################################## FUNCTION ########################################
-### Name:		32rtos								##
-### Inputs/Outputs:	None								##
-### Purpose:		Compiles AT32 rtos						##
-### 										     	##
-##########################################################################################
-
-rtos32 ()
+rtos32()
 {
-    echo -e "${CYAN}\nNote: This is still in an experimental stage${NO_COLOUR}\n"
-    if [ ! -d $TCPATH/res/avr32comp ]; then						# If the avr32comp tar file has not been untared, then
-	echo -e "${CYAN}\n\n Unzipping avr32 compiler and libraries...\n\n${NO_COLOUR}"					# inform the user that that's what's happening.
-	tar -C $TCPATH/res -xf  $TCPATH/res/avr32comp.tar				# untar the avr32comp file
-    fi
-    cp $TCPATH/src/$name/main.c $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
-    cd $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc
-    make program
-    if [ $? != 0 ]; then								# check for error in the make command. If there is an error, then
-	echo -e "\n${RED}Compilation error, exiting\n${NO_COLOUR}"					# inform the user
-	make clean
-	rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
-	exit										# exit the script as there was a build error
-    fi
-    cp $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc/avr32_services_freertis_example_uc3c_ek.hex $TCPATH/bin/$name.hex
-    make clean
-    rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
+	# TODO - This is still only experimentatl at the moment.
+	echo -e "${CYAN}\nNote: This is still in an experimental stage${NO_COLOUR}\n"
+
+    	# Check if the AVR32 compiler has been uncompressed already.
+	inflate_avr32cc
+
+	# Copy some stuff around.
+	cp $TCPATH/src/$name/main.c $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
+	cd $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc
+
+	# Actually make the component.
+	echo -e "${CYAN}Making component AT32 RTOS...\n${NO_COLOUR}"	
+	make program	# TODO - "make program" doesn't that imply flashing the completed binary to a device?  
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+
+		# Remove things.
+		make clean
+		rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
+	else
+		# The compilation worked, so now just copy across the output binaries.
+		cp $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc/avr32_services_freertis_example_uc3c_ek.hex $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+		make clean
+		rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
+	fi
+
+	# All done.
+	return
 }
 
+##################################### MINOR FUNCTIONS ####################################
 
+# Uncompress the AVR32 compiler if required, since it is stored in compressed form.
+inflate_avr32cc()
+{
+	# Check if the AVR32 compiler has been uncompressed already.
+	if [ ! -d $TCPATH/res/avr32/avr32comp ]; then
+		# We need to uncompress the compiler before we continue.		
+		echo -e "${CYAN}Uncompressing the AVR32 compiler and libraries...\n${NO_COLOUR}"
+		tar -C $TCPATH/res/avr32 -xf  $TCPATH/res/avr32/avr32comp.tar
+    	fi
 
-# **********	SCRIPT STARTS HERE	**************
+	# All done.
+	return
+}
 
-SCRIPT=`readlink -f $0`							# find the directory this script is in
-SCRIPTPATH=`dirname $SCRIPT`						# find the directory this script is in
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')				# make our path name that of above it
-rm -rf  $TCPATH/tmp/*								# delete everything in the temp directory
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
 
+Usage: $0 [Options] [Component Names]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to build components.
+
+Parameters:
+
+	[Component Names]		Space separated list of the components to build, or "all".
+
+Options:
+	-h --help			Show this message.
+	-r --retain			Retain temporary files at completion of script.
+	-a --all			Build all components.
+	-n --name <Component Name>	Specify the name of a component to build.
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')
+
+# Delete everything in the tmp directory.
+rm -rf  $TCPATH/tmp/*
+
+# TODO - Change this so that there is no need to alter the $PATH at all.
+
+# Add the AVR32 compiler to the path, temporarily.
 PATH=$PATH:$TCPATH/res/avr32comp/bin
-									# first we want to check if any components exist
-curr=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)	# read the value for curr
-if [ $# == 0 ]; then
-    if [ "$curr" == "none" ]; then					# if the current component variable is currently "none", then
-	echo -e "${RED}No components currently exist${NO_COLOUR}"	# tell the user there is nothing to compile
-	exit								# exit as there is nothing to do.
-    else
-	comp=$curr				# make the component to be built the active component
-    fi						# end if "is current component 'none'"
-elif [ $# == 1 ]; then				# if there is exactly one argument
-    if [ "$1" == "retain" ]; then		# if that one argument is the word "retain"	
-	comp=$curr				# make the component to be built the active component
-	retain=1				# set 
-    elif [ "$1" == "all" ]; then
-	comp=$(ls -C $TCPATH/src)
-    elif [ "$1" == "clean" -a $curr != clean ]; then
-	echo -e "${RED}\nThis script automatically cleans after running." 
-	echo -e "To retain files built during compilation, type ./build retain ${NO_COLOUR}"
-	exit
-    else
-	comp="$1"
-    fi
-else
-	comp="$1"
-    if [ "$2" == "retain" ]; then
-	retain="TRUE"
-    elif [ "$2" == "clean" ]; then
-	echo -e "${RED}\nThis script automatically cleans after running. To retain files built during compilation, type \"./build retain\" ${NO_COLOUR}"
-	exit
-    else
-	echo -e "${RED}Second Argument not recognised\n${NO_COLOUR}"
-	exit
-    fi
-fi									
 
-if [ "$1" != "all" ]; then
-    if [ ! -d "$TCPATH/src/$comp" ]; then								# Make sure the specified component actually exist, if it doesn't, exit.
-	echo -e "\n${RED}This component doesn't exist. Please check the name and try again\n${NO_COLOUR}"
-	exit
-    fi
-fi
-# We will only have made it this far if the above code hasn't made the script exit.
+# PARSE ANY COMMAND LINE PARAMETERS.
 
-for name in $comp 
-do
-    # Now we will check the component directory for c files, the config file, and h files. The component cannot compile without any c files, and also requires the component.cfg file
-    cd $TCPATH/src/$name						# couldn't figure out how to run the command below without this
+# Indicate where we are up to in the script.
+echo -e "${BOLD_CYAN}\nParsing command line parameters...\n${NO_COLOUR}"
 
-    count=`ls -1 *.c 2>/dev/null | wc -l`				# count how many c files there are in the component directory and store it in the variable "count"
+# Zero fields to be extracted from the parameters.
+NAME=
+RETAIN=
+ALL=
 
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="harcn:"
+LONGOPTS="help,all,retain,clean,name:"
 
-    if [ $count == 0 ]						# if there are no c files, then
-    then 
-	    echo -e "\n***\t${RED}No C files present in directory\t   ***\n${NO_COLOUR}"		# Tell the user there is nothing to compile
-	    exit									# quit to terminal
-    fi 
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
 
-    count=`ls -1 *.cfg 2>/dev/null | wc -l`				# count how many cfg files there are in the component directory and store it in the variable "count"
-    if [ $count == 0 ]						# if there are no cfg files, then
-    then 
-	    echo -e "\n***\t${RED}No config file present in the component directory, cannnot compile.\t   ***\n${NO_COLOUR}"		# Tell the user there is nothing to compile
-	    echo -e "${YELLOW}\nWould you like to create one now?\n${NO_COLOUR}"
-	    read resp								# await user input, should by y or n
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-a|--all)
+			# Select 'building all components'.
+			ALL=1
+			;;
+		-r|--retain)
+			# Select 'retaining temporary files'.
+			RETAIN=1
+			;;
+		-c|--clean)
+			# Remind the user that there is no 'clean' option here.
+			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
+			echo -e "To retain files built during compilation, type ./build retain\n${NO_COLOUR}"
+			exit 0		
+			;;
+		-n|--name)
+			# Specify the name of the component to build.
+			shift
+			NAME="$NAME$1 " # NOTE - The space in intentional!
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			NAME="$NAME$* " # NOTE - The space in intentional!
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			NAME="$NAME$* " # NOTE - The space in intentional!
+			break
+			;;
+	esac
 
-		case "$resp" in							# check value of $resp. If value is...
-
-		"Y"|"y")								# yes, then we...
-		   # bash $TCPATH/bld/Create/comp_conf
-		    echo -e "This is not yet implemented"
-		    exit
-		;;
-
-		*)								# any other response
-		    echo -e "${CYAN}Exiting...${NO_COLOUR}"			# the input is invalid, let's loop back.
-		    exit
-		;;
-
-		esac								# close case
-	    
-	    												# quit to terminal
-    fi 
-
-    platform=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep platform | cut -d '=' -f2)
-    micro=$(grep -v "#" $TCPATH/src/$name/$name.cfg | grep micro | cut -d '=' -f2)		# extract info about which micro to compile for
-
-    if [ `ls -1 *.h 2>/dev/null | wc -l` != 0 ]; then						# if there are one or more, then 
-	inh="*.h"
-    fi
-    if [ `ls -1 *.S 2>/dev/null | wc -l` != 0 ]; then						# if there are one or more, then 
-	inS="*.S"
-    fi
-	    a_files=$(ls *.c $inh $inS *.cfg)				# make this array with both c and h file names (and config)
-	    
-  
-
-    if [ "$platform" == "Bare_metal" ]; then
-
-	cp $TCPATH/src/$name/$a_files $TCPATH/tmp						# copy all h, c, and config files to the tmp directory
-
-	if [ "$micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
-	    make32
-	elif [ "$micro" == "atmega64m1" ]; then
-	    makeavr
-	elif [ "$micro" == "at90can128" ]; then
-	    makeavr
-	elif [ "$micro" == "atmega323" ]; then
-	    makeavr
-	elif [ "$micro" == "atmega2560" ]; then
-	    makeavr
-	else
-	    echo -e "\n${RED}This micro is currently not supported\n${NO_COLOUR}"
-	    exit
-	fi
-    else
-	if [ "$micro" == "uc3c0512c" ]; then							# use a makefile template depending on the micro
-	    rtos32
-	elif [ "$micro" == "atmega323" ]; then
-	    cp $TCPATH/src/$name/$a_files $TCPATH/tmp
-	    makeavr
-	else
-	    echo -e "\n${RED}This micro is currently not supported\n${NO_COLOUR}"
-	    exit
-	fi
-    fi
-
-
-
-    # ************		Compile Project		************
-
-
-
-    echo -e "\n${YELLOW}Your output file is now available under bin/$name.hex\n${NO_COLOUR}"  	# say nice things to the user
-
+	# Advance on to the next parameter.
+	shift
 done
 
-if [ "$1" == "all" ]; then						# IF multiple components have been compiled
-    echo -e "${YELLOW}\nThe following components compiled successfully: ${CYAN}${proj}\n${NO_COLOUR}"
+# If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
+if [ "$NAME" == "all " ]; then  # NOTE - The space in intentional!
+	ALL=1
 fi
-									# exit to terminal
+
+# If there was no component name specified, we'll just try to build the 'active component' instead.
+if [ "$NAME" == " " ] && ! [ $ALL ]; then  # NOTE - The space in intentional!
+	# Try to build the 'active component' instead.
+
+	# Extract the value of the 'active component' from the toolchain configuration file.
+	CURR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)
+
+	# TODO - If this fails (for instance, because the file is missing), the script should handle the failure elegantly.
+
+	# Check if the toolchain has an 'active component' to build.
+	if [ "$CURR" == "none" ]; then
+		# Tell the use there is nothing to compile, then exit.
+		echo -e "${RED}No components currently exist; nothing to build.\n${NO_COLOUR}"
+		exit 0
+	else
+		# Schedule the 'active component' to be built.
+		NAME=$CURR
+	fi
+fi
+
+# If we're going to build 'everything', then get a list of what 'everything' actually entails.
+if [ $ALL ]; then
+	# Get a list of all the components in the src folder.
+	NAME=$(ls -C $TCPATH/src)
+fi
+
+# PARSE THE BUILD CONFIGURATIONS FILE.
+
+# Indicate we are reading the configuration file.
+echo -e "${BOLD_CYAN}Reading build configuration file...\n${NO_COLOUR}"
+
+# First check that the build configuration file actually exists.
+if [ ! -r $TCPATH/bld/$BUILD_CONFIG_FILE ]; then
+	# The build configuration file is missing, so we aren't going to be able to do anything.
+	echo -e "${BOLD_RED}FATAL - Build configuration file (bld/$BUILD_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Then read the contents of the file.
+source $TCPATH/bld/$BUILD_CONFIG_FILE
+
+# Establish how many configurations were read.
+COUNT=`declare -f | grep "bconf_" | wc -l`
+
+# If no valid configurations were read, then there is no point in going any further.
+if [ $COUNT == 0 ]; then
+	# Report there were no configurations found, and exit.
+	echo -e "${BOLD_RED}FATAL - No valid build configurations were found in the build configuration file.\n${NO_COLOUR}"
+	exit 1
+else
+	# Indicate how many build configurations were found.	
+	echo -e "${CYAN}Read in $COUNT build configurations.\n${NO_COLOUR}"
+fi
+
+# BUILD THE COMPONENTS ONE BY ONE.
+
+# NOTE - Since each component is independent of one another, the order they are built in doesn't matter.
+
+# Iterate through each of the components in the queue.
+for COMPONENT in $NAME
+do
+	# Reset any variables which may have been set by the previous component.
+	TARGET=
+	PLATFORM=
+	
+	BCONF_NAME=
+	COMPILER=
+	MAKEFUNCTION=
+	MAKEFILE=
+	MCU_CODE=
+	OBJCOPY=
+
+	# First, check if this component actually exists.
+	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+		# The component does't have a matching source folder, so skip it and move on.
+		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+
+	# Indicate we are starting the build process for this component.
+	echo -e "${BOLD_CYAN}Building component $COMPONENT...\n${NO_COLOUR}"
+
+	# Check if we can find the config file for this component.
+	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+		# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
+		echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			# Rebuild the configuration file.
+			
+			# TODO - This needs to be implemented.
+			echo -e "${RED}This function is not implemented yet.\n${NO_COLOUR}"
+			exit 0
+		else
+			# Just skip this component and move on.
+			echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		fi
+	fi
+
+	# Extract relevant configuration information from the configuration file.
+	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f2)
+	TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
+
+	# Check to see if we can find a matching build configuration.
+	BCONF="bconf_${TARGET}_${PLATFORM}"
+	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so skip this component and move on.
+		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	else
+		# There is a matching build configuration, so load it.
+		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+		$BCONF
+
+		# Check that all the required variables were set by the build configuration.
+		if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
+		   || [ -z "$OBJCOPY" ]; then
+			# At least one of the required variables was not set, so skip this component and move on.
+			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		fi
+
+		# TODO - Actually, maybe some of these would be optional, if they aren't need by all targets?
+	
+		# Check that the make function specified by the build configuration actually exists.
+		if [ `declare -f | grep "$MAKEFUNCTION" | wc -l` == 0 ]; then
+			# The specified make function doesn't exist, so skip this component and move on.
+			echo -e "${RED}Build configuration specifies an invalid make function.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		fi
+
+		# The build configuration was loaded successfully.
+		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+	fi
+
+	# Count the number of C files in the source folder for this component.
+	COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
+	echo -e "${CYAN}Found $COUNT C source files.\n${NO_COLOUR}"
+
+	# If there are no C source files, then there is nothing to do.
+	if ! [ $COUNT ]; then
+		# There are no C source files, so skip this component and move on.
+		echo -e "${YELLOW}No C files present in source folder.\n${NO_COLOUR}"
+		continue
+	fi
+
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
+	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Copy all the source files into the tmp directory, where the actual making will occur.
+	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.S $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+
+	# Actually run the appropriate make function for this build configuration.
+	$MAKEFUNCTION
+done
+
+# Check if we are supposed to be deleting temporary files after we are finished.
+if [ ! $RETAIN ]; then
+	# Delete all the temporary files.
+	echo -e "${CYAN}Removing temporary files...\n${NO_COLOUR}"
+
+	# Delete the temporary source folders.
+	rm -rf  $TCPATH/$TMP_SRC_DIR
+else
+	# Don't delete any temporary files.
+	echo -e "${CYAN}Retaining temporary files.\n${NO_COLOUR}"
+fi
+
+# Indicate that we're done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+
+# All done.
+exit 0
+
