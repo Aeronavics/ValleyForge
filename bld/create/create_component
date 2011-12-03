@@ -35,6 +35,9 @@ BUILD_CONFIG_FILE="bld/build_configs.cfg"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+# Define the functions used for preprocessing.
+source $TCPATH/bld/preprocess/preprocess
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		create_template							###
@@ -48,39 +51,17 @@ source $TCPATH/bld/common/def_colours
 
 create_template ()
 {
-	# Populate a variable with the users information, from the configuration file.
-	AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-	ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
-
-	# Populate a string with the current date.
-	DATE=$(date +"%-d.%-m.%Y")
+	# Preprocess the template source files to file in appropriate fields.
+	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 
 	# Create the actual files by coping the templates into the source directory.
-	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$NAME/$NAME.c
 	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$NAME/$NAME.h
 
-	# Preprocess the template source files to file in appropriate fields.
-	echo -e "${CYAN}Preprocessing template files...\n${NO_COLOUR}"
+	# Preprocess the two template files.
+	preprocess_template $TCPATH/src/$NAME/$NAME.c
+	preprocess_template $TCPATH/src/$NAME/$NAME.h
 
-	# Iterate through the file extensions to be preprocessed.
-	for EXT in c h
-	do
-		# Replace each instance of a placeholder in the template files with the corresponding information.
-
-		sed -i 's/<<<TC_INSERTS_FILE_NAME_HERE>>>/'$NAME'.'$EXT'/g' $TCPATH/src/$NAME/$NAME.$EXT		
-		sed -i 's^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^'\"$NAME.h'\"^g' $TCPATH/src/$NAME/$NAME.$EXT
-		sed -i 's^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^'\"$NAME.c'\"^g' $TCPATH/src/$NAME/$NAME.$EXT
-
-		sed -i 's/<<<TC_INSERTS_COMPONENT_NAME_HERE>>>/'$NAME'/g' $TCPATH/src/$NAME/$NAME.$EXT
-		sed -i "s/<<<TC_INSERTS_AUTHOR_NAME_HERE>>>/$AUTHOR/g" $TCPATH/src/$NAME/$NAME.$EXT
-		sed -i 's/<<<TC_INSERTS_DATE_HERE>>>/'$DATE'/g' $TCPATH/src/$NAME/$NAME.$EXT
-		sed -i "s/<<<TC_INSERTS_ASPECT_HERE>>>/$ASPECT/g" $TCPATH/src/$NAME/$NAME.$EXT
-
-		sed -i 's/<<<TC_INSERTS_MICRO_HERE>>>/'$TARGET'/g' $TCPATH/src/$NAME/$NAME.$EXT
-		sed -i 's^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^'$IOHEADER'^g' $TCPATH/src/$NAME/$NAME.$EXT
-    	done
-	
 	# All done.
 	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
 	return
@@ -354,7 +335,7 @@ echo -e "# Configuration file for component $NAME.\n\nTARGET=$TARGET\nPLATFORM=$
 
 # POST-NEW-COMPONENT OPTIONS.
 
-# We only ask the user questions if we're not in batch mode.
+# We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
 	# Ask if the user wants to set this as the current component.
 	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"

@@ -6,7 +6,9 @@
  *
  *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
  *
- *  MCU:		<<<TC_INSERTS_MICRO_HERE>>>
+ *  TARGET:		<<<TC_INSERTS_TARGET_HERE>>>
+ *
+ *  PLATFORM:		<<<TC_INSERTS_PLATFORM_HERE>>>
  *
  *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
  *
@@ -17,8 +19,8 @@
  ********************************************************************************************************************************/
 
 // Only include this header file once.
-#ifndef __<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__
-#define __<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__
+#ifndef __<<<TC_INSERTS_FILE_BASENAME_HERE>>>_H__
+#define __<<<TC_INSERTS_FILE_BASENAME_HERE>>>_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
@@ -33,6 +35,6 @@
 
 int main(void);
 
-#endif /*__<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__*/
+#endif /*__<<<TC_INSERTS_FILE_BASENAME_HERE>>>_H__*/
 
 // ALL DONE.
