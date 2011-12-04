@@ -215,6 +215,7 @@ Options:
 	-h --help			Show this message.
 	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
 	-n --name <Component Name>	Specify the name of a component to create/update.
+	-s --subsystem <Subsystem Name>	Specify the name of the subsystem this component is part of.
 	-t --target <Target Name>	Specify the name of the target for this component.
 	-p --platform <Platform Name>	Specify the name of the platform for this component.
 EOF
@@ -229,6 +230,7 @@ EOF
 # Reset fields to be extracted from the parameters.
 NAME=
 BATCHMODE=
+SUBSYSTEM=
 TARGET=
 PLATFORM=
 
@@ -351,7 +353,7 @@ if [ -z $SUBSYSTEM ] && [ ! $BATCHMODE ]; then
 	# We haven't been given a subsysytem name, so we need the user to enter one.
 
 	# We will need to prompt the user for the name of the component to create.
-	echo -e -n "${GREEN}Enter a subsystem name for the component to be created: ${NO_COLOUR}"
+	echo -e -n "${GREEN}Enter a subsystem name for the component: ${NO_COLOUR}"
 	read
 	echo -e ""
 

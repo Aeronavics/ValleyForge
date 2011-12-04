@@ -230,10 +230,79 @@ do
 		"E" | "e" )
 			# The user wants to edit something.
 
-			# TODO - This.  There needs to be some more menu here?
+			# Loop continuously until the user selects a suitable option.
+			while :
+			do
+				# Print the submenu prompt to the user.
+				echo -e "${GREEN}Please select an option:\n${NO_COLOUR}"
+				echo -en "\t${UNDERLINED}A${NO_COLOUR}CTIVATE Component    ${UNDERLINED}R${NO_COLOUR}ECONFIGURE Active Component    ${UNDERLINED}E${NO_COLOUR}DIT Settings    ${UNDERLINED}B${NO_COLOUR}ACK"
 
-			# Run the edit script.			
-			bash $TCPATH/bld/Edit/Edit $TCPATH
+				# Read a single character input from the user and select the appropriate response.
+				read -s -n 1
+				echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+				case "$REPLY" in
+					"A" | "a" )
+						# Provide a list of valid components for the user to choose from.
+						
+						# Create a menu of choices and have the user select one.
+						select CURR in $(ls $TCPATH/src)
+						do
+							# Check if the selected component is actually valid.
+							CURR=$(echo "$(ls $TCPATH/src)" | grep -w -o "$CURR")
+							if [ -z "$CURR" ]; then
+								# The selected component was not in the list of components, so the user is apparently a moron.
+								echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+							else
+								# A legitimate option was selected, so we can go now.
+								sed "s/tc_curr=.*/tc_curr=$CURR/g" -i $TCPATH/$USER_CONFIG_FILE								
+								echo -e "${BOLD_CYAN}Activated component $CURR.\n${NO_COLOUR}"
+								break
+							fi
+						done
+						;;
+
+					"R" | "r" )
+						# Check that there is an active component selected.
+						if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+							# There is no active component selected, so nothing to do here.
+							echo -e "${RED} No component set as active.  Cannot reconfigure active component.\n${NO_COLOUR}"
+							REDRAW_TOP=1
+							break
+						
+						# Check if the active project doesn't actually exist.
+						elif [ ! -d $TCPATH/src/$CURR ]; then
+							# The active component doesn't exist (probably they've deleted it manually).
+							echo -e "${RED} Active component does not exist.  Cannot reconfigure active component.\n${NO_COLOUR}"
+							REDRAW_TOP=1
+							break
+						fi
+							# Else we're good to go.						
+
+						# Run the create component script on the active component.
+						bash $TCPATH/bld/create/create_component -n $CURR
+						;;
+
+					"E" | "e" )
+						# Run the edit script.			
+						bash $TCPATH/bld/edit/edit $TCPATH
+						;;
+
+					"B" | "b" | "Q" | "q" | "X" | "x" )
+						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						REDRAW_TOP=1
+						break
+						;;
+
+					*)
+						# Any other option is invalid.  We print a message to that effect and try again.
+						echo -e "${RED}Invalid choice. Try again or press Q to quit.\n${NO_COLOUR}"
+						continue
+						;;
+				esac
+				
+				# We're done here.
+				break
+			done
 			;;
 
 		"Q" | "q" | "X" | "x")
