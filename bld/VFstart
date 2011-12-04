@@ -224,7 +224,7 @@ do
 			# TODO - This.  There needs to be some more menu here?
 	
 			# Run the delete script.
-			bash $TCPATH/bld/Delete/Delete $TCPATH
+			bash $TCPATH/bld/delete/delete $TCPATH
 		        ;;
 
 		"E" | "e" )
