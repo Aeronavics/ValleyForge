@@ -6,5 +6,7 @@
 
 * In the 'EDIT' menu, the items "Active Component" and "Another Thing" both have the letter 'A' underlined.
 
+* Rename bld/Delete/Delete to bld/delete/delete.
+
 
 

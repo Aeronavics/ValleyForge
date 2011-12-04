@@ -244,6 +244,8 @@ do
 					"A" | "a" )
 						# Provide a list of valid components for the user to choose from.
 						
+						# TODO - This needs fixing: if there are any files in src, this will totally fail.
+
 						# Create a menu of choices and have the user select one.
 						select CURR in $(ls $TCPATH/src)
 						do
