@@ -1,0 +1,259 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		create_files											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	15.11.11											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script is used to create a new set of blank source files in an existing component, from	###
+###			the available template files. 									###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+TEMPLATE_C_FILE="res/c_template.c"
+TEMPLATE_H_FILE="res/h_template.h"
+USER_CONFIG_FILE="var/config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+# Define the functions used for preprocessing.
+source $TCPATH/bld/preprocess/preprocess
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options] [File Name]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to create empty source files to develop with.
+
+Parameters:
+
+	[File Name]			Specify the name of the files to add to the current project.
+
+Options:
+	-h --help			Show this message.
+	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
+	-n --name <File Name>		Specify the name of the files to add to the current project.
+	-c --component			Specify the name of the component to add the files to.  Defaults to the 'active component'.
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+FILENAMES=
+BATCHMODE=
+CURR=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hbn:c:"
+LONGOPTS="help,batch,name:,component:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-b|--batch)
+			# Select batch mode.
+			BATCHMODE=1
+			;;
+		-n|--name)
+			# Specify the name of the files to create.
+			shift
+			FILENAMES="$FILENAMES$1 " # NOTE - The space in intentional!
+			;;
+		-c|--component)
+			# Specify the name of the component to add files to.
+			shift
+			COMPONENT="$1"
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			FILENAMES="$FILENAMES$* " # NOTE - The space in intentional!
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			FILENAMES="$FILENAMES$* " # NOTE - The space in intentional!
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
+
+# Check if we have been supplied the name of some files to create and that we're not in batch mode.
+if [ -z $FILENAMES ] && [ ! $BATCHMODE ]; then
+	# We haven't been given a file name, so we need the user to enter one.
+
+	# We will need to prompt the user for the name of the component to create.
+	echo -e -n "${GREEN}Enter basenames for the files to be created: (Space separated) ${NO_COLOUR}"
+	read
+	echo -e ""
+
+	# Pretty much anything goes here.
+	FILENAMES=$REPLY
+
+# Check if we have been supplied the name of some files to create and that we're in batch mode.
+elif [ -z $FILENAMES ] && [ $BATCHMODE ]; then
+	# We haven't been given a filename, and we're in batch mode, so can't ask.  So we just have to bail.
+	echo -e "${RED}No filenames supplied in batch mode.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Check if we were explicitly told which component to add files to.
+if [ -z $COMPONENT ]; then
+	# We use the 'active component' by default.
+	
+	# Check to make sure the user configuration file is there.
+	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+		# The configuration file is missing, so we don't know what to compile.
+		echo -e "${BOLD_RED}FATAL - User configuration file ($USER_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# Extract the value of the 'active component' from the user configuration file.
+	COMPONENT=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+
+	# Check if the toolchain has an 'active component' to build.
+	if [ "$COMPONENT" == "none" ] || [ -z "$COMPONENT" ]; then
+		# Tell the user there is nothing to compile, then exit.
+		echo -e "${RED}No active component is set; cannot create files for it!\n${NO_COLOUR}"
+		exit 1
+	fi
+fi
+
+# Check if the specified component actually exists.
+if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+	# The component does't have a matching source folder, we bail.
+	echo -e "${RED}Component $COMPONENT does not exist.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# CREATE THE FILES.
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# Check if we can find the config file for this component.
+if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+	# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
+	echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
+	echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Rebuild the configuration file.
+			
+		# Call the 'component_create' script: it will handle rebuilding the configuration file.
+		bash $TCPATH/bld/create/create_component --name $COMPONENT
+
+		# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+	else
+		# Just skip this component and move on.
+		echo -e "${YELLOW}No configuration file.  Cannot create files for component $COMPONENT.\n${NO_COLOUR}"
+		exit 0
+	fi
+fi
+
+# Extract relevant configuration information from the configuration file.
+PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f2)
+TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
+
+# Reset any variables which may have been set by a previous component.
+BCONF_NAME=
+COMPILER=
+MAKEFUNCTION=
+MAKEFILE=
+MCU_CODE=
+OBJCOPY=
+IOHEADER=
+
+# Check to see if we can find a matching build configuration.
+BCONF="bconf_${TARGET}_${PLATFORM}"
+if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+	# No matching build configuration was found, so we can't do the preprocessing.
+	echo -e "${RED}No suitable build configuration found.  Cannot create files for component $COMPONENT.\n${NO_COLOUR}"
+	exit 1
+else
+	# There is a matching build configuration, so load it.
+	echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+	$BCONF
+
+	# Check that all the required variables were set by the build configuration.
+	if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
+	   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
+		# At least one of the required variables was not set, so skip this component and move on.
+		echo -e "${RED}Build configuration incomplete. Cannot create files for component $COMPONENT.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# TODO - Actually, maybe some of these would be optional, if they aren't need by all targets?
+
+	# The build configuration was loaded successfully.
+	echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+fi
+
+# Iterate through all the filenames in the list provided.
+for FILENAME in $FILENAMES; do
+	# TODO - Check if there is already a file which the specified name in the source directory.
+	
+	# Create the actual files by coping the templates into the source directory.
+	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
+	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
+	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
+
+	# Preprocess the two template files.
+	preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
+	preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+done
+
+# All done.
+echo -e "${CYAN}All done.\n${NO_COLOUR}"	
+exit 0
+
+

@@ -34,6 +34,9 @@ OUTPUT_DIR="bin"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+# Define the functions used for preprocessing.
+source $TCPATH/bld/preprocess/preprocess
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		makeavr								###
@@ -305,7 +308,7 @@ if [ "$NAME" == " " ] && ! [ $ALL ]; then  # NOTE - The space in intentional!
 	fi
 
 	# Extract the value of the 'active component' from the user configuration file.
-	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f2)
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
 
 	# Check if the toolchain has an 'active component' to build.
 	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
@@ -338,13 +341,6 @@ do
 	TARGET=
 	PLATFORM=
 	
-	BCONF_NAME=
-	COMPILER=
-	MAKEFUNCTION=
-	MAKEFILE=
-	MCU_CODE=
-	OBJCOPY=
-
 	# First, check if this component actually exists.
 	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 		# The component does't have a matching source folder, so skip it and move on.
@@ -367,7 +363,7 @@ do
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			# Rebuild the configuration file.
 			
-			# Call the 'component_create' script: it will handle rebuilding the a configuration file.
+			# Call the 'component_create' script: it will handle rebuilding the configuration file.
 			bash $TCPATH/bld/create/create_component --name $COMPONENT
 
 			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
@@ -382,6 +378,15 @@ do
 	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f2)
 	TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
 
+	# Reset any variables which may have been set by the previous component.
+	BCONF_NAME=
+	COMPILER=
+	MAKEFUNCTION=
+	MAKEFILE=
+	MCU_CODE=
+	OBJCOPY=
+	IOHEADER=
+
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
 	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
@@ -395,7 +400,7 @@ do
 
 		# Check that all the required variables were set by the build configuration.
 		if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
-		   || [ -z "$OBJCOPY" ]; then
+		   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
 			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 			continue
@@ -431,6 +436,20 @@ do
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
 	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.S $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+
+	# Preprocess the copied header files.
+	FILES=$TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h
+	for FILE in $FILES; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
+
+	# Preprocess the copied source files.
+	FILES=$TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c
+	for FILE in $FILES; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION

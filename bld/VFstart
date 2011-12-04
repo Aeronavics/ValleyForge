@@ -1,96 +1,275 @@
 #!/bin/bash
 
-############################################################################################################################
-### Name:		VFStart												####
-### Author:		Zac Frank											####
-### Date Created:	15.11.11											####
-### Type:		Bash Script											####
-###															####
-### Purpose:		This script is the starting script for the ValleyForge toolchain. It gives the user some options####
-###			 as to what they would like to do, then calls other scripts depending on the user's input. 	####
-############################################################################################################################
+###########################################################################################################################
+###															###
+### Name:		VFStart												###
+###															###
+###															###
+### Author:		Zac Frank											###
+###															###
+### Date Created:	15-11-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script is the starting script for the ValleyForge toolchain. It gives the user some 	###
+###			options as to what they would like to do, then calls other scripts depending on the user's	###
+###			input.											 	###
+###															###
+###########################################################################################################################
 
-CYAN="\033[0;36m"
-NO_COLOUR="\033[0m"
-YELLOW="\033[1;33m"
-RED="\033[0;31m"
-BLUE="\033[0;34m"
-UNDERLINED="\033[4m"
+# FIGURE OUT WHERE WE ARE.
 
-
-clear							# clear the terminal display. This makes things nice and tidy.
-
-SCRIPT=`readlink -f $0`					# find the directory the script is in
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld*//')
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
-echo -e '\E[37;44m'"\033[1m\n\n ***********  Welcome to the 'ValleyForge' Embedded Toolchain Interface  ************${NO_COLOUR}\n " 			# Welcome message
+# DEFINE CONSTANTS.
 
-if [ ! -f $TCPATH/var/config.cfg ]; then
-  echo -e "${CYAN}Creating config file...\n${NO_COLOUR}"
-  cp $TCPATH/res/Defaults/config.cfg $TCPATH/var/config.cfg
-fi
+# Define file names.
 
-startup=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_startup | cut -d '=' -f2)			# check config file for state of key "startup"
+USER_CONFIG_FILE="var/config.cfg"
+DEFAULT_USER_CONFIG_FILE="bld/default_user_config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+TMP_SRC_DIR="tmp/tmp_src"
+OUTPUT_DIR="bin"
 
-if [ "$startup" == "start" ]; then								# if it is "start" then
-    bash $TCPATH/bld/Other/askForInfo $TCPATH							# run the script asking if the user wants to enter their personal info
-elif [ "$startup" == "later" ]; then				
-    echo -e "${YELLOW}\nTo set up your details, navigate through Edit -> User Info\n${NO_COLOUR}"			# remind the user they should set up their info sometime
-fi
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
 
+##################################### MINOR FUNCTIONS ####################################
 
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
 
-curr=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_curr | cut -d '=' -f2)			# extract current component directory
-if [ "$curr" == "none" ]; then								# if the value is the default "none" then
-    if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then					# if there are no components at all
-	echo -e "${YELLOW}You currently have no components in the src folder"					# inform the user that they have no components
-    else
-	echo -e "${YELLOW}\nNone of your components are currently set to be the active component. \nTo set a component to be your current component, navigate through Edit -> Change active component\n${NO_COLOUR}"
-    fi
-elif [ ! -d $TCPATH/src/$curr ]; then							# If the active component doesn't actually exist (i.e they've deleted it manually
-    echo -e "${YELLOW}\n Your active component doesn't exist. Please set a component to be active through Edit -> Change Default Project\n${NO_COLOUR}"
-else 										# if curr= something else
-  echo -e "${YELLOW}Your active component is $curr\n"					# inform the user what their active component currently is
-fi
+Usage: $0 [Options]
 
+This script is used to interact with the 'Valley Forge' Embedded Toolchain.
 
-while :										# while loop in case user gives invalid input, we can restart the prompt process
+Options:
+	-h --help			Show this message.
+	-b --block			Do not quit out of the toolchain interface after a single operation.
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+BLOCKMODE=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hb"
+LONGOPTS="help,block"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-b|--block)
+			# Select block mode.
+			BLOCKMODE=1
+			;;
+		--)
+			# We're done parsing options.  We ignore anything else.
+			shift
+			break
+			;;
+		*)
+			# We ignore anything else.
+			shift
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# PRESENT THE USER WITH THE MAIN INTERFACE.
+
+# Loop continuously until the user exits the script.
+while :
 do
+	# We're at the top level.
+	REDRAW_TOP=
 
-  echo -e  "${YELLOW}Please indicate what you would like to do:\n${NO_COLOUR}"
-  # The section below uses the \033[4mC\033[0m\t wrapping to underline the "C"
-  echo -e "\t${BLUE}${UNDERLINED}C${NO_COLOUR}${BLUE}reate \t ${UNDERLINED}E${NO_COLOUR}${BLUE}dit \t ${UNDERLINED}D${NO_COLOUR}${BLUE}elete\n${NO_COLOUR}" #Give options with first letter underlined
+	# Clear the terminal to keep things tidy.
+	clear
 
-  read input						# read user input and store it in new variable input
+	# Print welcome message.
+	echo -e '\E[37;44m'"\033[1m\n\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
 
-  case "$input" in					# if input is .....  then .....
+	# Check if a user configuration file is present.
+	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+		# The user configuration file is missing, so copy over the default configuration file.
+		echo -e "${CYAN}Creating user configuration file...\n${NO_COLOUR}"
+		cp $TCPATH/$DEFAULT_USER_CONFIG_FILE $TCPATH/$USER_CONFIG_FILE
 
-    "C" | "c" )						# if input is "C" or "c"
-      bash $TCPATH/bld/create/create_component		# run the create script
-      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question.
-    ;;
+		# TODO - Should probably check this actually worked.
+	fi
 
-    "D" | "d" )
-      bash $TCPATH/bld/Delete/Delete $TCPATH		# run the delete script
-      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question.
-    ;;
+	# Check if this is the first time the toolchain has been used by this user.
+	STARTUP=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_startup | cut -d '=' -f 2)
+	if [ "$STARTUP" == "start" ]; then
+		# The user has not run the toolchain before, so we prompt them to enter their information.
+		bash $TCPATH/bld/Other/askForInfo $TCPATH
+	elif [ "$STARTUP" == "later" ]; then
+		# The user has not set their details in a previous setting, so remind them to.
+	    echo -e "${YELLOW}No user information has been set.  To enter your details, use EDIT -> USER INFO.\n${NO_COLOUR}"
+	fi
 
-    "E" | "e" )
-      bash $TCPATH/bld/Edit/Edit $TCPATH		# run the edit script
-      break						# once we've returned, we can exit the while loop, as we have received a valid response to our question
-    ;;
+	# Check if there is an 'active component' specified by the user configuration.
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+		# Check if there are actually any components listed in the source folder.
+		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
+			# Indicate to the user that there are no source components at the moment.
+			echo -e "${YELLOW}There are no components in this project yet.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
+		else
+			# There is at least one component available, it just isn't activated.
+			echo -e "${YELLOW}No component is currently set as active. To set a component to be active, use EDIT -> ACTIVATE.\n${NO_COLOUR}"
+	    fi
 
-    "Exit"|"EXIT"|"exit")				# if input is one of these
-      echo -e '\E[37;44m'"\033[1m******    Closing ValleyForge Interface...    *******${NO_COLOUR}\n"
-      exit						# exit the script, return to terminal
-    ;;
+	# Check if the active project doesn't actually exist.
+	elif [ ! -d $TCPATH/src/$CURR ]; then
+		# The active component doesn't exist (probably they've deleted it manually).
+	
+		# Check if there are actually any components listed in the source folder.
+		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
+			# Indicate to the user that there are no source components at the moment.
+			echo -e "${YELLOW}The active component does not exist.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
+		else
+			# Indicate to the user that the active component does not exist.
+			echo -e "${YELLOW}The active component doesn't exist. Please set a component to be active using EDIT -> ACTIVATE.\n${NO_COLOUR}"
+		fi
 
-    *)								# any other response
-      echo -e "${RED}Invalid choice. Try again or type exit to quit\n${NO_COLOUR}"	# inform the user that their response was incorrect and DON'T break
-    ;;
+		# Change the active component to 'none'.
+		sed "s/tc_curr=.*/tc_curr=none/g" -i $TCPATH/$USER_CONFIG_FILE
+		CURR="none"
+	else
+		# An active component is set, and actually exists.
+		echo -e "${BOLD_CYAN}Your active component is $CURR.\n${NO_COLOUR}"
+	fi
 
-  esac				# end case
-done				# ask the user which option they would like again as they obviously didn't get it right last time.
-echo -e "\n"
-echo -e '\E[37;44m'"\033[1m******    Closing ValleyForge Interface...    *******${NO_COLOUR}\n"
+	# Print the prompt to the user.
+	echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
+	echo -en "\t${UNDERLINED}C${NO_COLOUR}REATE    ${UNDERLINED}E${NO_COLOUR}DIT    ${UNDERLINED}D${NO_COLOUR}ELETE    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}" 
+	
+	# Read a single character input from the user and select the appropriate response.
+	read -s -n 1
+	echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+	case "$REPLY" in
+		"C" | "c" )
+			# The user wants to create something.
+
+			# Loop continuously until the user selects a suitable option.
+			while :
+			do
+				# Print the submenu prompt to the user.
+				echo -e "${GREEN}Please select an option:\n${NO_COLOUR}"
+				echo -en "\tCreate ${UNDERLINED}C${NO_COLOUR}OMPONENT    Create ${UNDERLINED}F${NO_COLOUR}ILES    ${UNDERLINED}B${NO_COLOUR}ACK"
+
+				# Read a single character input from the user and select the appropriate response.
+				read -s -n 1
+				echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+				case "$REPLY" in
+					"C" | "c" )
+						# Run the create component script.
+						bash $TCPATH/bld/create/create_component
+						;;
+
+					"F" | "f" )
+						# Run the create files script.
+						bash $TCPATH/bld/create/create_files
+						;;
+
+					"B" | "b" | "Q" | "q" | "X" | "x" )
+						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						REDRAW_TOP=1
+						break
+						;;
+
+					*)
+						# Any other option is invalid.  We print a message to that effect and try again.
+						echo -e "${RED}Invalid choice. Try again or press Q to quit.\n${NO_COLOUR}"
+						continue
+						;;
+				esac
+				
+				# We're done here.
+				break
+			done		        
+			;;
+
+		"D" | "d" )
+			# The user wants to delete something.
+
+			# TODO - This.  There needs to be some more menu here?
+	
+			# Run the delete script.
+			bash $TCPATH/bld/Delete/Delete $TCPATH
+		        ;;
+
+		"E" | "e" )
+			# The user wants to edit something.
+
+			# TODO - This.  There needs to be some more menu here?
+
+			# Run the edit script.			
+			bash $TCPATH/bld/Edit/Edit $TCPATH
+			;;
+
+		"Q" | "q" | "X" | "x")
+			# The user probably wants to exit.
+			break
+			;;
+
+		*)
+			# Any other option is invalid.  We print a message to that effect and try again.
+			echo -e "${RED}Invalid choice. Try again or press Q to quit.\n${NO_COLOUR}"
+			continue
+			;;
+	esac
+
+	# Check if the script returned an error condition or not.
+	if [ $? != 0 ]; then
+		# Check if we are in block mode, which means the UI will reappear, covering any messages.
+		if [ $BLOCKMODE ]; then
+			# Pause so the user can see any messages.
+			read -n 1 -p "Press any key to continue..."
+		fi
+	fi
+
+	# Check if we are supposed to be redrawing the top level menu again.
+	if [ $REDRAW_TOP ]; then
+		# Loop back up the top again.
+		continue
+	fi
+
+	# Check if we are in block mode or not.
+	if [ ! $BLOCKMODE ]; then
+		# We are not in block mode, so we quit rather than waiting for the user to make a second choice.
+		break
+	fi
+done
+
+# All done.
+echo -e '\E[37;44m'"\033[1m**********************    Closing ValleyForge Interface...    ***********************${NO_COLOUR}\n"
+exit 0

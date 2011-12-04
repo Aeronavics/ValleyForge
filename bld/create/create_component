@@ -51,12 +51,44 @@ source $TCPATH/bld/preprocess/preprocess
 
 create_template ()
 {
-	# Preprocess the template source files to file in appropriate fields.
-	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
-
 	# Create the actual files by coping the templates into the source directory.
+	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$NAME/$NAME.c
 	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$NAME/$NAME.h
+
+	# Reset any variables which may have been set by a previous component.
+	BCONF_NAME=
+	COMPILER=
+	MAKEFUNCTION=
+	MAKEFILE=
+	MCU_CODE=
+	OBJCOPY=
+	IOHEADER=
+
+	# Check to see if we can find a matching build configuration.
+	BCONF="bconf_${TARGET}_${PLATFORM}"
+	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so we can't do the preprocessing.
+		echo -e "${RED}No suitable build configuration found.  Cannot preprocess template files.\n${NO_COLOUR}"
+		return
+	else
+		# There is a matching build configuration, so load it.
+		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+		$BCONF
+
+		# Check that all the required variables were set by the build configuration.
+		if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
+		   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
+			# At least one of the required variables was not set, so skip this component and move on.
+			echo -e "${RED}Build configuration incomplete. Cannot preprocess template files.\n${NO_COLOUR}"
+			continue
+		fi
+
+		# TODO - Actually, maybe some of these would be optional, if they aren't need by all targets?
+
+		# The build configuration was loaded successfully.
+		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+	fi
 
 	# Preprocess the two template files.
 	preprocess_template $TCPATH/src/$NAME/$NAME.c
@@ -190,7 +222,6 @@ EOF
 	return
 }
 
-
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # PARSE ANY COMMAND LINE PARAMETERS.
@@ -203,8 +234,8 @@ PLATFORM=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="hbn:t:p:"
-LONGOPTS="help,batch,name:,target:,platform:"
+SHORTOPTS="hbn:s:t:p:"
+LONGOPTS="help,batch,name:,subsystem:,target:,platform:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -228,15 +259,20 @@ while true; do
 			shift
 			NAME="$1"
 			;;
+		-s|--subsystem)
+			# Specify the subsystem of the component to create.
+			shift
+			SUBSYSTEM="$1"
+			;;
 		-t|--target)
 			# Specify the target of the component to create.
 			shift
-			NAME="$1"
+			TARGET="$1"
 			;;
 		-p|--platform)
 			# Specify the platform of the component to create.
 			shift
-			NAME="$1"
+			PLATFORM="$1"
 			;;
 		--)
 			# We're done parsing options.  We ignore anything else.
@@ -266,7 +302,8 @@ if [ -z $NAME ] && [ ! $BATCHMODE ]; then
 	do
 		# We will need to prompt the user for the name of the component to create.
 		echo -e -n "${GREEN}Enter a name for the component to be created: (No spaces) ${NO_COLOUR}"
-		read 
+		read
+		echo -e "" 
 
 		# Check the user actually entered something.
 		if [ -z "$REPLY" ]; then
@@ -301,6 +338,27 @@ if [ -z $NAME ] && [ ! $BATCHMODE ]; then
 			break
 		fi
 	done
+
+# Check if we have been supplied the name of the component to create and that we're in batch mode.
+elif [ -z $NAME ] && [ $BATCHMODE ]; then
+	# We haven't been given a name, and we're in batch mode, so can't ask.  So we just have to bail.
+	echo -e "${BOLD_RED}FATAL - No name supplied in batch mode.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Check if we have been supplied the sub-system name and that we're not in batch mode.
+if [ -z $SUBSYSTEM ] && [ ! $BATCHMODE ]; then
+	# We haven't been given a subsysytem name, so we need the user to enter one.
+
+	# We will need to prompt the user for the name of the component to create.
+	echo -e -n "${GREEN}Enter a subsystem name for the component to be created: ${NO_COLOUR}"
+	read
+	echo -e ""
+
+	# Pretty much anything goes here.
+	SUBSYSTEM=$REPLY
+
+	# TODO - Maybe later we could have a list of known subsystems from which to choose of just a random text field?
 fi
 
 # Check if we have been supplied the target type and that we're not in batch mode.
@@ -329,7 +387,7 @@ fi
 
 # Create the configuration file for the component, overriding any existing configuration file.
 echo -e "${CYAN}Creating configuration file (src/$NAME/$NAME.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for component $NAME.\n\nTARGET=$TARGET\nPLATFORM=$PLATFORM\n" > $TCPATH/src/$NAME/$NAME.cfg
+echo -e "# Configuration file for component $NAME.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\n" > $TCPATH/src/$NAME/$NAME.cfg
 
 # TODO - We should actually check if this works.
 

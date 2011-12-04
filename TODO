@@ -1,20 +1,10 @@
-* 	I deleted the file "config.cfg", since it contains things that shouldn't be under source control.  But now, when you run uavstart with "./bld/ uavstart", it complains:
-
-		grep: /my/path/var/config.cfg: No such file or directory
-		grep: /my/path/var/config.cfg: No such file or directory
-
-If the configuration file isn't there, then it should produce it, and populate it with some defaults?  Oh, you then can't even set any configuration values, because setting the configuration values relies on the file already being there.
-
-* The thing that is currently called 'Aspect' is stored in var/config.cfg, making it specific to the user.  I don't think this will neccesarily be that helpful, mostly because one person might be working on different bits of the project.  More helpful would be if each component also had a field called 'Sub-System' perhaps. The only real place it would be used (as I see it at the moment, though that could change) would be adding it into the top of each source file (in the same place where the 'Aspect' is at the moment).  So two different components might be part of the same 'sub-system' even though different people are working on them.
-
-* I can't actually check if this needs fixing, but suspect it will; the line "#ifndef __<<<TC_INSERTS_PROJECT_NAME_HERE>>>_H__" probably gets resolved to something like: "#ifndef __Mux_H__", but it should be like this: "#ifndef __MUX_H__".  All macro definitions should be in upper case, so you'll have to convert the symbol to upper case before it gets substituted in.
+* The thing that is currently called 'Aspect' is stored in var/config.cfg, making it specific to the user.  I don't think this will neccesarily be that helpful, mostly because one person might be working on different bits of the project.  Get rid of it.
 
 * Change the colour of all the text that is currently dark blue; it is almost impossible to see!
 
-* In the case where it says "Your active component doesn't exist. Please set a component to be active through Edit -> Change Default Project",
-the toolchain should then set 'tc_current' variable to 'none'.  Hence, you'd only ever get this message once.
-
 * The string which yields that white-on-blue text '\E[37;44m'"\033[1m should be replaced with a variable the same as the other colours.
+
+* In the 'EDIT' menu, the items "Active Component" and "Another Thing" both have the letter 'A' underlined.
 
 
 

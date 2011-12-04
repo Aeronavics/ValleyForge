@@ -32,14 +32,15 @@
 ###			delimiters, and leave the unexpanded macros in the source file, ###
 ###			ready to be expanded at compile time.				###
 ###											###
-###			So long as any macros for which expansion requires a valid	###
-###			build configuration loaded have been doubly delimited, no build	###
-###			profile needs to have been loaded for this preprocessing.	###
+###			Requires that a valid build configuration has been loaded.	###
 ###											###
 ###########################################################################################
 
 preprocess_template()
 {	
+	# Preprocess the files.
+	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
+
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
@@ -61,9 +62,6 @@ preprocess_template()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
-	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
-
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
@@ -79,9 +77,13 @@ preprocess_template()
 	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
 
-	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^none^g" $1
+	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 
-	# TODO - Can't expand the IO header macro if a build configuration isn't loaded, so what SHOULD this do?
+	# 	There are also upper-case versions of some of those same macros.
+
+	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
+
+	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${NAME^^}^g" $1
 
 	# Re-reverse the delimiters for any macros with reversed delimiters.
 
@@ -119,6 +121,9 @@ preprocess_template()
 
 preprocess_general()
 {
+	# Preprocess the files.
+	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
+
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
@@ -140,9 +145,6 @@ preprocess_general()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
-	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
-
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
@@ -150,17 +152,21 @@ preprocess_general()
 	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
 	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
 
-	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^'$NAME'^g" $1
-	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^'$AUTHOR'^g" $1
-	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^'$DATE'^g" $1
-	sed -i "s^<<<TC_INSERTS_ASPECT_HERE>>>^'$ASPECT'^g" $1
+	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$NAME^g" $1
+	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
+	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
+	sed -i "s^<<<TC_INSERTS_ASPECT_HERE>>>^$ASPECT^g" $1
 
-	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^'$TARGET'^g" $1
-	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^'$PLATFORM'^g" $1
+	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
+	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 
-	# TODO - In all liklihood, this last one is broken, since IOHEADER has special characters in it which will mess with sed.
+	# 	There are also upper-case versions of some of those same macros.
+
+	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
+
+	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${NAME^^}^g" $1
 
 	# All done.
 	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
