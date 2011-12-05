@@ -213,8 +213,9 @@ Parameters:
 
 Options:
 	-h --help			Show this message.
-	-r --retain			Retain temporary files at completion of script.
 	-a --all			Build all components.
+	-r --retain			Retain temporary files at completion of script.
+	-l --loader			Build the bootloader for each component as well.
 	-n --name <Component Name>	Specify the name of a component to build.
 EOF
 	# All done.
@@ -235,11 +236,12 @@ echo -e "${BOLD_CYAN}\nParsing command line parameters...\n${NO_COLOUR}"
 NAME=
 RETAIN=
 ALL=
+LOADER=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harcn:"
-LONGOPTS="help,all,retain,clean,name:"
+SHORTOPTS="harlcn:"
+LONGOPTS="help,all,retain,loader,clean,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -261,6 +263,10 @@ while true; do
 		-r|--retain)
 			# Select 'retaining temporary files'.
 			RETAIN=1
+			;;
+		-l|--loader)
+			# Select 'creating bootloaders'.
+			LOADER=1
 			;;
 		-c|--clean)
 			# Remind the user that there is no 'clean' option here.
@@ -337,10 +343,6 @@ source $TCPATH/bld/common/load_build_configs
 # Iterate through each of the components in the queue.
 for COMPONENT in $NAME
 do
-	# Reset any variables which may have been set by the previous component.
-	TARGET=
-	PLATFORM=
-	
 	# First, check if this component actually exists.
 	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 		# The component does't have a matching source folder, so skip it and move on.
@@ -350,6 +352,14 @@ do
 
 	# Indicate we are starting the build process for this component.
 	echo -e "${BOLD_CYAN}Building component $COMPONENT...\n${NO_COLOUR}"
+
+	# First, we need to read the configuration information for this component.
+	echo -e "${CYAN}Loading component build configuration...\n${NO_COLOUR}"
+
+	# Reset any variables which may have been set by the previous component.
+	TARGET=
+	PLATFORM=
+	BOOTLOADER=
 
 	# Check if we can find the config file for this component.
 	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
@@ -375,8 +385,9 @@ do
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f2)
-	TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
+	TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f 2)
+	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f 2)
+	BOOTLOADER=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^BOOTLOADER" | cut -d '=' -f 2)
 
 	# Reset any variables which may have been set by the previous component.
 	BCONF_NAME=
@@ -419,6 +430,11 @@ do
 		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
 	fi
 
+	# TODO - If there is anything required to set up the platform, maybe it goes about here?
+	
+	# Now, we compile the application code.
+	echo -e "${CYAN}Compiling application code...\n${NO_COLOUR}"
+
 	# Count the number of C files in the source folder for this component.
 	COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
 	echo -e "${CYAN}Found $COUNT C source files.\n${NO_COLOUR}"
@@ -453,6 +469,63 @@ do
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
+
+	# Check if we should also make the corresponding bootloader for this component.
+	if [ $LOADER ]; then
+		# We need to make the corresponding bootloader as well.
+
+		# Now, we build the application code for the component.
+		echo -e "${CYAN}Building bootloader for component ${COMPONENT}...\n${NO_COLOUR}"
+		
+		# First, we need to read the configuration information for this component.
+		echo -e "${CYAN}Loading bootloader configuration...\n${NO_COLOUR}"
+
+		# Reset any variables which may have been set by the previous bootloader.
+		BCONF_NAME=
+		COMPILER=
+		MAKEFUNCTION=
+		MAKEFILE=
+		MCU_CODE=
+		OBJCOPY=
+		IOHEADER=
+
+		# Check to see if we can find a matching bootloader configuration.
+		BLOADCONF="bload_${TARGET}_${BOOTLOADER}"
+		if [ `declare -f | grep "$BLOADCONF ()" | wc -l` == 0 ]; then
+			# No matching bootloader configuration was found, so skip this and move on.
+			echo -e "${RED}No suitable bootloader configuration found.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		else
+			# There is a matching bootloader configuration, so load it.
+			echo -e "${CYAN}Loading bootloader configuration ($BLOADCONF)...\n${NO_COLOUR}"
+			$BCONF
+
+			# Check that all the required variables were set by the bootloader configuration.
+			if [ -z "$BLOAD_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
+			   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
+				# At least one of the required variables was not set, so skip this and move on.
+				echo -e "${RED}Bootloader configuration incomplete.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# TODO - Actually, maybe some of these would be optional, if they aren't need by all bootloaders?
+	
+			# Check that the make function specified by the bootloader configuration actually exists.
+			if [ `declare -f | grep "$MAKEFUNCTION" | wc -l` == 0 ]; then
+				# The specified make function doesn't exist, so skip this and move on.
+				echo -e "${RED}Build configuration specifies an invalid make function.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# The bootloader configuration was loaded successfully.
+			echo -e "${CYAN}Loaded bootloader configuration '$BLOAD_NAME'.\n${NO_COLOUR}"
+		fi
+
+		# Now, we compile the bootloader.
+		echo -e "${CYAN}Compiling bootloader...\n${NO_COLOUR}"
+
+		# TODO - This!
+	fi
 done
 
 # Check if we are supposed to be deleting temporary files after we are finished.

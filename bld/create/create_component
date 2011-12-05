@@ -112,9 +112,6 @@ create_template ()
 
 choose_target()
 {
-	# Prompt the user.
-	echo -e "${GREEN}Which target would you like to code for? \n${NO_COLOUR}"
-	
 	# List the possible build configurations.
 	BCONFS=`declare -F | grep -o -e "bconf_.*"`
 	
@@ -126,6 +123,9 @@ choose_target()
 
 	# Sort the list of targets and search for duplicates.
 	TARGETS="`echo $TARGETS | tr " " "\n" | sort -u -r | tr "\n" " "`"
+
+	# Prompt the user.
+	echo -e "${GREEN}Which target would you like to code for? \n${NO_COLOUR}"
 
 	# Create a menu of choices and have the user select one.
 	select TARGET in $TARGETS
@@ -159,9 +159,6 @@ choose_target()
 
 choose_platform()
 {
-	# Prompt the user.
-	echo -e "${GREEN}Which platform would you like to code for? \n${NO_COLOUR}"
-	
 	# List the possible build configurations.
 	BCONFS=`declare -F | grep -o -e "bconf_.*"`
 	
@@ -177,8 +174,11 @@ choose_platform()
 			# Else, the configuration is for some other target, so we ignore it.
 	done
 
-	# Sort the list of platforms and search for platforms.
+	# Sort the list of platforms and search for duplicates.
 	PLATFORMS="`echo $PLATFORMS | tr " " "\n" | sort -u -r | tr "\n" " "`"
+
+	# Prompt the user.
+	echo -e "${GREEN}Which platform would you like to code for? \n${NO_COLOUR}"
 
 	# Create a menu of choices and have the user select one.
 	select PLATFORM in $PLATFORMS
@@ -191,6 +191,66 @@ choose_platform()
 		else
 			# A legitimate option was selected, so we can go now.
 			echo -e "${CYAN}Selected platform $PLATFORM.\n${NO_COLOUR}"
+			break
+		fi
+	done
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		choose_bootloader						###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Asks the user which bootloader they wish to use and sets the	###
+###			value $BOOTLOADER accordingly.					###
+###											###
+###########################################################################################
+
+choose_bootloader()
+{
+	# List the possible bootloader configurations.
+	BLOADCONFS=`declare -F | grep -o -e "bload_.*"`
+	
+	# Iterate through the possible bootloader configurations
+	for BLOADCONF in $BLOADCONFS; do
+		# Check if this configuration is specific to our chosen target.
+		if [ "$TARGET" == `echo $BLOADCONF | cut -d '_' -f 2` ]; then
+			# This configuration matches the current target.
+	
+			# Extract the name of the bootloader from the configuration and add it to a list of possible bootloaders.
+			BOOTLOADERS="`echo $BLOADCONF | cut -d '_' -f 3` $BOOTLOADERS"
+		fi
+			# Else, the configuration is for some other target, so we ignore it.
+	done
+
+	# Sort the list of bootloaders and search for duplicates.
+	BOOTLOADERS="`echo $BOOTLOADERS | tr " " "\n" | sort -u -r | tr "\n" " "`"
+
+	# Check if the list is empty.  It can be, because its possible to have a build configuration for a target without a suitable bootloader.
+	if [ -z "${BOOTLOADERS## }" ]; then
+		# There are no suitable bootloaders, so there is no point asking the user to choose one.
+		echo -e "${YELLOW}No suitable bootloaders found for this target.\n${NO_COLOUR}"
+		return
+	fi
+
+	# Prompt the user.
+	echo -e "${GREEN}Which bootloader would you like to use for this component? \n${NO_COLOUR}"
+
+	# Create a menu of choices and have the user select one.
+	select BOOTLOADER in $BOOTLOADERS
+	do
+		# Check if the selected bootloader is actually valid.
+		BOOTLOADER=$(echo "$BOOTLOADERS" | grep -w -o "$BOOTLOADER")
+		if [ -z "$BOOTLOADER" ]; then
+			# The selected bootloader was not in the list of bootloaders, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			echo -e "${CYAN}Selected bootloader $BOOTLOADER.\n${NO_COLOUR}"
 			break
 		fi
 	done
@@ -216,8 +276,9 @@ Options:
 	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
 	-n --name <Component Name>	Specify the name of a component to create/update.
 	-s --subsystem <Subsystem Name>	Specify the name of the subsystem this component is part of.
-	-t --target <Target Name>	Specify the name of the target for this component.
-	-p --platform <Platform Name>	Specify the name of the platform for this component.
+	-t --target <Target ID>		Specify the target for this component.
+	-p --platform <Platform ID>	Specify the platform for this component.
+	-l --loader <Bootloader ID>	Specify the bootloader for this component.
 EOF
 	# All done.
 	return
@@ -233,11 +294,12 @@ BATCHMODE=
 SUBSYSTEM=
 TARGET=
 PLATFORM=
+BOOTLOADER=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="hbn:s:t:p:"
-LONGOPTS="help,batch,name:,subsystem:,target:,platform:"
+SHORTOPTS="hbn:s:t:p:l:"
+LONGOPTS="help,batch,name:,subsystem:,target:,platform:,loader:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -275,6 +337,11 @@ while true; do
 			# Specify the platform of the component to create.
 			shift
 			PLATFORM="$1"
+			;;
+		-l|--loader)
+			# Specify the bootloader of the component to create.
+			shift
+			BOOTLOADER="$1"
 			;;
 		--)
 			# We're done parsing options.  We ignore anything else.
@@ -375,6 +442,12 @@ if [ -z $PLATFORM ] && [ ! $BATCHMODE ]; then
 	choose_platform
 fi
 
+# Check if we have been supplied the bootloader type and that we're not in batch mode.
+if [ -z $BOOTLOADER ] && [ ! $BATCHMODE ]; then
+	# We haven't been given the bootloader type, so we need the user to select one.
+	choose_bootloader
+fi
+
 # CREATE THE COMPONENT.
 
 # Check if the specified component does not exist yet.
@@ -389,7 +462,7 @@ fi
 
 # Create the configuration file for the component, overriding any existing configuration file.
 echo -e "${CYAN}Creating configuration file (src/$NAME/$NAME.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for component $NAME.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\n" > $TCPATH/src/$NAME/$NAME.cfg
+echo -e "# Configuration file for component $NAME.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$NAME/$NAME.cfg
 
 # TODO - We should actually check if this works.
 
