@@ -33,6 +33,13 @@
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
+/**
+ *	Description of what the function does...
+ *
+ *	TAKES: Details of arguments to the function.
+ *
+ *	RETURNS: Details of return value from the function.
+ */
 int main(void);
 
 #endif /*__<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__*/

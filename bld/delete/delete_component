@@ -1,0 +1,74 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		delete_component										###
+###															###
+### Author:		Zac Frank											###
+###															###
+### Date Created:	15-11-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Deletes a component.									 	###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Provide a list of valid components for the user to choose from.
+echo -e "${GREEN}Please select which component to delete:\n${NO_COLOUR}"
+						
+# TODO - This needs fixing: if there are any files in src, this will totally fail.
+
+# Create a menu of choices and have the user select one.
+select DEL in $(ls $TCPATH/src)
+do
+	# Check if the selected component is actually valid.
+	DEL=$(echo $(ls $TCPATH/src) | grep -w -o "$DEL")
+	if [ -z "$DEL" ]; then
+		# The selected component was not in the list of components, so the user is apparently a moron.
+		echo -e "${RED}Invalid choice.\n${NO_COLOUR}"
+
+		# Since deleting a component is serious business, we won't give them another try, we'll just exit.
+		break
+	else
+		# A legitimate option was selected, so delete that component.
+
+		# We had better present the user with some kind of confirmation.
+		echo -e -n "${BOLD_GREEN}Do you really want to delete component ${DEL}?  This cannot be undone. (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then delete everything.  If NO, then we're done here.
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			# Delete the appropriate component.
+			rm -rf $TCPATH/src/$DEL
+
+			# All done.
+			echo -e "${CYAN}Deleted component $DEL.\n${NO_COLOUR}"
+			break
+		else
+			# We're done here.
+			break
+		fi
+	fi
+done
+
+# All done.
+exit 0
+

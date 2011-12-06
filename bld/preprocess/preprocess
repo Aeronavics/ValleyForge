@@ -69,10 +69,10 @@ preprocess_template()
 	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
 	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
 
-	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$NAME^g" $1
+	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
+	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
 	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
-	sed -i "s^<<<TC_INSERTS_ASPECT_HERE>>>^$ASPECT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
@@ -83,7 +83,7 @@ preprocess_template()
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
 
-	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${NAME^^}^g" $1
+	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${COMPONENT^^}^g" $1
 
 	# Re-reverse the delimiters for any macros with reversed delimiters.
 
@@ -93,9 +93,9 @@ preprocess_template()
 	sed -i 's^>>>TC_INSERTS_C_FILE_NAME_HERE<<<^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^g' $1
 
 	sed -i 's^>>>TC_INSERTS_COMPONENT_NAME_HERE<<<^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^g' $1
+	sed -i 's^>>>TC_INSERTS_SUBSYSTEM_HERE<<<^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^g' $1
 	sed -i 's^>>>TC_INSERTS_AUTHOR_NAME_HERE<<<^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^g' $1
 	sed -i 's^>>>TC_INSERTS_DATE_HERE<<<^<<<TC_INSERTS_DATE_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_ASPECT_HERE<<<^<<<TC_INSERTS_ASPECT_HERE>>>^g' $1
 
 	sed -i 's^>>>TC_INSERTS_TARGET_HERE<<<^<<<TC_INSERTS_TARGET_HERE>>>^g' $1
 	sed -i 's^>>>TC_INSERTS_PLATFORM_HERE<<<^<<<TC_INSERTS_PLATFORM_HERE>>>^g' $1
@@ -122,12 +122,12 @@ preprocess_template()
 preprocess_general()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing file ($1)...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_template.  File does not exist.\n${NO_COLOUR}"
+		echo -e "${RED}ERROR - Invalid argument to preprocess_general.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -152,13 +152,68 @@ preprocess_general()
 	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
 	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
 
-	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$NAME^g" $1
+	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
+	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
 	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
-	sed -i "s^<<<TC_INSERTS_ASPECT_HERE>>>^$ASPECT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
+
+	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+
+	# 	There are also upper-case versions of some of those same macros.
+
+	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
+
+	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${COMPONENT^^}^g" $1
+
+	# All done.
+	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		preprocess_bootloader						###
+###											###
+### Inputs/Outputs:	A single input argument: the path to the file to process.	###
+###											###
+### Purpose:		Preprocesses a single bootloader source file. Should not be	###
+###			used to preprocess application code!				###
+###											###
+###			Requires that a valid bootloader build configuration has been	###
+###			loaded.								###
+###											###
+###########################################################################################
+
+preprocess_bootloader()
+{
+	# Preprocess the files.
+	echo -e "${CYAN}Preprocessing bootloader file ($1)...\n${NO_COLOUR}"
+
+	# Check that the specified file exists.
+	if [ ! -w $1 ]; then
+		# The specified file is invalid, so bail.
+		echo -e "${RED}ERROR - Invalid argument to preprocess_bootloader.  File does not exist.\n${NO_COLOUR}"
+		return
+	fi
+
+	# Figure out what the NAME of the file actually is.
+	local NAME=${1##*/}
+	local NAME=${NAME%.*}
+	local EXT=${1##*.}
+
+	# Replace each instance of a macro in the template files with the corresponding information.
+
+	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
+	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+
+	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$NAME^g" $1
+
+	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 

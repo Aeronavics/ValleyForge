@@ -55,7 +55,7 @@ makeavr()
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# Get the list of names of source files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c $inS | sed ':a;N;$!ba;s/\n/ /g')
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
@@ -73,14 +73,97 @@ makeavr()
 	if [ $? != 0 ]; then
 		# Something went wrong.
 		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
-	else
-		# The compilation worked, so now just copy across the output binaries.
-		$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.out $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
-		echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
-	fi										
+		return 1
+	fi
+	
+	# The compilation worked, so now just copy across the output binaries.
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.out $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi									
 
 	# All done.
-	return
+	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makeavr_bootloader						###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Builds the AVR bootloader for the current component.	     	###
+###											###
+###########################################################################################
+
+makeavr_bootloader() 
+{
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+
+	# Copy all the source files into the tmp directory, where the actual making will occur.
+	cp $SOURCEPATH/*.c $SOURCEPATH/*.h $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+
+	# Preprocess the copied header files.
+	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h
+	for FILE in $FILES; do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+
+	# Preprocess the copied source files.
+	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c
+	for FILE in $FILES; do
+		# Preprocess this source file.
+		preprocess_bootloader $FILE
+	done
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+
+	# Get the list of names of source files.
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c | sed ':a;N;$!ba;s/\n/ /g')
+								
+	# Update the working makefile with the appropriate values for this component.	
+	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	
+	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s/\(PROJECTNAME *= *\).*/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s/\(BOOTSTART *= *\).*/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	
+    
+	# Actually make the component.
+	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
+	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader all			
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# The compilation worked, so now just copy across the output binaries.
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/${COMPONENT}_bootloader.out $TCPATH/$OUTPUT_DIR/${COMPONENT}_bootloader.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi									
+
+	# All done.
+	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -104,7 +187,7 @@ make32()
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# Get the list of names of source and header files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c $inS | sed ':a;N;$!ba;s/\n/ /g')
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
@@ -124,14 +207,22 @@ make32()
 	if [ $? != 0 ]; then
 		# Something went wrong.
 		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
-	else
-		# The compilation worked, so now just copy across the output binaries.
-		$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.elf $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
-		echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
-	fi										
+		return 1
+	fi
+	
+	# The compilation worked, so now just copy across the output binaries.
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.elf $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi									
 
 	# All done.
-	return
+	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -170,6 +261,7 @@ rtos32()
 		# Remove things.
 		make clean
 		rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
+		return 1
 	else
 		# The compilation worked, so now just copy across the output binaries.
 		cp $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc/avr32_services_freertis_example_uc3c_ek.hex $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
@@ -178,7 +270,7 @@ rtos32()
 	fi
 
 	# All done.
-	return
+	return 0
 }
 
 ##################################### MINOR FUNCTIONS ####################################
@@ -456,7 +548,7 @@ do
 	# Preprocess the copied header files.
 	FILES=$TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h
 	for FILE in $FILES; do
-		# Preprocess this source file.
+		# Preprocess this header file.
 		preprocess_general $FILE
 	done
 
@@ -470,6 +562,13 @@ do
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
 
+	# Check if the make function worked.  If not, we don't go any further with this component.
+	if [ $? != 0 ]; then
+		# We just skip the booloader and anything else, and move on.
+		echo -e "${YELLOW}Application code build failed.  Skipping additional build stages...\n${NO_COLOUR}"
+		continue
+	fi
+
 	# Check if we should also make the corresponding bootloader for this component.
 	if [ $LOADER ]; then
 		# We need to make the corresponding bootloader as well.
@@ -481,13 +580,15 @@ do
 		echo -e "${CYAN}Loading bootloader configuration...\n${NO_COLOUR}"
 
 		# Reset any variables which may have been set by the previous bootloader.
-		BCONF_NAME=
+		BLOAD_NAME=
 		COMPILER=
 		MAKEFUNCTION=
 		MAKEFILE=
+		SOURCEPATH=
 		MCU_CODE=
 		OBJCOPY=
 		IOHEADER=
+		BOOTSTART=
 
 		# Check to see if we can find a matching bootloader configuration.
 		BLOADCONF="bload_${TARGET}_${BOOTLOADER}"
@@ -498,11 +599,11 @@ do
 		else
 			# There is a matching bootloader configuration, so load it.
 			echo -e "${CYAN}Loading bootloader configuration ($BLOADCONF)...\n${NO_COLOUR}"
-			$BCONF
+			$BLOADCONF
 
 			# Check that all the required variables were set by the bootloader configuration.
-			if [ -z "$BLOAD_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
-			   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
+			if [ -z "$BLOAD_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$SOURCEPATH" ] ||\
+			   [ -z "$MCU_CODE" ] || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ] || [ -z "$BOOTSTART" ]; then
 				# At least one of the required variables was not set, so skip this and move on.
 				echo -e "${RED}Bootloader configuration incomplete.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
 				continue
@@ -524,7 +625,8 @@ do
 		# Now, we compile the bootloader.
 		echo -e "${CYAN}Compiling bootloader...\n${NO_COLOUR}"
 
-		# TODO - This!
+		# Actually run the appropriate make function for this build configuration.
+		$MAKEFUNCTION
 	fi
 done
 

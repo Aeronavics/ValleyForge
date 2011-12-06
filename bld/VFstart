@@ -4,7 +4,6 @@
 ###															###
 ### Name:		VFStart												###
 ###															###
-###															###
 ### Author:		Zac Frank											###
 ###															###
 ### Date Created:	15-11-2011											###
@@ -224,7 +223,7 @@ do
 			# TODO - This.  There needs to be some more menu here?
 	
 			# Run the delete script.
-			bash $TCPATH/bld/delete/delete $TCPATH
+			bash $TCPATH/bld/delete/delete_component
 		        ;;
 
 		"E" | "e" )

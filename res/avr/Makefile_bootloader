@@ -96,6 +96,8 @@ LIBS=
 # use s (size opt), 1, 2, 3 or 0 (off)
 OPTLEVEL=s
 
+# Bootloader start address.
+BOOTSTART=BUILD_WILL_INSERT_BOOT_START_ADDRESS_HERE
 
 #####      AVR Dude 'writeflash' options       #####
 #####  If you are using the avrdude program
@@ -160,7 +162,7 @@ ASMFLAGS =-I. $(INC) -mmcu=$(MCU)        \
 
 # linker
 LDFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) \
-	-lm $(LIBS)
+	-lm $(LIBS) --section-start=.text=$(BOOTSTART)
 
 ##### executables ####
 CC=avr-gcc
