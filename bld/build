@@ -168,7 +168,7 @@ makeavr_bootloader()
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		make32								###
+### Name:		makeavr32							###
 ###											###
 ### Inputs/Outputs:	None								###
 ###											###
@@ -177,7 +177,7 @@ makeavr_bootloader()
 ###											###
 ###########################################################################################
 
-make32()
+makeavr32()
 {
 	# Check if the AVR32 compiler has been uncompressed already.
 	inflate_avr32cc
@@ -222,54 +222,6 @@ make32()
 
 	# All done.
 	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
-	return 0
-}
-
-######################################## FUNCTION #########################################
-###											###
-### Name:		32rtos								###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Compiles AT32 rtos						###
-### 										     	###
-###########################################################################################
-
-rtos32()
-{
-	# TODO - This is still only experimental at the moment.
-	echo -e "${CYAN}\nNote: This is still in an experimental stage${NO_COLOUR}\n"
-
-    	# Check if the AVR32 compiler has been uncompressed already.
-	inflate_avr32cc
-
-	# Copy some stuff around.
-	cp $TCPATH/src/$name/main.c $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
-	cd $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc
-
-	# Actually make the component.
-	echo -e "${CYAN}Making component AT32 RTOS...\n${NO_COLOUR}"	
-	make program	# TODO - "make program" doesn't that imply flashing the completed binary to a device?  
-
-	# NOTE - Don't put anything in here; we need the return value from 'make' below.
-
-	# Check the return value from make, to determine if an error occurred during compilation.
-	if [ $? != 0 ]; then
-		# Something went wrong.
-		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
-
-		# Remove things.
-		make clean
-		rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
-		return 1
-	else
-		# The compilation worked, so now just copy across the output binaries.
-		cp $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/at32uc3c0512c_uc3c_ek/gcc/avr32_services_freertis_example_uc3c_ek.hex $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
-		make clean
-		rm $TCPATH/res/asf-2.8.1/thirdparty/freertos/demo/avr32_uc3_example/main.c
-	fi
-
-	# All done.
 	return 0
 }
 
