@@ -81,7 +81,7 @@ create_template ()
 		   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
 			echo -e "${RED}Build configuration incomplete. Cannot preprocess template files.\n${NO_COLOUR}"
-			continue
+			return
 		fi
 
 		# TODO - Actually, maybe some of these would be optional, if they aren't need by all targets?
