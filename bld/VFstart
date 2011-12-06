@@ -285,7 +285,7 @@ do
 
 					"E" | "e" )
 						# Run the edit script.			
-						bash $TCPATH/bld/edit/edit $TCPATH
+						bash $TCPATH/bld/edit/edit
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
