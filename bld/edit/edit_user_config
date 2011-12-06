@@ -2,7 +2,7 @@
 
 ###########################################################################################################################
 ###															###
-### Name:		edit												###
+### Name:		edit_user_config										###
 ###															###
 ### Author:		Zac Frank											###
 ###															###
@@ -61,8 +61,7 @@ do
 
 		"R" | "r" )
 			# Rerun the 'first time configuration' script.
-
-			# TODO - This.
+			bash ${TCPATH}/bld/other/first_run
 
 			# We're done here.
 			break

@@ -127,11 +127,32 @@ do
 	# Check if this is the first time the toolchain has been used by this user.
 	STARTUP=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_startup | cut -d '=' -f 2)
 	if [ "$STARTUP" == "start" ]; then
-		# The user has not run the toolchain before, so we prompt them to enter their information.
-		bash $TCPATH/bld/Other/askForInfo $TCPATH
+		# Print a message to the user.
+		echo -e "${YELLOW}The first time the ValleyForge toolchain is used, some initial configuration is required.\n${NO_COLOUR}"
+
+		# Prompt the user.
+		echo -ne  "${GREEN}Do you want to run the setup process now (or be reminded later)? (Y/N or L) ${NO_COLOUR}"
+	
+		# Read a single character input from the user and select the appropriate response.
+		read -s -n 1
+		echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+		case "$REPLY" in
+			"Y" | "y" )
+				# Run the setup script.
+				bash ${TCPATH}/bld/other/first_run
+				;;
+			"N" | "n" )
+				# The user doesn't want to run the setup.  So we'll just pretend that it has already been set up.
+				sed "s/tc_startup=.*/tc_startup=notrun/g" -i $TCPATH/$USER_CONFIG_FILE
+				;;
+			"L" | "l" )
+				# The user wants to be reminded later.
+				sed "s/tc_startup=.*/tc_startup=later/g" -i $TCPATH/$USER_CONFIG_FILE
+				;;
+		esac
 	elif [ "$STARTUP" == "later" ]; then
 		# The user has not set their details in a previous setting, so remind them to.
-	    echo -e "${YELLOW}No user information has been set.  To enter your details, use EDIT -> USER INFO.\n${NO_COLOUR}"
+	    echo -e "${YELLOW}Setup has not been completed.  To run setup process, use EDIT -> EDIT SETTINGS -> RERUN USER SETUP.\n${NO_COLOUR}"
 	fi
 
 	# Check if there is an 'active component' specified by the user configuration.
@@ -285,7 +306,7 @@ do
 
 					"E" | "e" )
 						# Run the edit script.			
-						bash $TCPATH/bld/edit/edit
+						bash $TCPATH/bld/edit/edit_user_config
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
