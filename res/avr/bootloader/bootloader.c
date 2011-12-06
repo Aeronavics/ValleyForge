@@ -66,6 +66,8 @@ int main(void)
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
 	wdt_enable(WDTO_250MS);
 
+	// TODO - Turn on the blinkenlight solidly.
+
 	// Check the state of the 'application run' marker.
 	if (is_clean())
 	{
@@ -82,6 +84,8 @@ int main(void)
 	// Start up whichever peripherals are required by the modules we're using.
 	mod_init();
 
+	// TODO - Set up a timer and interrupt to flash the blinkenlight.
+
 	// Enable interrupts.
 	sei();
 
@@ -90,6 +94,8 @@ int main(void)
 	{
 		// Touch the watchdog.
 		wdt_reset();
+
+		// TODO - The blinkenlight should flash some kind of pattern to indicate what is going on.
 
 		// TODO - Wait until some firmware arrives.
 
@@ -147,6 +153,8 @@ void run_application(void)
 
 	// Shut down whatever peripherals have been activated.
 	mod_exit();
+
+	// TODO - Stop the timer and interrupt for the blinkenlight.
 
 	// TODO - Put interrupts back into application-land.
 	

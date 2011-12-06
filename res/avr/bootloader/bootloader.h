@@ -21,6 +21,9 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
+// Include the bootloader module header file.
+#include "bootloader_module.h"
+
 // Include the AVR Boot Library.
 #include <avr/boot.h>
 

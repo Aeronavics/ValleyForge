@@ -1,10 +1,4 @@
-* The thing that is currently called 'Aspect' is stored in var/config.cfg, making it specific to the user.  I don't think this will neccesarily be that helpful, mostly because one person might be working on different bits of the project.  Get rid of it.
-
-* Change the colour of all the text that is currently dark blue; it is almost impossible to see!
-
 * The string which yields that white-on-blue text '\E[37;44m'"\033[1m should be replaced with a variable the same as the other colours.
-
-* In the 'EDIT' menu, the items "Active Component" and "Another Thing" both have the letter 'A' underlined.
 
 * Add the ATmega328 to the targets list.  Actually, I think I mean the ATmega328, but maybe I don't: I mean whatever the MUX/PPM controller on the ArduPilot Mega is; look this up.
 
