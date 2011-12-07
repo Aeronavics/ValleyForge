@@ -56,14 +56,21 @@ create_template ()
 	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$NAME/$NAME.c
 	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$NAME/$NAME.h
 
-	# Reset any variables which may have been set by a previous component.
+	# Reset any variables which may have been set by the previous component.
 	BCONF_NAME=
 	COMPILER=
+	ASSEMBLER=
+	OBJCOPY=
 	MAKEFUNCTION=
 	MAKEFILE=
+	LINKSCRIPT=
 	MCU_CODE=
-	OBJCOPY=
 	IOHEADER=
+	CFLAGS=
+	AFLAGS=
+	LFLAGS=
+	OUTPUT_TYPE=
+	OUTPUT_NAME=
 
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
@@ -76,15 +83,7 @@ create_template ()
 		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
 		$BCONF
 
-		# Check that all the required variables were set by the build configuration.
-		if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
-		   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
-			# At least one of the required variables was not set, so skip this component and move on.
-			echo -e "${RED}Build configuration incomplete. Cannot preprocess template files.\n${NO_COLOUR}"
-			return
-		fi
-
-		# TODO - Actually, maybe some of these would be optional, if they aren't need by all targets?
+		# TODO - For now, we aren't checking that the build profile actually contains any useful data.
 
 		# The build configuration was loaded successfully.
 		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
