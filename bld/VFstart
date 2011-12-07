@@ -301,7 +301,7 @@ do
 							# Else we're good to go.						
 
 						# Run the create component script on the active component.
-						bash $TCPATH/bld/create/create_component -n $CURR
+						bash $TCPATH/bld/create/create_component -c $CURR
 						;;
 
 					"E" | "e" )

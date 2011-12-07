@@ -493,7 +493,7 @@ do
 			# Rebuild the configuration file.
 			
 			# Call the 'component_create' script: it will handle rebuilding the configuration file.
-			bash $TCPATH/bld/create/create_component --name $COMPONENT
+			bash $TCPATH/bld/create/create_component -c $COMPONENT
 
 			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
 		else
@@ -536,7 +536,7 @@ do
 		$BCONF
 
 		# Check that all the required variables were set by the build configuration.
-		if [ -z "$BCONF_NAME" ] ||[ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ]; then
+		if [ -z "$BCONF_NAME" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
 			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 			continue

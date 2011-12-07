@@ -53,8 +53,8 @@ create_template ()
 {
 	# Create the actual files by coping the templates into the source directory.
 	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
-	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$NAME/$NAME.c
-	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$NAME/$NAME.h
+	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$COMPONENT.c
+	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$COMPONENT.h
 
 	# Reset any variables which may have been set by the previous component.
 	BCONF_NAME=
@@ -90,8 +90,8 @@ create_template ()
 	fi
 
 	# Preprocess the two template files.
-	preprocess_template $TCPATH/src/$NAME/$NAME.c
-	preprocess_template $TCPATH/src/$NAME/$NAME.h
+	preprocess_template $TCPATH/src/$COMPONENT/$COMPONENT.c
+	preprocess_template $TCPATH/src/$COMPONENT/$COMPONENT.h
 
 	# All done.
 	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
@@ -273,7 +273,7 @@ This script is used, as part of the 'Valley Forge' Embedded Toolchain to create 
 Options:
 	-h --help			Show this message.
 	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
-	-n --name <Component Name>	Specify the name of a component to create/update.
+	-c --component <Component Name>	Specify the name of a component to create/update.
 	-s --subsystem <Subsystem Name>	Specify the name of the subsystem this component is part of.
 	-t --target <Target ID>		Specify the target for this component.
 	-p --platform <Platform ID>	Specify the platform for this component.
@@ -288,7 +288,7 @@ EOF
 # PARSE ANY COMMAND LINE PARAMETERS.
 
 # Reset fields to be extracted from the parameters.
-NAME=
+COMPONENT=
 BATCHMODE=
 SUBSYSTEM=
 TARGET=
@@ -297,8 +297,8 @@ BOOTLOADER=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="hbn:s:t:p:l:"
-LONGOPTS="help,batch,name:,subsystem:,target:,platform:,loader:"
+SHORTOPTS="hbc:s:t:p:l:"
+LONGOPTS="help,batch,component:,subsystem:,target:,platform:,loader:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -317,10 +317,10 @@ while true; do
 			# Select batch mode.
 			BATCHMODE=1
 			;;
-		-n|--name)
+		-c|--component)
 			# Specify the name of the component to create.
 			shift
-			NAME="$1"
+			COMPONENT="$1"
 			;;
 		-s|--subsystem)
 			# Specify the subsystem of the component to create.
@@ -364,7 +364,7 @@ source $TCPATH/bld/common/load_build_configs
 # PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
 
 # Check if we have been supplied the name of the component to create and that we're not in batch mode.
-if [ -z $NAME ] && [ ! $BATCHMODE ]; then
+if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 	# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
 	while :
 	do
@@ -391,7 +391,7 @@ if [ -z $NAME ] && [ ! $BATCHMODE ]; then
 			echo -e "${RED}The component name '$REPLY' is an invalid name.  Please choose another name.\n${NO_COLOUR}"
 
 		# Check if the component name contains spaces.
-		elif [[ $name == *\ * ]]; then
+		elif [[ $REPLY == *\ * ]]; then
 			# The name contains spaces, which is invalid. Prompt the user to choose a more suitable name.
 			echo -e "${RED}The component name must not contain spaces.  Please choose another name.\n${NO_COLOUR}"
 
@@ -402,13 +402,13 @@ if [ -z $NAME ] && [ ! $BATCHMODE ]; then
 
 		else
 			# The name is probably legit, so we move on.
-			NAME=$REPLY
+			COMPONENT=$REPLY
 			break
 		fi
 	done
 
 # Check if we have been supplied the name of the component to create and that we're in batch mode.
-elif [ -z $NAME ] && [ $BATCHMODE ]; then
+elif [ -z $COMPONENT ] && [ $BATCHMODE ]; then
 	# We haven't been given a name, and we're in batch mode, so can't ask.  So we just have to bail.
 	echo -e "${BOLD_RED}FATAL - No name supplied in batch mode.\n${NO_COLOUR}"
 	exit 1
@@ -450,18 +450,18 @@ fi
 # CREATE THE COMPONENT.
 
 # Check if the specified component does not exist yet.
-if [ ! -d "$TCPATH/src/$NAME" ]; then
+if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 	# This is a new component, so we will need to create a directory for it.
-	echo -e "${CYAN}Creating component directory (src/$NAME)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Creating component directory (src/$COMPONENT)...\n${NO_COLOUR}"
 	NEW=1
-	mkdir $TCPATH/src/$NAME
+	mkdir $TCPATH/src/$COMPONENT
 fi
 
 # TODO - We should check that this actually worked, and if it didn't, bail.
 
 # Create the configuration file for the component, overriding any existing configuration file.
-echo -e "${CYAN}Creating configuration file (src/$NAME/$NAME.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for component $NAME.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$NAME/$NAME.cfg
+echo -e "${CYAN}Creating configuration file (src/$COMPONENT/$COMPONENT.cfg)...\n${NO_COLOUR}"
+echo -e "# Configuration file for component $COMPONENT.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 
 # TODO - We should actually check if this works.
 
@@ -477,7 +477,7 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 	# If they responded YES, then set the current component.
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# We want to set this as the current component.
-		sed -i "s^\(tc_curr *= *\).*^\1$NAME^" $TCPATH/$USER_CONFIG_FILE
+		sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
 
 		# TODO - We should actually check if we can find the config file first.
 	fi
@@ -494,7 +494,7 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 	fi
 
 	# Explain to the user what they should do now.
-	echo -e "${BOLD_WHITE}The working directory for component $NAME can now be found at src/$NAME.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}The working directory for component $COMPONENT can now be found at src/$COMPONENT.\n${NO_COLOUR}"
 fi
 
 # All done.
