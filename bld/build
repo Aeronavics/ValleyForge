@@ -61,7 +61,9 @@ makeavr()
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
+	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
+	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s/\(PROJECTNAME *= *\).*/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
@@ -135,7 +137,9 @@ makeavr_bootloader()
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(PROJECTNAME *= *\).*/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(BOOTSTART *= *\).*/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	
@@ -194,11 +198,11 @@ makeavr32()
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
-	sed -i "s^\(PART *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\).*^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	
-	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(HEADERS *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(TARGET *= *\).*^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PART *= *\)BUILD_WILL_INSERT_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\)BUILD_WILL_INSERT_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC *= *\)BUILD_WILL_INSERT_H_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(HEADERS *= *\)BUILD_WILL_INSERT_H_FILES_HERE^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(TARGET *= *\)BUILD_WILL_INSERT_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
