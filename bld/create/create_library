@@ -1,0 +1,313 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		create_library											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	08-12-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script gets called by VFstart script, when the user chooses to create a new library. 	###
+###			It creates a new folder in src/libs given the name of the library specified by the user, and 	###
+###			sets the library configuration depending on the user's input. 					###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+TEMPLATE_C_FILE="res/c_library_template.c"
+TEMPLATE_H_FILE="res/h_library_template.h"
+USER_CONFIG_FILE="var/config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+LIB_SOURCE_PATH="lib"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+# Define the functions used for preprocessing.
+source $TCPATH/bld/preprocess/preprocess
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		create_template							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Creates template source files for the user to build their 	###
+###			software from.						     	###
+###											###
+###########################################################################################
+
+create_template ()
+{
+	# Create the actual files by coping the templates into the library directory.
+	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
+	
+	# Check if the template files actually exist.
+	if [ -r $TCPATH/$TEMPLATE_C_FILE ] && [ -r $TCPATH/$TEMPLATE_H_FILE ]; then
+		# They do exist, so copy them over.
+		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.c
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.h
+	else
+		# They don't exist, so something is terribly wrong.
+		echo -e "${RED}ERROR - Could not find template files.\n${NO_COLOUR}"
+	fi
+
+	# Preprocess the two template files.
+	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.c
+	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.h
+
+	# All done.
+	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		choose_builds							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Asks the user which build configurations the library is to be	###
+###			compatible with and sets $BUILDS accordingly.			###
+###											###
+###########################################################################################
+
+choose_builds()
+{
+	# List the possible build configurations.
+	BCONFS=`declare -F | grep -o -e "bconf_.*"`
+	
+	# Prompt the user.
+	echo -e "${GREEN}Which build configurations should the library be used with? \n${NO_COLOUR}"
+
+	# Create a menu of choices and have the user select one.
+	select BUILD in $BCONFS
+	do
+		# Check if the selected target is actually valid.
+		BUILD=$(echo "$BCONFS" | grep -w -o "$BUILD")
+		if [ -z "$BUILD" ]; then
+			# The selected target was not in the list of targets, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so add it to the list, avoiding duplicates.
+			BUILDS="`echo "$BUILD $BUILDS" | tr " " "\n" | sort -u -r | tr "\n" " "`"
+			echo -e "${CYAN}Compatible builds: $BUILDS.\n${NO_COLOUR}"
+			
+			# Ask if the user wants template files to be created.
+			echo -e -n "${GREEN}Do you wish to add another build configuration library? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+
+			# If they responded YES, then prompt the user again.
+			if [[ $REPLY =~ ^[Yy]$ ]]; then
+				# Loop back up and prompt the user again.
+				continue
+			fi				
+			# Else we're done.
+			break
+		fi
+	done
+
+	# All done.
+	return
+}
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options] [Build Configurations]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to create libraries and update their configurations.
+
+Parameters:
+
+	[Build Configurations]		A space separated list of the build configurations this library is suitable for use with.
+
+Options:
+	-h --help				Show this message.
+	-b --batch				Operate in 'batch mode', wherein there are no interactive prompts.
+	-l --library <Library Name>		Specify the name of a library to create/update.
+	-c --configuration <Configuration>	Specify the build configuration this library is suitable for use with.
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+LIBRARY=
+BATCHMODE=
+BUILDS=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hbl:c:"
+LONGOPTS="help,batch,library:,configuration:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-b|--batch)
+			# Select batch mode.
+			BATCHMODE=1
+			;;
+		-l|--library)
+			# Specify the name of the library to create.
+			shift
+			LIBRARY="$1"
+			;;
+		-c|--configuration)
+			# Add the specified configuration to the list of suitable configurations.
+			shift
+			BUILDS="$BUILDS$1 "
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			BUILDS="$BUILDS$* " # NOTE - The space in intentional!
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			BUILDS="$BUILDS$* " # NOTE - The space in intentional!
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
+
+# Check if we have been supplied the name of the library to create and that we're not in batch mode.
+if [ -z $LIBRARY ] && [ ! $BATCHMODE ]; then
+	# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+	while :
+	do
+		# We will need to prompt the user for the name of the component to create.
+		echo -e -n "${GREEN}Enter a name for the library to be created: (No spaces) ${NO_COLOUR}"
+		read
+		echo -e "" 
+
+		# Check the user actually entered something.
+		if [ -z "$REPLY" ]; then
+			# We'll just prompt again.
+			continue
+
+		# Check if the user actually just wants to exit without creating anything.
+		elif [ "$REPLY" == "exit" ]; then
+			# Exit the script.
+			exit 0
+
+		# Check if the name is a reserved word.
+		elif [ "$REPLY" == "none" ]; then
+			# The name is a reserved word, and thus invalid.  Prompt the user to choose a more suitable name.
+			echo -e "${RED}The library name '$REPLY' is an invalid name.  Please choose another name.\n${NO_COLOUR}"
+
+		# Check if the name contains spaces.
+		elif [[ $REPLY == *\ * ]]; then
+			# The name contains spaces, which is invalid. Prompt the user to choose a more suitable name.
+			echo -e "${RED}The library name must not contain spaces.  Please choose another name.\n${NO_COLOUR}"
+
+		# Check to see if this name is already taken.
+		elif [ -d "$TCPATH/$LIB_SOURCE_PATH/$REPLY" ]; then
+			# The name provided is already taken.  Prompt the user to choose an available name.
+			echo -e "${RED}The library '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
+
+		else
+			# The name is probably legit, so we move on.
+			LIBRARY=$REPLY
+			break
+		fi
+	done
+
+# Check if we have been supplied the name of the library to create and that we're in batch mode.
+elif [ -z $LIBRARY ] && [ $BATCHMODE ]; then
+	# We haven't been given a name, and we're in batch mode, so can't ask.  So we just have to bail.
+	echo -e "${BOLD_RED}FATAL - No name supplied in batch mode.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Check if we have been supplied at least compatible build configuration and that we're not in batch mode.
+if [ -z $BUILDS ] && [ ! $BATCHMODE ]; then
+	# We haven't been given any compatible configurations, so we need the user to select some.
+	choose_builds
+fi
+
+# CREATE THE COMPONENT.
+
+# Check if the specified library does not exist yet.
+if [ ! -d "$TCPATH/$LIB_SOURCE_PATH/$LIBRARY" ]; then
+	# This is a new library, so we will need to create a directory for it.
+	echo -e "${CYAN}Creating library directory ($LIB_SOURCE_PATH/$LIBRARY)...\n${NO_COLOUR}"
+	NEW=1
+	mkdir -p $TCPATH/$LIB_SOURCE_PATH/$LIBRARY
+fi
+
+# TODO - We should check that this actually worked, and if it didn't, bail.
+
+# Create the configuration file for the library, overriding any existing configuration file.
+echo -e "${CYAN}Creating configuration file ($LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg)...\n${NO_COLOUR}"
+echo -e "# Configuration file for library $LIBRARY.\n\nBUILDS=$BUILDS\n" > $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg
+
+# TODO - We should actually check if this works.
+
+# POST-NEW-LIBRARY OPTIONS.
+
+# We only ask the user questions if we're not in batch mode and it's a new library.
+if [ ! $BATCHMODE ] && [ $NEW ]; then
+	# Ask if the user wants template files to be created.
+	echo -e -n "${GREEN}Do you wish for template files to be created for the library? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+
+	# If they responded YES, then create the template files.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Create the template files.
+		create_template
+	fi
+
+	# Explain to the user what they should do now.
+	echo -e "${BOLD_WHITE}The working directory for library $LIBRARY can now be found at $LIB_SOURCE_PATH/$LIBRARY.\n${NO_COLOUR}"
+fi
+
+# All done.
+echo -e "${CYAN}All done.\n${NO_COLOUR}"
+exit 0
+

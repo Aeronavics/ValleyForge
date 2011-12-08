@@ -53,8 +53,16 @@ create_template ()
 {
 	# Create the actual files by coping the templates into the source directory.
 	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
-	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$COMPONENT.c
-	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$COMPONENT.h
+	
+	# Check if the template files actually exist.
+	if [ -r $TCPATH/$TEMPLATE_C_FILE ] && [ -r $TCPATH/$TEMPLATE_H_FILE ]; then
+		# They do exist, so copy them over.
+		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$COMPONENT.c
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$COMPONENT.h
+	else
+		# They don't exist, so something is terribly wrong.
+		echo -e "${RED}ERROR - Could not find template files.\n${NO_COLOUR}"
+	fi
 
 	# Reset any variables which may have been set by the previous component.
 	BCONF_NAME=

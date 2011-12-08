@@ -1,0 +1,75 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		delete_library											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	08-12-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Deletes a library.									 	###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+LIB_SOURCE_PATH="lib"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Provide a list of valid components for the user to choose from.
+echo -e "${GREEN}Please select which library to delete:\n${NO_COLOUR}"
+						
+# TODO - This needs fixing: if there are any files in LIB_SOURCE_PATH, this will totally fail.
+
+# Create a menu of choices and have the user select one.
+select DEL in $(ls $TCPATH/$LIB_SOURCE_PATH)
+do
+	# Check if the selected library is actually valid.
+	DEL=$(echo $(ls $TCPATH/$LIB_SOURCE_PATH) | grep -w -o "$DEL")
+	if [ -z "$DEL" ]; then
+		# The selected library was not in the list of libraries, so the user is apparently a moron.
+		echo -e "${RED}Invalid choice.\n${NO_COLOUR}"
+
+		# Since deleting a library is serious business, we won't give them another try, we'll just exit.
+		break
+	else
+		# A legitimate option was selected, so delete that library.
+
+		# We had better present the user with some kind of confirmation.
+		echo -e -n "${BOLD_GREEN}Do you really want to delete library ${DEL}?  This cannot be undone. (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then delete everything.  If NO, then we're done here.
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			# Delete the appropriate library.
+			rm -rf $TCPATH/$LIB_SOURCE_PATH/$DEL
+
+			# All done.
+			echo -e "${CYAN}Deleted library $DEL.\n${NO_COLOUR}"
+			break
+		else
+			# We're done here.
+			break
+		fi
+	fi
+done
+
+# All done.
+exit 0
+

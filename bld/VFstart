@@ -204,7 +204,7 @@ do
 			do
 				# Print the submenu prompt to the user.
 				echo -e "${GREEN}Please select an option:\n${NO_COLOUR}"
-				echo -en "\tCreate ${UNDERLINED}C${NO_COLOUR}OMPONENT    Create ${UNDERLINED}F${NO_COLOUR}ILES    ${UNDERLINED}B${NO_COLOUR}ACK"
+				echo -en "\tCreate ${UNDERLINED}C${NO_COLOUR}OMPONENT    Create ${UNDERLINED}F${NO_COLOUR}ILES    Create ${UNDERLINED}L${NO_COLOUR}IBRARY    ${UNDERLINED}B${NO_COLOUR}ACK"
 
 				# Read a single character input from the user and select the appropriate response.
 				read -s -n 1
@@ -218,6 +218,11 @@ do
 					"F" | "f" )
 						# Run the create files script.
 						bash $TCPATH/bld/create/create_files
+						;;
+
+					"L" | "l" )
+						# Run the create library script.
+						bash $TCPATH/bld/create/create_library
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
@@ -241,11 +246,44 @@ do
 		"D" | "d" )
 			# The user wants to delete something.
 
-			# TODO - This.  There needs to be some more menu here?
-	
-			# Run the delete script.
-			bash $TCPATH/bld/delete/delete_component
-		        ;;
+			# Loop continuously until the user selects a suitable option.
+			while :
+			do
+				# Print the submenu prompt to the user.
+				echo -e "${GREEN}Please select an option:\n${NO_COLOUR}"
+				echo -en "\tDelete ${UNDERLINED}C${NO_COLOUR}OMPONENT    Delete ${UNDERLINED}L${NO_COLOUR}IBRARY    ${UNDERLINED}B${NO_COLOUR}ACK"
+
+				# Read a single character input from the user and select the appropriate response.
+				read -s -n 1
+				echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+				case "$REPLY" in
+					"C" | "c" )
+						# Run the delete component script.
+						bash $TCPATH/bld/delete/delete_component
+						;;
+
+					"L" | "l" )
+						# Run the delete library script.
+						bash $TCPATH/bld/delete/delete_library
+						;;
+
+					"B" | "b" | "Q" | "q" | "X" | "x" )
+						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						REDRAW_TOP=1
+						break
+						;;
+
+					*)
+						# Any other option is invalid.  We print a message to that effect and try again.
+						echo -e "${RED}Invalid choice. Try again or press Q to quit.\n${NO_COLOUR}"
+						continue
+						;;
+				esac
+				
+				# We're done here.
+				break
+			done		
+			;;
 
 		"E" | "e" )
 			# The user wants to edit something.
