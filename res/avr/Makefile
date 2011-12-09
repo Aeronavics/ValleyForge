@@ -67,10 +67,16 @@
 MCU=BUILD_INSERTS_MCU_CODE_HERE
 
 # Name of project.
-PROJECTNAME=BUILD_INSERTS_PROJECT_NAME_IN_HERE
+PROJECTNAME=BUILD_INSERTS_PROJECT_NAME_HERE
 
 # Source files.
-PRJSRC=BUILD_INSERTS_SOURCE_FILES_IN_HERE
+PRJSRC=BUILD_INSERTS_SOURCE_FILES_HERE
+
+# Library source files.
+LIBSRC=BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE
+
+# Library object files.
+LIBOBJ=BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE
 
 # Additional includes (e.g. -I/path/to/mydir).
 
@@ -131,8 +137,14 @@ CPPFILES=$(filter %.c, $(PRJSRC))
 	#  Assembly
 ASMFILES=$(filter %.s, $(PRJSRC))
 
+	#  C++ Library Files
+CPPLIBFILES=$(filter %.c, $(LIBSRC))
+
+	#  Assembly Library Files
+ASMLIBFILES=$(filter %.s, $(LIBSRC))
+
 	# List all object files we need to create
-OBJDEPS=$(CPPFILES:.c=.o) $(ASMFILES:.s=.o)
+OBJDEPS=$(CPPFILES:.c=.o) $(ASMFILES:.s=.o) $(CPPLIBFILES:.c=.o) $(ASMLIBFILES:.s=.o)
 
 	# Define all lst files.
 LST=$(filter %.lst, $(OBJDEPS:.o=.lst))

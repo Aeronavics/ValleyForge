@@ -323,5 +323,71 @@ preprocess_library_template()
 	return
 }
 
+######################################## FUNCTION #########################################
+###											###
+### NAME:		preprocess_library						###
+###											###
+### Inputs/Outputs:	A single input argument: the path to the file to process.	###
+###											###
+### Purpose:		Preprocesses a single library source file.			###
+###											###
+###			Requires that a valid build configuration has been loaded.	###
+###											###
+###########################################################################################
+
+preprocess_library()
+{
+	# Preprocess the files.
+	echo -e "${CYAN}Preprocessing file ($1)...\n${NO_COLOUR}"
+
+	# Check that the specified file exists.
+	if [ ! -w $1 ]; then
+		# The specified file is invalid, so bail.
+		echo -e "${RED}ERROR - Invalid argument to preprocess_library.  File does not exist.\n${NO_COLOUR}"
+		return
+	fi
+
+	# Populate a variable with the users information, from the configuration file.
+	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
+	local ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
+
+	# TODO - Need to confirm that such a configuration file actually exists?
+
+	# Populate a string with the current date.
+	local DATE=$(date +"%-d-%-m-%Y")
+
+	# Figure out what the NAME of the file actually is.
+	local NAME=${1##*/}
+	local NAME=${NAME%.*}
+	local EXT=${1##*.}
+
+	# Replace each instance of a macro in the template files with the corresponding information.
+
+	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
+	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+
+	sed -i "s^<<<TC_INSERTS_BUILD_LIST_HERE>>>^$BUILDS^g" $1
+	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
+	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
+
+	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
+
+	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
+	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
+
+	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+
+	# 	There are also upper-case versions of some of those same macros.
+
+	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
+
+	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
+
+	# All done.
+	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
+	return
+}
 
 

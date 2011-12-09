@@ -28,6 +28,7 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 USER_CONFIG_FILE="var/config.cfg"
 BUILD_CONFIG_FILE="bld/build_configs.cfg"
+LIB_SOURCE_PATH="lib"
 TMP_SRC_DIR="tmp/tmp_src"
 OUTPUT_DIR="bin"
 
@@ -54,18 +55,26 @@ makeavr()
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# Get the list of names of source and header files.
+	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-								
+	
+	# Get a list of all the library source and header files.
+	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
+							
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
 	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s/\(PROJECTNAME *= *\).*/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
@@ -192,17 +201,26 @@ makeavr32()
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# Get the list of names of source and header files.
+	# TODO - At the moment I don't think the AVR32 makefile can handle assembler files.
+
+	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	
+	# Get a list of all the library source and header files.
+	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
-	sed -i "s^\(PART *= *\)BUILD_WILL_INSERT_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_WILL_INSERT_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_WILL_INSERT_H_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(HEADERS *= *\)BUILD_WILL_INSERT_H_FILES_HERE^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(TARGET *= *\)BUILD_WILL_INSERT_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PART *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_C_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(TARGET *= *\)BUILD_INSERTS_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
@@ -258,10 +276,16 @@ makearm()
 		$LFLAGS="-T linker_script.ld $LFLAGS"
 	fi
 
-	# Get the list of names of source and header files.
+	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	
+	# Get a list of all the library source and header files.
+	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCPU *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
@@ -274,6 +298,10 @@ makearm()
 	sed -i "s^\(SRC_C *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_H *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_S *= *\).*^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(TARGET *= *\).*^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
@@ -315,6 +343,81 @@ inflate_avr32cc()
 		echo -e "${CYAN}Uncompressing the AVR32 compiler and libraries...\n${NO_COLOUR}"
 		tar -C $TCPATH/res/avr32 -xf  $TCPATH/res/avr32/avr32comp.tar
     	fi
+
+	# All done.
+	return
+}
+
+# Find suitable libraries and copy them into the tmp directory.
+get_suitable_libs()
+{
+	# Indicate what we're doing.
+	echo -e "${CYAN}Searching for compatible libraries...\n${NO_COLOUR}"
+
+	# Iterate through all the libraries.
+	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
+		# TODO - This is going to totally bail if there are any files in $LIB_SOURCE_PATH.
+
+		# Check if we can find the config file for this library.
+		if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg ]; then
+			# The configuration file isn't there.  Ask the user if they want to create the file, or skip this library.
+			echo -e "${RED}No configuration file found for library $LIBRARY.\n${NO_COLOUR}"
+			echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+			# If they responded YES, then rebuild the configuration file.  If NO, then we bail.
+			if [[ $REPLY =~ ^[Yy]$ ]]; then
+				# Rebuild the configuration file.
+			
+				# Call the 'create_library' script: it will handle rebuilding the configuration file.
+				bash $TCPATH/bld/create/create_library --name $LIBRARY
+
+				# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+			else
+				# Just skip this component and move on.
+				echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.\n${NO_COLOUR}"
+				continue
+			fi	
+		fi
+
+		# Extract relevant configuration information from the configuration file.
+		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg | grep "^BUILDS" | cut -d '=' -f2)
+		
+		# Check if it is suitable for the current build configuration.
+		if [ ! -z $(echo $BUILDS | grep -w -o "$BCONF") ]; then
+			# The current build configuration is listed in the configuration as suitable, so use this library.
+			echo -e "${CYAN}Importing library $LIBRARY.\n${NO_COLOUR}"
+			
+			# Copy all the files across from the library directory.
+			mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
+			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
+
+			# Preprocess the copied header files.
+			shopt -s nullglob
+			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.h; do
+				# Preprocess this header file.
+				preprocess_library $FILE
+			done
+			shopt -u nullglob
+
+			# Preprocess the copied source files.
+			shopt -s nullglob
+			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.c; do
+				# Preprocess this source file.
+				preprocess_library $FILE
+			done
+			shopt -u nullglob
+
+			# Preprocess the copied assembler files.
+			shopt -s nullglob
+			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.s; do
+				# Preprocess this source file.
+				preprocess_library $FILE
+			done
+			shopt -u nullglob
+		fi
+	done
 
 	# All done.
 	return
@@ -607,6 +710,9 @@ do
 		preprocess_general $FILE
 	done
 	shopt -u nullglob
+
+	# Copy the library files which might be required into the tmp directory.
+	get_suitable_libs
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION

@@ -137,7 +137,7 @@ if [ -z $LIBRARY ] && [ ! $BATCHMODE ]; then
 	fi
 
 	# Prompt the user with a list of libraries and have them choose one.
-	echo -e -n "${GREEN}Select which library to add files to: \n${NO_COLOUR}"
+	echo -e "${GREEN}Select which library to add files to: \n${NO_COLOUR}"
 
 	# Create a menu of choices and have the user select one.
 	select LIBRARY in $(ls $TCPATH/$LIB_SOURCE_PATH)
@@ -217,7 +217,6 @@ fi
 
 # Extract relevant configuration information from the configuration file.
 BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg | grep "^BUILDS" | cut -d '=' -f2)
-echo -e "${BOLD_CYAN}>>>$BUILDS\n${NO_COLOUR}"
 
 # Iterate through all the filenames in the list provided.
 for FILENAME in $FILENAMES; do
