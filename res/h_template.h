@@ -27,6 +27,9 @@
 // Include the required IO header file.
 #include >>>TC_INSERTS_IO_FILE_NAME_HERE<<<
 
+// Include the STDINT fixed width types.
+#include >>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // DECLARE PUBLIC GLOBAL VARIABLES.

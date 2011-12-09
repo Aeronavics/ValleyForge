@@ -39,12 +39,12 @@
 preprocess_template()
 {	
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing template file ($1)...${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_template.  File does not exist.\n${NO_COLOUR}"
+		echo -e "\n${RED}ERROR - Invalid argument to preprocess_template.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -78,6 +78,7 @@ preprocess_template()
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
@@ -101,6 +102,7 @@ preprocess_template()
 	sed -i 's^>>>TC_INSERTS_PLATFORM_HERE<<<^<<<TC_INSERTS_PLATFORM_HERE>>>^g' $1
 	
 	sed -i 's^>>>TC_INSERTS_IO_FILE_NAME_HERE<<<^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^g' $1
+	sed -i 's^>>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^g' $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
@@ -128,12 +130,12 @@ preprocess_template()
 preprocess_general()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing file ($1)...${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_general.  File does not exist.\n${NO_COLOUR}"
+		echo -e "\n${RED}ERROR - Invalid argument to preprocess_general.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -167,6 +169,7 @@ preprocess_general()
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
@@ -196,12 +199,12 @@ preprocess_general()
 preprocess_bootloader()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing bootloader file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing bootloader file ($1)...${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_bootloader.  File does not exist.\n${NO_COLOUR}"
+		echo -e "\n${RED}ERROR - Invalid argument to preprocess_bootloader.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -222,6 +225,7 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
@@ -257,12 +261,12 @@ preprocess_bootloader()
 preprocess_library_template()
 {	
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing template file ($1)...${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_library_template.  File does not exist.\n${NO_COLOUR}"
+		echo -e "\n${RED}ERROR - Invalid argument to preprocess_library_template.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -293,6 +297,8 @@ preprocess_library_template()
 
 	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
 
+	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
+
 	# 	There are also upper-case versions of some of those same macros.
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
@@ -311,6 +317,8 @@ preprocess_library_template()
 	sed -i 's^>>>TC_INSERTS_DATE_HERE<<<^<<<TC_INSERTS_DATE_HERE>>>^g' $1
 	
 	sed -i 's^>>>TC_INSERTS_LIBRARY_NAME_HERE<<<^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^g' $1
+
+	sed -i 's^>>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^g' $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
@@ -338,12 +346,12 @@ preprocess_library_template()
 preprocess_library()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing file ($1)...\n${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing file ($1)...${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "${RED}ERROR - Invalid argument to preprocess_library.  File does not exist.\n${NO_COLOUR}"
+		echo -e "\n${RED}ERROR - Invalid argument to preprocess_library.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
@@ -378,6 +386,7 @@ preprocess_library()
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
+	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
 	# 	There are also upper-case versions of some of those same macros.
 

@@ -355,6 +355,7 @@ get_suitable_libs()
 	echo -e "${CYAN}Searching for compatible libraries...\n${NO_COLOUR}"
 
 	# Iterate through all the libraries.
+	COUNT=0
 	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
 		# TODO - This is going to totally bail if there are any files in $LIB_SOURCE_PATH.
 
@@ -416,10 +417,14 @@ get_suitable_libs()
 				preprocess_library $FILE
 			done
 			shopt -u nullglob
+
+			# Increment the number of libraries imported.
+			COUNT=`expr $COUNT + 1`
 		fi
 	done
 
 	# All done.
+	echo -e "${CYAN}Imported $COUNT compatible libraries.\n${NO_COLOUR}"
 	return
 }
 
@@ -667,11 +672,11 @@ do
 
 	# Count the number of C files in the source folder for this component.
 	C_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
-	echo -e "${CYAN}Found $COUNT C source files.\n${NO_COLOUR}"
+	echo -e "${CYAN}Found $C_COUNT C source files.\n${NO_COLOUR}"
 
 	# Count the number of S files in the source folder for this component.
 	S_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.s 2>/dev/null | wc -l`
-	echo -e "${CYAN}Found $COUNT assembler source files.\n${NO_COLOUR}"
+	echo -e "${CYAN}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
 	# If there are no C source files and no assembler source files, then there is nothing to do.
 	if [ ! $C_COUNT ] && [ ! $S_COUNT ]; then
