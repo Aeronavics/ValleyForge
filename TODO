@@ -2,8 +2,9 @@
 
 * Add the ATmega328 to the targets list.  Actually, I think I mean the ATmega328, but maybe I don't: I mean whatever the MUX/PPM controller on the ArduPilot Mega is; look this up.
 
-* All software written with the toolchain should use fixed width data types instead of the default language data types, which have platform dependent widths, eg: use 'uint8_t' instead of 'unsigned char'.  Either we can define our own types in a header file as part of the libary the toolchain provides, or we can use the existing fixed width types; these are provided in a different header file for each compiler (inconveniently), so in this case we'd need to add a '<<<TOOLCHAIN_INSERTS_STDINT_TYPES_HEADER_HERE>>>' macro to the preprocess function.
+* res/arm should probably be renamed to res/omap, since different ARM processors have quite different peripherals, so 'arm' is not really sufficiently specific.  There are quite a few places this path will need to be updated though?
 
+* Add support to the AVR bootloader makefunction to include the HAL.  Maybe wait until the general AVR makefile has stabilized, then copy it across and modify it for use with the AVR booloader?
 
 
 

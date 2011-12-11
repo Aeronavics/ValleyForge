@@ -1,20 +1,14 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE: 		semaphore.c
  *
- *  SUB-SYSTEM:		<<<TC_INSERTS_SUBSYSTEM_HERE>>>
+ *  LIBRARY:		hal
  *
- *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
+ *  AUTHOR: 		Edwin Hayes
  *
- *  TARGET:		<<<TC_INSERTS_TARGET_HERE>>>
+ *  DATE CREATED:	11-12-2011
  *
- *  PLATFORM:		<<<TC_INSERTS_PLATFORM_HERE>>>
- *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
- *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
- *
- *	Description goes here...
+ *	Provides an implementation of binary semaphores, used to control access to peripherals.
  *
  ********************************************************************************************************************************/
 
@@ -32,10 +26,22 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-int main(void)
+bool semaphore::procure(void)
 {
-	// All done.
-	return 0;
+	// For now, just return false.
+	return false;
+}
+
+bool semaphore::procure_spin(void)
+{
+	// For now, just return false.
+	return false;
+}
+
+void semaphore::vacate(void)
+{
+	// For now, just return.
+	return;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.

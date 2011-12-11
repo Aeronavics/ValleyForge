@@ -1,20 +1,14 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE: 		hal.c
  *
- *  SUB-SYSTEM:		<<<TC_INSERTS_SUBSYSTEM_HERE>>>
+ *  LIBRARY:		hal
  *
- *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
+ *  AUTHOR: 		Edwin Hayes
  *
- *  TARGET:		<<<TC_INSERTS_TARGET_HERE>>>
+ *  DATE CREATED:	11-12-2011
  *
- *  PLATFORM:		<<<TC_INSERTS_PLATFORM_HERE>>>
- *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
- *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
- *
- *	Description goes here...
+ *	Provides important common functionality required to allow using the ValleyForge HAL.
  *
  ********************************************************************************************************************************/
 
@@ -28,15 +22,11 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
+semaphore semaphores[PINS];
+
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 // IMPLEMENT PUBLIC FUNCTIONS.
-
-int main(void)
-{
-	// All done.
-	return 0;
-}
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 

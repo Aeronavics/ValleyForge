@@ -65,6 +65,12 @@ makeavr()
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
+
+	# Get a list of all the HAL source and header files.
+	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 							
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
@@ -72,8 +78,8 @@ makeavr()
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES $C_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
@@ -136,6 +142,9 @@ makeavr_bootloader()
 		# Preprocess this source file.
 		preprocess_bootloader $FILE
 	done
+
+	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default).
+	get_hal ${COMPONENT}_bootloader/hal
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
@@ -213,6 +222,12 @@ makeavr32()
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+
+	# Get a list of all the HAL source and header files.
+	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(PART *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
@@ -286,6 +301,12 @@ makearm()
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+
+	# Get a list of all the HAL source and header files.
+	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCPU *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
@@ -298,10 +319,10 @@ makearm()
 	sed -i "s^\(SRC_C *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_H *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_S *= *\).*^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES H_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(TARGET *= *\).*^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
@@ -354,6 +375,15 @@ get_suitable_libs()
 	# Indicate what we're doing.
 	echo -e "${CYAN}Searching for compatible libraries...\n${NO_COLOUR}"
 
+	# Check if a output location was given.
+	if [ -z $1 ]; then
+		# No specific output location was given, so use the default one for the current component.
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT/lib
+	else
+		# Use the specified output location instead.
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$1
+	fi
+
 	# Iterate through all the libraries.
 	COUNT=0
 	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
@@ -392,11 +422,11 @@ get_suitable_libs()
 			
 			# Copy all the files across from the library directory.
 			mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
-			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
+			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
 
 			# Preprocess the copied header files.
 			shopt -s nullglob
-			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.h; do
+			for FILE in $OUTPATH/$LIBRARY/*.h; do
 				# Preprocess this header file.
 				preprocess_library $FILE
 			done
@@ -404,7 +434,7 @@ get_suitable_libs()
 
 			# Preprocess the copied source files.
 			shopt -s nullglob
-			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.c; do
+			for FILE in $OUTPATH/$LIBRARY/*.c; do
 				# Preprocess this source file.
 				preprocess_library $FILE
 			done
@@ -412,7 +442,7 @@ get_suitable_libs()
 
 			# Preprocess the copied assembler files.
 			shopt -s nullglob
-			for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/$LIBRARY/*.s; do
+			for FILE in $OUTPATH/$LIBRARY/*.s; do
 				# Preprocess this source file.
 				preprocess_library $FILE
 			done
@@ -425,6 +455,82 @@ get_suitable_libs()
 
 	# All done.
 	echo -e "${CYAN}Imported $COUNT compatible libraries.\n${NO_COLOUR}"
+	return
+}
+
+# Find suitable HAL libraries and copy them into the tmp directory.
+get_hal()
+{
+	# Check if a output location was given.
+	if [ -z $1 ]; then
+		# No specific output location was given, so use the default one for the current component.
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT/hal
+	else
+		# Use the specified output location instead.
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$1
+	fi
+
+	# Check if the HAL header and source paths were set by the build configuration.
+	if [ -z $HAL_EN_LIST ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d $HAL_HEADER_PATH ] || [ ! -d $HAL_SOURCE_PATH ]; then
+		# We don't import the HAL at all.
+		echo -e "${YELLOW}Not importing HAL for this build configuration.\n${NO_COLOUR}"
+		return 0
+	fi
+	# Else, we're going to use the HAL.
+	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/
+
+	# Indicate what we're doing.
+	echo -e "${CYAN}Importing HAL...\n${NO_COLOUR}"
+
+	# Copy in the common HAL files.
+	cp $TCPATH/$HAL_HEADER_PATH/hal.h $OUTPATH
+	cp $TCPATH/$HAL_HEADER_PATH/semaphore.h $OUTPATH
+	cp $TCPATH/$HAL_SOURCE_PATH/hal.c $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.c $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.s $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.o $OUTPATH 2>/dev/null
+
+	# Only import each particular peripheral if it is enabled in the configuration.
+
+	# Iterate through the items in the enabled HAL peripherals list.
+	for PERIPHERAL in $HAL_EN_LIST; do
+		# Copy the corresponding files over.
+		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null		
+	done
+
+	# Preprocess the imported files.
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	for FILE in $OUTPATH/*.h; do
+		# Preprocess this header file.
+		preprocess_hal $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied source files.
+	shopt -s nullglob
+	for FILE in $OUTPATH/*.c; do
+		# Preprocess this source file.
+		preprocess_hal $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied assembler files.
+	shopt -s nullglob
+	for FILE in $OUTPATH/*.s; do
+		# Preprocess this source file.
+		preprocess_hal $FILE
+	done
+	shopt -u nullglob
+
+	# All done.
+	echo -e "${CYAN}Imported HAL.\n${NO_COLOUR}"
 	return
 }
 
@@ -635,6 +741,10 @@ do
 	LFLAGS=
 	OUTPUT_TYPE=
 	OUTPUT_NAME=
+	HAL_HEADER_PATH=
+	HAL_SOURCE_PATH=
+	HAL_EN_LIST=
+	PIN_COUNT=
 
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
@@ -716,8 +826,11 @@ do
 	done
 	shopt -u nullglob
 
-	# Copy the library files which might be required into the tmp directory.
+	# Fetch any user library files which might be required.
 	get_suitable_libs
+
+	# Fetch the HAL library files.
+	get_hal
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
@@ -749,6 +862,10 @@ do
 		MCU_CODE=
 		IOHEADER=
 		BOOTSTART=
+		HAL_HEADER_PATH=
+		HAL_SOURCE_PATH=
+		HAL_EN_LIST=
+		PIN_COUNT=
 
 		# Check to see if we can find a matching bootloader configuration.
 		BLOADCONF="bload_${TARGET}_${BOOTLOADER}"
