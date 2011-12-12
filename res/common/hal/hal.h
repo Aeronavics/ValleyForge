@@ -31,6 +31,9 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+typedef uint8_t port_t;
+typedef uint8_t pin_t;
+
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 extern semaphore semaphores[];

@@ -6,5 +6,7 @@
 
 * Add support to the AVR bootloader makefunction to include the HAL.  Maybe wait until the general AVR makefile has stabilized, then copy it across and modify it for use with the AVR booloader?
 
+* DEFERRED - Add compatibility with existing Arduino compatible projects such as the APM.  Need to have a build configuration which disables the HAL, and instead uses the existing Arduino libraries, which I guess can be in lib somewhere?  Also, need to add support back in for *.cpp extensions, and whatever other extensions the Arduino wants to use.  Also, Arduino projects probably support source in nested folders, which we don't support at the moment?
+
 
 

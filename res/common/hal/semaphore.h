@@ -8,8 +8,9 @@
  *
  *  DATE CREATED:	11-12-2011
  *
- *	This is the header file which matches semaphore.c.  It provides an implementation of binary semaphores, used to control
- *	access to peripherals.
+ *	Provides an implementation of binary semaphores, used to control access to peripherals.  NOTE - These semaphores are
+ *	TOTALLY NOT THREADSAFE at the moment.  This is a totally simplistic implementation, for starters, anyone can vacate a
+ *	semaphore, even if they aren't the one holding it!
  * 
  ********************************************************************************************************************************/
 
@@ -32,11 +33,48 @@ class semaphore
 		
 		// Functions.
 
-		bool procure(void);
+		semaphore()
+		{
+			// Initially the semaphore is free.
+			is_free = true;
+		}
 
-		bool procure_spin(void);
+		bool procure(void)
+		{
+			// Check if the semaphore is free.
+			if (is_free)
+			{
+				// Claim the semaphore and return true.
+				is_free = false;
+				return true;
+			}
+			else return false;
+		}
 
-		void vacate(void);
+		bool procure_spin(void)
+		{
+			// Wait until the semaphore becomes free.
+			while (!is_free);
+
+			// Claim the semaphore and return true.
+			is_free = false;
+			return true;
+		}
+
+		void vacate(void)
+		{
+			// The semaphore is now free.
+			is_free = true;
+			
+			// All done.
+			return;
+		}
+
+	private:
+
+		// Fields.
+
+		volatile bool is_free;
 };
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
