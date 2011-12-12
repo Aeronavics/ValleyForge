@@ -10,12 +10,15 @@
  *
  *  DATE CREATED:	12-12-2011
  *
- *	This is the header file which matches watchdog.c...
+ *	This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
  * 
  ********************************************************************************************************************************/ 
- 
+
+// Only include this header file once.
 #ifndef _WATCHDOG_H_
 #define _WATCHDOG_H_
+
+// INCLUDE REQUIRED HEADER FILES.
 
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
@@ -24,56 +27,55 @@
 #include <stddef.h>
 
 // Include the hal library.
-#include "hal.h"
+#include "hal/hal.h"
 
+// DEFINE PUBLIC MACROS.
 
+// DEFINE PUBLIC TYPES AND ENUMERATIONS.
+
+enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};
+
+// DECLARE PUBLIC GLOBAL VARIABLES.
+
+// FORWARD DEFINE PRIVATE PROTOTYPES.
+
+// DEFINE PUBLIC CLASSES.
 
 class watchdog
 {
 	public:
 		// Functions.
+
 		/**
-		 * watchdog destructor
-		 *
 		 * Gets run whenever the instance of class gpio_pin goes out of scope.
-		 * Does nothing
+		 * Does nothing, since the watchdog class cannot be instantiated.
 		 *
-		 * @param  none
-		 * @return no return
+		 * @param  Nothing.
+		 * @return Nothing.
 		 */
 		 ~watchdog(void);
 		
 		/**
-		 * Pat the Dog
-		 *
-		 * Resets the watchdog timer so it doesn't overflow and
-		 * trigger a system reset
+		 * Resets the watchdog timer so it doesn't overflow and trigger a system reset.
 		 * 
-		 * @param  none
-		 * @return void
+		 * @param  Nothing.
+		 * @return Nothing.
 		 */
 		static void pat(void);
 				
 		/**
-		 * Enable the Watchdog
-		 *
-		 * Sets the timeout of the watchdog timer
-		 * and enables it
+		 * Sets the timeout of the watchdog timer and starts the watchdog running.
 		 * 
 		 * @param time_out	One of 10 possible different values for the timeout value of the watchdog
-		 * (WDTO_15MS  	WDTO_30MS  WDTO_60MS  WDTO_120MS  WDTO_250MS WDTO_500MS	WDTO_1S  WDTO_2S  WDTO_4S  WDTO_8S)
-		 * @return void
+		 * @return Nothing.
 		 */
-		static void enable(uint8_t time);
+		static void enable(wdt_timeout time_out);
 		
-		/**
-		 * Disable the Watchdog
+		/** 
+		 * Disables the watchdog timer.
 		 *
-		 * 
-		 * Disables the watchdog timer
-		 *
-		 * @param  none
-		 * @return void
+		 * @param  Nothing.
+		 * @return Nothing.
 		 */
 		static void disable(void);
 		
@@ -83,5 +85,10 @@ class watchdog
 		watchdog(void);	// Poisoned.
 
 		watchdog operator =(watchdog const&);	// Poisoned.
-
 };
+
+// DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
+
+#endif /*__WATCHDOG_H__*/
+
+// ALL DONE.
