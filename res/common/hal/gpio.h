@@ -29,8 +29,8 @@
 // Include the semaphore library that someone is gonna create.
 #include "semaphore.h"
 
-// Include the pins library.
-#include "pins.h"
+// Include the hal library.
+#include "hal.h"
 
 // FORWARD DEFINE PRIVATE TYPES.
 
