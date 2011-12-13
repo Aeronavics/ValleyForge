@@ -64,7 +64,7 @@ uint8_t readMem(uint32_t src, uint8_t src_type, void* dst, uint16_t length);
 		 * @param  length	The number of bytes to be copied
 		 * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 		 */		
-uint8_t cpyMem(uint32_t src,uint8_t src_type, uint32_t dst, uint32 dst_type, uint16_t length);
+uint8_t cpyMem(uint32_t src,uint8_t src_type, uint32_t dst, uint32_t dst_type, uint16_t length);
 
 /**
 		 * Clear a section of memory (set bits to one)
