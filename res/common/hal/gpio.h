@@ -74,7 +74,7 @@ class gpio_pin
 		 * @param  mode	Set to INPUT or OUTPUT.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t set_mode(uint8_t mode);
+		int8_t set_mode(gpio_mode mode);
 				
 		/**
 		 * Read the value of the gpio pin and return it
@@ -82,7 +82,7 @@ class gpio_pin
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 */
-		int8_t read(void);
+		gpio_input_state read(void);
 		
 		/**
 		 * Writes the value provided to the pin
@@ -90,7 +90,7 @@ class gpio_pin
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
 		 */
-		int8_t write(uint8_t value);
+		int8_t write(gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode

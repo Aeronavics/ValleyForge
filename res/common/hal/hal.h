@@ -34,6 +34,8 @@
 typedef uint8_t port_t;
 typedef uint8_t pin_t;
 
+enum port {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_I, PORT_J, PORT_K, PORT_L};
+
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 extern semaphore semaphores[];

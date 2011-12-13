@@ -1,6 +1,6 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		hal.c
+ *  FILE: 		    hal.c
  *
  *  LIBRARY:		hal
  *
@@ -22,7 +22,18 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-semaphore semaphores[PINS];
+#ifdef (__AVR_ATmega2560__)
+	#define NUM_PORTS		12
+#elif defined (__AVR_ATmega64M1__)
+	#define NUM_PORTS		4
+#elif defined (__AVR_AT90CAN128__)
+	#define	NUM_PORTS		6
+	
+#endif
+#define NUM_PINS			8
+#define TOTAL_PINS			NUM_PORTS * PINS_PER_PORT
+
+semaphore semaphores[NUM_PORTS][NUM_PINS];
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 

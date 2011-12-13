@@ -29,6 +29,11 @@
 // Include the common HAL stuff.
 #include "hal.h"
 
+// DEFINE PUBLIC TYPES AND ENUMERATIONS
+
+enum memory_type {EEPROM, FLASH, FUSE_BITS};
+
+
 /**
 		 * Write to a memory address
 		 * 
@@ -39,7 +44,7 @@
 		 * @param  length	The number of bytes to be stored
 		 * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 		 */
-uint8_t writeMem(uint32_t dst, uint8_t dst_type, void* data, uint16_t length);
+uint8_t writeMem(uint32_t dst, memory_type dst_type, void* data, uint16_t length);
 
 /**
 		 * Read from memory address
@@ -51,7 +56,7 @@ uint8_t writeMem(uint32_t dst, uint8_t dst_type, void* data, uint16_t length);
 		 * @param  length	The number of bytes to be read
 		 * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 		 */
-uint8_t readMem(uint32_t src, uint8_t src_type, void* dst, uint16_t length);
+uint8_t readMem(uint32_t src, memory_type src_type, void* dst, uint16_t length);
 
 /**
 		 *Copy from one memory address to another
@@ -64,7 +69,7 @@ uint8_t readMem(uint32_t src, uint8_t src_type, void* dst, uint16_t length);
 		 * @param  length	The number of bytes to be copied
 		 * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 		 */		
-uint8_t cpyMem(uint32_t src,uint8_t src_type, uint32_t dst, uint32_t dst_type, uint16_t length);
+uint8_t cpyMem(uint32_t src, memory_type src_type, uint32_t dst, memory_type dst_type, uint16_t length);
 
 /**
 		 * Clear a section of memory (set bits to one)
@@ -75,7 +80,7 @@ uint8_t cpyMem(uint32_t src,uint8_t src_type, uint32_t dst, uint32_t dst_type, u
 		 * @param  length	The number of bytes to be cleared
 		 * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 		 */		
-uint8_t clearMem(uint32_t address,uint8_t add_type, uint16_t length);
+uint8_t clearMem(uint32_t address,memory_type add_type, uint16_t length);
 
 
 #endif /*__MEM_H__*/
