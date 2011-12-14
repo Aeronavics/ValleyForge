@@ -33,7 +33,7 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};
+enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};	//NB: WDT0_4s & WDT_8S are not valid options on the AT90CANxx or the ATmega16/32/64 devices
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
@@ -67,9 +67,9 @@ class watchdog
 		 * Sets the timeout of the watchdog timer and starts the watchdog running.
 		 * 
 		 * @param time_out	One of 10 possible different values for the timeout value of the watchdog
-		 * @return Nothing.
+		 * @return 0 for success, -1 for error.
 		 */
-		static void enable(wdt_timeout time_out);
+		static int8_t enable(wdt_timeout time_out);
 		
 		/** 
 		 * Disables the watchdog timer.
