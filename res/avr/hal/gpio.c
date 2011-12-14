@@ -22,74 +22,107 @@
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
-#define PORT_MUTLIPLIER		3
-enum port_offset	{P_READ, P_MODE, P_WRITE}
+// The addresses for GPIO are PINA,DDRA,PORTA,PINB,DDRB,PORTB... i.e each type is 3 away from the same on the next port.
+#define PORT_MULTIPLIER		3
+// So to access a for example PORTC would be 3 * PORT_D(2) + 3 = 0x09.
+enum port_offset	{P_READ, P_MODE, P_WRITE};
 
 
 // DECLARE IMPORTED GLOBAL VARIABLES.
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 
 
+/**
+ * A Class that implements the functions for gpio
+ * One instance for each pin.
+ * Reads, writes, and sets direction of pins
+ */
 class gpio_pin_imp
 {
 	public:
 
 		// Functions.
-
-		int8_t pinMode(pin_mode_t mode);
+		/**
+		 * Sets the direction of the pin
+		 * by manipulating the data direction register
+		 * 
+		 * @param mode	the direction (INPUT=0,OUTPUT=1)
+		 * @return int8_t error code
+		 */
+		int8_t set_mode(gpio_mode mode)
 		{
 				/* Check to see if parameters are right size */
-				
+				if (address.port >= NUM_PORTS) 
+				{
+					/* Parameter is wrong size*/
+					return I_ERROR;
+				}
 				
 				/* Set/clear data direction register pin */
-				_SFR_IO8((address->port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address->port * PORT_MULTIPLIER) + P_MODE) & ~address->pin ) | (mode?address->pin:~address->pin);
+				_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):~(1 << address.pin));
 				
 				return 0;
 		}
 
-		
-		int8_t pinWrite (pin_state_t value);
+		/**
+		 * Writes to the pin attached to the implementation
+		 * 
+		 * @param value	sets the pin to (O_LOW, O_HIGH, or O_TOGGLE)
+		 * @return int8_t error code
+		 */
+		int8_t write (gpio_output_state value)
 
 		{
-			
+				if (address.port >= NUM_PORTS) 
+				{
+					/* Parameter is wrong size*/
+					return I_ERROR;
+				}
 				/* Set/clear port register register pin */
-				if (value == TOGGLE)
+				if (value == O_TOGGLE)
 				{		/*Toggle value*/
 				
-						_SFR_IO8((address->port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address->port * PORT_MULTIPLIER) + P_WRITE) & ~address->pin ) | ~(_SFR_IO8((address->port * PORT_MULTIPLIER) + P_WRITE));
+						_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
 				}
 				else
 				{
 						/* Set or Clear pin on port*/
-						_SFR_IO8((address->port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address->port * PORT_MULTIPLIER) + P_WRITE) & ~address->pin ) | (value?address->pin:O_LOW);
+						_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value?(1 << address.pin):(pin_t)O_LOW);
 				}
 				return 0;
 		}
 
-		/* This reads the specified Pin */
-		gpio_input_state pinRead (void);
+		/**
+		 * Reads the pin attached to the implementation
+		 * 
+		 * @param Nothing.
+		 * @return int8_t error code
+		 */
+		gpio_input_state read (void)
 
 		{
 			
-				if (address->port >= NUM_PORTS) 
+				if (address.port >= NUM_PORTS) 
 				{
 					/* Parameter is wrong size*/
 					return I_ERROR;
 				}
 			
 				/* Read and return pin */
-				return ((_SFR_IO8((address->port * PORT_MULTIPLIER) + P_READ) & address->pin) ? I_LOW : I_HIGH);
+				return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
 		}
 
 		// Fields.
 		gpio_pin_address address;
-		semaphore& s;	
+		semaphore* s;	
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-gpio_pin_imp gpio_pin_imps[PORTS][PINS];
+// One implementation for each pin.
+gpio_pin_imp gpio_pin_imps[NUM_PORTS][NUM_PINS];
 
+// To show whether we have carrried out the initialisation yet.
 bool done_init;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
@@ -97,7 +130,7 @@ bool done_init;
 void gpio_init(void);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
-
+// See gpio.h for descriptions of these functions.
 gpio_pin::~gpio_pin(void)
 {
 	// Make sure we have vacated the semaphore before we go out of scope.
@@ -116,19 +149,19 @@ gpio_pin::gpio_pin(gpio_pin_imp* implementation)
 	return;
 }
 
-int8_t gpio_pin::pinMode(gpio_mode mode)
+int8_t gpio_pin::set_mode(gpio_mode mode)
 {
-	return (imp->pinMode(mode));
+	return (imp->set_mode(mode));
 }
 
-int8_t gpio_pin::pinWrite(gpio_output_state value)
+int8_t gpio_pin::write(gpio_output_state value)
 {
-	return (imp->pinWrite(value));
+	return (imp->write(value));
 }
 
-gpio_input_state gpio_pin::pinRead(void)
+gpio_input_state gpio_pin::read(void)
 {
-	return (imp->pinRead());
+	return (imp->read());
 }
 
 bool gpio_pin::is_valid(void)
@@ -142,7 +175,7 @@ void gpio_pin::vacate(void)
 	if (imp != NULL)
 	{		
 		// We haven't vacated yet, so vacate the semaphore.
-		imp->s.vacate();
+		imp->s->vacate();
 	}
 
 	// Break the link to the implementation.
@@ -164,7 +197,7 @@ gpio_pin gpio_pin::grab(gpio_pin_address address)
 	}
 
 	// Try to procure the semaphore.
-	if (gpio_pin_imps[address.port][address.pin].s.procure())
+	if (gpio_pin_imps[address.port][address.pin].s->procure())
 	{
 		// We got the semaphore!
 		return gpio_pin(&gpio_pin_imps[address.port][address.pin]);
@@ -185,9 +218,10 @@ void gpio_init(void)
 	{
 		for (uint8_t j = 0; j < NUM_PINS; j++)
 		{
-			gpio_pin_imps[i][j].s = semaphores[i][j];
-			gpio_pin_imps[i][j].address.port = i;
-			gpio_pin_imps[i][j].address.pin = j;
+			// Attach the semaphores to those in the pin implementations.
+			gpio_pin_imps[i][j].s = &semaphores[i][j];
+			gpio_pin_imps[i][j].address.port = (port_t)i;
+			gpio_pin_imps[i][j].address.pin = (pin_t)j;
 		}
 	}
 

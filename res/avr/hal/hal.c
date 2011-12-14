@@ -22,22 +22,31 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-#ifdef (__AVR_ATmega2560__)
-	#define NUM_PORTS		12
-#elif defined (__AVR_ATmega64M1__)
-	#define NUM_PORTS		4
-#elif defined (__AVR_AT90CAN128__)
-	#define	NUM_PORTS		6
-	
-#endif
-#define NUM_PINS			8
-#define TOTAL_PINS			NUM_PORTS * PINS_PER_PORT
+bool done_sem_init;
 
 semaphore semaphores[NUM_PORTS][NUM_PINS];
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 // IMPLEMENT PUBLIC FUNCTIONS.
+
+void init_hal(void)
+{
+    // Attach the gpio pin implementations to the semaphores which control the corresponding pins.
+	for (uint8_t i = 0; i < NUM_PORTS; i++)
+	{
+		for (uint8_t j = 0; j < NUM_PINS; j++)
+		{
+			semaphores[i][j] = semaphore();
+		}
+	}
+
+	// We don't need to do this again.
+	done_sem_init = true;
+
+	// All done.
+	return;
+}
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
