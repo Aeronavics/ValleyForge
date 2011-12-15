@@ -17,6 +17,7 @@
 // INCLUDE THE MATCHING HEADER FILE.
 
 #include "gpio.h"
+#include <avr/interrupt.h>
 
 // DEFINE PRIVATE MACROS.
 
@@ -30,7 +31,7 @@ enum port_offset	{P_READ, P_MODE, P_WRITE};
 
 // DECLARE IMPORTED GLOBAL VARIABLES.
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
-
+extern semaphore pc_int_sem[NUM_BANKS];
 
 /**
  * A Class that implements the functions for gpio
@@ -111,7 +112,20 @@ class gpio_pin_imp
 				/* Read and return pin */
 				return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
 		}
-
+		
+		
+		/**
+		 * Attaches an interrupt to the pin
+		 * 
+		 * @param Nothing.
+		 * @return int8_t error code
+		 */
+		int8_t init_interrupt(uint8_t mode, void* ISR(void))
+		
+		{
+		    
+		  
+		}
 		// Fields.
 		gpio_pin_address address;
 		semaphore* s;	
@@ -207,6 +221,12 @@ gpio_pin gpio_pin::grab(gpio_pin_address address)
 		// Procuring the semaphore failed, so the pin is already in use.
 		return NULL;
 	}
+}
+
+
+int8_t init_interrupt(uint8_t mode, void* ISR(void))
+{
+      imp->attach_interrupt(mode,ISR);  
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.

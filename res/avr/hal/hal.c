@@ -1,6 +1,6 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		    hal.c
+ *  FILE: 		hal.c
  *
  *  LIBRARY:		hal
  *
@@ -25,6 +25,7 @@
 bool done_sem_init;
 
 semaphore semaphores[NUM_PORTS][NUM_PINS];
+semaphore pc_int_sem[NUM_BANKS];
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -40,7 +41,11 @@ void init_hal(void)
 			semaphores[i][j] = semaphore();
 		}
 	}
-
+	
+	for (uint8_t i = 0; i < NUM_BANKS; i++)
+	{
+			pc_int_bank[i] = semaphore();
+	}
 	// We don't need to do this again.
 	done_sem_init = true;
 
