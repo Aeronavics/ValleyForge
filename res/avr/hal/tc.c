@@ -2,13 +2,13 @@
  *
  *  FILE: 		tc.c	
  *
- *  LIBRARY:		hal
+ *  SUB-SYSTEM:		hal
  *
  *  COMPONENT:		hal
  * 
  *  AUTHOR: 		Paul Bowler
  *
- *  DATE CREATED:	15-12-2012
+ *  DATE CREATED:	15-12-2011
  *
  *	Functionality to provide implementation for timer/counters in target devices.
  *
@@ -16,7 +16,7 @@
 
 // INCLUDE THE MATCHING HEADER FILE.
 
-#include ">>>TC_INSERTS_H_FILE_NAME_HERE<<<"
+#include "tc.h"
 
 // DEFINE PRIVATE MACROS.
 
