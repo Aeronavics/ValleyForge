@@ -31,9 +31,25 @@
 
 // DEFINE PUBLIC MACROS.
 
+/*WDTO Macro definitions*/
+#define WDTO_15MS	0
+#define WDTO_30MS	1
+#define WDTO_60MS	2
+#define WDTO_120MS	3
+#define WDTO_250MS	4
+#define WDTO_500MS	5
+#define WDTO_1S		6
+#define WDTO_2S		7
+
+/*WDTO_4S & WDTO_8S are only valid for the AVR ATmega 2560*/
+#if defined (__AVR_ATmega2560___)
+	#define WDTO_4S		8
+	#define WDTO_8S		9
+#endif
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};	//NB: WDT0_4s & WDT_8S are not valid options on the AT90CANxx or the ATmega16/32/64 devices
+//enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};	//NB: WDT0_4s & WDT_8S are not valid options on the AT90CANxx or the ATmega16/32/64 devices
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 

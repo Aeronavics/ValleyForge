@@ -227,7 +227,7 @@ class timer
 		 * @param  timer	Which timer is required.
 		 * @return A timer instance.
 		 */
-		static timer grab(tc_number timer);
+		static timer_grab(tc_number timer);
 
 	private:
 		// Functions.
