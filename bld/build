@@ -471,7 +471,7 @@ get_hal()
 	fi
 
 	# Check if the HAL header and source paths were set by the build configuration.
-	if [ -z "$HAL_EN_LIST" ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d $HAL_HEADER_PATH ] || [ ! -d $HAL_SOURCE_PATH ]; then
+	if [ -z "$HAL_EN_LIST" ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d ${TCPATH}/$HAL_HEADER_PATH ] || [ ! -d ${TCPATH}/$HAL_SOURCE_PATH ]; then
 		# We don't import the HAL at all.
 		echo -e "${YELLOW}Not importing HAL for this build configuration.\n${NO_COLOUR}"
 		return 0
