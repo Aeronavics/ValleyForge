@@ -37,11 +37,15 @@
 // Include the hal library.
 #include "hal/hal.h"
 
+// FORWARD DEFINE PRIVATE PROTOTYPES.
+
+class timer_imp;
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum timer_input_state {SUCCESS, NO_RES, PIN_TAKEN};
 
-enum tc_number {TC_0, TC_1, TC_2, TC_3};
+enum tc_number {TC_0, TC_1, TC_2, TC_3, TC_4, TC_5};
 
 enum tc_oc_channel {TC_OC_A, TC_OC_B, TC_OC_C};
 
@@ -53,13 +57,21 @@ enum tc_ic_mode {IC_NONE, IC_MODE_1, IC_MODE_2, IC_MODE_3};
 
 enum tc_clk_src {INT};
 
-enum tc_prescaler {TC_PRE_1, TC_PRE_2, TC_PRE_4, TC_PRE_8};
+enum tc_prescaler {TC_PRE_1, TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
 
 struct timer_rate
 {
 	tc_clk_src src;
 	tc_prescaler pre;
 };
+
+/*identifier to contain the timer number and the input/output channels*/
+struct timer_identifier
+{
+	tc_number number;
+	tc_oc_channel output_channel;
+	tc_ic_channel input_channel;
+}
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -104,7 +116,7 @@ class timer
 		 * @param Nothing
 		 * @return 0 for success, -1 for error.
 		 */
-		uint8_t start(void);
+		int8_t start(void);
 		
 		/**
 		 * Stops the timer.
@@ -112,7 +124,7 @@ class timer
 		 * @param Nothing
 		 * @return 0 for success, -1 for error.
 		 */
-		uint8_t stop(void);
+		int8_t stop(void);
 
 		/**
 		 * Enables the overflow interrupt on this timer
@@ -201,7 +213,7 @@ class timer
 		 * @return The IC register value.
 		 */
 		template <typename T>
-		T set_ocR(tc_oc_channel channel);
+		T get_ocR(tc_oc_channel channel);
 
 		/**
 		 * Gets run whenever the instance of class timer goes out of scope.
@@ -227,7 +239,7 @@ class timer
 		 * @param  timer	Which timer is required.
 		 * @return A timer instance.
 		 */
-		static timer_grab(tc_number timer);
+		static timer grab(tc_number timer);
 
 	private:
 		// Functions.
@@ -244,6 +256,16 @@ class timer
 		* Pointer to the machine specific implementation of the timer.
 		*/
 		timer_imp* imp;
+		
+		/**
+		 * Identifier of the current timer it is attached to
+		 */
+		timer_identifier timer_id;
+		
+		/**
+		 * Preserved prescalar value and clock source
+		 */
+		timer_rate preserved_rate;
 };
 
 
