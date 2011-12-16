@@ -44,7 +44,7 @@ void init_hal(void)
 	
 	for (uint8_t i = 0; i < NUM_BANKS; i++)
 	{
-			pc_int_bank[i] = semaphore();
+			pc_int_sem[i] = semaphore();
 	}
 	// We don't need to do this again.
 	done_sem_init = true;

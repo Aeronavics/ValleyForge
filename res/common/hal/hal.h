@@ -45,8 +45,6 @@ struct gpio_pin_address
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
-extern semaphore semaphores[];
-
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
 void init_hal(void);

@@ -35,6 +35,8 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+typedef void (*voidFuncPtr)(void);
+
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 class gpio_pin_imp;
@@ -51,11 +53,6 @@ enum inter_return_t {GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF
 
 enum interrupt_mode {INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_EDGE};
 
-struct gpio_pin_address
-{
-	port_t port;
-	pin_t pin;
-};
 
 class gpio_pin
 {
@@ -78,7 +75,7 @@ class gpio_pin
 		 * @param  mode	Set to INPUT or OUTPUT.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t set_mode(uint8_t mode);
+		int8_t set_mode(gpio_mode mode);
 				
 		/**
 		 * Read the value of the gpio pin and return it
@@ -86,7 +83,7 @@ class gpio_pin
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 */
-		int8_t read(void);
+		gpio_input_state read(void);
 		
 		/**
 		 * Writes the value provided to the pin
@@ -94,7 +91,7 @@ class gpio_pin
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
 		 */
-		int8_t write(uint8_t value);
+		int8_t write(gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode
@@ -104,7 +101,7 @@ class gpio_pin
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
 		 */
-		inter_return_t enable_interrupt(interrupt_mode mode, void* func_pt(void));
+		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
 
