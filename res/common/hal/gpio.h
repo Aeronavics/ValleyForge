@@ -35,6 +35,8 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+typedef void (*voidFuncPtr)(void);
+
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 class gpio_pin_imp;
@@ -43,15 +45,14 @@ class gpio_pin_imp;
 
 enum gpio_mode {INPUT, OUTPUT};
 
-enum gpio_output_state {O_LOW, O_HIGH, O_TOGGLE};
+enum gpio_output_state {O_LOW, O_HIGH, O_TOGGLE, O_ERROR=-1};
 
 enum gpio_input_state {I_LOW, I_HIGH, I_ERROR=-1};
 
-struct gpio_pin_address
-{
-	port_t port;
-	pin_t pin;
-};
+enum inter_return_t {GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2};
+
+enum interrupt_mode {INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_EDGE};
+
 
 class gpio_pin
 {
@@ -74,7 +75,7 @@ class gpio_pin
 		 * @param  mode	Set to INPUT or OUTPUT.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t set_mode(uint8_t mode);
+		int8_t set_mode(gpio_mode mode);
 				
 		/**
 		 * Read the value of the gpio pin and return it
@@ -82,7 +83,7 @@ class gpio_pin
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 */
-		int8_t read(void);
+		gpio_input_state read(void);
 		
 		/**
 		 * Writes the value provided to the pin
@@ -90,7 +91,7 @@ class gpio_pin
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
 		 */
-		int8_t write(uint8_t value);
+		int8_t write(gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode
@@ -98,26 +99,18 @@ class gpio_pin
 		 *
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
-		 * @return 0 for success, -1 for error.
+		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
 		 */
-		int8_t init_interrupt(uint8_t mode, void* func_pt(void));
-
-		/**
-		 * Initialise an interrupt for the associated pin.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		void enable_interrupt(void);
+		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
 
 		 * Disable an interrupt for the associated pin.
 		 *
 		 * @param  Nothing.
-		 * @return Nothing.
+		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
 		 */
-		void disable_interrupt(void);
+		inter_return_t disable_interrupt(void);
 		
 		/**
 		 * Checks to see whether or not the GPIO pin implementation pointer is null or not.

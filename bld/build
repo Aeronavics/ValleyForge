@@ -471,7 +471,7 @@ get_hal()
 	fi
 
 	# Check if the HAL header and source paths were set by the build configuration.
-	if [ -z "$HAL_EN_LIST" ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d $HAL_HEADER_PATH ] || [ ! -d $HAL_SOURCE_PATH ]; then
+	if [ -z "$HAL_EN_LIST" ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d ${TCPATH}/$HAL_HEADER_PATH ] || [ ! -d ${TCPATH}/$HAL_SOURCE_PATH ]; then
 		# We don't import the HAL at all.
 		echo -e "${YELLOW}Not importing HAL for this build configuration.\n${NO_COLOUR}"
 		return 0
@@ -485,19 +485,20 @@ get_hal()
 	# Copy in the common HAL files.
 	cp $TCPATH/$HAL_HEADER_PATH/hal.h $OUTPATH
 	cp $TCPATH/$HAL_HEADER_PATH/semaphore.h $OUTPATH
+	cp $TCPATH/$HAL_HEADER_PATH/target_config.h $OUTPATH
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.c $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.c $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.o $OUTPATH 2>/dev/null
-
 	# Only import each particular peripheral if it is enabled in the configuration.
 
 	# Iterate through the items in the enabled HAL peripherals list.
 	for PERIPHERAL in $HAL_EN_LIST; do
 		# Copy the corresponding files over.
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null		
