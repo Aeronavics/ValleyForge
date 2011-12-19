@@ -29,6 +29,8 @@
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
+volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
+
 // The addresses for GPIO are PINA,DDRA,PORTA,PINB,DDRB,PORTB... i.e each type is 3 away from the same on the next port.
 #define PORT_MULTIPLIER		3
 
@@ -39,7 +41,7 @@ enum port_offset	{P_READ, P_MODE, P_WRITE};
 // DECLARE IMPORTED GLOBAL VARIABLES.
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 extern semaphore pc_int_sem[NUM_BANKS];
-volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
+
 
 /**
  * A Class that implements the functions for gpio
@@ -298,7 +300,7 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 				}
 				
 				/* Set/clear data direction register pin */
-				_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):~(1 << address.pin));
+				_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
 				
 				return 0;
 		}
