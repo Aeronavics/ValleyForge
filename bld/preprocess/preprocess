@@ -443,8 +443,6 @@ preprocess_hal()
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
-	sed -i "s^<<<TC_INSERTS_NUMBER_OF_PINS_HERE>>>^$PIN_COUNT^g" $1
-
 	# 	There are also upper-case versions of some of those same macros.
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1

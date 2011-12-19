@@ -85,7 +85,7 @@ class watchdog
 		 * @param time_out	One of 10 possible different values for the timeout value of the watchdog
 		 * @return 0 for success, -1 for error.
 		 */
-		static int8_t enable(wdt_timeout time_out);
+		static int8_t enable(uint8_t time_out);
 		
 		/** 
 		 * Disables the watchdog timer.

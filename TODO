@@ -1,5 +1,3 @@
-* The string which yields that white-on-blue text '\E[37;44m'"\033[1m should be replaced with a variable the same as the other colours.
-
 * Add the ATmega328 to the targets list.  Actually, I think I mean the ATmega328, but maybe I don't: I mean whatever the MUX/PPM controller on the ArduPilot Mega is; look this up.  Actually, possibly belay that: the new Arduino's and hence the APMv2 might have a different MCU as the USB interface (and hence the MUX/PPM controller), in which case THAT should be added to the target list instead.
 
 * res/arm should probably be renamed to res/omap, since different ARM processors have quite different peripherals, so 'arm' is not really sufficiently specific.  There are quite a few places this path will need to be updated though?

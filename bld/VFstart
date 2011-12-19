@@ -113,7 +113,7 @@ do
 	clear
 
 	# Print welcome message.
-	echo -e '\E[37;44m'"\033[1m\n\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
+	echo -e "${HIGHLIGHT_BLUE}${BOLD}\n\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
 
 	# Check if a user configuration file is present.
 	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
@@ -400,5 +400,5 @@ do
 done
 
 # All done.
-echo -e '\E[37;44m'"\033[1m**********************    Closing ValleyForge Interface...    ***********************${NO_COLOUR}\n"
+echo -e "\n${HIGHLIGHT_BLUE}${BOLD}**********************    Closing ValleyForge Interface...    ***********************${NO_COLOUR}\n"
 exit 0

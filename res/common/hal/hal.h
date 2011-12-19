@@ -27,8 +27,6 @@
 
 // DEFINE PUBLIC MACROS.
 
-#define PINS <<<TC_INSERTS_NUMBER_OF_PINS_HERE>>>
-
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_I, PORT_J, PORT_K, PORT_L};
@@ -40,6 +38,7 @@ struct gpio_pin_address
 	port_t port;
 	pin_t pin;
 };
+
 // INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
 #include "target_config.h"
 

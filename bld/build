@@ -615,7 +615,7 @@ while true; do
 		-n|--name)
 			# Specify the name of the component to build.
 			shift
-			NAME="$NAME$1 " # NOTE - The space in intentional!
+			NAME="$NAME$1 " # NOTE - The space is intentional!
 			;;
 		--)
 			# We're done parsing options.  Anything else must be parameters.
@@ -626,7 +626,7 @@ while true; do
 		*)
 			# Anything else must be parameters.
 			shift
-			NAME="$NAME$* " # NOTE - The space in intentional!
+			NAME="$NAME$* " # NOTE - The space is intentional!
 			break
 			;;
 	esac
@@ -745,7 +745,6 @@ do
 	HAL_HEADER_PATH=
 	HAL_SOURCE_PATH=
 	HAL_EN_LIST=
-	PIN_COUNT=
 
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
@@ -866,7 +865,6 @@ do
 		HAL_HEADER_PATH=
 		HAL_SOURCE_PATH=
 		HAL_EN_LIST=
-		PIN_COUNT=
 
 		# Check to see if we can find a matching bootloader configuration.
 		BLOADCONF="bload_${TARGET}_${BOOTLOADER}"

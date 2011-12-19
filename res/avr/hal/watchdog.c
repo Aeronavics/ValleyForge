@@ -20,6 +20,7 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 #include <avr/wdt.h>
+#include <avr/interrupt.h>
 
 // DEFINE PRIVATE MACROS.
 
@@ -62,7 +63,7 @@ void watchdog::pat(void)
  * @param time_out	One of 10 possible different values for the timeout value of the watchdog
  * @return Nothing.
  */
-void watchdog::enable(wdt_timeout time_out)
+int8_t watchdog::enable(uint8_t time_out)
 {
 	//Check to see if time_out is an appropriate value for target
 	
