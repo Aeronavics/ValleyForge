@@ -63,8 +63,7 @@ int main(void)
 {
 	// TODO - Set interrupts into bootloader-land, rather than the application-land.
 
-	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-	wdt_enable(WDTO_250MS);
+	// TODO - Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
 
 	// TODO - Turn on the blinkenlight solidly.
 
@@ -81,8 +80,13 @@ int main(void)
 
 	// TODO - Probably need to read some configuration information from EEPROM, such as which ID this component is.
 
+	// Fetch whichever peripheral module we are using.
+	bootloader_module mod = get_module();
+
+	// TODO - The function get_module() needs to be implemented such that it returns the appropriate kind of module.
+
 	// Start up whichever peripherals are required by the modules we're using.
-	mod_init();
+	mod.init();
 
 	// TODO - Set up a timer and interrupt to flash the blinkenlight.
 
@@ -151,8 +155,8 @@ void run_application(void)
 
 	// TODO - Make sure we're all good to go.
 
-	// Shut down whatever peripherals have been activated.
-	mod_exit();
+	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
+	mod.exit();
 
 	// TODO - Stop the timer and interrupt for the blinkenlight.
 
