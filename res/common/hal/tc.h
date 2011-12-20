@@ -43,8 +43,6 @@ class timer_imp;
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-typedef void (*voidFuncPtr)(void);
-
 enum timer_input_state {SUCCESS, NO_RES, PIN_TAKEN};
 
 enum tc_number {TC_0, TC_1, TC_2, TC_3, TC_4, TC_5};
@@ -59,7 +57,7 @@ enum tc_ic_mode {IC_NONE, IC_MODE_1, IC_MODE_2, IC_MODE_3, IC_MODE_4};
 
 enum tc_clk_src {INT};
 
-enum tc_prescaler {TC_PRE_1, TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
+enum tc_prescaler {TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
 
 struct timer_rate
 {
@@ -68,12 +66,12 @@ struct timer_rate
 };
 
 /*identifier to contain the timer number and the input/output channels*/
-struct timer_identifier
-{
-	tc_number number;
-	tc_oc_channel output_channel;
-	tc_ic_channel input_channel;
-}
+// struct timer_identifier
+// {
+// 	tc_number number;
+// 	tc_oc_channel output_channel;
+// 	tc_ic_channel input_channel;
+// };
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -131,10 +129,10 @@ class timer
 		/**
 		 * Enables the overflow interrupt on this timer
 		 *
-		 * @param  ISR		A pointer to the ISR that will be called when this interrupt is generated.
+		 * @param  ISRptr		A pointer to the ISR that will be called when this interrupt is generated.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t enable_tov_interrupt(void* ISR(void));
+		int8_t enable_tov_interrupt(void* ISRptr(void));
 		
 		/**
 		 * Disables the overflow interrupt on this timer
@@ -158,10 +156,10 @@ class timer
 		 * enable OC mode itself.
 		 *
 		 * @param  channel		Which channel register to interrupt on.
-		 * @param  ISR			A pointer to the ISR that is called when this interrupt is generated.
+		 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t enable_oc_interrupt(tc_oc_channel channel, void* ISR(void));
+		int8_t enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void));
 		
 		/**
 		 * Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the
@@ -196,10 +194,10 @@ class timer
 		 * Enables the input compare interrupt on this timer
 		 *
 		 * @param  channel		Which channel register to interrupt on.
-		 * @param  ISR			A pointer to the ISR that is called when this interrupt is generated.  
+		 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.  
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t enable_ic_interrupt(uint8_t channel, void* ISR(void));
+		int8_t enable_ic_interrupt(uint8_t channel, void* ISRptr(void));
 		
 		/**
 		 * Disables the input compare interrupt on this timer
@@ -239,10 +237,10 @@ class timer
 		 * Allows a process to request access to a timer and manages the semaphore
 		 * indicating whether access has been granted or not.
 		 *
-		 * @param  timer	Which timer is required.
+		 * @param  timerNumber	Which timer is required.
 		 * @return A timer instance.
 		 */
-		static timer grab(tc_number timer);
+		static timer grab(tc_number timerNumber);
 
 	private:
 		// Functions.
@@ -260,10 +258,10 @@ class timer
 		*/
 		timer_imp* imp;
 		
-		/**
-		 * Identifier of the current timer it is attached to
-		 */
-		timer_identifier timer_id;
+// 		/**
+// 		 * Identifier of the current timer it is attached to
+// 		 */
+// 		timer_identifier timer_id;
 		
 		/**
 		 * Preserved prescalar value and clock source

@@ -25,7 +25,7 @@
 
 // DEFINE PRIVATE MACROS.
 /*Number of interrupts of all types across all timers & channels.*/
-#define NUM_TIMER_INTERRUPTS	23	
+#define NUM_TIMER_INTERRUPTS	26	
 
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
@@ -189,7 +189,7 @@ class timer_imp
 	* @param  timer_rate	Settings for clock source and prescaler.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t set_rate(timer_rate rate, timer_indentifier timer);
+	int8_t set_rate(timer_rate rate);
 	
 	
 	/**
@@ -229,10 +229,10 @@ class timer_imp
 	/**
 	* Enables the overflow interrupt on this timer
 	*
-	* @param  ISR		A pointer to the ISR that will be called when this interrupt is generated.
+	* @param  ISRptr		A pointer to the ISRptr that will be called when this interrupt is generated.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_tov_interrupt(void* ISR(void));
+	int8_t enable_tov_interrupt(void* ISRptr(void));
 	
 	/**
 	* Disables the overflow interrupt on this timer
@@ -256,10 +256,10 @@ class timer_imp
 	* enable OC mode itself.
 	*
 	* @param  channel		Which channel register to interrupt on.
-	* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.
+	* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_oc_interrupt(tc_oc_channel channel, void* ISR(void));
+	int8_t enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void));
 	
 	/**
 	* Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the
@@ -293,10 +293,10 @@ class timer_imp
 	* Enables the input compare interrupt on this timer
 	*
 	* @param  channel		Which channel register to interrupt on.
-	* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.  
+	* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_ic_interrupt(uint8_t channel, void* ISR(void));
+	int8_t enable_ic_interrupt(uint8_t channel, void* ISRptr(void));
 
 	/**
 	* Disables the input compare interrupt on this timer
@@ -329,24 +329,27 @@ class timer_imp
 	/**
 	* Identifier of the current timer it is attached to
 	*/
-	timer_identifier timer_id;
+	tc_number timer_id;
       
 	/**
 	* Preserved prescalar value and clock source
 	*/
 	timer_rate preserved_rate;
   
-}
+};
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-volatile static voidFuncPtr timerInterrupts[NUM_TIMER_INTERRUPTS];
+void* (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void);
 
 /*Create an array of timer implementation*/
 timer_imp timer_imps[NUM_TIMERS];	/*TODO Possibly make into a two-dimensional array of some sort to provide semaphores on each channel of each timer*/
 
+/* Variable to indicate whether timer_imps[] has been initialised yet */
+bool initialised_timers;
+
 /*Enumerated list of timer interrupts for use in accessing the appropriate function pointer from the function pointer array*/
-enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_OVF_int, TIMER2_CAPT_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER3_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
+enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_OVF_int, TIMER2_CAPT_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
@@ -363,7 +366,7 @@ int8_t timer::set_rate(timer_rate rate)
   
   /*Call the set_rate function within the implementation
    * to save the timer number and prescalar settings etc*/
-  (imp->set_rate(rate, timer_id));
+  (imp->set_rate(rate));
   
   return 0;
 }
@@ -377,7 +380,7 @@ int8_t timer::set_rate(timer_rate rate)
 template <typename T>
 int8_t timer::load_timer_value(T value)
 {
-  return(imp->load_timer_value(timer_id.number));
+  return(imp->load_timer_value(value));
 }
 
 /**
@@ -389,7 +392,7 @@ int8_t timer::load_timer_value(T value)
 template <typename T>
 T timer::get_timer_value(void)
 {
-  return(imp->get_timer_value <T> (timer_id.number));
+  return(imp->get_timer_value <T> ());
 }
 
 /**
@@ -400,7 +403,7 @@ T timer::get_timer_value(void)
 */
 int8_t timer::start(void)
 {
-  return(imp->start(preserved_rate, timer_id.number));
+  return(imp->start());
 }
 
 /**
@@ -411,18 +414,18 @@ int8_t timer::start(void)
 */
 int8_t timer::stop(void)
 {
-  return(imp->stop(timer_id.number));
+  return(imp->stop());
 }
 
 /**
 * Enables the overflow interrupt on this timer
 *
-* @param  ISR		A pointer to the ISR that will be called when this interrupt is generated.
+* @param  ISRptr		A pointer to the ISRptr that will be called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_tov_interrupt(void* ISR(void))
+int8_t timer::enable_tov_interrupt(void* ISRptr(void))
 {
-  return(imp->enable_tov_interrupt(void* ISR(void)));
+  return(imp->enable_tov_interrupt(ISRptr));
 }
 
 /**
@@ -445,7 +448,7 @@ int8_t timer::disable_tov_interrupt(void)
 */
 int8_t timer::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 {
-  return (imp->enable_oc(tc_oc_channel, tc_oc_mode mode));
+  return (imp->enable_oc(channel, mode));
 }
 
 /**
@@ -453,12 +456,12 @@ int8_t timer::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 * enable OC mode itself.
 *
 * @param  channel		Which channel register to interrupt on.
-* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.
+* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
+int8_t timer::enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void))
 {
-  return (imp->enable_oc(tc_oc_channel, ISR);
+  return (imp->enable_oc_interrupt(channel, ISRptr));
 }
 
 /**
@@ -502,12 +505,12 @@ int8_t timer::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * Enables the input compare interrupt on this timer
 *
 * @param  channel		Which channel register to interrupt on.
-* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.  
+* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_ic_interrupt(uint8_t channel, void* ISR(void))
+int8_t timer::enable_ic_interrupt(uint8_t channel, void* ISRptr(void))
 {
-  return (imp->enable_ic_interrupt(channel, ISR));
+  return (imp->enable_ic_interrupt(channel, ISRptr));
 }
 
 /**
@@ -518,7 +521,7 @@ int8_t timer::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 */
 int8_t timer::disable_ic_interrupt(uint8_t channel)
 {
-  return (imp->disable_ic_interrupt(channel, ISR));
+  return (imp->disable_ic_interrupt(channel));
 }
 
 /**
@@ -530,7 +533,7 @@ int8_t timer::disable_ic_interrupt(uint8_t channel)
 template <typename T>
 T timer::get_ocR(tc_oc_channel channel)
 {
-  return (imp->get_ocR(channel));
+  return (imp->get_ocR <T> (channel));
 }
 
 /**
@@ -560,20 +563,28 @@ void timer::vacate(void)
 * Allows a process to request access to a timer and manages the semaphore
 * indicating whether access has been granted or not.
 *
-* @param  timer	Which timer is required.
+* @param  timerNumber	Which timer is required.
 * @return A timer instance.
 */
-static timer timer::grab(tc_number timer)
+timer timer::grab(tc_number timerNumber)
 {
   /* TODO add possible semaphore functionality in here*/
   
-  /* Save the timer number in a field within the implementation here*/
-  timer_id.number = timer;
+  /* Check to make sure the timers have been initialised */
+  if  (!initialised_timers)
+  {
+    /* Go and initialise them */
+    for (uint8_t i = 0; i < NUM_TIMERS; i++)
+    {
+      timer_imps[i].timer_id = (tc_number)i;
+    }
+    
+    initialised_timers = true;
+  }
   
   /* Set the local field 'imp' pointer to point to the specific
    * implementation of timer_imp */
-  return timer(&timer_imps[timer]);
-  
+  return timer(&timer_imps[timerNumber]);
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
@@ -593,12 +604,12 @@ timer::timer(timer_imp* implementation)
 * @param  timer_rate	Settings for clock source and prescaler.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::set_rate(timer_rate rate, timer_indentifier timer)
+int8_t timer_imp::set_rate(timer_rate rate)
 {
-  /*Preserve the clock and prescalar settings as well as the timer number
-    * within the implementation fields*/
+  /*Preserve the clock and prescalar settings within the implementation fields*/
   preserved_rate = rate;
-  timer_id = timer;
+    
+  return 0;	/* How to detect possible error states? */
 }
 
 /**
@@ -611,7 +622,7 @@ template <typename T>
 int8_t timer_imp::load_timer_value(T value)
 {
   /*Switch which TCNTn registers are edited based on the timer number*/
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -662,6 +673,8 @@ int8_t timer_imp::load_timer_value(T value)
       break;
     }
   }
+  
+ return 0;	/* How to detect possible error states? */
 }
 
 /**
@@ -673,7 +686,7 @@ template <typename T>
 T timer_imp::get_timer_value(void)
 {
   /*Switch which TCNTn registers are read based on the timer number*/
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -722,7 +735,7 @@ T timer_imp::get_timer_value(void)
 int8_t timer_imp::start(void)
 {
   /*Switch which registers are edited based on the timer number*/
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -772,7 +785,7 @@ int8_t timer_imp::start(void)
 int8_t timer_imp::stop(void)
 {
   /*Switch which TCNTn registers are edited based on the timer number*/
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -783,31 +796,31 @@ int8_t timer_imp::stop(void)
     case TC_1:
     {
       /*edit the TCCR1B register*/
-      TCCR1B &= (~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10))
+      TCCR1B &= (~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10));
       break;
     }
     case TC_2:
     {
       /*edit the TCCR2B register*/
-      TCCR2B &= (~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20))
+      TCCR2B &= (~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20));
       break;
     }
     case TC_3:
     {
       /*edit the TCCR3B register*/
-      TCCR3B &= (~(1 << CS32) & ~(1 << CS31) & ~(1 << CS30))
+      TCCR3B &= (~(1 << CS32) & ~(1 << CS31) & ~(1 << CS30));
       break;
     }
     case TC_4:
     {
       /*edit the TCCR4B register*/
-      TCCR4B &= (~(1 << CS42) & ~(1 << CS41) & ~(1 << CS40))
+      TCCR4B &= (~(1 << CS42) & ~(1 << CS41) & ~(1 << CS40));
       break;
     }
     case TC_5:
     {
       /*edit the TCCR5B register*/
-      TCCR5B &= (~(1 << CS52) & ~(1 << CS51) & ~(1 << CS50))
+      TCCR5B &= (~(1 << CS52) & ~(1 << CS51) & ~(1 << CS50));
       break;
     }
   }
@@ -817,10 +830,10 @@ int8_t timer_imp::stop(void)
 /**
 * Enables the overflow interrupt on this timer
 *
-* @param  ISR		A pointer to the ISR that will be called when this interrupt is generated.
+* @param  ISRptr		A pointer to the ISR that will be called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
+int8_t timer_imp::enable_tov_interrupt(void* ISRptr(void))
 {
    /* Set the TCCRnA and TCCRnB WGMn2:0 bits to 0 for normal operation where the timer/counter
     * counting direction is always incremented from 0x00(00) to 0xFF(FF) (16-bit implementation)
@@ -829,12 +842,12 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
     * Set the appropriate registers depedning on which timer/counter implementation
     * is for.
     * 
-    * In addition, place the user-provided ISR into the appropriate position of the timer_interrupts
+    * In addition, place the user-provided ISR into the appropriate position of the timerInterrupts
     * ISR
     * 
     * 
     */
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -845,8 +858,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK0 |= (1 << TOIE0);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR0 |= (1 << TOV0);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER0_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER0_OVF_int] = ISRptr;
       break;
     }
     case TC_1:
@@ -858,8 +871,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK1 |= (1 << TOIE1);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR1 |= (1 << TOV1);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER1_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER1_OVF_int] = ISRptr;
       break;
     }
     case TC_2:
@@ -871,8 +884,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK2 |= (1 << TOIE2);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR2 |= (1 << TOV2);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER2_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER2_OVF_int] = ISRptr;
       break;
     }
     case TC_3:
@@ -884,8 +897,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK3 |= (1 << TOIE3);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR3 |= (1 << TOV3);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER3_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER3_OVF_int] = ISRptr;
       break;
     }
     case TC_4:
@@ -897,8 +910,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK4 |= (1 << TOIE4);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR4 |= (1 << TOV4);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER4_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER4_OVF_int] = ISRptr;
       break;
     }
     case TC_5:
@@ -910,8 +923,8 @@ int8_t timer_imp::enable_tov_interrupt(void* ISR(void))
       TIMSK5 |= (1 << TOIE5);
       /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
       TIFR5 |= (1 << TOV5);
-      /*place ISR pointer in timer_interrupts array*/
-      timer_interrupts[TIMER5_OVF_int] = ISR;
+      /*place ISR pointer in timerInterrupts array*/
+      timerInterrupts[TIMER5_OVF_int] = ISRptr;
       break;
     }
   }
@@ -931,48 +944,48 @@ int8_t timer_imp::disable_tov_interrupt(void)
    * To disable the timer overflow interrupt
    * clear the TOIEn bit in the TIMSKn register
    */
-  switch(timer_id.number)
+  switch(timer_id)
     {
       case TC_0:
       {
 	TIMSK0 &= ~(1 << TOIE0);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER0_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER0_OVF_int] = NULL;
 	break;
       }
       case TC_1:
       {
 	TIMSK1 &= ~(1 << TOIE1);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER1_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER1_OVF_int] = NULL;
 	break;
       }
       case TC_2:
       {
 	TIMSK2 &= ~(1 << TOIE2);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER2_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER2_OVF_int] = NULL;
 	break;
       }
       case TC_3:
       {
 	TIMSK3 &= ~(1 << TOIE3);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER3_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER3_OVF_int] = NULL;
 	break;
       }
       case TC_4:
       {
 	TIMSK4 &= ~(1 << TOIE4);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER4_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER4_OVF_int] = NULL;
 	break;
       }
       case TC_5:
       {
 	TIMSK5 &= ~(1 << TOIE5);
-	/*replace ISR pointer in timer_interrupts array with NULL to prevent an ISR firing (just in case)*/
-	timer_interrupts[TIMER5_OVF_int] = NULL;
+	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	timerInterrupts[TIMER5_OVF_int] = NULL;
 	break;
       }
     }
@@ -993,7 +1006,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
   /* Switch the process of enabling output compare mode depending on which timer is used for
    * implementation
    */
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -1034,15 +1047,15 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 * enable OC mode itself.
 *
 * @param  channel		Which channel register to interrupt on.
-* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.
+* @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
+int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void))
 {
   /* Switch the process of enabling output compare interrupts depending on which timer is used for
    * implementation
    */
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -1055,7 +1068,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK0 |= (1 << OCIE0A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER0_COMPA_int] = ISR;
+	 timerInterrupts[TIMER0_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1064,7 +1077,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK0 |= (1 << OCIE0B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER0_COMPB_int] = ISR;
+	 timerInterrupts[TIMER0_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1084,7 +1097,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK1 |= (1 << OCIE1A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPA_int] = ISR;
+	 timerInterrupts[TIMER1_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1093,16 +1106,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK1 |= (1 << OCIE1B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPB_int] = ISR;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 |= (1 << OCIE1C);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPC_int] = ISR;
+	 timerInterrupts[TIMER1_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1122,7 +1126,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK2 |= (1 << OCIE2A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER2_COMPA_int] = ISR;
+	 timerInterrupts[TIMER2_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1131,7 +1135,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK2 |= (1 << OCIE2B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER2_COMPB_int] = ISR;
+	 timerInterrupts[TIMER2_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1151,7 +1155,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 |= (1 << OCIE3A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPA_int] = ISR;
+	 timerInterrupts[TIMER3_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1160,7 +1164,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 |= (1 << OCIE3B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPB_int] = ISR;
+	 timerInterrupts[TIMER3_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1169,7 +1173,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 |= (1 << OCIE3C);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPC_int] = ISR;
+	 timerInterrupts[TIMER3_COMPC_int] = ISRptr;
 	 
 	 break;
        }
@@ -1189,7 +1193,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 |= (1 << OCIE4A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPA_int] = ISR;
+	 timerInterrupts[TIMER4_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1198,7 +1202,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 |= (1 << OCIE4B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPB_int] = ISR;
+	 timerInterrupts[TIMER4_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1207,7 +1211,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 |= (1 << OCIE4C);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPC_int] = ISR;
+	 timerInterrupts[TIMER4_COMPC_int] = ISRptr;
 	 
 	 break;
        }
@@ -1227,7 +1231,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 |= (1 << OCIE5A);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPA_int] = ISR;
+	 timerInterrupts[TIMER5_COMPA_int] = ISRptr;
 	 
 	 break;
        }
@@ -1236,7 +1240,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 |= (1 << OCIE5B);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPB_int] = ISR;
+	 timerInterrupts[TIMER5_COMPB_int] = ISRptr;
 	 
 	 break;
        }
@@ -1245,7 +1249,7 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISR(void))
 	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 |= (1 << OCIE5C);
 	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPC_int] = ISR;
+	 timerInterrupts[TIMER5_COMPC_int] = ISRptr;
 	 
 	 break;
        }
@@ -1270,7 +1274,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
  /* Switch the process of disabling output compare interrupts depending on which timer is used for
    * implementation
    */
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -1283,7 +1287,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK0 &= ~(1 << OCIE0A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER0_COMPA_int] = NULL;
+	 timerInterrupts[TIMER0_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1292,7 +1296,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK0 &= ~(1 << OCIE0B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER0_COMPB_int] = NULL;
+	 timerInterrupts[TIMER0_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1312,7 +1316,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK1 &= ~(1 << OCIE1A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPA_int] = NULL;
+	 timerInterrupts[TIMER1_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1321,16 +1325,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK1 &= ~(1 << OCIE1B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPB_int] = NULL;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 &= ~(1 << OCIE1C);
-	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER1_COMPC_int] = NULL;
+	 timerInterrupts[TIMER1_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1350,7 +1345,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK2 &= ~(1 << OCIE2A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER2_COMPA_int] = NULL;
+	 timerInterrupts[TIMER2_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1359,7 +1354,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK2 &= ~(1 << OCIE2B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER2_COMPB_int] = NULL;
+	 timerInterrupts[TIMER2_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1379,7 +1374,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 &= ~(1 << OCIE3A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPA_int] = NULL;
+	 timerInterrupts[TIMER3_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1388,7 +1383,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 &= ~(1 << OCIE3B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPB_int] = NULL;
+	 timerInterrupts[TIMER3_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1397,7 +1392,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK3 &= ~(1 << OCIE3C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER3_COMPC_int] = NULL;
+	 timerInterrupts[TIMER3_COMPC_int] = NULL;
 	 
 	 break;
        }
@@ -1417,7 +1412,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 &= ~(1 << OCIE4A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPA_int] = NULL;
+	 timerInterrupts[TIMER4_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1426,7 +1421,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 &= ~(1 << OCIE4B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPB_int] = NULL;
+	 timerInterrupts[TIMER4_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1435,7 +1430,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK4 &= ~(1 << OCIE4C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER4_COMPC_int] = NULL;
+	 timerInterrupts[TIMER4_COMPC_int] = NULL;
 	 
 	 break;
        }
@@ -1455,7 +1450,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 &= ~(1 << OCIE5A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPA_int] = NULL;
+	 timerInterrupts[TIMER5_COMPA_int] = NULL;
 	 
 	 break;
        }
@@ -1464,7 +1459,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 &= ~(1 << OCIE5B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPB_int] = NULL;
+	 timerInterrupts[TIMER5_COMPB_int] = NULL;
 	 
 	 break;
        }
@@ -1473,7 +1468,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
 	 TIMSK5 &= ~(1 << OCIE5C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
-	 timer_interrupts[TIMER5_COMPC_int] = NULL;
+	 timerInterrupts[TIMER5_COMPC_int] = NULL;
 	 
 	 break;
        }
@@ -1499,7 +1494,7 @@ uint8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
   /* Switch the process of disabling output compare interrupts depending on which timer is used for
    * implementation
    */
-  switch(timer_id.number)
+  switch(timer_id)
   {
     case TC_0:
     {
@@ -1693,7 +1688,7 @@ uint8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
 int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 {
   /* Switch depending on which timer is saved in the implementation */
-  switch (timer_id.number)
+  switch (timer_id)
   {
     case TC_1:
     {
@@ -1725,13 +1720,13 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * Enables the input compare interrupt on this timer
 *
 * @param  channel		Which channel register to interrupt on.
-* @param  ISR			A pointer to the ISR that is called when this interrupt is generated.  
+* @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
+int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISRptr(void))
 {
   /* Switch depending on which timer is saved in the implementation */
-  switch (timer_id.number)
+  switch (timer_id)
   {
     case TC_1:
     {
@@ -1743,7 +1738,7 @@ int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK1 |= (1 << ICIE1);
 	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER1_CAPT_int] = ISR;
+	  timerInterrupts[TIMER1_CAPT_int] = ISRptr;
 	  
 	  break;
 	}
@@ -1761,7 +1756,7 @@ int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK3 |= (1 << ICIE3);
 	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER3_CAPT_int] = ISR;
+	  timerInterrupts[TIMER3_CAPT_int] = ISRptr;
 	  
 	  break;
 	}
@@ -1779,7 +1774,7 @@ int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK4 |= (1 << ICIE4);
 	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER4_CAPT_int] = ISR;
+	  timerInterrupts[TIMER4_CAPT_int] = ISRptr;
 	  
 	  break;
 	}
@@ -1797,7 +1792,7 @@ int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK5 |= (1 << ICIE5);
 	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER5_CAPT_int] = ISR;
+	  timerInterrupts[TIMER5_CAPT_int] = ISRptr;
 	  
 	  break;
 	}
@@ -1820,7 +1815,7 @@ int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISR(void))
 int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 {
   /* Switch depending on which timer is saved in the implementation */
-  switch (timer_id.number)
+  switch (timer_id)
   {
     case TC_1:
     {
@@ -1832,7 +1827,7 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK1 &= ~(1 << ICIE1);
 	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER1_CAPT_int] = NULL;
+	  timerInterrupts[TIMER1_CAPT_int] = NULL;
 	  
 	  break;
 	}
@@ -1850,7 +1845,7 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK3 &= ~(3 << ICIE1);
 	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER3_CAPT_int] = NULL;
+	  timerInterrupts[TIMER3_CAPT_int] = NULL;
 	  
 	  break;
 	}
@@ -1868,7 +1863,7 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK4 &= ~(1 << ICIE4);
 	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER4_CAPT_int] = NULL;
+	  timerInterrupts[TIMER4_CAPT_int] = NULL;
 	  
 	  break;
 	}
@@ -1886,7 +1881,7 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
 	  TIMSK5 &= ~(1 << ICIE1);
 	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timer_interrupts[TIMER5_CAPT_int] = NULL;
+	  timerInterrupts[TIMER5_CAPT_int] = NULL;
 	  
 	  break;
 	}
@@ -1910,7 +1905,7 @@ template <typename T>
 T timer_imp::get_ocR(tc_oc_channel channel)
 {
   /* Switch which register to read depending on ther timer number saved in the implementation */
-  switch (timer_id.number)
+  switch (timer_id)
   {
     case TC_1:
     {
@@ -2352,7 +2347,7 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
 	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
@@ -2409,7 +2404,7 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
 	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
@@ -2485,7 +2480,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
@@ -2542,7 +2537,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
@@ -2599,7 +2594,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
@@ -2675,7 +2670,7 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
 	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
@@ -2732,7 +2727,7 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
 	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
@@ -2808,7 +2803,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
@@ -2865,7 +2860,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
@@ -2922,7 +2917,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
@@ -2998,7 +2993,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
@@ -3055,7 +3050,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
@@ -3112,7 +3107,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
@@ -3188,7 +3183,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
@@ -3245,7 +3240,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
@@ -3302,7 +3297,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_3;	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, inverted */
 	  {
 	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
 	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
@@ -3355,7 +3350,7 @@ int8_t enable_ic_timer1(tc_ic_channel channel, tc_ic_mode mode)
 	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR1B |= (1 << ICES1) 
+	  TCCR1B |= (1 << ICES1); 
 	  TCCR1B &= ~(1 << ICNC1);
 	  break;
 	}
@@ -3366,7 +3361,7 @@ int8_t enable_ic_timer1(tc_ic_channel channel, tc_ic_mode mode)
 	  TCCR1B &= ~(1 << ICES1);
 	  break;
 	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
 	  TCCR1B &= (~(1 << ICNC1) & ~(1 << ICES1));
@@ -3413,7 +3408,7 @@ int8_t enable_ic_timer3(tc_ic_channel channel, tc_ic_mode mode)
 	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR3B |= (1 << ICES3) 
+	  TCCR3B |= (1 << ICES3);
 	  TCCR3B &= ~(1 << ICNC3);
 	  break;
 	}
@@ -3424,7 +3419,7 @@ int8_t enable_ic_timer3(tc_ic_channel channel, tc_ic_mode mode)
 	  TCCR3B &= ~(1 << ICES3);
 	  break;
 	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
 	  TCCR3B &= (~(1 << ICNC3) & ~(1 << ICES3));
@@ -3471,7 +3466,7 @@ int8_t enable_ic_timer4(tc_ic_channel channel, tc_ic_mode mode)
 	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR4B |= (1 << ICES4) 
+	  TCCR4B |= (1 << ICES4); 
 	  TCCR4B &= ~(1 << ICNC4);
 	  break;
 	}
@@ -3482,7 +3477,7 @@ int8_t enable_ic_timer4(tc_ic_channel channel, tc_ic_mode mode)
 	  TCCR4B &= ~(1 << ICES4);
 	  break;
 	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
 	  TCCR4B &= (~(1 << ICNC4) & ~(1 << ICES4));
@@ -3529,7 +3524,7 @@ int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
 	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR5B |= (1 << ICES5) 
+	  TCCR5B |= (1 << ICES5); 
 	  TCCR5B &= ~(1 << ICNC5);
 	  break;
 	}
@@ -3540,7 +3535,7 @@ int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
 	  TCCR5B &= ~(1 << ICES5);
 	  break;
 	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
 	{
 	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
 	  TCCR5B &= (~(1 << ICNC5) & ~(1 << ICES5));
@@ -3555,162 +3550,162 @@ int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
   return 0;  
 }
 
-/* Declare the ISRs
+/* Declare the ISRptrs
  * 
  * Each timer interrupt type is tied to a relevant interrupt vector. These are associated
- * with the user ISRs by way of the function pointer array timer_interrupts[]. Here the
+ * with the user ISRs by way of the function pointer array timerInterrupts[]. Here the
  * ISRs are declared and the user ISR is called if the appropriate element of the function
  * pointer array is non NULL.
  */
 
 ISR(TIMER0_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER0_COMPA_int])
-    timer_interrupts[TIMER0_COMPA_int]();
+  if (timerInterrupts[TIMER0_COMPA_int])
+    timerInterrupts[TIMER0_COMPA_int]();
 }
 
 ISR(TIMER0_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER0_COMPB_int])
-    timer_interrupts[TIMER0_COMPB_int]();
+  if (timerInterrupts[TIMER0_COMPB_int])
+    timerInterrupts[TIMER0_COMPB_int]();
 }
 
 ISR(TIMER0_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER0_OVF_int])
-    timer_interrupts[TIMER0_OVF_int]();
+  if (timerInterrupts[TIMER0_OVF_int])
+    timerInterrupts[TIMER0_OVF_int]();
 }
 
 ISR(TIMER1_CAPT_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER1_CAPT_int])
-    timer_interrupts[TIMER1_CAPT_int]();
+  if (timerInterrupts[TIMER1_CAPT_int])
+    timerInterrupts[TIMER1_CAPT_int]();
 }
 
 ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER1_COMPA_int])
-    timer_interrupts[TIMER1_COMPA_int]();
+  if (timerInterrupts[TIMER1_COMPA_int])
+    timerInterrupts[TIMER1_COMPA_int]();
 }
 
 ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER1_COMPB_int])
-    timer_interrupts[TIMER1_COMPB_int]();
+  if (timerInterrupts[TIMER1_COMPB_int])
+    timerInterrupts[TIMER1_COMPB_int]();
 }
 
 ISR(TIMER1_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER1_OVF_int])
-    timer_interrupts[TIMER1_OVF_int]();
+  if (timerInterrupts[TIMER1_OVF_int])
+    timerInterrupts[TIMER1_OVF_int]();
 }
 
 ISR(TIMER2_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER2_COMPA_int])
-    timer_interrupts[TIMER2_COMPA_int]();
+  if (timerInterrupts[TIMER2_COMPA_int])
+    timerInterrupts[TIMER2_COMPA_int]();
 }
 
 ISR(TIMER2_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER2_COMPB_int])
-    timer_interrupts[TIMER2_COMPB_int]();
+  if (timerInterrupts[TIMER2_COMPB_int])
+    timerInterrupts[TIMER2_COMPB_int]();
 }
 
 ISR(TIMER2_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER2_OVF_int])
-    timer_interrupts[TIMER2_OVF_int]();
+  if (timerInterrupts[TIMER2_OVF_int])
+    timerInterrupts[TIMER2_OVF_int]();
 }
 
 ISR(TIMER3_CAPT_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER3_CAPT_int])
-    timer_interrupts[TIMER3_CAPT_int]();
+  if (timerInterrupts[TIMER3_CAPT_int])
+    timerInterrupts[TIMER3_CAPT_int]();
 }
 
 ISR(TIMER3_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER3_COMPA_int])
-    timer_interrupts[TIMER3_COMPA_int]();
+  if (timerInterrupts[TIMER3_COMPA_int])
+    timerInterrupts[TIMER3_COMPA_int]();
 }
 
 ISR(TIMER3_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER3_COMPB_int])
-    timer_interrupts[TIMER3_COMPB_int]();
+  if (timerInterrupts[TIMER3_COMPB_int])
+    timerInterrupts[TIMER3_COMPB_int]();
 }
 
 ISR(TIMER3_COMPC_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER3_COMPC_int])
-    timer_interrupts[TIMER3_COMPC_int]();
+  if (timerInterrupts[TIMER3_COMPC_int])
+    timerInterrupts[TIMER3_COMPC_int]();
 }
 
 ISR(TIMER3_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER3_OVF_int])
-    timer_interrupts[TIMER3_OVF_int]();
+  if (timerInterrupts[TIMER3_OVF_int])
+    timerInterrupts[TIMER3_OVF_int]();
 }
 
 ISR(TIMER4_CAPT_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER4_CAPT_int])
-    timer_interrupts[TIMER4_CAPT_int]();
+  if (timerInterrupts[TIMER4_CAPT_int])
+    timerInterrupts[TIMER4_CAPT_int]();
 }
 
 ISR(TIMER4_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER4_COMPA_int])
-    timer_interrupts[TIMER4_COMPA_int]();
+  if (timerInterrupts[TIMER4_COMPA_int])
+    timerInterrupts[TIMER4_COMPA_int]();
 }
 
 ISR(TIMER4_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER4_COMPB_int])
-    timer_interrupts[TIMER4_COMPB_int]();
+  if (timerInterrupts[TIMER4_COMPB_int])
+    timerInterrupts[TIMER4_COMPB_int]();
 }
 
 ISR(TIMER4_COMPC_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER4_COMPC_int])
-    timer_interrupts[TIMER4_COMPC_int]();
+  if (timerInterrupts[TIMER4_COMPC_int])
+    timerInterrupts[TIMER4_COMPC_int]();
 }
 
 ISR(TIMER4_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER4_OVF_int])
-    timer_interrupts[TIMER4_OVF_int]();
+  if (timerInterrupts[TIMER4_OVF_int])
+    timerInterrupts[TIMER4_OVF_int]();
 }
 
 ISR(TIMER5_CAPT_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER5_CAPT_int])
-    timer_interrupts[TIMER5_CAPT_int]();
+  if (timerInterrupts[TIMER5_CAPT_int])
+    timerInterrupts[TIMER5_CAPT_int]();
 }
 
 ISR(TIMER5_COMPA_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER5_COMPA_int])
-    timer_interrupts[TIMER5_COMPA_int]();
+  if (timerInterrupts[TIMER5_COMPA_int])
+    timerInterrupts[TIMER5_COMPA_int]();
 }
 
 ISR(TIMER5_COMPB_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER5_COMPB_int])
-    timer_interrupts[TIMER5_COMPB_int]();
+  if (timerInterrupts[TIMER5_COMPB_int])
+    timerInterrupts[TIMER5_COMPB_int]();
 }
 
 ISR(TIMER5_COMPC_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER5_COMPC_int])
-    timer_interrupts[TIMER5_COMPC_int]();
+  if (timerInterrupts[TIMER5_COMPC_int])
+    timerInterrupts[TIMER5_COMPC_int]();
 }
 
 ISR(TIMER5_OVF_vect, ISR_BLOCK)
 {
-  if (timer_interrupts[TIMER5_OVF_int])
-    timer_interrupts[TIMER5_OVF_int]();
+  if (timerInterrupts[TIMER5_OVF_int])
+    timerInterrupts[TIMER5_OVF_int]();
 }
 
 // ALL DONE.
