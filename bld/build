@@ -150,17 +150,27 @@ makeavr_bootloader()
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 
-	# Get the list of names of source files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c | sed ':a;N;$!ba;s/\n/ /g')
+	# Get a list of names of source and header files.
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
+
+	# Get a list of all the HAL source and header files.
+	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	# NOTE - Using '^' as delimiters.
 	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(PRJSRC *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s/\(PROJECTNAME *= *\).*/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s/\(BOOTSTART *= *\).*/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	
+	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s/\(BOOTSTART *= *\)BUILD_INSERTS_BOOTLOADER_ADDRESS_HERE/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
