@@ -205,13 +205,7 @@ PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" 
 TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
 
 # Reset any variables which may have been set by a previous component.
-BCONF_NAME=
-COMPILER=
-MAKEFUNCTION=
-MAKEFILE=
-MCU_CODE=
-OBJCOPY=
-IOHEADER=
+source $TCPATH/bld/common/clear_bconf_vars
 
 # Check to see if we can find a matching build configuration.
 BCONF="bconf_${TARGET}_${PLATFORM}"

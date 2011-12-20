@@ -492,6 +492,7 @@ get_hal()
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.c $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.o $OUTPATH 2>/dev/null
+
 	# Only import each particular peripheral if it is enabled in the configuration.
 
 	# Iterate through the items in the enabled HAL peripherals list.
@@ -727,24 +728,8 @@ do
 	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f 2)
 	BOOTLOADER=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^BOOTLOADER" | cut -d '=' -f 2)
 
-	# Reset any variables which may have been set by the previous component.
-	BCONF_NAME=
-	COMPILER=
-	ASSEMBLER=
-	OBJCOPY=
-	MAKEFUNCTION=
-	MAKEFILE=
-	LINKSCRIPT=
-	MCU_CODE=
-	IOHEADER=
-	CFLAGS=
-	AFLAGS=
-	LFLAGS=
-	OUTPUT_TYPE=
-	OUTPUT_NAME=
-	HAL_HEADER_PATH=
-	HAL_SOURCE_PATH=
-	HAL_EN_LIST=
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
 
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
@@ -837,7 +822,7 @@ do
 
 	# Check if the make function worked.  If not, we don't go any further with this component.
 	if [ $? != 0 ]; then
-		# We just skip the booloader and anything else, and move on.
+		# We just skip the bootloader and anything else, and move on.
 		echo -e "${YELLOW}Application code build failed.  Skipping additional build stages...\n${NO_COLOUR}"
 		continue
 	fi
@@ -853,18 +838,7 @@ do
 		echo -e "${CYAN}Loading bootloader configuration...\n${NO_COLOUR}"
 
 		# Reset any variables which may have been set by the previous bootloader.
-		BLOAD_NAME=
-		COMPILER=
-		OBJCOPY=
-		MAKEFUNCTION=
-		MAKEFILE=
-		SOURCEPATH=
-		MCU_CODE=
-		IOHEADER=
-		BOOTSTART=
-		HAL_HEADER_PATH=
-		HAL_SOURCE_PATH=
-		HAL_EN_LIST=
+		source $TCPATH/bld/common/clear_bconf_vars
 
 		# Check to see if we can find a matching bootloader configuration.
 		BLOADCONF="bload_${TARGET}_${BOOTLOADER}"

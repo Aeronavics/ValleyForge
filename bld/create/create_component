@@ -64,21 +64,8 @@ create_template ()
 		echo -e "${RED}ERROR - Could not find template files.\n${NO_COLOUR}"
 	fi
 
-	# Reset any variables which may have been set by the previous component.
-	BCONF_NAME=
-	COMPILER=
-	ASSEMBLER=
-	OBJCOPY=
-	MAKEFUNCTION=
-	MAKEFILE=
-	LINKSCRIPT=
-	MCU_CODE=
-	IOHEADER=
-	CFLAGS=
-	AFLAGS=
-	LFLAGS=
-	OUTPUT_TYPE=
-	OUTPUT_NAME=
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
 
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
@@ -120,8 +107,15 @@ create_template ()
 choose_target()
 {
 	# List the possible build configurations.
-	BCONFS=`declare -F | grep -o -e "bconf_.*"`
+	BCONFS=`declare -F | grep -o -e "declare -f bconf_.*" | grep -o -e "bconf_.*"`
 	
+	# Check that something was actually returned here.
+	if [ -z "$BCONFS" ]; then
+		# Something is terribly wrong here.
+		echo -e "${BOLD_RED}FATAL - No application build profiles available.\n${NO_COLOUR}"
+		exit 1
+	fi
+
 	# Iterate through the possible build configurations
 	for BCONF in $BCONFS; do
 		# Extract the name of the target from the configuration and add it to a list of possible targets.
@@ -167,8 +161,15 @@ choose_target()
 choose_platform()
 {
 	# List the possible build configurations.
-	BCONFS=`declare -F | grep -o -e "bconf_.*"`
+	BCONFS=`declare -F | grep -o -e "declare -f bconf_.*" | grep -o -e "bconf_.*"`
 	
+	# Check that something was actually returned here.
+	if [ -z "$BCONFS" ]; then
+		# Something is terribly wrong here.
+		echo -e "${BOLD_RED}FATAL - No application build profiles available.\n${NO_COLOUR}"
+		exit 1
+	fi
+
 	# Iterate through the possible build configurations
 	for BCONF in $BCONFS; do
 		# Check if this configuration is specific to our chosen target.
@@ -220,7 +221,7 @@ choose_platform()
 choose_bootloader()
 {
 	# List the possible bootloader configurations.
-	BLOADCONFS=`declare -F | grep -o -e "bload_.*"`
+	BLOADCONFS=`declare -F | grep -o -e "declare -f bload_.*" | grep -o -e "bload_.*"`
 	
 	# Iterate through the possible bootloader configurations
 	for BLOADCONF in $BLOADCONFS; do
@@ -268,6 +269,97 @@ choose_bootloader()
 
 ##################################### MINOR FUNCTIONS ####################################
 
+# Run any build configuration specific configuration required.
+run_bconf_specific_config()
+{
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
+
+	# Check to see if we can find a matching build configuration.
+	BCONF="bconf_${TARGET}_${PLATFORM}"
+	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so we can't do the configuration.
+		echo -e "${RED}No suitable build configuration found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
+		return 1
+	else
+		# There is a matching build configuration, so load it.
+		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+		$BCONF
+
+		# Check if a target specific configuration script was detailed in the build configuration.
+		if [ -z $BCONF_SPECIFIC_CONFIG ]; then
+			# No specific configuration script was specified.
+			echo -e "${YELLOW}No target specific configuration required.\n${NO_COLOUR}"
+			return 0
+		fi
+	
+		# The build configuration was loaded successfully.
+		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+	fi
+
+	# Check if the specific configuration script actually exists.
+	if [ ! -r ${TCPATH}/${BCONF_SPECIFIC_CONFIG} ]; then
+		# The script could not be found, so we have to bail.
+		echo -e "${RED}Target configuration script (${BCONF_SPECIFIC_CONFIG}) not found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Run the target specific build configuration script.
+	source $TCPATH/$BCONF_SPECIFIC_CONFIG
+
+	# All done.
+	return 0
+}
+
+# Run any bootloader specific configuration required.
+run_bload_specific_config()
+{
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
+
+	# Check if a bootloader was specified.
+	if [ -z $BOOTLOADER ]; then
+		# No bootloader was specified, so we can skip this.
+		echo -e "${YELLOW}No bootloader selected.  Skipping bootloader specific configuration.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Check to see if we can find a matching build configuration.
+	BLOAD="bload_${TARGET}_${BOOTLOADER}"
+	if [ `declare -f | grep "$BLOAD ()" | wc -l` == 0 ]; then
+		# No matching bootloader configuration was found, so we can't do the configuration.
+		echo -e "${RED}No suitable bootloader configuration found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
+		return 1
+	else
+		# There is a matching bootloader configuration, so load it.
+		echo -e "${CYAN}Loading bootloader configuration ($BLOAD)...\n${NO_COLOUR}"
+		$BLOAD
+
+		# Check if a bootloader specific configuration script was detailed in the bootloader configuration.
+		if [ -z $BLOAD_SPECIFIC_CONFIG ]; then
+			# No specific configuration script was specified.
+			echo -e "${YELLOW}No bootloader specific configuration required.\n${NO_COLOUR}"
+			return 0
+		fi
+	
+		# The bootloader configuration was loaded successfully.
+		echo -e "${CYAN}Loaded bootloader configuration '$BLOAD_NAME'.\n${NO_COLOUR}"
+	fi
+
+	# Check if the specific configuration script actually exists.
+	if [ ! -r ${TCPATH}/${BCONF_SPECIFIC_CONFIG} ]; then
+		# The script could not be found, so we have to bail.
+		echo -e "${RED}Bootloader configuration script (${BCONF_SPECIFIC_CONFIG}) not found.  Cannot perform bootloader specific configuration.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Run the bootloader specific build configuration script.
+	source $TCPATH/$BLOAD_SPECIFIC_CONFIG
+
+	# All done.
+	return 0
+}
+
 # Print a usage message.
 usage()
 {
@@ -288,7 +380,7 @@ Options:
 	-l --loader <Bootloader ID>	Specify the bootloader for this component.
 EOF
 	# All done.
-	return
+	return 0
 }
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
@@ -472,6 +564,14 @@ echo -e "${CYAN}Creating configuration file (src/$COMPONENT/$COMPONENT.cfg)...\n
 echo -e "# Configuration file for component $COMPONENT.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 
 # TODO - We should actually check if this works.
+
+# TARGET SPECIFIC CONFIGURATION.
+
+# Run any required target/platform specific config.
+run_bconf_specific_config
+
+# Run any required bootloader specific config.
+run_bload_specific_config
 
 # POST-NEW-COMPONENT OPTIONS.
 
