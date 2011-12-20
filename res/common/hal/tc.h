@@ -43,6 +43,8 @@ class timer_imp;
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+typedef void (*voidFuncPtr)(void);
+
 enum timer_input_state {SUCCESS, NO_RES, PIN_TAKEN};
 
 enum tc_number {TC_0, TC_1, TC_2, TC_3, TC_4, TC_5};
@@ -53,7 +55,7 @@ enum tc_oc_mode {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3};
 
 enum tc_ic_channel {TC_IC_A};
 
-enum tc_ic_mode {IC_NONE, IC_MODE_1, IC_MODE_2, IC_MODE_3};
+enum tc_ic_mode {IC_NONE, IC_MODE_1, IC_MODE_2, IC_MODE_3, IC_MODE_4};
 
 enum tc_clk_src {INT};
 
@@ -186,6 +188,7 @@ class timer
 		 *
 		 * @param channel		Which IC channel should be enabled.
 		 * @param mode			Which mode the IC channel should be set to.
+		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_ic(tc_ic_channel channel, tc_ic_mode mode);
 
