@@ -232,7 +232,7 @@ class timer_imp
 	* @param  ISRptr		A pointer to the ISRptr that will be called when this interrupt is generated.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_tov_interrupt(void* ISRptr(void));
+	int8_t enable_tov_interrupt(void (*ISRptr)(void));
 	
 	/**
 	* Disables the overflow interrupt on this timer
@@ -259,7 +259,7 @@ class timer_imp
 	* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void));
+	int8_t enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void));
 	
 	/**
 	* Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the
@@ -296,7 +296,7 @@ class timer_imp
 	* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_ic_interrupt(uint8_t channel, void* ISRptr(void));
+	int8_t enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void));
 
 	/**
 	* Disables the input compare interrupt on this timer
@@ -340,7 +340,8 @@ class timer_imp
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-void* (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void);
+/* Array of user ISRs for timer interrupts */
+void (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void) = {NULL};
 
 /*Create an array of timer implementation*/
 timer_imp timer_imps[NUM_TIMERS];	/*TODO Possibly make into a two-dimensional array of some sort to provide semaphores on each channel of each timer*/
@@ -423,7 +424,7 @@ int8_t timer::stop(void)
 * @param  ISRptr		A pointer to the ISRptr that will be called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_tov_interrupt(void* ISRptr(void))
+int8_t timer::enable_tov_interrupt(void (*ISRptr)(void))
 {
   return(imp->enable_tov_interrupt(ISRptr));
 }
@@ -459,7 +460,7 @@ int8_t timer::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 * @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void))
+int8_t timer::enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void))
 {
   return (imp->enable_oc_interrupt(channel, ISRptr));
 }
@@ -508,7 +509,7 @@ int8_t timer::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_ic_interrupt(uint8_t channel, void* ISRptr(void))
+int8_t timer::enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void))
 {
   return (imp->enable_ic_interrupt(channel, ISRptr));
 }
@@ -833,7 +834,7 @@ int8_t timer_imp::stop(void)
 * @param  ISRptr		A pointer to the ISR that will be called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_tov_interrupt(void* ISRptr(void))
+int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
 {
    /* Set the TCCRnA and TCCRnB WGMn2:0 bits to 0 for normal operation where the timer/counter
     * counting direction is always incremented from 0x00(00) to 0xFF(FF) (16-bit implementation)
@@ -1050,7 +1051,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void* ISRptr(void))
+int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void))
 {
   /* Switch the process of enabling output compare interrupts depending on which timer is used for
    * implementation
@@ -1723,7 +1724,7 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void* ISRptr(void))
+int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void))
 {
   /* Switch depending on which timer is saved in the implementation */
   switch (timer_id)
