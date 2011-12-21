@@ -42,6 +42,13 @@ class bootloader_module
 		// Functions.
 	
 		/**
+		 *	Destroys the module when it goes out of scope.
+		 *	
+		 *	NOTE - This needs to be virtual so that the default destructor of any derived classes is always used.
+		 */
+		virtual ~bootloader_module(void) = 0;
+
+		/**
 		 *	Starts up the module; initialize whatever peripherals are required, configures interrupts, etc.
 		 *
 		 *	NOTE - There is no reporting of whether the initialization was successful.  Bootloader code is assumed to ALWAYS work.
