@@ -148,7 +148,7 @@ makeavr_bootloader()
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
-	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
@@ -169,7 +169,7 @@ makeavr_bootloader()
 	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(BOOTSTART *= *\)BUILD_INSERTS_BOOTLOADER_ADDRESS_HERE/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
     
 	# Actually make the component.
@@ -487,7 +487,7 @@ get_hal()
 		return 0
 	fi
 	# Else, we're going to use the HAL.
-	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/
+	mkdir -p $OUTPATH
 
 	# Indicate what we're doing.
 	echo -e "${CYAN}Importing HAL...\n${NO_COLOUR}"
