@@ -17,9 +17,48 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+
+#include "hal/hal.h"
+#include "hal/gpio.h"
+#include "hal/mem.h"
+#include "hal/watchdog.h"
+#include "hal/tc.h"
+
+
+// DEFINE CONSTANTS
+
+#define BLINK_PORT		<<<TC_INSERTS_BLINK_PORT_HERE>>>
+#define BLINK_PIN		<<<TC_INSERTS_BLINK_PIN_HERE>>>
+#define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
+#define FORCE_BL_PORT		<<<TC_INSERTS_FORCE_BL_PORT_HERE>>>
+#define FORCE_BL_PIN		<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>
+#define LED_LOGIC		<<<TC_INSERTS_LED_LOGIC_HERE>>>
+#define INPUT_LOGIC		<<<TC_INSERTS_INPUT_LOGIC_HERE>>>
+#define CLK_SPEED		CLK_SPEED_IN_MHZ*1000000
+#define MS_P_S			1000	/*milliseconds per second */
+#define TM_PRSCL		1024
+#define BOOT_TIMEOUT		500  /* milliseconds*/
+#define MAX_TICK_VALUE		10
+#define TM_CHAN_VAL		(CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10
+
+
+#define SHUTDOWNSTATE_MEM	0x0000
+
+#define PAGE_SIZE	256
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
+
+gpio_pin_address blinkaddress = {BLINK_PORT, BLINK_PIN};
+gpio_pin blinkenlight = gpio_pin::grab(blinkaddress);
+
+timer bl_timer = timer::grab(TC_1);
+
+uint8_t timer_tick = 0;
+
+bool	buffer_1_full = false;
+bool	buffer_2_full = false;
+
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -57,39 +96,95 @@ void run_application(void);
  */
 void flash_page(uint32_t page, uint8_t* data);
 
+/**
+ *	ISR, flashes the LED
+ *
+ *	Also changes the period if in waiting mode
+ *
+ *	@param 	none
+ *
+ *	@return	Nothing.
+ */
+void blink_func(void);
+
+/**
+ *	ISR, increments tick to start program
+ *
+ *	Also changes the period if in waiting mode
+ *
+ *	@param 	none
+ *
+ *	@return	Nothing.
+ */
+void tick_func(void);
+
+
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
 {
-	// TODO - Set interrupts into bootloader-land, rather than the application-land.
-
-	// TODO - Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-
-	// TODO - Turn on the blinkenlight solidly.
-
-	// Check the state of the 'application run' marker.
-	if (is_clean())
-	{
-		// The marker seemed clean, so the bootloader will start the application immediately.
+	// Set interrupts into bootloader-land, rather than the application-land.
+	MCUCR = (1<<IVCE);
+	MCUCR |= (1<<IVSEL);
 	
-		// Run the application
-		run_application();
+	uint8_t buffer_1[PAGE_SIZE];
+	uint8_t buffer_2[PAGE_SIZE];
+	
+	uint8_t* buffer_1_pointer = &buffer_1[0];
+	uint8_t* buffer_2_pointer = &buffer_2[0];
+	
+	bool	firmware_finished = false;
+	uint8_t active_buffer = 1;
+	
+	uint32_t page = 0;
+	
+	bool	firmware_available = false;
+
+	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
+	watchdog::enable(WDTO_60MS);
+	
+	// Turn on the blinkenlight solidly.
+	if (blinkenlight.is_valid())
+	    blinkenlight.write(LED_LOGIC ? O_LOW : O_HIGH);
+	
+	
+	gpio_pin_address force_bl_add = {FORCE_BL_PORT, FORCE_BL_PIN};
+	gpio_pin force_bl = gpio_pin::grab(force_bl_add);
+
+	// Check to see if the pin is not already being used (in this case this would only be if the user specified the led pin and switch pin to be the same).
+	if (force_bl.is_valid())
+	{
+	    // Check the state of the 'application run' marker.
+	    if ((is_clean()) && (force_bl.read() == (INPUT_LOGIC ? I_HIGH : I_LOW)))
+	    {
+		    // The marker seemed clean, and there was no forcing of the bootloader firmware loading so the bootloader will start the application immediately.
+	    
+		    // Run the application
+		    run_application();
+	    }
 	}
 
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
-
-	// TODO - Probably need to read some configuration information from EEPROM, such as which ID this component is.
-
+	
 	// Fetch whichever peripheral module we are using.
-	bootloader_module mod = get_module();
+	//bootloader_module mod = get_module();
 
 	// TODO - The function get_module() needs to be implemented such that it returns the appropriate kind of module.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod.init();
+	//mod.init();
 
-	// TODO - Set up a timer and interrupt to flash the blinkenlight.
-
+	// Set up a timer and interrupt to flash the blinkenlight.
+	timer_rate bl_rate = {INT, TC_PRE_1024};
+	
+	bl_timer.set_ocR<uint16_t>(TC_OC_A,  10000);
+	bl_timer.set_ocR<uint16_t>(TC_OC_B, TM_CHAN_VAL);
+	bl_timer.enable_oc(TC_OC_A, OC_MODE_1);
+	bl_timer.enable_oc(TC_OC_B, OC_MODE_1);
+	bl_timer.enable_oc_interrupt(TC_OC_A, &blink_func);
+	bl_timer.enable_oc_interrupt(TC_OC_B, &tick_func);
+	bl_timer.set_rate(bl_rate);
+	bl_timer.start();
 	// Enable interrupts.
 	sei();
 
@@ -97,20 +192,42 @@ int main(void)
 	while (1)
 	{
 		// Touch the watchdog.
-		wdt_reset();
+		watchdog::pat();
 
-		// TODO - The blinkenlight should flash some kind of pattern to indicate what is going on.
-
+		// The blinkenlight should flash some kind of pattern to indicate what is going on.
+		bl_timer.set_ocR<uint16_t>(TC_OC_A,10000);
+		
+		// Check to see if we've timed out
+		if (((!firmware_available) && (timer_tick > MAX_TICK_VALUE)) || firmware_finished)
+		{
+		    run_application();
+		}
+		
 		// TODO - Wait until some firmware arrives.
 
 		//		Probably, send out a message to indicate that we're now waiting on firmware.  Then wait for some time.  If we
-		//		still haven't been given any firmware, then restart the application anyway, since in all liklihood this was an
+		//		still haven't been given any firmware, then restart the application anyway, since in all likelihood this was an
 		//		unforseen crash, and if for instance, the flight controller crashes, then we want to restart it and hope it can
 		//		recover, rather than flying into the ground whilst we wait for new software to arrive.
 
 		// TODO - When some firmware arrives, flash it to the RWW flash section.
+		
+		// If a buffer is full, write it to memory.
+		if ((buffer_1_full) || (firmware_finished && (active_buffer == 1)))
+		{
+		    flash_page(page, &buffer_1[0]);
+		    buffer_1_full = false;
+		    page += PAGE_SIZE;
+		}
+		
+		if ((buffer_2_full) || (firmware_finished && (active_buffer == 2)))
+		{
+		    flash_page(page, &buffer_2[0]);
+		    buffer_2_full = false;
+		    page += PAGE_SIZE;
+		}
 			
-		// TODO - Then check if we've now got a valid programme to run.
+		// TODO - Then check if we've now got a valid program to run.
 
 		// TODO - Then start the application.
 	}
@@ -122,7 +239,8 @@ int main(void)
 void boot_mark_clean(void)
 {
 	// TODO - This.
-	
+	int data = 1;
+	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
 	// All done.
 	return;
 }
@@ -130,7 +248,8 @@ void boot_mark_clean(void)
 void boot_mark_dirty(void)
 {
 	// TODO - This.
-
+	uint8_t data = 0;
+	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
 	// All done.
 	return;
 }
@@ -140,7 +259,8 @@ void boot_mark_dirty(void)
 bool is_clean(void)
 {
 	// TODO - This.
-
+	uint8_t data;
+	read_mem(SHUTDOWNSTATE_MEM, &data, 1); 
 	// TODO - For the moment, we return false.
 	return false;
 }
@@ -156,11 +276,16 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	mod.exit();
+	//mod.exit();
 
-	// TODO - Stop the timer and interrupt for the blinkenlight.
+	// Stop the timer and interrupt for the blinkenlight.
+	bl_timer.vacate();
+	blinkenlight.write(LED_LOGIC ? O_LOW: O_HIGH);
+	blinkenlight.vacate();
 
-	// TODO - Put interrupts back into application-land.
+	// Put interrupts back into application-land.
+	MCUCR |= (1<<IVCE);
+	MCUCR &= ~(1<<IVSEL);
 	
 	// Jump into the application.
 	asm("jmp 0000");
@@ -207,4 +332,15 @@ void flash_page(uint32_t page, uint8_t* data)
 	return;
 }
 
+
+void blink_func(void)
+{
+    bl_timer.set_ocR<uint16_t>(TC_OC_A, 10000);
+    blinkenlight.write(O_TOGGLE);  
+}
 // ALL DONE.
+
+void tick_func(void)
+{
+    timer_tick++;
+}

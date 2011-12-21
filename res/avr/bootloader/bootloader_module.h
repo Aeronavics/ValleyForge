@@ -63,7 +63,7 @@ class bootloader_module
 		virtual bool application_ready(void) = 0;
 
 	private:
-}
+};
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 

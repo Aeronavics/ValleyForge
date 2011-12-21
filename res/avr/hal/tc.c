@@ -490,6 +490,11 @@ uint8_t timer::set_ocR(tc_oc_channel channel, T value)
   return (imp->set_ocR <T> (channel, value));
 }
 
+template uint8_t timer::set_ocR(tc_oc_channel channel, uint16_t value);
+template uint8_t timer::set_ocR(tc_oc_channel channel, uint8_t value);
+template uint8_t timer::set_ocR(tc_oc_channel channel, int16_t value);
+template uint8_t timer::set_ocR(tc_oc_channel channel, uint32_t value);
+
 /**
 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
 * operation for the specified channel.
@@ -1678,6 +1683,7 @@ uint8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
   }
   return 0;   
 }
+
 
 /**
 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode

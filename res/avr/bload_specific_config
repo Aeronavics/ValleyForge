@@ -1,12 +1,135 @@
 #!/bin/bash
 
 # For the moment, we just print out a message to the user.
-echo -e "${GREEN}This is some other kind of prompt...\n${NO_COLOUR}"
+echo -e "\n${GREEN}Please choose which port your bootloader status LED is on\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PORTS in A B C D E F G H J K L
+	do
+		# Check if the selected component is actually valid.
+		PORTS=$(echo "A B C D E F G H J K L" | grep -w -o "$PORTS")
+		if [ -z "$PORTS" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			BLINK_PORT="$PORTS"
+			break
+		fi
+	done
+				
+echo -e "\n${GREEN}Please choose which pin your bootloader status LED is on\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PINS in 0 1 2 3 4 5 6 7
+	do
+		# Check if the selected component is actually valid.
+		PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+		if [ -z "$PINS" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			BLINK_PIN="$PINS"
+			break
+		fi
+	done
+
+echo -e "\n${GREEN}Please select whether the LED is using standard or inverted logic\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select LED_LOG in Standard\(Hi\ LED\ ON\) Inverted\(Lo\ LED\ ON\)
+	do
+		# Check if the selected component is actually valid.
+		LED_LOG=$(echo "Standard(Hi LED ON) Inverted(Lo LED ON)" | grep -w -o "$LED_LOG")
+		if [ -z "$LED_LOG" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			if [ $LED_LOG == "Standard(Hi LED ON)" ]; then
+				LED_LOGIC="1"
+			else
+				LED_LOGIC="0"
+			fi				
+			break
+		fi
+	done
+
+echo -e "\n${GREEN}Please choose which port your bootloader force pin is on\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PORTS in A B C D E F G H J K L
+	do
+		# Check if the selected component is actually valid.
+		PORTS=$(echo "A B C D E F G H J K L" | grep -w -o "$PORTS")
+		if [ -z "$PORTS" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			FORCE_BL_PORT="$PORTS"
+			break
+		fi
+	done
+
+echo -e "\n${GREEN}Please choose which pin your bootloader input pin is on\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PINS in 0 1 2 3 4 5 6 7
+	do
+		# Check if the selected component is actually valid.
+		PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+		if [ -z "$PINS" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			FORCE_BL_PIN="$PINS"
+			break
+		fi
+	done
+
+
+echo -e "\n${GREEN}Please select whether the pin is using standard or inverted logic\n${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PIN_LOG in Standard\(pin\ HIGH\) Inverted\(pin\ LO\)
+	do
+		# Check if the selected component is actually valid.
+		PIN_LOG=$(echo "Standard(pin HIGH) Inverted(pin LO)" | grep -w -o "$PIN_LOG")
+		if [ -z "$PIN_LOG" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			if [ $PIN_LOG == "Standard(pin HIGH)" ]; then
+				INPUT_LOGIC="1"
+			else
+				INPUT_LOGIC="0"
+			fi				
+			break
+		fi
+	done
+
+echo -e "\n${GREEN}Please enter the clock speed, in MHz\n${NO_COLOUR}"
+
+while :
+do
+    read
+	   if ! [[ "$REPLY" =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
+		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+	   else
+		CLK_SPEED_IN_MHZ=$REPLY
+		break
+	   fi
+done
+
+
+
 
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### BOOTLOADER SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 
 # Write configuration settings to the configuration file.
-echo -e "PUPPIES='Woof!'" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
-echo -e "KITTENS='Meow!'" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
-echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "BLINK_PORT=PORT_${BLINK_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "BLINK_PIN=PIN_${BLINK_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "LED_LOGIC=${LED_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "FORCE_BL_PORT=PORT_${FORCE_BL_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "FORCE_BL_PIN=PIN_${FORCE_BL_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "INPUT_LOGIC=${INPUT_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg

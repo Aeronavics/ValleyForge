@@ -734,9 +734,7 @@ do
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f 2)
-	PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f 2)
-	BOOTLOADER=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^BOOTLOADER" | cut -d '=' -f 2)
+	source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
 
 	# Reset any variables which may have been set by a previous component.
 	source $TCPATH/bld/common/clear_bconf_vars
