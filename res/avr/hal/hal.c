@@ -16,7 +16,11 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+#include <avr/interrupt.h>
+
 // DEFINE PRIVATE MACROS.
+
+#define INT_BIT	7
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -26,6 +30,8 @@ bool done_sem_init;
 
 semaphore semaphores[NUM_PORTS][NUM_PINS];
 semaphore pc_int_sem[NUM_BANKS];
+
+static bool int_flag = ((SREG & (1 << INT_BIT)) ? true : false);
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -53,6 +59,21 @@ void init_hal(void)
 	return;
 }
 
+void int_on(void)
+{
+	sei();
+}
+
+void int_off(void)
+{
+	int_flag = ((SREG & (1 << INT_BIT)) ? true : false);
+	cli();
+}
+
+void int_restore(void)
+{
+	SREG = (int_flag ? (SREG | (1 << INT_BIT)) : (SREG & ~(1 << INT_BIT)));
+}
 // IMPLEMENT PRIVATE FUNCTIONS.
 
 // ALL DONE.
