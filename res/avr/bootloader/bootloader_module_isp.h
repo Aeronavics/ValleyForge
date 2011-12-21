@@ -1,41 +1,29 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		bootloader_module.h
+ *  FILE: 		bootloader_module_isp.h
  *
  *  TARGET:		All AVR Targets.
  *
  *  AUTHOR: 		Edwin Hayes
  *
- *  DATE CREATED:	5-12-2011
+ *  DATE CREATED:	21-12-2011
  *
- *	This header file defines the interface for plug-in modules to the AVR bootloader.
+ *	Matching header file for bootloader_module_isp.c.  Provides a bootloader_module which only supports regular ISP
+ *	programming, i.e. doesn't do anything.
  * 
  ********************************************************************************************************************************/
 
 // Only include this header file once.
-#ifndef __BOOTLOADER_MODULE_H__
-#define __BOOTLOADER_MODULE_H__
+#ifndef __BOOTLOADER_MODULE_ISP_H__
+#define __BOOTLOADER_MODULE_ISP_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
-// Include boolean data types.
-#include <stdbool.h>
-
-// DEFINE PREPROCESSOR MACROS.
-
-#define PAGE_SIZE		256
+#include "bootloader_module.h"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-struct firmware_page
-{
-	bool ready_to_flash;
-	uint32_t page;
-	uint8_t current_byte;
-	uint8_t data[PAGE_SIZE];
-};
-
-class bootloader_module
+class bootloader_module_isp : public bootloader_module
 {
 	public:
 
@@ -50,7 +38,7 @@ class bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		virtual void init(void) = 0;
+		virtual void init(void);
 
 		/**
 		 *	Shuts down the module; deactivate whatever peripherals were used, etc.
@@ -63,22 +51,15 @@ class bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		virtual void exit() = 0;
+		virtual void exit();
 
 	private:
 };
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
-volatile firmware_page buffer;
-
-volatile uint32_t current_page = 0;
-
-volatile bool firmware_finished = false;
-volatile bool firmware_available = false;
-
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
-#endif /*__BOOTLOADER_MODULE_H__*/
+#endif /*__BOOTLOADER_MODULE_ISP_H__*/
 
 // ALL DONE.

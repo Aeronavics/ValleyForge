@@ -17,14 +17,6 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
-
-#include "hal/hal.h"
-#include "hal/gpio.h"
-#include "hal/mem.h"
-#include "hal/watchdog.h"
-#include "hal/tc.h"
-
-
 // DEFINE CONSTANTS
 
 #define BLINK_PORT		<<<TC_INSERTS_BLINK_PORT_HERE>>>
@@ -34,17 +26,19 @@
 #define FORCE_BL_PIN		<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>
 #define LED_LOGIC		<<<TC_INSERTS_LED_LOGIC_HERE>>>
 #define INPUT_LOGIC		<<<TC_INSERTS_INPUT_LOGIC_HERE>>>
-#define CLK_SPEED		CLK_SPEED_IN_MHZ*1000000
-#define MS_P_S			1000	/*milliseconds per second */
+#define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
+#define MS_P_S			1000	/* Conversion factor; milliseconds per second. */
 #define TM_PRSCL		1024
-#define BOOT_TIMEOUT		500  /* milliseconds*/
+#define BOOT_TIMEOUT		500	/* Timeout in milliseconds. */
 #define MAX_TICK_VALUE		10
-#define TM_CHAN_VAL		(CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10
+#define TM_CHAN_VAL		((CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10)
 
+#define SHUTDOWNSTATE_MEM	TODO - There needs to be a toolchain macro here to stick in the appropriate address.
 
-#define SHUTDOWNSTATE_MEM	0x0000
+#define CLEAN_FLAG		0xAFAF
 
-#define PAGE_SIZE	256
+#define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -54,11 +48,11 @@ gpio_pin blinkenlight = gpio_pin::grab(blinkaddress);
 
 timer bl_timer = timer::grab(TC_1);
 
-uint8_t timer_tick = 0;
+volatile uint8_t timer_tick;
 
-bool	buffer_1_full = false;
-bool	buffer_2_full = false;
+volatile bool timeout_expired;
 
+BOOTLOADER_MODULE mod = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -89,17 +83,14 @@ void run_application(void);
  *
  *	NOTE - There is no testing that the arguments provided are valid; invalid arguments may result in undefined behaviour.
  *
- *	TAKES: 		page	The byte address of the page to flash.
- *			data	Pointer to the data to be written to EEPROM.
+ *	TAKES: 		buffer		The firmware_page containing the page of data to be written.
  *
  *	RETURNS: 	Nothing.
  */
-void flash_page(uint32_t page, uint8_t* data);
+void flash_page(volatile firmware_page& buffer);
 
 /**
- *	ISR, flashes the LED
- *
- *	Also changes the period if in waiting mode
+ *	ISR, flashes the LED. Also changes the period if in waiting mode.
  *
  *	@param 	none
  *
@@ -108,9 +99,7 @@ void flash_page(uint32_t page, uint8_t* data);
 void blink_func(void);
 
 /**
- *	ISR, increments tick to start program
- *
- *	Also changes the period if in waiting mode
+ *	ISR, increments tick to start application programme. Also changes the period if in waiting mode.
  *
  *	@param 	none
  *
@@ -126,19 +115,6 @@ int main(void)
 	// Set interrupts into bootloader-land, rather than the application-land.
 	MCUCR = (1<<IVCE);
 	MCUCR |= (1<<IVSEL);
-	
-	uint8_t buffer_1[PAGE_SIZE];
-	uint8_t buffer_2[PAGE_SIZE];
-	
-	uint8_t* buffer_1_pointer = &buffer_1[0];
-	uint8_t* buffer_2_pointer = &buffer_2[0];
-	
-	bool	firmware_finished = false;
-	uint8_t active_buffer = 1;
-	
-	uint32_t page = 0;
-	
-	bool	firmware_available = false;
 
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
 	watchdog::enable(WDTO_60MS);
@@ -147,46 +123,46 @@ int main(void)
 	if (blinkenlight.is_valid())
 	    blinkenlight.write(LED_LOGIC ? O_LOW : O_HIGH);
 	
-	
 	gpio_pin_address force_bl_add = {FORCE_BL_PORT, FORCE_BL_PIN};
 	gpio_pin force_bl = gpio_pin::grab(force_bl_add);
 
-	// Check to see if the pin is not already being used (in this case this would only be if the user specified the led pin and switch pin to be the same).
+	// Check to see if the pin is not already being used (this would only happen if the user specified the led and switch to be the same pin).
 	if (force_bl.is_valid())
 	{
 	    // Check the state of the 'application run' marker.
 	    if ((is_clean()) && (force_bl.read() == (INPUT_LOGIC ? I_HIGH : I_LOW)))
 	    {
-		    // The marker seemed clean, and there was no forcing of the bootloader firmware loading so the bootloader will start the application immediately.
+		    // The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
 	    
-		    // Run the application
+		    // Run the application.
 		    run_application();
 	    }
 	}
 
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
-	
-	// Fetch whichever peripheral module we are using.
-	//bootloader_module mod = get_module();
-
-	// TODO - The function get_module() needs to be implemented such that it returns the appropriate kind of module.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	//mod.init();
+	mod.init();
 
-	// Set up a timer and interrupt to flash the blinkenlight.
+	// Set up a timer and interrupt to flash the blinkenlight, and to record the time elapsed since startup.
 	timer_rate bl_rate = {INT, TC_PRE_1024};
-	
-	bl_timer.set_ocR<uint16_t>(TC_OC_A,  10000);
-	bl_timer.set_ocR<uint16_t>(TC_OC_B, TM_CHAN_VAL);
+	bl_timer.set_ocR(TC_OC_A,  10000);	// TODO - This magic number should be replaced.
+	bl_timer.set_ocR(TC_OC_B, TM_CHAN_VAL);
 	bl_timer.enable_oc(TC_OC_A, OC_MODE_1);
 	bl_timer.enable_oc(TC_OC_B, OC_MODE_1);
 	bl_timer.enable_oc_interrupt(TC_OC_A, &blink_func);
 	bl_timer.enable_oc_interrupt(TC_OC_B, &tick_func);
 	bl_timer.set_rate(bl_rate);
-	bl_timer.start();
+
+	// TODO - Could we use separate timers for these two purposes, just for clarity.  We shouldn't have to conserve timers here.
+	
 	// Enable interrupts.
 	sei();
+
+	// TODO - Replace this with something non-target specific.
+
+	// Don't start the timer until after interrupts have been enabled!
+	bl_timer.start();
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
@@ -194,12 +170,15 @@ int main(void)
 		// Touch the watchdog.
 		watchdog::pat();
 
+		// TODO - Why do we keep doing this?
+
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
-		bl_timer.set_ocR<uint16_t>(TC_OC_A,10000);
+		bl_timer.set_ocR(TC_OC_A, 10000);
 		
 		// Check to see if we've timed out
-		if (((!firmware_available) && (timer_tick > MAX_TICK_VALUE)) || firmware_finished)
+		if (((!firmware_available) && timeout_expired) || firmware_finished)
 		{
+		    // Run the application.
 		    run_application();
 		}
 		
@@ -210,26 +189,14 @@ int main(void)
 		//		unforseen crash, and if for instance, the flight controller crashes, then we want to restart it and hope it can
 		//		recover, rather than flying into the ground whilst we wait for new software to arrive.
 
-		// TODO - When some firmware arrives, flash it to the RWW flash section.
-		
-		// If a buffer is full, write it to memory.
-		if ((buffer_1_full) || (firmware_finished && (active_buffer == 1)))
+		// If the buffer is ready, write it to memory.
+		if (buffer.ready_to_flash)
 		{
-		    flash_page(page, &buffer_1[0]);
-		    buffer_1_full = false;
-		    page += PAGE_SIZE;
-		}
-		
-		if ((buffer_2_full) || (firmware_finished && (active_buffer == 2)))
-		{
-		    flash_page(page, &buffer_2[0]);
-		    buffer_2_full = false;
-		    page += PAGE_SIZE;
+			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
+			flash_page(buffer);
 		}
 			
 		// TODO - Then check if we've now got a valid program to run.
-
-		// TODO - Then start the application.
 	}
 
 	// We should never reach here.
@@ -238,18 +205,20 @@ int main(void)
 
 void boot_mark_clean(void)
 {
-	// TODO - This.
-	int data = 1;
+	// Set the clean flag in EEPROM.
+	uint16_t data = CLEAN_FLAG;
 	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
+
 	// All done.
 	return;
 }
 
 void boot_mark_dirty(void)
 {
-	// TODO - This.
+	// Clear the clean flag in EEPROM, thus making the memory 'dirty'.
 	uint8_t data = 0;
 	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
+
 	// All done.
 	return;
 }
@@ -258,10 +227,17 @@ void boot_mark_dirty(void)
 
 bool is_clean(void)
 {
-	// TODO - This.
+	// Read the clean flag from EEPROM.
 	uint8_t data;
-	read_mem(SHUTDOWNSTATE_MEM, &data, 1); 
-	// TODO - For the moment, we return false.
+	read_mem(SHUTDOWNSTATE_MEM, &data, 1);
+
+	// Check if the flag was 'clean' or not.
+	if (data == CLEAN_FLAG)
+	{
+		// The flag was clean.
+		return true;
+	}
+	// Else the flag is presumed dirty.
 	return false;
 }
 
@@ -270,13 +246,17 @@ void run_application(void)
 	// Disable interrupts.
 	cli();
 
+	// TODO - Replace this with something non-target specific.
+
 	// Set the application run marker to 'dirty', so that the application must 'clean' it when it shuts down.
 	boot_mark_dirty();
 
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	//mod.exit();
+	mod.exit();
+
+	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started.
 
 	// Stop the timer and interrupt for the blinkenlight.
 	bl_timer.vacate();
@@ -294,17 +274,22 @@ void run_application(void)
 	return;
 }
 
-void flash_page(uint32_t page, uint8_t* data)
+void flash_page(volatile firmware_page& buffer)
 {
 	// Disable interrupts.
 	uint8_t sreg = SREG;
 	cli();
 
+	// TODO - Replace this with something non-target specific.
+
+	// Get a pointer to the start of the data we're going to write.
+	uint8_t* data = (uint8_t*) buffer.data;	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
+
 	// Wait until the EEPROM is ready.
 	eeprom_busy_wait();
 
 	// Erase the EEPROM page that we are about to write.
-	boot_page_erase(page);
+	boot_page_erase(buffer.page);
 	boot_spm_busy_wait();
 
 	// Set up the page of data to write, one word (two bytes) at at time.
@@ -315,32 +300,54 @@ void flash_page(uint32_t page, uint8_t* data)
 		w += (*data++) << 8;
 
 		// Fill the temporary page buffer with the created word.
-		boot_page_fill(page + i, w);
+		boot_page_fill((buffer.page + i), w);
 	}
 
 	// Write the temporary page buffer to the EEPROM.
-	boot_page_write(page);
+	boot_page_write(buffer.page);
 	boot_spm_busy_wait();
 
 	// Reenable the RWW EEPROM again.
 	boot_rww_enable();
 	
+	// Clear the buffer so that it may be used again.
+	buffer.ready_to_flash = false;
+	buffer.page = 0;
+	buffer.current_byte = 0;
+
 	// Re-enable interrupts.
 	SREG = sreg;
+
+	// TODO - Replace this with something non-target specific.
 
 	// All done.
 	return;
 }
 
-
 void blink_func(void)
 {
-    bl_timer.set_ocR<uint16_t>(TC_OC_A, 10000);
-    blinkenlight.write(O_TOGGLE);  
+	// TODO - What does this do?
+
+	// Reset the output compare register.
+	bl_timer.set_ocR(TC_OC_A, 10000);
+
+	// Toggle the blinkenlight.
+	blinkenlight.write(O_TOGGLE);  
+
+	// All done.
+	return;
 }
-// ALL DONE.
 
 void tick_func(void)
 {
-    timer_tick++;
+	// Advance the tick count.
+	timer_tick++;
+	
+	// Check if the timeout period has now expired.
+	timeout_expired = (timer_tick > MAX_TICK_VALUE);
+
+	// All done.
+	return;
 }
+
+// ALL DONE.
