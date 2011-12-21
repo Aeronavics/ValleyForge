@@ -11,3 +11,5 @@ echo -e "LOLLIPOP='Sunshine!'" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 echo -e "RAINBOW='Bright!'" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 
+# All done.
+
