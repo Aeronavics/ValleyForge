@@ -52,7 +52,8 @@ volatile uint8_t timer_tick;
 
 volatile bool timeout_expired;
 
-BOOTLOADER_MODULE mod = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
+BOOTLOADER_MODULE mod_imp = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
+bootloader_module* mod = &mod_imp;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -142,7 +143,7 @@ int main(void)
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod.init();
+	mod->init();
 
 	// Set up a timer and interrupt to flash the blinkenlight, and to record the time elapsed since startup.
 	timer_rate bl_rate = {INT, TC_PRE_1024};
@@ -254,7 +255,7 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	mod.exit();
+	mod->exit();
 
 	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started.
 
