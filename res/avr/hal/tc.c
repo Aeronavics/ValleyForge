@@ -547,6 +547,8 @@ T timer::get_ocR(tc_oc_channel channel)
 timer::~timer(void)
 {
   /*TODO vacate the timer semaphore here*/
+  
+  /* TODO call vacate() */
 }
 
 /** 
@@ -857,8 +859,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR0B &= ~(1 << WGM02);
       /*edit the TIMSK0 register to enable timer 0 overflow*/
       TIMSK0 |= (1 << TOIE0);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR0 |= (1 << TOV0);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER0_OVF_int] = ISRptr;
       break;
@@ -870,8 +870,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR1B &= ~(1 << WGM12);
       /*edit the TIMSK1 register to enable timer 1 overflow*/
       TIMSK1 |= (1 << TOIE1);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR1 |= (1 << TOV1);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER1_OVF_int] = ISRptr;
       break;
@@ -883,8 +881,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR2B &= ~(1 << WGM22);
       /*edit the TIMSK2 register to enable timer 2 overflow*/
       TIMSK2 |= (1 << TOIE2);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR2 |= (1 << TOV2);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER2_OVF_int] = ISRptr;
       break;
@@ -896,8 +892,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR3B &= ~(1 << WGM32);
       /*edit the TIMSK3 register to enable timer 3 overflow*/
       TIMSK3 |= (1 << TOIE3);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR3 |= (1 << TOV3);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER3_OVF_int] = ISRptr;
       break;
@@ -909,8 +903,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR4B &= ~(1 << WGM42);
       /*edit the TIMSK4 register to enable timer 4 overflow*/
       TIMSK4 |= (1 << TOIE4);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR4 |= (1 << TOV4);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER4_OVF_int] = ISRptr;
       break;
@@ -922,8 +914,6 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
       TCCR5B &= ~(1 << WGM52);
       /*edit the TIMSK5 register to enable timer 5 overflow*/
       TIMSK5 |= (1 << TOIE5);
-      /*edit the TIFR0 register to clear overflow event (not strictly necessary)*/
-      TIFR5 |= (1 << TOV5);
       /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER5_OVF_int] = ISRptr;
       break;
