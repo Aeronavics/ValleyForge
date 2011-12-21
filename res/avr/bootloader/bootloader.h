@@ -21,20 +21,24 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
-// Include the bootloader module header file.
+// Include the general bootloader module header file.
 #include "bootloader_module.h"
+
+// Include the specific bootloader module we want to use.
+#include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.h"
 
 // Include the AVR Boot Library.
 #include <avr/boot.h>
 
-// Include AVR interrupt library.
-#include <avr/interrupt.h>
-
-// Include the AVR watchdog library.
-#include <avr/wdt.h>
-
 // Include boolean data types.
 #include <stdbool.h>
+
+// Include the HAL libraries we use.
+#include "hal/hal.h"
+#include "hal/gpio.h"
+#include "hal/mem.h"
+#include "hal/watchdog.h"
+#include "hal/tc.h"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

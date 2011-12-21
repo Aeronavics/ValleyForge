@@ -50,7 +50,6 @@ preprocess_template()
 
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-	local ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
 
 	# TODO - Need to confirm that such a configuration file actually exists?
 
@@ -141,7 +140,6 @@ preprocess_general()
 
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-	local ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
 
 	# TODO - Need to confirm that such a configuration file actually exists?
 
@@ -207,13 +205,13 @@ preprocess_bootloader()
 		echo -e "\n${RED}ERROR - Invalid argument to preprocess_bootloader.  File does not exist.\n${NO_COLOUR}"
 		return
 	fi
-
+	
 	# Figure out what the NAME of the file actually is.
 	local NAME=${1##*/}
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
-	# Replace each instance of a macro in the template files with the corresponding information.
+	# Replace each instance of a macro in the bootloader files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
@@ -227,6 +225,15 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
 
+	sed -i "s^<<<TC_INSERTS_BLINK_PORT_HERE>>>^$BLINK_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_BLINK_PIN_HERE>>>^$BLINK_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_LED_LOGIC_HERE>>>^$LED_LOGIC^g" $1
+	sed -i "s^<<<TC_INSERTS_FORCE_BL_PORT_HERE>>>^$FORCE_BL_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>^$FORCE_BL_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_INPUT_LOGIC_HERE>>>^$INPUT_LOGIC^g" $1
+	sed -i "s^<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>^$CLK_SPEED_IN_MHZ^g" $1
+	sed -i "s^<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>^$ACTIVE_MODULE^g" $1
+	
 	# 	There are also upper-case versions of some of those same macros.
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
@@ -272,7 +279,6 @@ preprocess_library_template()
 
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-	local ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
 
 	# TODO - Need to confirm that such a configuration file actually exists?
 
@@ -357,7 +363,6 @@ preprocess_library()
 
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-	local ASPECT=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_aspect | cut -d '=' -f2)
 
 	# TODO - Need to confirm that such a configuration file actually exists?
 

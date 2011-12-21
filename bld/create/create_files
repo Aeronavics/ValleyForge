@@ -201,8 +201,7 @@ if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
 fi
 
 # Extract relevant configuration information from the configuration file.
-PLATFORM=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^PLATFORM" | cut -d '=' -f2)
-TARGET=$(grep -v "#" $TCPATH/src/$COMPONENT/$COMPONENT.cfg | grep "^TARGET" | cut -d '=' -f2)
+source $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 
 # Reset any variables which may have been set by a previous component.
 source $TCPATH/bld/common/clear_bconf_vars
