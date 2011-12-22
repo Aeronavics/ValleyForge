@@ -27,6 +27,9 @@
 // Include the specific bootloader module we want to use.
 #include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.h"
 
+// Include the STDINT fixed width types.
+#include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
+
 // Include the AVR Boot Library.
 #include <avr/boot.h>
 

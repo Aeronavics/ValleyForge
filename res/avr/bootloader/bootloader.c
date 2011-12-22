@@ -59,6 +59,13 @@ volatile bool timeout_expired;
 BOOTLOADER_MODULE mod_imp = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
 bootloader_module* mod = &mod_imp;
 
+volatile firmware_page buffer;
+
+volatile uint32_t current_page;
+
+volatile bool firmware_finished;
+volatile bool firmware_available;
+
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 /**
@@ -112,7 +119,6 @@ void blink_func(void);
  */
 void tick_func(void);
 
-
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -162,7 +168,7 @@ int main(void)
 	// Set up a timer and interrupt to measure the time elapsed.
 	timer_rate timeout_rate = {INT, TC_PRE_1024};
 	bl_timeout.set_rate(timeout_rate);
-	bl_timeout.set_ocR(TC_OC_A, TM_CHAN_VAL);
+	bl_timeout.set_ocR(TC_OC_A, (uint32_t) TM_CHAN_VAL);
 	bl_timeout.enable_oc(TC_OC_A, OC_MODE_1);
 	bl_timeout.enable_oc_interrupt(TC_OC_A, &tick_func);
 
