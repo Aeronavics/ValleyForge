@@ -140,6 +140,7 @@ class timer
 		 *
 		 * @param channel		Which OC channel should be enabled.
 		 * @param mode			Which mode the OC channel should be set to.
+		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_oc(tc_oc_channel channel, tc_oc_mode mode);
 
@@ -148,7 +149,7 @@ class timer
 		 * enable OC mode itself.
 		 *
 		 * @param  channel		Which channel register to interrupt on.
-		 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.
+		 * @param  ISRptr		A pointer to the ISR that is called when this interrupt is generated.
 		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void));
@@ -170,7 +171,7 @@ class timer
 		 * @return 0 for success, -1 for error.
 		 */
 		template <typename T>
-		uint8_t set_ocR(tc_oc_channel channel, T value);
+		int8_t set_ocR(tc_oc_channel channel, T value);
 
 		/**
 		 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
@@ -206,7 +207,7 @@ class timer
 		 * @return The IC register value.
 		 */
 		template <typename T>
-		T get_ocR(tc_oc_channel channel);
+		T get_icR(tc_ic_channel channel);
 
 		/**
 		 * Gets run whenever the instance of class timer goes out of scope.
@@ -249,12 +250,6 @@ class timer
 		* Pointer to the machine specific implementation of the timer.
 		*/
 		timer_imp* imp;
-		
-		
-		/**
-		 * Preserved prescalar value and clock source
-		 */
-		timer_rate preserved_rate;
 };
 
 

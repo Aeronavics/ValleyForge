@@ -25,7 +25,7 @@
 
 // DEFINE PRIVATE MACROS.
 /*Number of interrupts of all types across all timers & channels.*/
-#define NUM_TIMER_INTERRUPTS	26	
+#define NUM_TIMER_INTERRUPTS	25	
 
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
@@ -248,6 +248,7 @@ class timer_imp
 	*
 	* @param channel		Which OC channel should be enabled.
 	* @param mode			Which mode the OC channel should be set to.
+	* @return 0 for success, -1 for error.
 	*/
 	int8_t enable_oc(tc_oc_channel channel, tc_oc_mode mode);
 	
@@ -278,7 +279,7 @@ class timer_imp
 	* @return 0 for success, -1 for error.
 	*/
 	template <typename T>
-	uint8_t set_ocR(tc_oc_channel channel, T value);
+	int8_t set_ocR(tc_oc_channel channel, T value);
 
 	/**
 	* Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
@@ -313,15 +314,15 @@ class timer_imp
 	* @return The IC register value.
 	*/
 	template <typename T>
-	T get_ocR(tc_oc_channel channel);
+	T get_icR(tc_ic_channel channel);
 
 	/** 
-	* Allows access to the timer to be relinquished and assumed elsewhere.
+	* Returns which Timer/Counter the implementation is for.
 	*
 	* @param  Nothing.
-	* @return Nothing.
+	* @return Timer/Counter identifier; TC_0, TC_1 etc.
 	*/
-	void vacate(void);
+	tc_number whichTimer(void);
 	
 	//Private functions
 	
@@ -350,7 +351,7 @@ timer_imp timer_imps[NUM_TIMERS];	/*TODO Possibly make into a two-dimensional ar
 bool initialised_timers;
 
 /*Enumerated list of timer interrupts for use in accessing the appropriate function pointer from the function pointer array*/
-enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_OVF_int, TIMER2_CAPT_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
+enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_OVF_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
@@ -362,14 +363,9 @@ enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER
 */
 int8_t timer::set_rate(timer_rate rate)
 {
-  /*Preserve the prescalar and clock source now*/
-  preserved_rate = rate;
-  
   /*Call the set_rate function within the implementation
    * to save the timer number and prescalar settings etc*/
-  (imp->set_rate(rate));
-  
-  return 0;
+  return(imp->set_rate(rate));
 }
 
 /**
@@ -385,6 +381,16 @@ int8_t timer::load_timer_value(T value)
 }
 
 /**
+ * Pre-defined function prototypes for all the template functions.
+ */
+template int8_t timer::load_timer_value(uint8_t value);
+template int8_t timer::load_timer_value(uint16_t value);
+template int8_t timer::load_timer_value(uint32_t value);
+template int8_t timer::load_timer_value(int8_t value);
+template int8_t timer::load_timer_value(int16_t value);
+template int8_t timer::load_timer_value(int32_t value);
+
+/**
 * Gets the value of the timer register.
 *
 * @param Nothing.
@@ -395,6 +401,13 @@ T timer::get_timer_value(void)
 {
   return(imp->get_timer_value <T> ());
 }
+
+/**
+ * Pre-defined function prototypes for all the template functions.
+ */
+template int8_t timer::get_timer_value(void);
+template int16_t timer::get_timer_value(void);
+template int32_t timer::get_timer_value(void);
 
 /**
 * Starts the timer.
@@ -446,6 +459,7 @@ int8_t timer::disable_tov_interrupt(void)
 *
 * @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
+* @return 0 for success, -1 for error.
 */
 int8_t timer::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 {
@@ -485,15 +499,20 @@ int8_t timer::disable_oc_interrupt(tc_oc_channel channel)
 * @return 0 for success, -1 for error.
 */
 template <typename T>
-uint8_t timer::set_ocR(tc_oc_channel channel, T value)
+int8_t timer::set_ocR(tc_oc_channel channel, T value)
 {
   return (imp->set_ocR <T> (channel, value));
 }
 
-template uint8_t timer::set_ocR(tc_oc_channel channel, uint16_t value);
-template uint8_t timer::set_ocR(tc_oc_channel channel, uint8_t value);
-template uint8_t timer::set_ocR(tc_oc_channel channel, int16_t value);
-template uint8_t timer::set_ocR(tc_oc_channel channel, uint32_t value);
+/**
+ * Pre-defined function prototypes for all the template functions.
+ */
+template int8_t timer::set_ocR(tc_oc_channel channel, int8_t value);
+template int8_t timer::set_ocR(tc_oc_channel channel, int16_t value);
+template int8_t timer::set_ocR(tc_oc_channel channel, int32_t value);
+template int8_t timer::set_ocR(tc_oc_channel channel, uint8_t value);
+template int8_t timer::set_ocR(tc_oc_channel channel, uint16_t value);
+template int8_t timer::set_ocR(tc_oc_channel channel, uint32_t value);
 
 /**
 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
@@ -537,10 +556,17 @@ int8_t timer::disable_ic_interrupt(uint8_t channel)
 * @return The IC register value.
 */
 template <typename T>
-T timer::get_ocR(tc_oc_channel channel)
+T timer::get_icR(tc_ic_channel channel)
 {
-  return (imp->get_ocR <T> (channel));
+  return (imp->get_icR <T> (channel));
 }
+
+/**
+ * Pre-defined function prototypes for all the template functions.
+ */
+template uint8_t timer::get_icR(tc_ic_channel channel);
+template uint16_t timer::get_icR(tc_ic_channel channel);
+template uint32_t timer::get_icR(tc_ic_channel channel);
 
 /**
 * Gets run whenever the instance of class timer goes out of scope.
@@ -553,7 +579,8 @@ timer::~timer(void)
 {
   /*TODO vacate the timer semaphore here*/
   
-  /* TODO call vacate() */
+  /* call vacate() */
+  vacate();
 }
 
 /** 
@@ -564,7 +591,107 @@ timer::~timer(void)
 */
 void timer::vacate(void)
 {
-  
+  /* Check to make sure the timer has not already been vacated */
+  if (imp != NULL)
+  {
+    /* Switch which timer is vacated based on the return of the implementation's whichTimer() */
+    switch (imp->whichTimer())
+    {
+      case TC_0:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR0B &= (~(1 << CS02) & ~(1 << CS01) & ~(1 << CS00));
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK0 &= (~(1 << OCIE0B) & ~(1 << OCIE0A) & ~(1 << TOIE0));
+	/* Reset TCNTn to zero */
+	TCNT0 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER0_COMPA_int; i < TIMER1_CAPT_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+      case TC_1:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR1B &= (~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10));      
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK1 &= (~(1 << ICIE1) & ~(1 << OCIE1C) & ~(1 << OCIE1B) & ~(1 << OCIE1A) & ~(1 << TOIE1));
+	/* Reset TCNTn to zero */
+	TCNT1 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER1_CAPT_int; i < TIMER2_COMPA_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+      case TC_2:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR2B &= (~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20));
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK2 &= (~(1 << OCIE2B) & ~(1 << OCIE2A) & ~(1 << TOIE2));
+	/* Reset TCNTn to zero */
+	TCNT2 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER2_COMPA_int; i < TIMER3_CAPT_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+      case TC_3:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR3B &= (~(1 << CS32) & ~(1 << CS31) & ~(1 << CS30));
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK3 &= (~(1 << ICIE3) & ~(1 << OCIE3C) & ~(1 << OCIE3B) & ~(1 << OCIE3A) & ~(1 << TOIE3));
+	/* Reset TCNTn to zero */
+	TCNT3 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER3_CAPT_int; i < TIMER4_CAPT_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+      case TC_4:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR4B &= (~(1 << CS42) & ~(1 << CS41) & ~(1 << CS40));
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK4 &= (~(1 << ICIE4) & ~(1 << OCIE4C) & ~(1 << OCIE4B) & ~(1 << OCIE4A) & ~(1 << TOIE4));
+	/* Reset TCNTn to zero */
+	TCNT4 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER4_CAPT_int; i < TIMER5_CAPT_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+      case TC_5:
+      {
+	/*set prescalar bits CSn2:0 to 0x00*/
+	TCCR5B &= (~(1 << CS52) & ~(1 << CS51) & ~(1 << CS50));
+	/* Reset the TIMSKn register to clear interrupts */
+	TIMSK5 &= (~(1 << ICIE5) & ~(1 << OCIE5C) & ~(1 << OCIE5B) & ~(1 << OCIE5A) & ~(1 << TOIE5));
+	/* Reset TCNTn to zero */
+	TCNT5 = 0;
+	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
+	for (int8_t i = TIMER5_CAPT_int; i <= TIMER5_OVF_int; i++)
+	{
+	  timerInterrupts[i] = NULL;
+	}
+	break;
+      }
+    } 
+    
+    /*Reset the implementation pointer to NULL */
+    imp = NULL;
+  }
 }
 
 /**
@@ -614,10 +741,54 @@ timer::timer(timer_imp* implementation)
 */
 int8_t timer_imp::set_rate(timer_rate rate)
 {
-  /*Preserve the clock and prescalar settings within the implementation fields*/
+  /* Check the rate (i.e prescalar) is compatible with the timer chosen */
+  switch (timer_id)
+  {
+    case TC_0:
+    {
+      if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+	return -1;
+      
+      break;
+    }
+    case TC_1:
+    {
+      if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+	return -1;
+      
+      break;
+    }
+    case TC_2:
+    {
+      /* No invalid settings */
+      break;
+    }
+    case TC_3:
+    {
+      if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+	return -1;
+      
+      break;
+    }
+    case TC_4:
+    {
+      if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+	return -1;
+      
+      break;
+    }
+    case TC_5:
+    {
+      if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+	return -1;
+      
+      break;
+    }
+  }
+  /*Preserve the clock and prescalar settings within the implementation fields if code makes it this far*/
   preserved_rate = rate;
     
-  return 0;	/* How to detect possible error states? */
+  return 0;	/* Exit success	*/
 }
 
 /**
@@ -733,6 +904,8 @@ T timer_imp::get_timer_value(void)
       break;
     }
   }
+  
+  return 0;	/*Should never reach here */
 }
 
 /**
@@ -793,6 +966,7 @@ int8_t timer_imp::start(void)
 int8_t timer_imp::stop(void)
 {
   /*Switch which TCNTn registers are edited based on the timer number*/
+  /* Sets the prescalar bits CSn2:0 to 0x00 to stop the clock */
   switch(timer_id)
   {
     case TC_0:
@@ -1035,7 +1209,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       break;
     }
   }
-  return 0;	
+  return 0;	/*Should never get here*/
 }
 
 /**
@@ -1485,7 +1659,7 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 * @return 0 for success, -1 for error.
 */
 template <typename T>
-uint8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
+int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
 {
   /* Switch the process of disabling output compare interrupts depending on which timer is used for
    * implementation
@@ -1673,7 +1847,6 @@ uint8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
   }
   return 0;   
 }
-
 
 /**
 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
@@ -1899,7 +2072,7 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 * @return The IC register value.
 */
 template <typename T>
-T timer_imp::get_ocR(tc_oc_channel channel)
+T timer_imp::get_icR(tc_ic_channel channel)
 {
   /* Switch which register to read depending on ther timer number saved in the implementation */
   switch (timer_id)
@@ -1963,14 +2136,14 @@ T timer_imp::get_ocR(tc_oc_channel channel)
 }
 
 /** 
-* Allows access to the timer to be relinquished and assumed elsewhere.
+* Returns which Timer/Counter the implementation is for.
 *
 * @param  Nothing.
-* @return Nothing.
+* @return Timer/Counter identifier; TC_0, TC_1 etc.
 */
-void timer_imp::vacate(void)
+tc_number timer_imp::whichTimer(void)
 {
-
+  return(timer_id);
 }
 
 /**
@@ -1991,27 +2164,27 @@ int8_t start_timer0(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR0B |= (0 << CS02) | (0 << CS01) | (1 << CS00);
+	  TCCR0B &= ((0 << CS02) | (0 << CS01) | (1 << CS00));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR0B |= (0 << CS02) | (1 << CS01) | (0 << CS00);
+	  TCCR0B &= ((0 << CS02) | (1 << CS01) | (0 << CS00));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR0B |= (0 << CS02) | (1 << CS01) | (1 << CS00);
+	  TCCR0B &= ((0 << CS02) | (1 << CS01) | (1 << CS00));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR0B |= (1 << CS02) | (0 << CS01) | (0 << CS00);
+	  TCCR0B &= ((1 << CS02) | (0 << CS01) | (0 << CS00));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR0B |= (1 << CS02) | (0 << CS01) | (1 << CS00);
+	  TCCR0B &= ((1 << CS02) | (0 << CS01) | (1 << CS00));
 	  break;
 	}
 	default: /*Not a valid prescalar*/
@@ -2042,27 +2215,27 @@ int8_t start_timer1(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR1B |= (0 << CS12) | (0 << CS11) | (1 << CS10);
+	  TCCR1B &= ((0 << CS12) | (0 << CS11) | (1 << CS10));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR1B |= (0 << CS12) | (1 << CS11) | (0 << CS10);
+	  TCCR1B &= ((0 << CS12) | (1 << CS11) | (0 << CS10));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR1B |= (0 << CS12) | (1 << CS11) | (1 << CS10);
+	  TCCR1B &= ((0 << CS12) | (1 << CS11) | (1 << CS10));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR1B |= (1 << CS12) | (0 << CS11) | (0 << CS10);
+	  TCCR1B &= ((1 << CS12) | (0 << CS11) | (0 << CS10));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR1B |= (1 << CS12) | (0 << CS11) | (1 << CS10);
+	  TCCR1B &= ((1 << CS12) | (0 << CS11) | (1 << CS10));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2093,37 +2266,37 @@ int8_t start_timer2(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR2B |= (0 << CS22) | (0 << CS21) | (1 << CS20);
+	  TCCR2B &= ((0 << CS22) | (0 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR2B |= (0 << CS22) | (1 << CS21) | (0 << CS20);
+	  TCCR2B &= ((0 << CS22) | (1 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_32:	//Prescalar = 32
 	{
-	  TCCR2B |= (0 << CS22) | (1 << CS21) | (1 << CS20);
+	  TCCR2B &= ((0 << CS22) | (1 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR2B |= (1 << CS22) | (0 << CS21) | (0 << CS20);
+	  TCCR2B &= ((1 << CS22) | (0 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_128:	//Prescalar = 128
 	{
-	  TCCR2B |= (1 << CS22) | (0 << CS21) | (1 << CS20);
+	  TCCR2B &= ((1 << CS22) | (0 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR2B |= (1 << CS22) | (1 << CS21) | (0 << CS20);
+	  TCCR2B &= ((1 << CS22) | (1 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR2B |= (1 << CS22) | (1 << CS21) | (1 << CS20);
+	  TCCR2B &= ((1 << CS22) | (1 << CS21) | (1 << CS20));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2154,27 +2327,27 @@ int8_t start_timer3(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR3B |= (0 << CS32) | (0 << CS31) | (1 << CS30);
+	  TCCR3B &= ((0 << CS32) | (0 << CS31) | (1 << CS30));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR3B |= (0 << CS32) | (1 << CS31) | (0 << CS30);
+	  TCCR3B &= ((0 << CS32) | (1 << CS31) | (0 << CS30));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR3B |= (0 << CS32) | (1 << CS31) | (1 << CS30);
+	  TCCR3B &= ((0 << CS32) | (1 << CS31) | (1 << CS30));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR3B |= (1 << CS32) | (0 << CS31) | (0 << CS30);
+	  TCCR3B &= ((1 << CS32) | (0 << CS31) | (0 << CS30));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR3B |= (1 << CS32) | (0 << CS31) | (1 << CS30);
+	  TCCR3B &= ((1 << CS32) | (0 << CS31) | (1 << CS30));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2205,27 +2378,27 @@ int8_t start_timer4(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR4B |= (0 << CS42) | (0 << CS41) | (1 << CS40);
+	  TCCR4B &= ((0 << CS42) | (0 << CS41) | (1 << CS40));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR4B |= (0 << CS42) | (1 << CS41) | (0 << CS40);
+	  TCCR4B &= ((0 << CS42) | (1 << CS41) | (0 << CS40));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR4B |= (0 << CS42) | (1 << CS41) | (1 << CS40);
+	  TCCR4B &= ((0 << CS42) | (1 << CS41) | (1 << CS40));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR4B |= (1 << CS42) | (0 << CS41) | (0 << CS40);
+	  TCCR4B &= ((1 << CS42) | (0 << CS41) | (0 << CS40));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR4B |= (1 << CS42) | (0 << CS41) | (1 << CS40);
+	  TCCR4B &= ((1 << CS42) | (0 << CS41) | (1 << CS40));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2256,27 +2429,27 @@ int8_t start_timer5(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR5B |= (0 << CS52) | (0 << CS51) | (1 << CS50);
+	  TCCR5B &= ((0 << CS52) | (0 << CS51) | (1 << CS50));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR5B |= (0 << CS52) | (1 << CS51) | (0 << CS50);
+	  TCCR5B &= ((0 << CS52) | (1 << CS51) | (0 << CS50));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR5B |= (0 << CS52) | (1 << CS51) | (1 << CS50);
+	  TCCR5B &= ((0 << CS52) | (1 << CS51) | (1 << CS50));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR5B |= (1 << CS52) | (0 << CS51) | (0 << CS50);
+	  TCCR5B &= ((1 << CS52) | (0 << CS51) | (0 << CS50));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR5B |= (1 << CS52) | (0 << CS51) | (1 << CS50);
+	  TCCR5B &= ((1 << CS52) | (0 << CS51) | (1 << CS50));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2327,9 +2500,6 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	    TCCR0A |= (1 << COM0A0);
 	    TCCR0A &= ~(1 << COM0A1);
 	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK0 |= (1 << OCIE0A);
-	    
 	    break;
 	  }
 	  case OC_MODE_2:	/* Fast PWM, non-inverted */
@@ -2357,6 +2527,7 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -2414,9 +2585,12 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
+    {
       return -1;
+    }
     }
     
     return 0;
@@ -2490,6 +2664,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -2547,6 +2722,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_C:
     {
@@ -2604,6 +2780,7 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
       return -1;
@@ -2680,6 +2857,7 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -2737,6 +2915,7 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
       return -1;
@@ -2813,6 +2992,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -2870,6 +3050,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_C:
     {
@@ -2927,6 +3108,7 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
       return -1;
@@ -3003,6 +3185,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -3060,6 +3243,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_C:
     {
@@ -3117,6 +3301,7 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
       return -1;
@@ -3193,6 +3378,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_B:
     {
@@ -3250,6 +3436,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     case TC_OC_C:
     {
@@ -3307,6 +3494,7 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	  }
 	  /* TODO: More modes in here if necessary */
 	}
+	break;
     }
     default:	/* No more channels available, return an error. */
       return -1;
@@ -3367,8 +3555,9 @@ int8_t enable_ic_timer1(tc_ic_channel channel, tc_ic_mode mode)
 	default:	/* Invalid mode for timer */
 	  return -1;
       }
-      /*TODO: any more IC channels go here*/
-    }
+      break;
+     }
+     /*TODO: any more IC channels go here*/
   }
   return 0;  
 }
@@ -3425,8 +3614,9 @@ int8_t enable_ic_timer3(tc_ic_channel channel, tc_ic_mode mode)
 	default:	/* Invalid mode for timer */
 	  return -1;
       }
-      /*TODO: any more IC channels go here*/
-    }
+      break;
+     }
+     /*TODO: any more IC channels go here*/
   }
   return 0;  
 }
@@ -3483,8 +3673,9 @@ int8_t enable_ic_timer4(tc_ic_channel channel, tc_ic_mode mode)
 	default:	/* Invalid mode for timer */
 	  return -1;
       }
-      /*TODO: any more IC channels go here*/
-    }
+      break;
+     }
+     /*TODO: any more IC channels go here*/
   }
   return 0;  
 }
@@ -3541,13 +3732,14 @@ int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
 	default:	/* Invalid mode for timer */
 	  return -1;
       }
-      /*TODO: any more IC channels go here*/
-    }
+      break;
+     }
+     /*TODO: any more IC channels go here*/
   }
   return 0;  
 }
 
-/* Declare the ISRptrs
+/** Declare the ISRptrs
  * 
  * Each timer interrupt type is tied to a relevant interrupt vector. These are associated
  * with the user ISRs by way of the function pointer array timerInterrupts[]. Here the
