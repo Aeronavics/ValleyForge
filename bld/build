@@ -103,10 +103,14 @@ makeavr()
 		# Something went wrong.
 		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
-	fi									
+	fi
+
+	# Print out details of the size of the generated hex file.
+	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}.hex									
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -193,10 +197,14 @@ makeavr_bootloader()
 		# Something went wrong.
 		echo -e "\n${RED}Object copy error.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
-	fi									
+	fi
+
+	# Print out details of the size of the generated hex file.
+	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}_bootloader.hex							
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -268,10 +276,14 @@ makeavr32()
 		# Something went wrong.
 		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
-	fi									
+	fi	
+
+	# Print out details of the size of the generated hex file.
+	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}.hex								
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -356,7 +368,9 @@ makearm()
 		# Something went wrong.
 		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
-	fi									
+	fi
+
+	# TODO - Print out the size of the generated file.								
 
 	# All done.
 	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$OUTPUT_NAME.\n${NO_COLOUR}"
