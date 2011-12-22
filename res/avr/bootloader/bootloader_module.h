@@ -18,6 +18,9 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 
+// Include the STDINT fixed width types.
+#include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
+
 // Include boolean data types.
 #include <stdbool.h>
 
@@ -41,6 +44,13 @@ class bootloader_module
 
 		// Functions.
 	
+		/**
+		 *	Destroys the module when it goes out of scope.
+		 *	
+		 *	NOTE - This needs to be virtual so that the default destructor of any derived classes is always used.
+		 */
+		virtual ~bootloader_module() = 0;
+
 		/**
 		 *	Starts up the module; initialize whatever peripherals are required, configures interrupts, etc.
 		 *
@@ -70,12 +80,12 @@ class bootloader_module
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
-volatile firmware_page buffer;
+extern volatile firmware_page buffer;
 
-volatile uint32_t current_page = 0;
+extern volatile uint32_t current_page;
 
-volatile bool firmware_finished = false;
-volatile bool firmware_available = false;
+extern volatile bool firmware_finished;
+extern volatile bool firmware_available;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 

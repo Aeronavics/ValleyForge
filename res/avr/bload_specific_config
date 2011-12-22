@@ -5,10 +5,10 @@
 # Prompt the user to select the port to use for the blinkenlight.
 echo -e "${GREEN}Please choose which port your bootloader status LED is on:${NO_COLOUR}"
 	# Create a menu of choices and have the user select one.
-	select PORTS in A B C D E F G H J K L
+	select PORTS in $PORT_COUNT
 	do
 		# Check if the selected component is actually valid.
-		PORTS=$(echo "A B C D E F G H J K L" | grep -w -o "$PORTS")
+		PORTS=$(echo $PORT_COUNT | grep -w -o "$PORTS")
 		if [ -z "$PORTS" ]; then
 			# The selected component was not in the list of components, so the user is apparently a moron.
 			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
@@ -63,10 +63,10 @@ echo -e "${GREEN}Please select whether the LED is using standard or inverted log
 # Prompt the user to select which port to use for the force-load input.
 echo -e "${GREEN}Please choose which port your bootloader force pin is on:${NO_COLOUR}"
 	# Create a menu of choices and have the user select one.
-	select PORTS in A B C D E F G H J K L
+	select PORTS in $PORT_COUNT
 	do
 		# Check if the selected component is actually valid.
-		PORTS=$(echo "A B C D E F G H J K L" | grep -w -o "$PORTS")
+		PORTS=$(echo $PORT_COUNT | grep -w -o "$PORTS")
 		if [ -z "$PORTS" ]; then
 			# The selected component was not in the list of components, so the user is apparently a moron.
 			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
@@ -122,6 +122,25 @@ echo -e "${GREEN}Please select whether the pin is using standard or inverted log
 
 # Prompt the user to enter the clock speed the MCU will be running at.
 echo -e -n "${GREEN}Please enter the clock speed, in MHz: ${NO_COLOUR}"
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a line of input from the user.
+	read
+	# Check if the user input a valid response (a number).
+	if ! [[ "$REPLY" =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
+		# The user is apparently a moron.
+		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+	else
+		# A legitimate value was entered, so we can go now.
+		CLK_SPEED_IN_MHZ=$REPLY
+		echo -e "${CYAN}Selected clock speed of ${CLK_SPEED_IN_MHZ}MHz.\n${NO_COLOUR}"
+		break
+	fi
+done
+
+# Prompt the user to enter the EEPROM memory address that will be used for the shutdown state.
+echo -e -n "${GREEN}Please enter the memory address in the form \"03F1\". Number must be between 0x0000 and $MAX_EEPROM_ADDRESS ${NO_COLOUR}"
 # We loop continuously until the user enters a valid choice.
 while :
 do

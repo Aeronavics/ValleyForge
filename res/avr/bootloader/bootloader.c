@@ -33,7 +33,10 @@
 #define MAX_TICK_VALUE		10
 #define TM_CHAN_VAL		((CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10)
 
-#define SHUTDOWNSTATE_MEM	TODO - There needs to be a toolchain macro here to stick in the appropriate address.
+#define LONG_FLASH		16000
+#define SHORT_FLASH		9500
+
+#define SHUTDOWNSTATE_MEM	0x0200	/* TODO - There needs to be a toolchain macro here to stick in the appropriate address.*/
 
 #define CLEAN_FLAG		0xAFAF
 
@@ -46,13 +49,22 @@
 gpio_pin_address blinkaddress = {BLINK_PORT, BLINK_PIN};
 gpio_pin blinkenlight = gpio_pin::grab(blinkaddress);
 
-timer bl_timer = timer::grab(TC_1);
+timer blink_timer = timer::grab(TC_1);
+timer bl_timeout  = timer::grab(TC_3);
 
-volatile uint8_t timer_tick;
+volatile uint8_t timeout_tick;
 
 volatile bool timeout_expired;
 
-BOOTLOADER_MODULE mod = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
+BOOTLOADER_MODULE mod_imp = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
+bootloader_module* mod = &mod_imp;
+
+volatile firmware_page buffer;
+
+volatile uint32_t current_page;
+
+volatile bool firmware_finished;
+volatile bool firmware_available;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -107,7 +119,6 @@ void blink_func(void);
  */
 void tick_func(void);
 
-
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -115,6 +126,9 @@ int main(void)
 	// Set interrupts into bootloader-land, rather than the application-land.
 	MCUCR = (1<<IVCE);
 	MCUCR |= (1<<IVSEL);
+	
+	// Initialise the hal.
+	init_hal();
 
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
 	watchdog::enable(WDTO_60MS);
@@ -142,27 +156,31 @@ int main(void)
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod.init();
+	mod->init();
 
-	// Set up a timer and interrupt to flash the blinkenlight, and to record the time elapsed since startup.
-	timer_rate bl_rate = {INT, TC_PRE_1024};
-	bl_timer.set_ocR(TC_OC_A,  10000);	// TODO - This magic number should be replaced.
-	bl_timer.set_ocR(TC_OC_B, TM_CHAN_VAL);
-	bl_timer.enable_oc(TC_OC_A, OC_MODE_1);
-	bl_timer.enable_oc(TC_OC_B, OC_MODE_1);
-	bl_timer.enable_oc_interrupt(TC_OC_A, &blink_func);
-	bl_timer.enable_oc_interrupt(TC_OC_B, &tick_func);
-	bl_timer.set_rate(bl_rate);
+	// Set up a timer and interrupt to flash the blinkenlight..
+	timer_rate blink_rate = {INT, TC_PRE_1024};
+	blink_timer.set_rate(blink_rate);
+	blink_timer.set_ocR(TC_OC_A,  SHORT_FLASH);
+	blink_timer.enable_oc(TC_OC_A, OC_MODE_1);
+	blink_timer.enable_oc_interrupt(TC_OC_A, &blink_func);
+	
+	// Set up a timer and interrupt to measure the time elapsed.
+	timer_rate timeout_rate = {INT, TC_PRE_1024};
+	bl_timeout.set_rate(timeout_rate);
+	bl_timeout.set_ocR(TC_OC_A, (uint32_t) TM_CHAN_VAL);
+	bl_timeout.enable_oc(TC_OC_A, OC_MODE_1);
+	bl_timeout.enable_oc_interrupt(TC_OC_A, &tick_func);
 
-	// TODO - Could we use separate timers for these two purposes, just for clarity.  We shouldn't have to conserve timers here.
+	
 	
 	// Enable interrupts.
-	sei();
+	int_on();
 
 	// TODO - Replace this with something non-target specific.
 
 	// Don't start the timer until after interrupts have been enabled!
-	bl_timer.start();
+	blink_timer.start();
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
@@ -170,10 +188,9 @@ int main(void)
 		// Touch the watchdog.
 		watchdog::pat();
 
-		// TODO - Why do we keep doing this?
-
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
-		bl_timer.set_ocR(TC_OC_A, 10000);
+		// If the flashing period keeps changing, we know we are making it around the loop fine.
+		blink_timer.set_ocR(TC_OC_A, LONG_FLASH);
 		
 		// Check to see if we've timed out
 		if (((!firmware_available) && timeout_expired) || firmware_finished)
@@ -244,7 +261,7 @@ bool is_clean(void)
 void run_application(void)
 {
 	// Disable interrupts.
-	cli();
+	int_off();
 
 	// TODO - Replace this with something non-target specific.
 
@@ -254,12 +271,12 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	mod.exit();
+	mod->exit();
 
-	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started.
+	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started. Yes
 
 	// Stop the timer and interrupt for the blinkenlight.
-	bl_timer.vacate();
+	blink_timer.vacate();
 	blinkenlight.write(LED_LOGIC ? O_LOW: O_HIGH);
 	blinkenlight.vacate();
 
@@ -277,8 +294,7 @@ void run_application(void)
 void flash_page(volatile firmware_page& buffer)
 {
 	// Disable interrupts.
-	uint8_t sreg = SREG;
-	cli();
+	int_off();
 
 	// TODO - Replace this with something non-target specific.
 
@@ -316,9 +332,7 @@ void flash_page(volatile firmware_page& buffer)
 	buffer.current_byte = 0;
 
 	// Re-enable interrupts.
-	SREG = sreg;
-
-	// TODO - Replace this with something non-target specific.
+	int_restore();
 
 	// All done.
 	return;
@@ -326,10 +340,8 @@ void flash_page(volatile firmware_page& buffer)
 
 void blink_func(void)
 {
-	// TODO - What does this do?
-
 	// Reset the output compare register.
-	bl_timer.set_ocR(TC_OC_A, 10000);
+	blink_timer.set_ocR(TC_OC_A, SHORT_FLASH);
 
 	// Toggle the blinkenlight.
 	blinkenlight.write(O_TOGGLE);  
@@ -341,10 +353,10 @@ void blink_func(void)
 void tick_func(void)
 {
 	// Advance the tick count.
-	timer_tick++;
+	timeout_tick++;
 	
 	// Check if the timeout period has now expired.
-	timeout_expired = (timer_tick > MAX_TICK_VALUE);
+	timeout_expired = (timeout_tick > MAX_TICK_VALUE);
 
 	// All done.
 	return;

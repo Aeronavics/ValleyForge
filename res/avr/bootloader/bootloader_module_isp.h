@@ -30,6 +30,13 @@ class bootloader_module_isp : public bootloader_module
 		// Functions.
 	
 		/**
+		 *	Destroys the module when it goes out of scope.  Not that this DOESN'T exit the module properly, so the exit function
+		 *	still needs to be called.
+		 *	
+		 */
+		virtual ~bootloader_module_isp();
+
+		/**
 		 *	Starts up the module; initialize whatever peripherals are required, configures interrupts, etc.
 		 *
 		 *	NOTE - There is no reporting of whether the initialization was successful.  Bootloader code is assumed to ALWAYS work.

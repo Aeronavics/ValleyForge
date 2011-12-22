@@ -46,8 +46,38 @@ struct gpio_pin_address
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
+
+/**
+ * initialises the hal by creating semaphores and such.
+ * 
+ * @param none
+ * @return none
+ */
 void init_hal(void);
 
+/**
+ * Enables global interrupts.
+ * 
+ * @param none
+ * @return none
+ */
+void int_on(void);
+
+/**
+ * Disables global interrupts.
+ * 
+ * @param none
+ * @return none
+ */
+void int_off(void);
+
+/**
+ * Restores interrupts to the state they were in before int_off was called.
+ * 
+ * @param none
+ * @return none
+ */
+void int_restore(void);
 
 #endif /*__HAL_H__*/
 
