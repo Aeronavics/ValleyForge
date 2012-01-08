@@ -297,7 +297,7 @@ class timer_imp
 	* @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void));
+	int8_t enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void));
 
 	/**
 	* Disables the input compare interrupt on this timer
@@ -533,7 +533,7 @@ int8_t timer::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * @param  ISRptr			A pointer to the ISRptr that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void))
+int8_t timer::enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void))
 {
   return (imp->enable_ic_interrupt(channel, ISRptr));
 }
@@ -1893,7 +1893,7 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.  
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void))
+int8_t timer_imp::enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void))
 {
   /* Switch depending on which timer is saved in the implementation */
   switch (timer_id)
@@ -2164,27 +2164,27 @@ int8_t start_timer0(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR0B &= ((0 << CS02) | (0 << CS01) | (1 << CS00));
+	  TCCR0B |= ((0 << CS02) | (0 << CS01) | (1 << CS00));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR0B &= ((0 << CS02) | (1 << CS01) | (0 << CS00));
+	  TCCR0B |= ((0 << CS02) | (1 << CS01) | (0 << CS00));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR0B &= ((0 << CS02) | (1 << CS01) | (1 << CS00));
+	  TCCR0B |= ((0 << CS02) | (1 << CS01) | (1 << CS00));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR0B &= ((1 << CS02) | (0 << CS01) | (0 << CS00));
+	  TCCR0B |= ((1 << CS02) | (0 << CS01) | (0 << CS00));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR0B &= ((1 << CS02) | (0 << CS01) | (1 << CS00));
+	  TCCR0B |= ((1 << CS02) | (0 << CS01) | (1 << CS00));
 	  break;
 	}
 	default: /*Not a valid prescalar*/
@@ -2215,27 +2215,27 @@ int8_t start_timer1(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR1B &= ((0 << CS12) | (0 << CS11) | (1 << CS10));
+	  TCCR1B |= ((0 << CS12) | (0 << CS11) | (1 << CS10));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR1B &= ((0 << CS12) | (1 << CS11) | (0 << CS10));
+	  TCCR1B |= ((0 << CS12) | (1 << CS11) | (0 << CS10));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR1B &= ((0 << CS12) | (1 << CS11) | (1 << CS10));
+	  TCCR1B |= ((0 << CS12) | (1 << CS11) | (1 << CS10));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR1B &= ((1 << CS12) | (0 << CS11) | (0 << CS10));
+	  TCCR1B |= ((1 << CS12) | (0 << CS11) | (0 << CS10));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR1B &= ((1 << CS12) | (0 << CS11) | (1 << CS10));
+	  TCCR1B |= ((1 << CS12) | (0 << CS11) | (1 << CS10));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2266,37 +2266,37 @@ int8_t start_timer2(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR2B &= ((0 << CS22) | (0 << CS21) | (1 << CS20));
+	  TCCR2B |= ((0 << CS22) | (0 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR2B &= ((0 << CS22) | (1 << CS21) | (0 << CS20));
+	  TCCR2B |= ((0 << CS22) | (1 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_32:	//Prescalar = 32
 	{
-	  TCCR2B &= ((0 << CS22) | (1 << CS21) | (1 << CS20));
+	  TCCR2B |= ((0 << CS22) | (1 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR2B &= ((1 << CS22) | (0 << CS21) | (0 << CS20));
+	  TCCR2B |= ((1 << CS22) | (0 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_128:	//Prescalar = 128
 	{
-	  TCCR2B &= ((1 << CS22) | (0 << CS21) | (1 << CS20));
+	  TCCR2B |= ((1 << CS22) | (0 << CS21) | (1 << CS20));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR2B &= ((1 << CS22) | (1 << CS21) | (0 << CS20));
+	  TCCR2B |= ((1 << CS22) | (1 << CS21) | (0 << CS20));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR2B &= ((1 << CS22) | (1 << CS21) | (1 << CS20));
+	  TCCR2B |= ((1 << CS22) | (1 << CS21) | (1 << CS20));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2327,27 +2327,27 @@ int8_t start_timer3(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR3B &= ((0 << CS32) | (0 << CS31) | (1 << CS30));
+	  TCCR3B |= ((0 << CS32) | (0 << CS31) | (1 << CS30));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR3B &= ((0 << CS32) | (1 << CS31) | (0 << CS30));
+	  TCCR3B |= ((0 << CS32) | (1 << CS31) | (0 << CS30));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR3B &= ((0 << CS32) | (1 << CS31) | (1 << CS30));
+	  TCCR3B |= ((0 << CS32) | (1 << CS31) | (1 << CS30));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR3B &= ((1 << CS32) | (0 << CS31) | (0 << CS30));
+	  TCCR3B |= ((1 << CS32) | (0 << CS31) | (0 << CS30));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR3B &= ((1 << CS32) | (0 << CS31) | (1 << CS30));
+	  TCCR3B |= ((1 << CS32) | (0 << CS31) | (1 << CS30));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2378,27 +2378,27 @@ int8_t start_timer4(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR4B &= ((0 << CS42) | (0 << CS41) | (1 << CS40));
+	  TCCR4B |= ((0 << CS42) | (0 << CS41) | (1 << CS40));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR4B &= ((0 << CS42) | (1 << CS41) | (0 << CS40));
+	  TCCR4B |= ((0 << CS42) | (1 << CS41) | (0 << CS40));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR4B &= ((0 << CS42) | (1 << CS41) | (1 << CS40));
+	  TCCR4B |= ((0 << CS42) | (1 << CS41) | (1 << CS40));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR4B &= ((1 << CS42) | (0 << CS41) | (0 << CS40));
+	  TCCR4B |= ((1 << CS42) | (0 << CS41) | (0 << CS40));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR4B &= ((1 << CS42) | (0 << CS41) | (1 << CS40));
+	  TCCR4B |= ((1 << CS42) | (0 << CS41) | (1 << CS40));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2429,27 +2429,27 @@ int8_t start_timer5(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR5B &= ((0 << CS52) | (0 << CS51) | (1 << CS50));
+	  TCCR5B |= ((0 << CS52) | (0 << CS51) | (1 << CS50));
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR5B &= ((0 << CS52) | (1 << CS51) | (0 << CS50));
+	  TCCR5B |= ((0 << CS52) | (1 << CS51) | (0 << CS50));
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR5B &= ((0 << CS52) | (1 << CS51) | (1 << CS50));
+	  TCCR5B |= ((0 << CS52) | (1 << CS51) | (1 << CS50));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR5B &= ((1 << CS52) | (0 << CS51) | (0 << CS50));
+	  TCCR5B |= ((1 << CS52) | (0 << CS51) | (0 << CS50));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 256
 	{
-	  TCCR5B &= ((1 << CS52) | (0 << CS51) | (1 << CS50));
+	  TCCR5B |= ((1 << CS52) | (0 << CS51) | (1 << CS50));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2502,26 +2502,27 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
-	    TCCR0B |= (1 << WGM02);
+	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
+	    TCCR0A |= ((1 << COM0A1) | (1 << WGM00));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR0A |= (1 << COM0A1);
-	    TCCR0A &= ~(1 << COM0A0);
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR0A &= (~(1 << WGM01) & ~(1 << COM0A0));
+	    TCCR0B &= ~(1 << WGM02);
 	    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non - inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
-	    TCCR0B |= (1 << WGM02);
+	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	    TCCR0A |= ((1 << COM0A1) | (1 << WGM01) | (1 << WGM00));
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR0A |= ((1 << COM0A1) | (1 << COM0A0));
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR0A &= ~(1 << COM0A0);
+	    TCCR0B &= ~(1 << WGM02);
 		    
 	    break;
 	  }
@@ -2560,26 +2561,27 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
-	    TCCR0B |= (1 << WGM02);
+	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	    /* Set COMnX2:0 bits to 0x03 to set OCnX pin on match when counting up, clear when counting down */
+	    TCCR0A |= ((1 << COM0B1) | (1 << COM0B0) | (1 << WGM00));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR0A |= (1 << COM0B1);
-	    TCCR0A &= ~(1 << COM0B0);
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR0A &= ~(1 << WGM01);
+	    TCCR0B &= ~(1 << WGM02);
 	    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non - inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR0A |= ((1 << WGM01) | (1 << WGM00));
-	    TCCR0B |= (1 << WGM02);
+	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	    TCCR0A |= ((1 << COM0B1) | (1 << WGM01) | (1 << WGM00));
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR0A |= ((1 << COM0B1) | (1 << COM0B0));
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR0A &= ~(1 << COM0B0);
+	    TCCR0B &= ~(1 << WGM02);
 		    
 	    break;
 	  }
@@ -2639,27 +2641,29 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR1A |= ((1 << COM1A1) | (1 << WGM11) | (1 << WGM10));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR1A |= (1 << COM1A1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR1A &= ~(1 << COM1A0);
-	    
+	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR1A |= ((1 << COM1A1) | (1 << WGM11) | (1 << WGM10));
+	    TCCR1B |= (1 << WGM12);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR1A |= ((1 << COM1A1) | (1 << COM1A0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR1A &= ~(1 << COM1A0);
+	    TCCR1B &= ~(1 << WGM13);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -2697,27 +2701,29 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR1A |= ((1 << COM1B1) | (1 << WGM11) | (1 << WGM10));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR1A |= (1 << COM1B1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR1A &= ~(1 << COM1B0);
-	    
+	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR1A |= ((1 << COM1B1) | (1 << WGM11) | (1 << WGM10));
+	    TCCR1B |= (1 << WGM12);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR1A |= ((1 << COM1B1) | (1 << COM1B0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR1A &= ~(1 << COM1B0);
+	    TCCR1B &= ~(1 << WGM13);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -2755,27 +2761,29 @@ int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR1A |= ((1 << COM1C1) | (1 << WGM11) | (1 << WGM10));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR1A |= (1 << COM1C1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR1A &= ~(1 << COM1C0);
-	    
+	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR1A |= ((1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= ((1 << WGM13) | (1 << WGM12));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR1A |= ((1 << COM1C1) | (1 << WGM11) | (1 << WGM10));
+	    TCCR1B |= (1 << WGM12);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR1A |= ((1 << COM1C1) | (1 << COM1C0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR1A &= ~(1 << COM1C0);
+	    TCCR1B &= ~(1 << WGM13);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -2832,26 +2840,27 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
-	    TCCR2B |= (1 << WGM22);
+	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
+	    TCCR2A |= ((1 << COM2A1) | (1 << WGM20));
 	    
-	    /* Configure COMnX1:0 bits to 0x12 for non-inverted PWM */
-	    TCCR2A |= (1 << COM2A1);
-	    TCCR2A &= ~(1 << COM2A0);
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR2A &= (~(1 << WGM21) & ~(1 << COM2A0));
+	    TCCR2B &= ~(1 << WGM22);
 	    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non - inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
-	    TCCR2B |= (1 << WGM22);
+	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	    TCCR2A |= ((1 << COM2A1) | (1 << WGM21) | (1 << WGM20));
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for non-inverted PWM */
-	    TCCR2A |= ((1 << COM2A1) | (1 << COM2A0));
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR2A &= ~(1 << COM2A0);
+	    TCCR2B &= ~(1 << WGM22);
 		    
 	    break;
 	  }
@@ -2890,26 +2899,27 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
-	    TCCR2B |= (1 << WGM22);
+	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
+	    TCCR2A |= ((1 << COM2B1) | (1 << WGM20));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR2A |= (1 << COM2B1);
-	    TCCR2A &= ~(1 << COM2B0);
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR2A &= (~(1 << WGM21) & ~(1 << COM2B0));
+	    TCCR2B &= ~(1 << WGM22);
 	    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non - inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0x07 for Fast PWM mode where TOP = OCRnX */
-	    TCCR2A |= ((1 << WGM21) | (1 << WGM20));
-	    TCCR2B |= (1 << WGM22);
+	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	    TCCR2A |= ((1 << COM2B1) | (1 << WGM21) | (1 << WGM20));
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for non-inverted PWM */
-	    TCCR2A |= ((1 << COM2B1) | (1 << COM2B0));
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR2A &= ~(1 << COM2B0);
+	    TCCR2B &= ~(1 << WGM22);
 		    
 	    break;
 	  }
@@ -2967,27 +2977,29 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR3A |= ((1 << COM3A1) | (1 << WGM31) | (1 << WGM30));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR3A |= (1 << COM3A1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR3A &= ~(1 << COM3A0);
-	    
+	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR3A |= ((1 << COM3A1) | (1 << WGM31) | (1 << WGM30));
+	    TCCR3B |= (1 << WGM32);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR3A |= ((1 << COM3A1) | (1 << COM3A0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR3A &= ~(1 << COM3A0);
+	    TCCR3B &= ~(1 << WGM33);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3025,27 +3037,29 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR3A |= ((1 << COM3B1) | (1 << WGM31) | (1 << WGM30));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR3A |= (1 << COM3B1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR3A &= ~(1 << COM3B0);
-	    
+	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR3A |= ((1 << COM3B1) | (1 << WGM31) | (1 << WGM30));
+	    TCCR3B |= (1 << WGM32);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR3A |= ((1 << COM3B1) | (1 << COM3B0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR3A &= ~(1 << COM3B0);
+	    TCCR3B &= ~(1 << WGM33);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3083,27 +3097,29 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR3A |= ((1 << COM3C1) | (1 << WGM31) | (1 << WGM30));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR3A |= (1 << COM3C1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR3A &= ~(1 << COM3C0);
-	    
+	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR3A |= ((1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= ((1 << WGM33) | (1 << WGM32));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR3A |= ((1 << COM3C1) | (1 << WGM31) | (1 << WGM30));
+	    TCCR3B |= (1 << WGM32);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR3A |= ((1 << COM3C1) | (1 << COM3C0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR3A &= ~(1 << COM3C0);
+	    TCCR3B &= ~(1 << WGM33);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3160,27 +3176,29 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR4A |= ((1 << COM4A1) | (1 << WGM41) | (1 << WGM40));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR4A |= (1 << COM4A1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR4A &= ~(1 << COM4A0);
-	    
+	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR4A |= ((1 << COM4A1) | (1 << WGM41) | (1 << WGM40));
+	    TCCR4B |= (1 << WGM42);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR4A |= ((1 << COM4A1) | (1 << COM4A0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR4A &= ~(1 << COM4A0);
+	    TCCR4B &= ~(1 << WGM43);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3218,27 +3236,29 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR4A |= ((1 << COM4B1) | (1 << WGM41) | (1 << WGM40));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR4A |= (1 << COM4B1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR4A &= ~(1 << COM4B0);
-	    
+	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR4A |= ((1 << COM4B1) | (1 << WGM41) | (1 << WGM40));
+	    TCCR4B |= (1 << WGM42);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR4A |= ((1 << COM4B1) | (1 << COM4B0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR4A &= ~(1 << COM4B0);
+	    TCCR4B &= ~(1 << WGM43);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3276,27 +3296,29 @@ int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR4A |= ((1 << COM4C1) | (1 << WGM41) | (1 << WGM40));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR4A |= (1 << COM4C1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR4A &= ~(1 << COM4C0);
-	    
+	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR4A |= ((1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= ((1 << WGM43) | (1 << WGM42));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR4A |= ((1 << COM4C1) | (1 << WGM41) | (1 << WGM40));
+	    TCCR4B |= (1 << WGM42);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR4A |= ((1 << COM4C1) | (1 << COM4C0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR4A &= ~(1 << COM4C0);
+	    TCCR4B &= ~(1 << WGM43);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3353,27 +3375,29 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR5A |= ((1 << COM5A1) | (1 << WGM51) | (1 << WGM50));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR5A |= (1 << COM5A1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR5A &= ~(1 << COM5A0);
-	    
+	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR5A |= ((1 << COM5A1) | (1 << WGM51) | (1 << WGM50));
+	    TCCR5B |= (1 << WGM52);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR5A |= ((1 << COM5A1) | (1 << COM5A0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR5A &= ~(1 << COM5A0);
+	    TCCR5B &= ~(1 << WGM53);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3411,27 +3435,29 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR5A |= ((1 << COM5B1) | (1 << WGM51) | (1 << WGM50));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR5A |= (1 << COM5B1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR5A &= ~(1 << COM5B0);
-	    
+	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR5A |= ((1 << COM5B1) | (1 << WGM51) | (1 << WGM50));
+	    TCCR5B |= (1 << WGM52);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR5A |= ((1 << COM5B1) | (1 << COM5B0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR5A &= ~(1 << COM5B0);
+	    TCCR5B &= ~(1 << WGM53);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3469,27 +3495,29 @@ int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
 	    
 	    break;
 	  }
-	  case OC_MODE_2:	/* Fast PWM, non-inverted */
+	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
+	    TCCR5A |= ((1 << COM5C1) | (1 << WGM51) | (1 << WGM50));
 	    
-	    /* Configure COMnX1:0 bits to 0x02 for non-inverted PWM */
-	    TCCR5A |= (1 << COM5C1);
+	    /* Clear un-needed bits (safeguard) */
 	    TCCR5A &= ~(1 << COM5C0);
-	    
+	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
+		    
 	    break;
 	  }
-	  case OC_MODE_3:	/* Fast PWM, inverted */
+	  case OC_MODE_3:	/* Fast PWM, non-inverted */
 	  {
-	    /* Set WGMn2:0 bits to 0xF0 for Fast PWM mode where TOP = OCRnX */
-	    TCCR5A |= ((1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= ((1 << WGM53) | (1 << WGM52));
+	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
+	    TCCR5A |= ((1 << COM5C1) | (1 << WGM51) | (1 << WGM50));
+	    TCCR5B |= (1 << WGM52);
 	    
-	    /* Configure COMnX1:0 bits to 0x03 for inverted PWM */
-	    TCCR5A |= ((1 << COM5C1) | (1 << COM5C0));
-		    
+	    /* Clear un-needed bits (safeguard) */
+	    TCCR5A &= ~(1 << COM5C0);
+	    TCCR5B &= ~(1 << WGM53);
+	    
 	    break;
 	  }
 	  /* TODO: More modes in here if necessary */
@@ -3747,151 +3775,151 @@ int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
  * pointer array is non NULL.
  */
 
-ISR(TIMER0_COMPA_vect, ISR_BLOCK)
+ISR(TIMER0_COMPA_vect)
 {
   if (timerInterrupts[TIMER0_COMPA_int])
     timerInterrupts[TIMER0_COMPA_int]();
 }
 
-ISR(TIMER0_COMPB_vect, ISR_BLOCK)
+ISR(TIMER0_COMPB_vect)
 {
   if (timerInterrupts[TIMER0_COMPB_int])
     timerInterrupts[TIMER0_COMPB_int]();
 }
 
-ISR(TIMER0_OVF_vect, ISR_BLOCK)
+ISR(TIMER0_OVF_vect)
 {
   if (timerInterrupts[TIMER0_OVF_int])
     timerInterrupts[TIMER0_OVF_int]();
 }
 
-ISR(TIMER1_CAPT_vect, ISR_BLOCK)
+ISR(TIMER1_CAPT_vect)
 {
   if (timerInterrupts[TIMER1_CAPT_int])
     timerInterrupts[TIMER1_CAPT_int]();
 }
 
-ISR(TIMER1_COMPA_vect, ISR_BLOCK)
+ISR(TIMER1_COMPA_vect)
 {
   if (timerInterrupts[TIMER1_COMPA_int])
     timerInterrupts[TIMER1_COMPA_int]();
 }
 
-ISR(TIMER1_COMPB_vect, ISR_BLOCK)
+ISR(TIMER1_COMPB_vect)
 {
   if (timerInterrupts[TIMER1_COMPB_int])
     timerInterrupts[TIMER1_COMPB_int]();
 }
 
-ISR(TIMER1_OVF_vect, ISR_BLOCK)
+ISR(TIMER1_OVF_vect)
 {
   if (timerInterrupts[TIMER1_OVF_int])
     timerInterrupts[TIMER1_OVF_int]();
 }
 
-ISR(TIMER2_COMPA_vect, ISR_BLOCK)
+ISR(TIMER2_COMPA_vect)
 {
   if (timerInterrupts[TIMER2_COMPA_int])
     timerInterrupts[TIMER2_COMPA_int]();
 }
 
-ISR(TIMER2_COMPB_vect, ISR_BLOCK)
+ISR(TIMER2_COMPB_vect)
 {
   if (timerInterrupts[TIMER2_COMPB_int])
     timerInterrupts[TIMER2_COMPB_int]();
 }
 
-ISR(TIMER2_OVF_vect, ISR_BLOCK)
+ISR(TIMER2_OVF_vect)
 {
   if (timerInterrupts[TIMER2_OVF_int])
     timerInterrupts[TIMER2_OVF_int]();
 }
 
-ISR(TIMER3_CAPT_vect, ISR_BLOCK)
+ISR(TIMER3_CAPT_vect)
 {
   if (timerInterrupts[TIMER3_CAPT_int])
     timerInterrupts[TIMER3_CAPT_int]();
 }
 
-ISR(TIMER3_COMPA_vect, ISR_BLOCK)
+ISR(TIMER3_COMPA_vect)
 {
   if (timerInterrupts[TIMER3_COMPA_int])
     timerInterrupts[TIMER3_COMPA_int]();
 }
 
-ISR(TIMER3_COMPB_vect, ISR_BLOCK)
+ISR(TIMER3_COMPB_vect)
 {
   if (timerInterrupts[TIMER3_COMPB_int])
     timerInterrupts[TIMER3_COMPB_int]();
 }
 
-ISR(TIMER3_COMPC_vect, ISR_BLOCK)
+ISR(TIMER3_COMPC_vect)
 {
   if (timerInterrupts[TIMER3_COMPC_int])
     timerInterrupts[TIMER3_COMPC_int]();
 }
 
-ISR(TIMER3_OVF_vect, ISR_BLOCK)
+ISR(TIMER3_OVF_vect)
 {
   if (timerInterrupts[TIMER3_OVF_int])
     timerInterrupts[TIMER3_OVF_int]();
 }
 
-ISR(TIMER4_CAPT_vect, ISR_BLOCK)
+ISR(TIMER4_CAPT_vect)
 {
   if (timerInterrupts[TIMER4_CAPT_int])
     timerInterrupts[TIMER4_CAPT_int]();
 }
 
-ISR(TIMER4_COMPA_vect, ISR_BLOCK)
+ISR(TIMER4_COMPA_vect)
 {
   if (timerInterrupts[TIMER4_COMPA_int])
     timerInterrupts[TIMER4_COMPA_int]();
 }
 
-ISR(TIMER4_COMPB_vect, ISR_BLOCK)
+ISR(TIMER4_COMPB_vect)
 {
   if (timerInterrupts[TIMER4_COMPB_int])
     timerInterrupts[TIMER4_COMPB_int]();
 }
 
-ISR(TIMER4_COMPC_vect, ISR_BLOCK)
+ISR(TIMER4_COMPC_vect)
 {
   if (timerInterrupts[TIMER4_COMPC_int])
     timerInterrupts[TIMER4_COMPC_int]();
 }
 
-ISR(TIMER4_OVF_vect, ISR_BLOCK)
+ISR(TIMER4_OVF_vect)
 {
   if (timerInterrupts[TIMER4_OVF_int])
     timerInterrupts[TIMER4_OVF_int]();
 }
 
-ISR(TIMER5_CAPT_vect, ISR_BLOCK)
+ISR(TIMER5_CAPT_vect)
 {
   if (timerInterrupts[TIMER5_CAPT_int])
     timerInterrupts[TIMER5_CAPT_int]();
 }
 
-ISR(TIMER5_COMPA_vect, ISR_BLOCK)
+ISR(TIMER5_COMPA_vect)
 {
   if (timerInterrupts[TIMER5_COMPA_int])
     timerInterrupts[TIMER5_COMPA_int]();
 }
 
-ISR(TIMER5_COMPB_vect, ISR_BLOCK)
+ISR(TIMER5_COMPB_vect)
 {
   if (timerInterrupts[TIMER5_COMPB_int])
     timerInterrupts[TIMER5_COMPB_int]();
 }
 
-ISR(TIMER5_COMPC_vect, ISR_BLOCK)
+ISR(TIMER5_COMPC_vect)
 {
   if (timerInterrupts[TIMER5_COMPC_int])
     timerInterrupts[TIMER5_COMPC_int]();
 }
 
-ISR(TIMER5_OVF_vect, ISR_BLOCK)
+ISR(TIMER5_OVF_vect)
 {
   if (timerInterrupts[TIMER5_OVF_int])
     timerInterrupts[TIMER5_OVF_int]();

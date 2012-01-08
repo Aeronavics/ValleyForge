@@ -190,7 +190,7 @@ class timer
 		 * @param  ISRptr			A pointer to the ISR that is called when this interrupt is generated.  
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t enable_ic_interrupt(uint8_t channel, void (*ISRptr)(void));
+		int8_t enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void));
 		
 		/**
 		 * Disables the input compare interrupt on this timer
