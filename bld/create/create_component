@@ -40,61 +40,6 @@ source $TCPATH/bld/preprocess/preprocess
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		create_template							###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Creates template source files for the user to build their 	###
-###			software from.						     	###
-###											###
-###########################################################################################
-
-create_template ()
-{
-	# Create the actual files by coping the templates into the source directory.
-	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
-	
-	# Check if the template files actually exist.
-	if [ -r $TCPATH/$TEMPLATE_C_FILE ] && [ -r $TCPATH/$TEMPLATE_H_FILE ]; then
-		# They do exist, so copy them over.
-		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$COMPONENT.c
-		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$COMPONENT.h
-	else
-		# They don't exist, so something is terribly wrong.
-		echo -e "${RED}ERROR - Could not find template files.\n${NO_COLOUR}"
-	fi
-
-	# Reset any variables which may have been set by a previous component.
-	source $TCPATH/bld/common/clear_bconf_vars
-
-	# Check to see if we can find a matching build configuration.
-	BCONF="bconf_${TARGET}_${PLATFORM}"
-	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
-		# No matching build configuration was found, so we can't do the preprocessing.
-		echo -e "${RED}No suitable build configuration found.  Cannot preprocess template files.\n${NO_COLOUR}"
-		return
-	else
-		# There is a matching build configuration, so load it.
-		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
-		$BCONF
-
-		# TODO - For now, we aren't checking that the build profile actually contains any useful data.
-
-		# The build configuration was loaded successfully.
-		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
-	fi
-
-	# Preprocess the two template files.
-	preprocess_template $TCPATH/src/$COMPONENT/$COMPONENT.c
-	preprocess_template $TCPATH/src/$COMPONENT/$COMPONENT.h
-
-	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
-}
-
-######################################## FUNCTION #########################################
-###											###
 ### Name:		choose_target							###
 ###											###
 ### Inputs/Outputs:	None								###
@@ -598,7 +543,7 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 	# If they responded YES, then create the template files.
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Create the template files.
-		create_template
+		bash $TCPATH/bld/create/create_files -n $COMPONENT -c $COMPONENT
 	fi
 
 	# Explain to the user what they should do now.

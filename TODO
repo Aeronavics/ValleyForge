@@ -13,3 +13,5 @@
 * The interface for mem.h has a bunch of functions which take a pointer to the array of data to be written.  Since we are using C++, these should be changed to instead take a REFERENCE to the array of data to be written.  Similarly for anywhere else where this applies.
 
 * Maybe should split the preprocess script up into different files?
+
+* BUG - In the target specific configuration for the AVR bootloader, it asks you first to enter the clock speed in MHz, then the memory address.  Firstly, it doesn't indicate the memory addresss of WHAT (I presume it wants the bootloader clean/dirty flag?).  Secondly, when you enter a value for the memory address, it says "Selected clock speed of...".

@@ -27,6 +27,7 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 # Define file names.
 
 TEMPLATE_C_FILE="res/c_template.c"
+TEMPLATE_CPP_FILE="res/cpp_template.cpp"
 TEMPLATE_H_FILE="res/h_template.h"
 USER_CONFIG_FILE="var/config.cfg"
 BUILD_CONFIG_FILE="bld/build_configs.cfg"
@@ -58,6 +59,7 @@ Options:
 	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
 	-n --name <File Name>		Specify the name of the files to add to the current project.
 	-c --component			Specify the name of the component to add the files to.  Defaults to the 'active component'.
+	-t --type <File Type>		Specify the kind of files to create (either 'C' or 'CPP').
 EOF
 	# All done.
 	return
@@ -71,6 +73,7 @@ EOF
 FILENAMES=
 BATCHMODE=
 COMPONENT=
+TYPE=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
@@ -103,6 +106,11 @@ while true; do
 			# Specify the name of the component to add files to.
 			shift
 			COMPONENT="$1"
+			;;
+		-t|--type)
+			# Specify the type of files to create.
+			shift
+			TYPE="$1"
 			;;
 		--)
 			# We're done parsing options.  Anything else must be parameters.
@@ -172,6 +180,40 @@ if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 	exit 1
 fi
 
+# Check if we have been told which type of files to create and that we're not in batch mode.
+if [ -z $TYPE ] && [ ! $BATCHMODE ]; then
+	# We haven't been given a type, so we need the user to enter one.
+
+	# Prompt the user to select a file type.
+	echo -e "${GREEN}Please choose which file type to create:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select TYPE in C CPP
+		do
+			# Check if the selected file type is actually valid.
+			TYPE=$(echo "C CPP" | grep -w -o "$TYPE")
+			if [ -z "$TYPE" ]; then
+				# The selected file type was not in the list of supported types, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected file type $TYPE.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+# Check if we have been told which type of files to create and that we're in batch mode.
+elif [ -z $TYPE ] && [ $BATCHMODE ]; then
+	# We haven't been given a type, and we're in batch mode, so can't ask.  So we just have to bail.
+	echo -e "${RED}No file type specified in batch mode.\n${NO_COLOUR}"
+	exit 1
+
+# Check if we're been told to create an invalid type of file.
+elif ( ! $TYPE == "C" ) && ( ! $TYPE == "CPP"); then
+	# An invalid file type was specified.
+	echo -e "${RED}Invalid file type ($TYPE). Use either 'C' or 'CPP'.\n${NO_COLOUR}"
+	exit 1
+fi
+
 # CREATE THE FILES.
 
 # Parse the build configurations file.
@@ -232,17 +274,28 @@ else
 fi
 
 # Iterate through all the filenames in the list provided.
+echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 for FILENAME in $FILENAMES; do
 	# TODO - Check if there is already a file which the specified name in the source directory.
 	
-	# Create the actual files by coping the templates into the source directory.
-	echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
-	cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
-	cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
+	# Check which kind of file we are creating.
+	if [ $TYPE == "C" ]; then
+		# Create the actual files by coping the templates into the source directory.
+		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
 
-	# Preprocess the two template files.
-	preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
-	preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+		# Preprocess the two template files.
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+	elif [ $TYPE == "CPP" ]; then
+		# Create the actual files by coping the templates into the source directory.
+		cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
+
+		# Preprocess the two template files.
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+	fi
 done
 
 # All done.
