@@ -104,22 +104,26 @@ BOOTSTART=BUILD_INSERTS_BOOTLOADER_ADDRESS_HERE
 # Format for .hex file output
 HEXFORMAT=ihex
 
-# Compiler flags.  
-CPPFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char \
-	  -fno-exceptions -Wall -Wa,-ahlms=$(firstword $(filter %.lst, $(<:.c=.lst)))
+# NOTE - The assembler listings have been disabled, since this tends to flood the console with unhelpful text.
+
+# Compiler flags.
+CFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char \
+	  -fno-exceptions -Wall #-Wa,-ahlms=$(firstword $(filter %.lst, $(<:.c=.lst)))
+PFLAGS= $(CFLAGS)
 
 # Assembler flags.
-ASMFLAGS =-I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs -ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
+AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs -ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
 
 # Linker flags.
-LDFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS)
+LFLAGS= -Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS)
 
 # THIS IS THE BIT THAT MAKES THIS PROJECT INTO A BOOTLOADER.
-LDFLAGS+=-Wl,--section-start=.text=$(BOOTSTART)
+LFLAGS+= -Wl,--section-start=.text=$(BOOTSTART)
 
 ##### Executables ####
 
-CC=BUILD_INSERTS_COMPILER_HERE
+CC=BUILD_INSERTS_C_COMPILER_HERE
+PC=BUILD_INSERTS_P_COMPILER_HERE
 OBJCOPY=BUILD_INSERTS_OBJCOPY_HERE
 OBJDUMP=BUILD_INSERTS_OBJDUMP_HERE
 SIZE=avr-size
@@ -135,22 +139,26 @@ GDBINITFILE=gdbinit-$(PROJECTNAME)
 
 # Define all object files.
 
-	# All our C source files are assumed to be CPP.
+	#  C
+CFILES=$(filter %.c, $(PRJSRC))
 
 	#  C++
-CPPFILES=$(filter %.c, $(PRJSRC))
+CPPFILES=$(filter %.cpp, $(PRJSRC))
 
 	#  Assembly
 ASMFILES=$(filter %.s, $(PRJSRC))
 
+	#  C Library Files
+CLIBFILES=$(filter %.c, $(LIBSRC))
+
 	#  C++ Library Files
-CPPLIBFILES=$(filter %.c, $(LIBSRC))
+CPPLIBFILES=$(filter %.cpp, $(LIBSRC))
 
 	#  Assembly Library Files
 ASMLIBFILES=$(filter %.s, $(LIBSRC))
 
 	# List all object files we need to create
-OBJDEPS=$(CPPFILES:.c=.o) $(ASMFILES:.s=.o) $(CPPLIBFILES:.c=.o) $(ASMLIBFILES:.s=.o)
+OBJDEPS=$(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(ASMFILES:.s=.o) $(CLIBFILES:.c=.o) $(CPPLIBFILES:.cpp=.o) $(ASMLIBFILES:.s=.o)
 
 	# Define all lst files.
 LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
@@ -180,26 +188,31 @@ $(DUMPTRG): $(TRG)
 
 $(TRG): $(OBJDEPS)
 	@echo "******** Linking target ${PROJECTNAME} from object files. ********"
-	$(CC) $(LDFLAGS) -o $(TRG) $(OBJDEPS)
+	$(CC) $(LFLAGS) -o $(TRG) $(OBJDEPS)
 
 #### Generating assembly. ####
 
 # ASM from (hand coded) asm
 
 %.S: %.s
-	$(CC) -S $(ASMFLAGS) $< > $@
+	$(CC) -S $(AFLAGS) $< > $@
 
 #### Generating object files. ####
 
-# Object from C++.
+# Object from C.
 %.o : %.c
 	@echo "******** Compiling $@ from $^. ********"
-	$(CC) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Object from C++.
+%.o : %.cpp
+	@echo "******** Compiling $@ from $^. ********"
+	$(PC) $(PFLAGS) -c $< -o $@
 
 # Object from assembly.
 %.o : %.s
 	@echo "******** Assembling $@ from $^. ********"
-	$(CC) $(ASMFLAGS) -c $< -o $@
+	$(CC) $(AFLAGS) -c $< -o $@
 
 #### Generating hex files ####
 
