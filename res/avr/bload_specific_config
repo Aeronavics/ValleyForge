@@ -140,20 +140,22 @@ do
 done
 
 # Prompt the user to enter the EEPROM memory address that will be used for the shutdown state.
-echo -e -n "${GREEN}Please enter the memory address in the form \"03F1\". Number must be between 0x0000 and $MAX_EEPROM_ADDRESS ${NO_COLOUR}"
+echo -e -n "${GREEN}Please enter the shutdown state memory address in the form \"03F1\". Number must be between 0x0000 and 0x$MAX_EEPROM_ADDRESS. ${NO_COLOUR}"
 # We loop continuously until the user enters a valid choice.
 while :
 do
 	# Read a line of input from the user.
 	read
-	# Check if the user input a valid response (a number).
-	if ! [[ "$REPLY" =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
-		# The user is apparently a moron.
+	# Check if the user input a valid response (a hex number).
+	if ! [[ "$REPLY" =~ ^[A-F0-9]+$ ]]; then
+		# The user is apparently a moron. Come now, that's a bit harsh isn't it?
 		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+	elif [[ $(echo "ibase=16; $REPLY" | bc) -gt $(echo "ibase=16; $MAX_EEPROM_ADDRESS" | bc) ]]; then
+		echo -e "${RED}Number is too large. Please enter a smaller number\n${NO_COLOUR}"
 	else
 		# A legitimate value was entered, so we can go now.
-		CLK_SPEED_IN_MHZ=$REPLY
-		echo -e "${CYAN}Selected clock speed of ${CLK_SPEED_IN_MHZ}MHz.\n${NO_COLOUR}"
+		SHUTDOWNSTATE_MEM="0x$REPLY"
+		echo -e "${CYAN}Selected memory address of ${SHUTDOWNSTATE_MEM}.\n${NO_COLOUR}"
 		break
 	fi
 done
@@ -169,6 +171,6 @@ echo -e "FORCE_BL_PORT=PORT_${FORCE_BL_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONE
 echo -e "FORCE_BL_PIN=PIN_${FORCE_BL_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 echo -e "INPUT_LOGIC=${INPUT_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
-
+echo -e "SHUTDOWNSTATE_MEM=${SHUTDOWNSTATE_MEM}" >> $TCPATH/src/$COMPONENT/$COMPONENT.cfg
 # All done.
 
