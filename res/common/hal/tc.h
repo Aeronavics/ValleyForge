@@ -27,11 +27,10 @@
 // Include the standard C++ definitions.
 #include <stddef.h>
 
-// Include the gpio functionality for tying pins with PWM and input compare.
-
+// Include the gpio functionality for tying pins with PWM and input capture.
 #include "gpio.h"
 
-// Include the semaphore library that someone is gonna create.
+// Include the semaphore library
 #include "semaphore.h"
 
 // Include the hal library.
@@ -198,7 +197,7 @@ class timer
 		 * @param channel		Which channel register to disable the interrupt on.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t disable_ic_interrupt(uint8_t channel);
+		int8_t disable_ic_interrupt(tc_ic_channel channel);
 		
 		/**
 		 * Reads the current input capture register value for the specified channel.

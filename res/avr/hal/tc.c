@@ -24,9 +24,154 @@
 #include <avr/interrupt.h>
 
 // DEFINE PRIVATE MACROS.
-/*Number of interrupts of all types across all timers & channels.*/
-#define NUM_TIMER_INTERRUPTS	25	
 
+// DEFINE DEVICE PARTICULAR REGISTAR ADDRESSES
+#if defined (__AVR_ATmega2560__)
+	/* Timer/Counter 0 */
+#	define TIMSK0_ADDRESS		0x6E
+#	define TCNT0_ADDRESS		0x36
+#	define OCR0B_ADDRESS		0x28
+#	define OCR0A_ADDRESS		0x27
+#	define TCCR0B_ADDRESS		0x25
+#	define TCCR0A_ADDRESS		0x24
+
+	/* Timer/Counter 1 */
+#	define OCR1B_ADDRESS		0x8A
+#	define OCR1A_ADDRESS		0x88
+#	define TCNT1_ADDRESS		0x84
+#	define TCCR1B_ADDRESS		0x81
+#	define TCCR1A_ADDRESS		0x80
+#	define TIMSK1_ADDRESS		0x6F
+
+	/* Timer/Counter 2 */
+#	define OCR2B_ADDRESS		0xB4
+#	define OCR2A_ADDRESS		0xB3
+#	define TCNT2_ADDRESS		0xB2
+#	define TCCR2B_ADDRESS		0xB1
+#	define TCCR2A_ADDRESS		0xB0
+#	define TIMSK2_ADDRESS		0x70
+
+	/* Timer/Counter 3 */
+#	define OCR3B_ADDRESS		0x9A
+#	define OCR3A_ADDRESS		0x98
+#	define TCNT3_ADDRESS		0x94
+#	define TCCR3B_ADDRESS		0x91
+#	define TCCR3A_ADDRESS		0x90
+#	define TIMSK3_ADDRESS		0x71
+
+	/* Timer/Counter 4 */
+#	define OCR4B_ADDRESS		0xAA
+#	define OCR4A_ADDRESS		0xA8
+#	define TCNT4_ADDRESS		0xA4
+#	define TCCR4B_ADDRESS		0xA1
+#	define TCCR4A_ADDRESS		0xA0
+#	define TIMSK4_ADDRESS		0x72
+
+	/* Timer/Counter 5 */
+#	define OCR5B_ADDRESS		0x12A
+#	define OCR5A_ADDRESS		0x128
+#	define TCNT5_ADDRESS		0x124
+#	define TCCR5B_ADDRESS		0x121
+#	define TCCR5A_ADDRESS		0x120
+#	define TIMSK5_ADDRESS		0x73
+
+	/* Input Capture Registers */
+#	define ICR1_ADDRESS		0x86
+#	define ICR3_ADDRESS		0x96
+#	define ICR4_ADDRESS		0xA6
+#	define ICR5_ADDRESS		0x126
+
+	/* TCCRnB generic bits */
+#	define ICNC_BIT			7
+#	define ICES_BIT			6
+#	define WGM3_BIT			4
+#	define WGM2_BIT			3
+#	define CS2_BIT			2
+#	define CS1_BIT			1
+#	define CS0_BIT			0
+
+	/* TCCRnA generic bits */
+#	define COMA1_BIT		7
+#	define COMA0_BIT		6
+#	define COMB1_BIT		5
+#	define COMB0_BIT		4
+#	define COMC1_BIT		3
+#	define COMC0_BIT		2
+#	define WGM1_BIT			1
+#	define WGM0_BIT			0
+
+	/* TIMSKn generic bits */
+#	define ICIE_BIT			5
+#	define OCIEC_BIT		3
+#	define OCIEB_BIT		2
+#	define OCIEA_BIT		1
+#	define TOIE_BIT			0
+
+	/* Timer/Counter Peripheral Pin Addresses */
+#	define TC0_OC_A_PORT		PORT_B
+#	define TC0_OC_A_PIN		PIN_7
+#	define TC0_OC_B_PIN		{PORT_G, PIN_5}
+#	define TC1_OC_A_PIN		{PORT_B, PIN_5}
+#	define TC1_OC_B_PIN		{PORT_B, PIN_6}
+#	define TC1_OC_C_PIN		{PORT_B, PIN_7}
+#	define TC1_IC_A_PIN		{PORT_D, PIN_4}
+#	define TC2_OC_A_PIN		{PORT_B, PIN_4}
+#	define TC2_OC_B_PIN		{PORT_H, PIN_6}
+#	define TC3_OC_A_PIN		{PORT_E, PIN_3}
+#	define TC3_OC_B_PIN		{PORT_E, PIN_4}
+#	define TC3_OC_C_PIN		{PORT_E, PIN_5}
+#	define TC3_IC_A_PIN		{PORT_E, PIN_7}
+#	define TC4_OC_A_PIN		{PORT_H, PIN_3}
+#	define TC4_OC_B_PIN		{PORT_H, PIN_4}
+#	define TC4_OC_C_PIN		{PORT_H, PIN_5}
+#	define TC4_IC_A_PIN		{PORT_L, PIN_0}
+#	define TC5_OC_A_PIN		{PORT_L, PIN_3}
+#	define TC5_OC_B_PIN		{PORT_L, PIN_4}
+#	define TC5_OC_C_PIN		{PORT_L, PIN_5}
+#	define TC5_IC_A_PIN		{PORT_L, PIN_1}
+
+	/* Interrupt Pointer Array values and offsets */
+#	define NUM_TIMER0_INTERRUPTS	3
+#	define TIMER0_OFFSET		0
+#	define NUM_TIMER1_INTERRUPTS	5
+#	define TIMER1_OFFSET		3
+#	define NUM_TIMER2_INTERRUPTS	3
+#	define TIMER2_OFFSET		8
+#	define NUM_TIMER3_INTERRUPTS	5
+#	define TIMER3_OFFSET		11
+#	define NUM_TIMER4_INTERRUPTS	5
+#	define TIMER4_OFFSET		16
+#	define NUM_TIMER5_INTERRUPTS	5
+#	define TIMER5_OFFSET		21
+#	define NUM_TIMER_INTERRUPTS	NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS + NUM_TIMER4_INTERRUPTS + NUM_TIMER5_INTERRUPTS
+#endif
+
+/*
+ * Structure to contain all the required register addresses that are needed for the Timer/Counter functionality
+ */
+typedef struct REGISTER_ADDRESS_TABLE {
+  int16_t TIMSK_address;
+  int16_t TCCRB_address;
+  int16_t TCCRA_address;
+  int16_t OCRC_address;
+  int16_t OCRB_address;
+  int16_t OCRA_address;
+  int16_t TCNT_address;
+  int16_t ICR_address;
+} registerAddressTable_t;
+
+/*
+ * Structure to contain the GPIO pin addresses and associated semaphores that represent the peripheral pins for all the timer counters
+ */
+typedef struct TIMER_COUNTER_PIN {
+  semaphore *s;
+  gpio_pin_address address;
+} timerCounterPin_t;
+
+/*
+ * Enumerated list of Timer/Counter types
+ */
+enum timer_type {TIMER_8_BIT, TIMER_16_BIT};
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -34,139 +179,48 @@
 * Starts Timer 0 by manipulating the TCCR0A & TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
-* * @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer0(timer_rate rate);
-
-/**
-* Starts Timer 1 by manipulating the TCCR1A & TCCR1B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer1(timer_rate rate);
+int8_t start_timer0(timer_rate rate, registerAddressTable_t *table);
 
 /**
-* Starts Timer 2 by manipulating the TCCR2A & TCCR2B registers
+* Starts the 16-bit Timer/Counters by manipulating the TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer2(timer_rate rate);
+int8_t start_16bit_timer(timer_rate rate, registerAddressTable_t *table);
 
 /**
-* Starts Timer 3 by manipulating the TCCR3A & TCCR3B registers
+* Starts Timer 0 by manipulating the TCCR0A & TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer3(timer_rate rate);
+int8_t start_timer2(timer_rate rate, registerAddressTable_t *table);
 
 /**
-* Starts Timer 4 by manipulating the TCCR4A & TCCR4B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
-* @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer4(timer_rate rate);
-
-/**
-* Starts Timer 5 by manipulating the TCCR5A & TCCR5B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
-* @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer5(timer_rate rate);
-
-/**
-* Enables Output Compare operation on Timer Counter 0.
+* Enables Output Compare operation on 8-bit Timer/Counters.
 * 
 * @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
+* @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode);
+int8_t enable_oc_8bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table);
 
 /**
-* Enables Output Compare operation on Timer Counter 1.
+* Enables Output Compare operation on 16-bit Timer/Counters.
 * 
 * @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
+* @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode);
-
-/**
-* Enables Output Compare operation on Timer Counter 2.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode);
-
-/**
-* Enables Output Compare operation on Timer Counter 3.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode);
-
-/**
-* Enables Output Compare operation on Timer Counter 4.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode);
-
-/**
-* Enables Output Compare operation on Timer Counter 5.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode);
-
-/**
-* Enables input capture mode for Timer Counter 1.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-*/
-int8_t enable_ic_timer1(tc_ic_channel channel, tc_ic_mode mode);
-
-/**
-* Enables input capture mode for Timer Counter 3.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-*/
-int8_t enable_ic_timer3(tc_ic_channel channel, tc_ic_mode mode);
-
-/**
-* Enables input capture mode for Timer Counter 4.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-*/
-int8_t enable_ic_timer4(tc_ic_channel channel, tc_ic_mode mode);
-
-/**
-* Enables input capture mode for Timer Counter 5.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-*/
-int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode);
+int8_t enable_oc_16bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table);
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -305,7 +359,7 @@ class timer_imp
 	* @param channel		Which channel register to disable the interrupt on.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t disable_ic_interrupt(uint8_t channel);
+	int8_t disable_ic_interrupt(tc_ic_channel channel);
 
 	/**
 	* Reads the current input capture register value for the specified channel.
@@ -315,18 +369,8 @@ class timer_imp
 	*/
 	template <typename T>
 	T get_icR(tc_ic_channel channel);
-
-	/** 
-	* Returns which Timer/Counter the implementation is for.
-	*
-	* @param  Nothing.
-	* @return Timer/Counter identifier; TC_0, TC_1 etc.
-	*/
-	tc_number whichTimer(void);
 	
-	//Private functions
-	
-	//Fields
+	// Public Fields
 	/**
 	* Identifier of the current timer it is attached to
 	*/
@@ -336,7 +380,25 @@ class timer_imp
 	* Preserved prescalar value and clock source
 	*/
 	timer_rate preserved_rate;
-  
+	
+	/**
+	 * Register Address table to store the addresses of the particular Timer/Counter 
+	 * registers when a Timer/Counter is instantiated and initialised.
+	 */
+	registerAddressTable_t registerTable;
+	
+	/**
+	 * Variable to identify what type of Timer/Counter each implementation is (i.e 8-bit or 16-bit)
+	 */
+	timer_type timerType;
+	
+// 	/**
+// 	 * Pointer to array of Timer/Counter pins to represent each of the peripheral pins available 
+// 	 * to the Timer/Counter.
+// 	 */
+// 	timerCounterPin_t *timerCounterPins;
+
+	//Private functions & Fields
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -345,13 +407,13 @@ class timer_imp
 void (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void) = {NULL};
 
 /*Create an array of timer implementation*/
-timer_imp timer_imps[NUM_TIMERS];	/*TODO Possibly make into a two-dimensional array of some sort to provide semaphores on each channel of each timer*/
+timer_imp timer_imps[NUM_TIMERS];	/*Possibly make into a two-dimensional array of some sort to provide semaphores on each channel of each timer*/
 
 /* Variable to indicate whether timer_imps[] has been initialised yet */
 bool initialised_timers;
 
 /*Enumerated list of timer interrupts for use in accessing the appropriate function pointer from the function pointer array*/
-enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_OVF_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
+enum timer_interrupts {TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER0_OVF_int, TIMER1_CAPT_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_COMPC_int, TIMER1_OVF_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER2_OVF_int, TIMER3_CAPT_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_OVF_int, TIMER4_CAPT_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_OVF_int, TIMER5_CAPT_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_OVF_int};
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
@@ -544,7 +606,7 @@ int8_t timer::enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void))
 * @param channel		Which channel register to disable the interrupt on.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::disable_ic_interrupt(uint8_t channel)
+int8_t timer::disable_ic_interrupt(tc_ic_channel channel)
 {
   return (imp->disable_ic_interrupt(channel));
 }
@@ -577,8 +639,6 @@ template uint32_t timer::get_icR(tc_ic_channel channel);
 */
 timer::~timer(void)
 {
-  /*TODO vacate the timer semaphore here*/
-  
   /* call vacate() */
   vacate();
 }
@@ -591,22 +651,33 @@ timer::~timer(void)
 */
 void timer::vacate(void)
 {
+  /*TODO vacate the timer semaphore here*/
+  
   /* Check to make sure the timer has not already been vacated */
   if (imp != NULL)
   {
-    /* Switch which timer is vacated based on the return of the implementation's whichTimer() */
-    switch (imp->whichTimer())
+    _SFR_IO8(imp->registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+    _SFR_MEM8(imp->registerTable.TIMSK_address) &= (~(1 << OCIEB_BIT) & ~(1 << OCIEA_BIT) & ~(1 << TOIE_BIT));
+    
+    /* Clear the TCNTn value upon vacating */
+    if ((imp->timer_id == TC_0) || (imp->timer_id == TC_2))
+    {
+      _SFR_IO8(imp->registerTable.TCNT_address) = 0;
+    }
+    else
+    {
+      _SFR_MEM16(imp->registerTable.TCNT_address) = 0;
+    }
+    
+    /*
+     * Reset the appropriate ISR pointers in the ISR function pointer array to NULL depending on which
+     * Timer/Counter has been applied.
+     */
+    switch(imp->timer_id)
     {
       case TC_0:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR0B &= (~(1 << CS02) & ~(1 << CS01) & ~(1 << CS00));
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK0 &= (~(1 << OCIE0B) & ~(1 << OCIE0A) & ~(1 << TOIE0));
-	/* Reset TCNTn to zero */
-	TCNT0 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER0_COMPA_int; i < TIMER1_CAPT_int; i++)
+	for (int8_t i = TIMER0_OFFSET; i < (TIMER0_OFFSET + NUM_TIMER0_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
@@ -614,14 +685,7 @@ void timer::vacate(void)
       }
       case TC_1:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR1B &= (~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10));      
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK1 &= (~(1 << ICIE1) & ~(1 << OCIE1C) & ~(1 << OCIE1B) & ~(1 << OCIE1A) & ~(1 << TOIE1));
-	/* Reset TCNTn to zero */
-	TCNT1 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER1_CAPT_int; i < TIMER2_COMPA_int; i++)
+	for (int8_t i = TIMER1_OFFSET; i < (TIMER1_OFFSET + NUM_TIMER1_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
@@ -629,14 +693,7 @@ void timer::vacate(void)
       }
       case TC_2:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR2B &= (~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20));
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK2 &= (~(1 << OCIE2B) & ~(1 << OCIE2A) & ~(1 << TOIE2));
-	/* Reset TCNTn to zero */
-	TCNT2 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER2_COMPA_int; i < TIMER3_CAPT_int; i++)
+	for (int8_t i = TIMER2_OFFSET; i < (TIMER2_OFFSET + NUM_TIMER2_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
@@ -644,14 +701,7 @@ void timer::vacate(void)
       }
       case TC_3:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR3B &= (~(1 << CS32) & ~(1 << CS31) & ~(1 << CS30));
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK3 &= (~(1 << ICIE3) & ~(1 << OCIE3C) & ~(1 << OCIE3B) & ~(1 << OCIE3A) & ~(1 << TOIE3));
-	/* Reset TCNTn to zero */
-	TCNT3 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER3_CAPT_int; i < TIMER4_CAPT_int; i++)
+	for (int8_t i = TIMER3_OFFSET; i < (TIMER3_OFFSET + NUM_TIMER3_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
@@ -659,14 +709,7 @@ void timer::vacate(void)
       }
       case TC_4:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR4B &= (~(1 << CS42) & ~(1 << CS41) & ~(1 << CS40));
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK4 &= (~(1 << ICIE4) & ~(1 << OCIE4C) & ~(1 << OCIE4B) & ~(1 << OCIE4A) & ~(1 << TOIE4));
-	/* Reset TCNTn to zero */
-	TCNT4 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER4_CAPT_int; i < TIMER5_CAPT_int; i++)
+	for (int8_t i = TIMER4_OFFSET; i < (TIMER4_OFFSET + NUM_TIMER4_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
@@ -674,21 +717,16 @@ void timer::vacate(void)
       }
       case TC_5:
       {
-	/*set prescalar bits CSn2:0 to 0x00*/
-	TCCR5B &= (~(1 << CS52) & ~(1 << CS51) & ~(1 << CS50));
-	/* Reset the TIMSKn register to clear interrupts */
-	TIMSK5 &= (~(1 << ICIE5) & ~(1 << OCIE5C) & ~(1 << OCIE5B) & ~(1 << OCIE5A) & ~(1 << TOIE5));
-	/* Reset TCNTn to zero */
-	TCNT5 = 0;
-	/*Fill all TIMERn_XXX_int elements in user ISR function array with NULL to detach interrupts*/
-	for (int8_t i = TIMER5_CAPT_int; i <= TIMER5_OVF_int; i++)
+	for (int8_t i = TIMER5_OFFSET; i < (TIMER5_OFFSET + NUM_TIMER5_INTERRUPTS); i++)
 	{
 	  timerInterrupts[i] = NULL;
 	}
 	break;
       }
-    } 
+    }	
     
+    /* TODO: Release the semaphore */
+   
     /*Reset the implementation pointer to NULL */
     imp = NULL;
   }
@@ -713,6 +751,9 @@ timer timer::grab(tc_number timerNumber)
     {
       timer_imps[i].timer_id = (tc_number)i;
     }
+    
+    /* Assign the implementation semaphore pointers to their associated peripheral pins */
+    
     
     initialised_timers = true;
   }
@@ -747,40 +788,117 @@ int8_t timer_imp::set_rate(timer_rate rate)
     case TC_0:
     {
       if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+      {
 	return -1;
+      }
       
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK0_ADDRESS;
+      registerTable.TCCRB_address = TCCR0B_ADDRESS;
+      registerTable.TCCRA_address = TCCR0A_ADDRESS;
+      registerTable.OCRB_address = OCR0B_ADDRESS;
+      registerTable.OCRA_address = OCR0A_ADDRESS;
+      registerTable.TCNT_address = TCNT0_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_8_BIT;
+
       break;
     }
     case TC_1:
     {
       if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+      {
 	return -1;
+      }
+      
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK1_ADDRESS;
+      registerTable.TCCRB_address = TCCR1B_ADDRESS;
+      registerTable.TCCRA_address = TCCR1A_ADDRESS;
+      registerTable.OCRB_address = OCR1B_ADDRESS;
+      registerTable.OCRA_address = OCR1A_ADDRESS;
+      registerTable.TCNT_address = TCNT1_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_16_BIT;
       
       break;
     }
     case TC_2:
     {
       /* No invalid settings */
+      
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK2_ADDRESS;
+      registerTable.TCCRB_address = TCCR2B_ADDRESS;
+      registerTable.TCCRA_address = TCCR2A_ADDRESS;
+      registerTable.OCRB_address = OCR2B_ADDRESS;
+      registerTable.OCRA_address = OCR2A_ADDRESS;
+      registerTable.TCNT_address = TCNT2_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_8_BIT;
+
       break;
     }
     case TC_3:
     {
       if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+      {
 	return -1;
+      }
+      
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK3_ADDRESS;
+      registerTable.TCCRB_address = TCCR3B_ADDRESS;
+      registerTable.TCCRA_address = TCCR3A_ADDRESS;
+      registerTable.OCRB_address = OCR3B_ADDRESS;
+      registerTable.OCRA_address = OCR3A_ADDRESS;
+      registerTable.TCNT_address = TCNT3_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_16_BIT;
       
       break;
     }
     case TC_4:
     {
       if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+      {
 	return -1;
+      }
+      
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK4_ADDRESS;
+      registerTable.TCCRB_address = TCCR4B_ADDRESS;
+      registerTable.TCCRA_address = TCCR4A_ADDRESS;
+      registerTable.OCRB_address = OCR4B_ADDRESS;
+      registerTable.OCRA_address = OCR4A_ADDRESS;
+      registerTable.TCNT_address = TCNT4_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_16_BIT;
       
       break;
     }
     case TC_5:
     {
       if ((rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128))
+      {
 	return -1;
+      }
+      
+      /* Populate the Timer/Counter register address fields here */
+      registerTable.TIMSK_address = TIMSK5_ADDRESS;
+      registerTable.TCCRB_address = TCCR5B_ADDRESS;
+      registerTable.TCCRA_address = TCCR5A_ADDRESS;
+      registerTable.OCRB_address = OCR5B_ADDRESS;
+      registerTable.OCRA_address = OCR5A_ADDRESS;
+      registerTable.TCNT_address = TCNT5_ADDRESS;
+      
+      /* Set which timer type it is */
+      timerType = TIMER_16_BIT;
       
       break;
     }
@@ -800,60 +918,9 @@ int8_t timer_imp::set_rate(timer_rate rate)
 template <typename T>
 int8_t timer_imp::load_timer_value(T value)
 {
-  /*Switch which TCNTn registers are edited based on the timer number*/
-  switch(timer_id)
-  {
-    case TC_0:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT0 register*/
-      TCNT0 = value;
-      //restart the timer
-      break;
-    }
-    case TC_1:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT1H & TCNT1L (combined TCNT1) registers*/
-      TCNT1 = value;
-      //restart the timer
-      break;
-    }
-    case TC_2:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT2 register*/
-      TCNT2 = value;
-      //restart the timer
-      break;
-    }
-    case TC_3:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT3H & TCNT3L (combined TCNT3) registers*/
-      TCNT3 = value;
-      //restart the timer
-      break;
-    }
-    case TC_4:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT4H & TCNT4L (combined TCNT4) registers*/
-      TCNT4 = value;
-      //restart the timer
-      break;
-    }
-    case TC_5:
-    {
-      //stop the timer	(to avoid a compare match on restart)
-      /*edit the TCNT5H & TCNT5L (combined TCNT5) registers*/
-      TCNT5 = value;
-      //restart the timer
-      break;
-    }
-  }
-  
- return 0;	/* How to detect possible error states? */
+  _SFR_IO8(registerTable.TCNT_address) = value;
+
+ return 0;
 }
 
 /**
@@ -864,48 +931,7 @@ int8_t timer_imp::load_timer_value(T value)
 template <typename T>
 T timer_imp::get_timer_value(void)
 {
-  /*Switch which TCNTn registers are read based on the timer number*/
-  switch(timer_id)
-  {
-    case TC_0:
-    {
-      /*read the TCNT0 register*/
-      return (TCNT0);
-      break;
-    }
-    case TC_1:
-    {
-      /*read the TCNT1 register*/
-      return (TCNT1);
-      break;
-    }
-    case TC_2:
-    {
-      /*read the TCNT2 register*/
-      return (TCNT2);
-      break;
-    }
-    case TC_3:
-    {
-      /*read the TCNT3 register*/
-      return (TCNT3);
-      break;
-    }
-    case TC_4:
-    {
-      /*read the TCNT4 register*/
-      return (TCNT4);
-      break;
-    }
-    case TC_5:
-    {
-      /*read the TCNT5 register*/
-      return (TCNT5);
-      break;
-    }
-  }
-  
-  return 0;	/*Should never reach here */
+  return (_SFR_IO8(registerTable.TCNT_address));
 }
 
 /**
@@ -921,37 +947,37 @@ int8_t timer_imp::start(void)
     case TC_0:
     {
       /*edit the TCCR0A and TCCR0B registers*/
-      start_timer0(preserved_rate);
+      start_timer0(preserved_rate, &registerTable);
       break;
     }
     case TC_1:
     {
       /*edit the TCCR1A and TCCR1B registers*/
-      start_timer1(preserved_rate);
+      start_16bit_timer(preserved_rate, &registerTable);
       break;
     }
     case TC_2:
     {
       /*edit the TCCR2A and TCCR2B registers*/
-      start_timer2(preserved_rate);
+      start_timer2(preserved_rate, &registerTable);
       break;
     }
     case TC_3:
     {
       /*edit the TCCR3A and TCCR3B registers*/
-      start_timer3(preserved_rate);
+      start_16bit_timer(preserved_rate, &registerTable);
       break;
     }
     case TC_4:
     {
       /*edit the TCCR4A and TCCR4B registers*/
-      start_timer4(preserved_rate);
+      start_16bit_timer(preserved_rate, &registerTable);
       break;
     }
     case TC_5:
     {
       /*edit the TCCR5A and TCCR5B registers*/
-      start_timer5(preserved_rate);
+      start_16bit_timer(preserved_rate, &registerTable);
       break;
     }
   }
@@ -965,48 +991,12 @@ int8_t timer_imp::start(void)
 */
 int8_t timer_imp::stop(void)
 {
-  /*Switch which TCNTn registers are edited based on the timer number*/
-  /* Sets the prescalar bits CSn2:0 to 0x00 to stop the clock */
-  switch(timer_id)
-  {
-    case TC_0:
-    {
-      /*edit the TCCR0B register*/
-      TCCR0B &= (~(1 << CS02) & ~(1 << CS01) & ~(1 << CS00));
-      break;
-    }
-    case TC_1:
-    {
-      /*edit the TCCR1B register*/
-      TCCR1B &= (~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10));
-      break;
-    }
-    case TC_2:
-    {
-      /*edit the TCCR2B register*/
-      TCCR2B &= (~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20));
-      break;
-    }
-    case TC_3:
-    {
-      /*edit the TCCR3B register*/
-      TCCR3B &= (~(1 << CS32) & ~(1 << CS31) & ~(1 << CS30));
-      break;
-    }
-    case TC_4:
-    {
-      /*edit the TCCR4B register*/
-      TCCR4B &= (~(1 << CS42) & ~(1 << CS41) & ~(1 << CS40));
-      break;
-    }
-    case TC_5:
-    {
-      /*edit the TCCR5B register*/
-      TCCR5B &= (~(1 << CS52) & ~(1 << CS51) & ~(1 << CS50));
-      break;
-    }
-  }
-  return 0;	//How to return -1?
+  if (timerType == TIMER_8_BIT)    
+    _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+  else
+    _SFR_MEM8(registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+  
+  return 0;
 }
 
 /**
@@ -1017,11 +1007,11 @@ int8_t timer_imp::stop(void)
 */
 int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
 {
-   /* Set the TCCRnA and TCCRnB WGMn2:0 bits to 0 for normal operation where the timer/counter
+    /* Set the TCCRnA and TCCRnB WGMn2:0 bits to 0 for normal operation where the timer/counter
     * counting direction is always incremented from 0x00(00) to 0xFF(FF) (16-bit implementation)
     * and the TOVn flag is set when the counter is reset to 0x00(00).
     *	
-    * Set the appropriate registers depedning on which timer/counter implementation
+    * Set the appropriate registers depending on which timer/counter implementation
     * is for.
     * 
     * In addition, place the user-provided ISR into the appropriate position of the timerInterrupts
@@ -1029,77 +1019,44 @@ int8_t timer_imp::enable_tov_interrupt(void (*ISRptr)(void))
     * 
     * 
     */
+  _SFR_IO8(registerTable.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+  _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << WGM2_BIT);
+  _SFR_MEM8(registerTable.TIMSK_address) |= (1 << TOIE_BIT);
+  
   switch(timer_id)
   {
     case TC_0:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR0A &= (~(1 << WGM01) & ~(1 << WGM00));
-      TCCR0B &= ~(1 << WGM02);
-      /*edit the TIMSK0 register to enable timer 0 overflow*/
-      TIMSK0 |= (1 << TOIE0);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER0_OVF_int] = ISRptr;
       break;
     }
     case TC_1:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR1A &= (~(1 << WGM11) & ~(1 << WGM10));
-      TCCR1B &= ~(1 << WGM12);
-      /*edit the TIMSK1 register to enable timer 1 overflow*/
-      TIMSK1 |= (1 << TOIE1);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER1_OVF_int] = ISRptr;
       break;
     }
     case TC_2:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR2A &= (~(1 << WGM21) & ~(1 << WGM20));
-      TCCR2B &= ~(1 << WGM22);
-      /*edit the TIMSK2 register to enable timer 2 overflow*/
-      TIMSK2 |= (1 << TOIE2);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER2_OVF_int] = ISRptr;
       break;
     }
     case TC_3:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR3A &= (~(1 << WGM31) & ~(1 << WGM30));
-      TCCR3B &= ~(1 << WGM32);
-      /*edit the TIMSK3 register to enable timer 3 overflow*/
-      TIMSK3 |= (1 << TOIE3);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER3_OVF_int] = ISRptr;
       break;
     }
     case TC_4:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR4A &= (~(1 << WGM41) & ~(1 << WGM40));
-      TCCR4B &= ~(1 << WGM42);
-      /*edit the TIMSK4 register to enable timer 4 overflow*/
-      TIMSK4 |= (1 << TOIE4);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER4_OVF_int] = ISRptr;
       break;
     }
     case TC_5:
     {
-      /*Edit the TCCR0A and TCCR0B registers*/
-      TCCR5A &= (~(1 << WGM51) & ~(1 << WGM50));
-      TCCR5B &= ~(1 << WGM52);
-      /*edit the TIMSK5 register to enable timer 5 overflow*/
-      TIMSK5 |= (1 << TOIE5);
-      /*place ISR pointer in timerInterrupts array*/
       timerInterrupts[TIMER5_OVF_int] = ISRptr;
       break;
     }
-  }
-  
-  return 0;	/* How to detect error states? TODO*/
+  }  
+  return 0;
 }
 
 /**
@@ -1114,53 +1071,48 @@ int8_t timer_imp::disable_tov_interrupt(void)
    * To disable the timer overflow interrupt
    * clear the TOIEn bit in the TIMSKn register
    */
+  _SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << TOIE_BIT);
+  
   switch(timer_id)
+  {
+    case TC_0:
     {
-      case TC_0:
-      {
-	TIMSK0 &= ~(1 << TOIE0);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER0_OVF_int] = NULL;
-	break;
-      }
-      case TC_1:
-      {
-	TIMSK1 &= ~(1 << TOIE1);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER1_OVF_int] = NULL;
-	break;
-      }
-      case TC_2:
-      {
-	TIMSK2 &= ~(1 << TOIE2);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER2_OVF_int] = NULL;
-	break;
-      }
-      case TC_3:
-      {
-	TIMSK3 &= ~(1 << TOIE3);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER3_OVF_int] = NULL;
-	break;
-      }
-      case TC_4:
-      {
-	TIMSK4 &= ~(1 << TOIE4);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER4_OVF_int] = NULL;
-	break;
-      }
-      case TC_5:
-      {
-	TIMSK5 &= ~(1 << TOIE5);
-	/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
-	timerInterrupts[TIMER5_OVF_int] = NULL;
-	break;
-      }
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER0_OVF_int] = NULL;
+      break;
     }
-    
-    return 0;	/* How to detect error states? TODO*/
+    case TC_1:
+    {
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER1_OVF_int] = NULL;
+      break;
+    }
+    case TC_2:
+    {
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER2_OVF_int] = NULL;
+      break;
+    }
+    case TC_3:
+    {
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER3_OVF_int] = NULL;
+      break;
+    }
+    case TC_4:
+    {
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER4_OVF_int] = NULL;
+      break;
+    }
+    case TC_5:
+    {
+      /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+      timerInterrupts[TIMER5_OVF_int] = NULL;
+      break;
+    }
+  }    
+  return 0;
 }
 
 /**
@@ -1173,42 +1125,86 @@ int8_t timer_imp::disable_tov_interrupt(void)
 */
 int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 {
-  /* Switch the process of enabling output compare mode depending on which timer is used for
-   * implementation
+  /* Switch the process of enabling output compare interrupts depending on which timer
+   * has been initialised.
    */
   switch(timer_id)
   {
     case TC_0:
     {
-      return (enable_oc_timer0(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+//       if (mode == OC_NONE)
+//       {
+// 	timerPin->vacate();
+//       }
+      /* Grab the GPIO Pin otherwise */
+//       else
+//       {
+// 	if (channel == TC_OC_A)
+// 	  timerPin = grabPeripheralPin({TC0_OC_A_PORT, TC0_OC_A_PIN});
+// 	else if (channel == TC_OC_B)
+// 	  timerPin = grabPeripheralPin(TC0_OC_B_PIN);
+// 	else
+// 	  return -1;
+// 	
+// 	/* Check if timer pin was correctly returned */
+// 	if (timerPin == NULL)
+// 	  return -1;
+//       }
+      
+      enable_oc_8bit(channel, mode, &registerTable);
       break;
     }
     case TC_1:
     {
-      return (enable_oc_timer1(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+      
+      /* Grab the GPIO Pin otherwise */
+      
+      enable_oc_16bit(channel, mode, &registerTable);
       break;
     }
     case TC_2:
     {
-      return (enable_oc_timer2(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+      
+      /* Grab the GPIO Pin otherwise */
+      
+      enable_oc_8bit(channel, mode, &registerTable);
       break;
     }
     case TC_3:
     {
-      return (enable_oc_timer3(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+      
+      /* Grab the GPIO Pin otherwise */
+            
+      enable_oc_16bit(channel, mode, &registerTable);
       break;
     }
     case TC_4:
     {
-      return (enable_oc_timer4(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+      
+      /* Grab the GPIO Pin otherwise */
+      
+      enable_oc_16bit(channel, mode, &registerTable);
       break;
     }
     case TC_5:
     {
-      return (enable_oc_timer5(channel, mode));
+      /* Vacate the GPIO Pin if user disables Output Compare */
+      
+      /* Grab the GPIO Pin otherwise */
+      
+      enable_oc_16bit(channel, mode, &registerTable);
       break;
     }
-  }
+    default:	/* No more channels available, return an error. */
+    {
+      return -1;
+    }
+  } 
   return 0;	/*Should never get here*/
 }
 
@@ -1222,213 +1218,168 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
 */
 int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void))
 {
-  /* Switch the process of enabling output compare interrupts depending on which timer is used for
-   * implementation
+  /*
+   * Save the ISR pointer in the appropriate element of the function pointer array
+   * depending on which timer has been implemented and channel provided.
    */
-  switch(timer_id)
+  switch (timer_id)
   {
     case TC_0:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK0 |= (1 << OCIE0A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER0_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK0 |= (1 << OCIE0B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER0_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER0_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER0_COMPB_int] = ISRptr;
+	  break;
+	}
+	default:
+	{
+	  return -1;
+	  break;
+	}
+      }
       break;
     }
     case TC_1:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 |= (1 << OCIE1A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER1_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 |= (1 << OCIE1B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER1_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER1_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER1_COMPB_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_C:
+	{
+	  timerInterrupts[TIMER1_COMPC_int] = ISRptr;
+	  break;
+	}
+      }
       break;
     }
     case TC_2:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK2 |= (1 << OCIE2A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER2_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK2 |= (1 << OCIE2B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER2_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER2_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER2_COMPB_int] = ISRptr;
+	  break;
+	}
+	default:
+	{
+	  return -1;
+	  break;
+	}
+      }
       break;
     }
     case TC_3:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 |= (1 << OCIE3A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER3_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 |= (1 << OCIE3B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER3_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 |= (1 << OCIE3C);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER3_COMPC_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER3_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER3_COMPB_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_C:
+	{
+	  timerInterrupts[TIMER3_COMPC_int] = ISRptr;
+	  break;
+	}
+      }
       break;
     }
     case TC_4:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 |= (1 << OCIE4A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER4_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 |= (1 << OCIE4B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER4_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 |= (1 << OCIE4C);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER4_COMPC_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER4_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER4_COMPB_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_C:
+	{
+	  timerInterrupts[TIMER4_COMPC_int] = ISRptr;
+	  break;
+	}
+      }
       break;
     }
     case TC_5:
     {
-       /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 |= (1 << OCIE5A);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER5_COMPA_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 |= (1 << OCIE5B);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER5_COMPB_int] = ISRptr;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Enable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 |= (1 << OCIE5C);
-	 /* Store the ISR function pointer in the appropriate element within the function pointer array */
-	 timerInterrupts[TIMER5_COMPC_int] = ISRptr;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      switch (channel)
+      {
+	case TC_OC_A:
+	{
+	  timerInterrupts[TIMER5_COMPA_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_B:
+	{
+	  timerInterrupts[TIMER5_COMPB_int] = ISRptr;
+	  break;
+	}
+	case TC_OC_C:
+	{
+	  timerInterrupts[TIMER5_COMPC_int] = ISRptr;
+	  break;
+	}
+      }
+      break;
+    }
+  }  
+  
+  /* 
+   * Switch which output compare interrupt to enable based on which channel is provided
+   */
+  switch (channel)
+  {
+    case TC_OC_A:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) |= (1 << OCIEA_BIT);
+      break;
+    }
+    case TC_OC_B:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) |= (1 << OCIEB_BIT);
+      break;
+    }
+    case TC_OC_C:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) |= (1 << OCIEC_BIT);
       break;
     }
   }
+  
   return 0;
 }
 
@@ -1441,9 +1392,10 @@ int8_t timer_imp::enable_oc_interrupt(tc_oc_channel channel, void (*ISRptr)(void
 */
 int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 {
- /* Switch the process of disabling output compare interrupts depending on which timer is used for
-   * implementation
-   */
+  /*
+   * Clear the ISR pointer in the appropriate element of the function pointer array
+   * depending on which timer has been implemented and channel provided.
+   */ 
   switch(timer_id)
   {
     case TC_0:
@@ -1454,8 +1406,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK0 &= ~(1 << OCIE0A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER0_COMPA_int] = NULL;
 	 
@@ -1463,8 +1413,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK0 &= ~(1 << OCIE0B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER0_COMPB_int] = NULL;
 	 
@@ -1483,8 +1431,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 &= ~(1 << OCIE1A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER1_COMPA_int] = NULL;
 	 
@@ -1492,8 +1438,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK1 &= ~(1 << OCIE1B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER1_COMPB_int] = NULL;
 	 
@@ -1512,8 +1456,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK2 &= ~(1 << OCIE2A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER2_COMPA_int] = NULL;
 	 
@@ -1521,8 +1463,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK2 &= ~(1 << OCIE2B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER2_COMPB_int] = NULL;
 	 
@@ -1541,8 +1481,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 &= ~(1 << OCIE3A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER3_COMPA_int] = NULL;
 	 
@@ -1550,8 +1488,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 &= ~(1 << OCIE3B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER3_COMPB_int] = NULL;
 	 
@@ -1559,8 +1495,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_C:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK3 &= ~(1 << OCIE3C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER3_COMPC_int] = NULL;
 	 
@@ -1579,8 +1513,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 &= ~(1 << OCIE4A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER4_COMPA_int] = NULL;
 	 
@@ -1588,8 +1520,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 &= ~(1 << OCIE4B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER4_COMPB_int] = NULL;
 	 
@@ -1597,8 +1527,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_C:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK4 &= ~(1 << OCIE4C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER4_COMPC_int] = NULL;
 	 
@@ -1617,8 +1545,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
      {
        case TC_OC_A:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 &= ~(1 << OCIE5A);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER5_COMPA_int] = NULL;
 	 
@@ -1626,8 +1552,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_B:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 &= ~(1 << OCIE5B);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER5_COMPB_int] = NULL;
 	 
@@ -1635,8 +1559,6 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
        }
        case TC_OC_C:
        {
-	 /* Disable the OCIEnX bit in the TIMSKn register to allow output compare interrupts */
-	 TIMSK5 &= ~(1 << OCIE5C);
 	 /* Store the NULL function pointer in the appropriate element within the function pointer array */
 	 timerInterrupts[TIMER5_COMPC_int] = NULL;
 	 
@@ -1648,6 +1570,29 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
       break;
     }
   }
+  
+  /* Switch the process of disabling output compare interrupts depending on which timer is used for
+   * implementation
+   */
+  switch (channel)
+  {
+    case TC_OC_A:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEA_BIT);
+      break;
+    }
+    case TC_OC_B:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEB_BIT);
+      break;
+    }
+    case TC_OC_C:
+    {
+      _SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEC_BIT);
+      break;
+    }
+  }
+  
   return 0; 
 }
 
@@ -1661,190 +1606,33 @@ int8_t timer_imp::disable_oc_interrupt(tc_oc_channel channel)
 template <typename T>
 int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
 {
-  /* Switch the process of disabling output compare interrupts depending on which timer is used for
-   * implementation
-   */
-  switch(timer_id)
+  switch(channel)
   {
-    case TC_0:
+    case TC_OC_A:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR0A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR0B = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      /* Write to the OCRnX register to set the output compare value */
+      _SFR_IO8(registerTable.OCRA_address) = value;
+      
       break;
     }
-    case TC_1:
+    case TC_OC_B:
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	/* Write to the OCRnX register to set the output compare value */
-	 OCR1A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR1B = value;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR1C = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      /* Write to the OCRnX register to set the output compare value */
+      _SFR_IO8(registerTable.OCRB_address) = value;
+      
       break;
     }
-    case TC_2:
+    case TC_OC_C:	/* TODO: Prevent user from writing to TC_OC_C if using a counter that only has two channels. */
     {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR2A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR2B = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
+      /* Write to the OCRnX register to set the output compare value */
+      _SFR_IO8(registerTable.OCRC_address) = value;
+    
       break;
     }
-    case TC_3:
-    {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR3A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR3B = value;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR3C = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
-      break;
-    }
-    case TC_4:
-    {
-     /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR4A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR4B = value;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR4C = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
-      break;
-    }
-    case TC_5:
-    {
-       /* Switch which channel is modified based on the channel provided
-      */
-     switch(channel)
-     {
-       case TC_OC_A:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR5A = value;
-	 
-	 break;
-       }
-       case TC_OC_B:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR5B = value;
-	 
-	 break;
-       }
-       case TC_OC_C:
-       {
-	 /* Write to the OCRnX register to set the output compare value */
-	 OCR5C = value;
-	 
-	 break;
-       }
-       default:		/* Not a valid channel for this timer */
-	 return -1;
-     }	 
-      break;
-    }
+    default:		/* Not a valid channel for this timer */
+      return -1;
   }
+
   return 0;   
 }
 
@@ -1857,32 +1645,55 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
 */
 int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 {
-  /* Switch depending on which timer is saved in the implementation */
-  switch (timer_id)
+  /*
+   * Switch which mode is enabled on the input capture unit by the value
+   * given to the function
+   */
+  switch(channel)
   {
-    case TC_1:
+    case TC_IC_A:
     {
-      return(enable_ic_timer1(channel, mode));
+      /* Switch depending on which mode is supplied */
+      switch(mode)
+      {
+	case IC_NONE:
+	{
+	  /* TODO: Any disabling code for IC goes here */
+	  break;
+	}
+	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
+	{
+	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
+	  _SFR_IO8(registerTable.TCCRB_address) |= ((1 << ICES_BIT) | (1 << ICNC_BIT));
+	  break;
+	}
+	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	{
+	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
+	  _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICES_BIT); 
+	  _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICNC_BIT);
+	  break;
+	}
+	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
+	{
+	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
+	  _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICNC_BIT);
+	  _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICES_BIT);
+	  break;
+	}
+	case IC_MODE_4:	/* Falling edge and input noise cancellation disabled */
+	{
+	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
+	  _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));
+	  break;
+	}
+	default:	/* Invalid mode for timer */
+	  return -1;
+      }
       break;
-    }
-    case TC_3:
-    {
-      return(enable_ic_timer3(channel, mode));
-      break;
-    }
-    case TC_4:
-    {
-      return(enable_ic_timer4(channel, mode));
-      break;
-    }
-    case TC_5:
-    {
-      return(enable_ic_timer5(channel, mode));
-      break;
-    }
-    default:	/* Invalid timer number supplied */
-      return -1;      
-  }
+     }
+     /* Any more IC channels go here*/
+  }  
   return 0;    
 }
 
@@ -1895,84 +1706,54 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
 */
 int8_t timer_imp::enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void))
 {
-  /* Switch depending on which timer is saved in the implementation */
+  /*
+   * Save the ISR pointer in the appropriate element of the function pointer array
+   * depending on which timer has been implemented and channel provided.
+   */
   switch (timer_id)
   {
     case TC_1:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK1 |= (1 << ICIE1);
-	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER1_CAPT_int] = ISRptr;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER1_CAPT_int] = ISRptr;
       break;
     }
     case TC_3:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK3 |= (1 << ICIE3);
-	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER3_CAPT_int] = ISRptr;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER3_CAPT_int] = ISRptr;
       break;
     }
     case TC_4:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK4 |= (1 << ICIE4);
-	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER4_CAPT_int] = ISRptr;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER4_CAPT_int] = ISRptr;
       break;
     }
     case TC_5:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK5 |= (1 << ICIE5);
-	  /* Place the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER5_CAPT_int] = ISRptr;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER5_CAPT_int] = ISRptr;
       break;
     }
-    default:	/* invalid timer number! */
+    default:
+    {
       return -1;
-  }	  
+      break;
+    }
+  }
+ 
+  /* 
+   *Switch depending on which channel is supplied 
+   */
+  switch (channel)
+  {
+    case TC_IC_A:
+    {
+      /* Set the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
+      _SFR_MEM8(registerTable.TIMSK_address) |= (1 << ICIE_BIT);
+         
+      break;
+    }
+    /* TODO: more channels go here if needed */
+  }
+  
   return 0;    
 }
 
@@ -1982,87 +1763,57 @@ int8_t timer_imp::enable_ic_interrupt(tc_ic_channel channel, void (*ISRptr)(void
 * @param channel		Which channel register to disable the interrupt on.
 * @return 0 for success, -1 for error.
 */
-int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
+int8_t timer_imp::disable_ic_interrupt(tc_ic_channel channel)
 {
-  /* Switch depending on which timer is saved in the implementation */
+  /*
+   * Clear the ISR pointer in the appropriate element of the function pointer array
+   * depending on which timer has been implemented and channel provided.
+   */
   switch (timer_id)
   {
     case TC_1:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK1 &= ~(1 << ICIE1);
-	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER1_CAPT_int] = NULL;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER1_CAPT_int] = NULL;
       break;
     }
     case TC_3:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK3 &= ~(3 << ICIE1);
-	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER3_CAPT_int] = NULL;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER3_CAPT_int] = NULL;
       break;
     }
     case TC_4:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK4 &= ~(1 << ICIE4);
-	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER4_CAPT_int] = NULL;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER4_CAPT_int] = NULL;
       break;
     }
     case TC_5:
     {
-      /* Switch depending on which channel is supplied */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
-	  TIMSK5 &= ~(1 << ICIE1);
-	  /* Replace the user ISR pointer in the appropriate element within the ISR pointer array */
-	  timerInterrupts[TIMER5_CAPT_int] = NULL;
-	  
-	  break;
-	}
-	/* TODO: more channels go here if needed */
-      }
+      timerInterrupts[TIMER5_CAPT_int] = NULL;
       break;
     }
-    default:	/* invalid timer number! */
+    default:
+    {
       return -1;
+      break;
+    }
   }
-  return 0;
+  
+  /* 
+   *Switch depending on which channel is supplied 
+   */
+  switch (channel)
+  {
+    case TC_IC_A:
+    {
+      /* Clear the Input Capture Interrupt Enable bit (ICIEn) in the TIMSKn register */
+      _SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << ICIE_BIT);
+         
+      break;
+    }
+    /* TODO: more channels go here if needed */
+  }
+  
+ return 0;  
 }
 
 /**
@@ -2074,85 +1825,38 @@ int8_t timer_imp::disable_ic_interrupt(uint8_t channel)
 template <typename T>
 T timer_imp::get_icR(tc_ic_channel channel)
 {
-  /* Switch which register to read depending on ther timer number saved in the implementation */
-  switch (timer_id)
+  /* Switch which channel to read */
+  switch (channel)
   {
-    case TC_1:
+    case TC_IC_A:
     {
-      /* Switch which channel to read */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  return (ICR1);
-	}
-      }
-      /*TODO: more channels could be placed here as required */
+      return (_SFR_MEM16(registerTable.ICR_address));
       break;
     }
-    case TC_3:
-    {
-      /* Switch which channel to read */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  return (ICR3);
-	}
-      }
-      /*TODO: more channels could be placed here as required */
-      break;
-    }
-    case TC_4:
-    {
-      /* Switch which channel to read */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  return (ICR4);
-	}
-      }
-      /*TODO: more channels could be placed here as required */
-      break;
-    }
-    case TC_5:
-    {
-      /* Switch which channel to read */
-      switch (channel)
-      {
-	case TC_IC_A:
-	{
-	  return (ICR5);
-	}
-      }
-      /*TODO: more channels could be placed here as required */
-      break;
-    }
-    default:	/* Not a valid timer number provided */
-      return -1;
-  }     
- return 0;	/* Should never reach this point */
+  }
+    
+ return 0;
 }
 
 /** 
-* Returns which Timer/Counter the implementation is for.
+* Obtains the peripheral pin which the Timer/Counter requires.
 *
-* @param  Nothing.
-* @return Timer/Counter identifier; TC_0, TC_1 etc.
+* @param  address	The address of the GPIO pin required.
+* @return Pointer to a GPIO pin implementation.
 */
-tc_number timer_imp::whichTimer(void)
-{
-  return(timer_id);
-}
+// gpio_pin* timer_imp::grabPeripheralPin(gpio_pin_address address)
+// {
+//   return (&(gpio_pin::grab(address)));
+// }
 
 /**
 * Starts Timer 0 by manipulating the TCCR0A & TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer0(timer_rate rate)
+int8_t start_timer0(timer_rate rate, registerAddressTable_t *table)
 {
   /*Edit the registers according to whether an internal/external clock is selected
    * and which prescaler is chosen*/
@@ -2164,27 +1868,32 @@ int8_t start_timer0(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR0B |= ((0 << CS02) | (0 << CS01) | (1 << CS00));
+	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS0_BIT);	  
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR0B |= ((0 << CS02) | (1 << CS01) | (0 << CS00));
+	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS1_BIT);
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR0B |= ((0 << CS02) | (1 << CS01) | (1 << CS00));
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS2_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR0B |= ((1 << CS02) | (0 << CS01) | (0 << CS00));
+  	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR0B |= ((1 << CS02) | (0 << CS01) | (1 << CS00));
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS1_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 	  break;
 	}
 	default: /*Not a valid prescalar*/
@@ -2192,18 +1901,19 @@ int8_t start_timer0(timer_rate rate)
       }
       break;
     }
-    /* TODO: If external clocks are ever an option add it here*/
+    /* If external clocks are ever an option add it here*/
   }
   return 0;	/*Valid clock and prescalar*/
 }
 
 /**
-* Starts Timer 1 by manipulating the TCCR1A & TCCR1B registers
+* Starts the 16-bit Timer/Counters by manipulating the TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer1(timer_rate rate)
+int8_t start_16bit_timer(timer_rate rate, registerAddressTable_t *table)
 {
   /*Edit the registers according to whether an internal/external clock is selected
    * and which prescaler is chosen*/
@@ -2215,88 +1925,32 @@ int8_t start_timer1(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR1B |= ((0 << CS12) | (0 << CS11) | (1 << CS10));
+ 	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS0_BIT);
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR1B |= ((0 << CS12) | (1 << CS11) | (0 << CS10));
+ 	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS1_BIT);
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR1B |= ((0 << CS12) | (1 << CS11) | (1 << CS10));
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS2_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR1B |= ((1 << CS12) | (0 << CS11) | (0 << CS10));
-	  break;
-	}
-	case TC_PRE_1024:	//Prescalar = 256
-	{
-	  TCCR1B |= ((1 << CS12) | (0 << CS11) | (1 << CS10));
-	  break;
-	}
-      default: /*Not a valid prescalar*/
-	  return -1;
-      }
-      break;
-    }
-    /* TODO: If external clocks are ever an option add it here*/
-  }
-  return 0;	/*Valid clock and prescalar*/
-}
-
-/**
-* Starts Timer 2 by manipulating the TCCR2A & TCCR2B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
-* @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer2(timer_rate rate)
-{
-  /*Edit the registers according to whether an internal/external clock is selected
-   * and which prescaler is chosen*/
-  switch(rate.src)
-  {
-    case INT:	//internal clock
-    {
-      switch(rate.pre)
-      {
-	case TC_PRE_1:	//Prescalar = 1
-	{
-	  TCCR2B |= ((0 << CS22) | (0 << CS21) | (1 << CS20));
-	  break;
-	}
-	case TC_PRE_8:	//Prescalar = 8
-	{
-	  TCCR2B |= ((0 << CS22) | (1 << CS21) | (0 << CS20));
-	  break;
-	}
-	case TC_PRE_32:	//Prescalar = 32
-	{
-	  TCCR2B |= ((0 << CS22) | (1 << CS21) | (1 << CS20));
-	  break;
-	}
-	case TC_PRE_64:	//Prescalar = 64
-	{
-	  TCCR2B |= ((1 << CS22) | (0 << CS21) | (0 << CS20));
-	  break;
-	}
-	case TC_PRE_128:	//Prescalar = 128
-	{
-	  TCCR2B |= ((1 << CS22) | (0 << CS21) | (1 << CS20));
-	  break;
-	}
-	case TC_PRE_256:	//Prescalar = 256
-	{
-	  TCCR2B |= ((1 << CS22) | (1 << CS21) | (0 << CS20));
+  	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT));
 	  break;
 	}
 	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR2B |= ((1 << CS22) | (1 << CS21) | (1 << CS20));
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS1_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2310,12 +1964,13 @@ int8_t start_timer2(timer_rate rate)
 }
 
 /**
-* Starts Timer 3 by manipulating the TCCR3A & TCCR3B registers
+* Starts Timer 0 by manipulating the TCCR0A & TCCR0B registers
 * 
 * @param  timer_rate	Settings for clock source and prescaler.
+* @param  table		Table register addresses for particular Timer/Counter.
 * @return 0 if valid prescalar and clock are supplied, otherwise -1
 */
-int8_t start_timer3(timer_rate rate)
+int8_t start_timer2(timer_rate rate, registerAddressTable_t *table)
 {
   /*Edit the registers according to whether an internal/external clock is selected
    * and which prescaler is chosen*/
@@ -2327,27 +1982,43 @@ int8_t start_timer3(timer_rate rate)
       {
 	case TC_PRE_1:	//Prescalar = 1
 	{
-	  TCCR3B |= ((0 << CS32) | (0 << CS31) | (1 << CS30));
+  	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS0_BIT);
 	  break;
 	}
 	case TC_PRE_8:	//Prescalar = 8
 	{
-	  TCCR3B |= ((0 << CS32) | (1 << CS31) | (0 << CS30));
+  	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS1_BIT);
+	  break;
+	}
+	case TC_PRE_32:	//Prescalar = 32
+	{
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS2_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS1_BIT);
 	  break;
 	}
 	case TC_PRE_64:	//Prescalar = 64
 	{
-	  TCCR3B |= ((0 << CS32) | (1 << CS31) | (1 << CS30));
+  	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+	  _SFR_IO8(table->TCCRB_address) |= (1 << CS2_BIT);
+	  break;
+	}
+	case TC_PRE_128:	//Prescalar = 128
+	{
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS1_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 	  break;
 	}
 	case TC_PRE_256:	//Prescalar = 256
 	{
-	  TCCR3B |= ((1 << CS32) | (0 << CS31) | (0 << CS30));
+  	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS0_BIT);
+	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
 	  break;
 	}
-	case TC_PRE_1024:	//Prescalar = 256
+	case TC_PRE_1024:	//Prescalar = 1024
 	{
-	  TCCR3B |= ((1 << CS32) | (0 << CS31) | (1 << CS30));
+ 	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
 	  break;
 	}
       default: /*Not a valid prescalar*/
@@ -2355,150 +2026,50 @@ int8_t start_timer3(timer_rate rate)
       }
       break;
     }
-    /* TODO: If external clocks are ever an option add it here*/
+    /* If external clocks are ever an option add it here*/
   }
   return 0;	/*Valid clock and prescalar*/
 }
 
 /**
-* Starts Timer 4 by manipulating the TCCR4A & TCCR4B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
-* @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer4(timer_rate rate)
-{
-  /*Edit the registers according to whether an internal/external clock is selected
-   * and which prescaler is chosen*/
-  switch(rate.src)
-  {
-    case INT:	//internal clock
-    {
-      switch(rate.pre)
-      {
-	case TC_PRE_1:	//Prescalar = 1
-	{
-	  TCCR4B |= ((0 << CS42) | (0 << CS41) | (1 << CS40));
-	  break;
-	}
-	case TC_PRE_8:	//Prescalar = 8
-	{
-	  TCCR4B |= ((0 << CS42) | (1 << CS41) | (0 << CS40));
-	  break;
-	}
-	case TC_PRE_64:	//Prescalar = 64
-	{
-	  TCCR4B |= ((0 << CS42) | (1 << CS41) | (1 << CS40));
-	  break;
-	}
-	case TC_PRE_256:	//Prescalar = 256
-	{
-	  TCCR4B |= ((1 << CS42) | (0 << CS41) | (0 << CS40));
-	  break;
-	}
-	case TC_PRE_1024:	//Prescalar = 256
-	{
-	  TCCR4B |= ((1 << CS42) | (0 << CS41) | (1 << CS40));
-	  break;
-	}
-      default: /*Not a valid prescalar*/
-	  return -1;
-      }
-      break;
-    }
-    /* TODO: If external clocks are ever an option add it here*/
-  }
-  return 0;	/*Valid clock and prescalar*/
-}
-
-/**
-* Starts Timer 5 by manipulating the TCCR3A & TCCR3B registers
-* 
-* @param  timer_rate	Settings for clock source and prescaler.
-* @return 0 if valid prescalar and clock are supplied, otherwise -1
-*/
-int8_t start_timer5(timer_rate rate)
-{
-  /*Edit the registers according to whether an internal/external clock is selected
-   * and which prescaler is chosen*/
-  switch(rate.src)
-  {
-    case INT:	//internal clock
-    {
-      switch(rate.pre)
-      {
-	case TC_PRE_1:	//Prescalar = 1
-	{
-	  TCCR5B |= ((0 << CS52) | (0 << CS51) | (1 << CS50));
-	  break;
-	}
-	case TC_PRE_8:	//Prescalar = 8
-	{
-	  TCCR5B |= ((0 << CS52) | (1 << CS51) | (0 << CS50));
-	  break;
-	}
-	case TC_PRE_64:	//Prescalar = 64
-	{
-	  TCCR5B |= ((0 << CS52) | (1 << CS51) | (1 << CS50));
-	  break;
-	}
-	case TC_PRE_256:	//Prescalar = 256
-	{
-	  TCCR5B |= ((1 << CS52) | (0 << CS51) | (0 << CS50));
-	  break;
-	}
-	case TC_PRE_1024:	//Prescalar = 256
-	{
-	  TCCR5B |= ((1 << CS52) | (0 << CS51) | (1 << CS50));
-	  break;
-	}
-      default: /*Not a valid prescalar*/
-	  return -1;
-      }
-      break;
-    }
-    /* TODO: If external clocks are ever an option add it here*/
-  }
-  return 0;	/*Valid clock and prescalar*/
-}
-
-/**
-* Enables Output Compare operation on Timer Counter 0.
+* Enables Output Compare operation on 8-bit Timer/Counters.
 * 
 * @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
+* @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
+int8_t enable_oc_8bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table)
 {
   /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
   switch(channel)
   {
     case TC_OC_A:
     {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
+	/* 
+	 * Enable/disable Output Compare Mode depending on which option is provided.
 	*/
 	switch(mode)
 	{
 	  case OC_NONE:
 	  {
 	    /* Disable the output compare operation */
-	    TIMSK0 &= ~(1 << OCIE0A);
+	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
 	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR0A &= (~(1 << COM0A1) & ~(1 << COM0A0));
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+	    
 	    break;
-	  }
+	  }	  	  
 	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
 	  {
 	    /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	    TCCR0A &= ~(1 << WGM00);
-	    TCCR0A |= (1 << WGM01);
-	    TCCR0B &= ~(1 << WGM02);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 	    
 	    /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR0A |= (1 << COM0A0);
-	    TCCR0A &= ~(1 << COM0A1);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << COMA0_BIT);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
 	    
 	    break;
 	  }
@@ -2506,11 +2077,11 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
 	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	    TCCR0A |= ((1 << COM0A1) | (1 << WGM00));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR0A &= (~(1 << WGM01) & ~(1 << COM0A0));
-	    TCCR0B &= ~(1 << WGM02);
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMA0_BIT));
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 	    
 	    break;
 	  }
@@ -2518,15 +2089,15 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
 	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	    TCCR0A |= ((1 << COM0A1) | (1 << WGM01) | (1 << WGM00));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR0A &= ~(1 << COM0A0);
-	    TCCR0B &= ~(1 << WGM02);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 		    
 	    break;
 	  }
-	  /* TODO: More modes in here if necessary */
+	  /* More modes in here if necessary */
 	}
 	break;
     }
@@ -2540,303 +2111,25 @@ int8_t enable_oc_timer0(tc_oc_channel channel, tc_oc_mode mode)
 	  case OC_NONE:
 	  {
 	    /* Disable the output compare operation */
-	    TIMSK0 &= ~(1 << OCIE0B);
+	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEB_BIT);
 	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR0A &= (~(1 << COM0B1) & ~(1 << COM0B0));
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << COMB1_BIT) & ~(1 << COMB0_BIT));
+	    
+	    /* Give up the OC0A pin */    
 	    break;
 	  }
+	  /* 'Grab' the ouput capture pin */
+	  
 	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
 	  {
 	    /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	    TCCR0A &= ~(1 << WGM00);
-	    TCCR0A |= (1 << WGM01);
-	    TCCR0B &= ~(1 << WGM02);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 	    
 	    /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR0A |= (1 << COM0B0);
-	    TCCR0A &= ~(1 << COM0B1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK0 |= (1 << OCIE0B);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM */
-	  {
-	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	    /* Set COMnX2:0 bits to 0x03 to set OCnX pin on match when counting up, clear when counting down */
-	    TCCR0A |= ((1 << COM0B1) | (1 << COM0B0) | (1 << WGM00));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR0A &= ~(1 << WGM01);
-	    TCCR0B &= ~(1 << WGM02);
-	    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non - inverted */
-	  {
-	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	    TCCR0A |= ((1 << COM0B1) | (1 << WGM01) | (1 << WGM00));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR0A &= ~(1 << COM0B0);
-	    TCCR0B &= ~(1 << WGM02);
-		    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    default:	/* No more channels available, return an error. */
-    {
-      return -1;
-    }
-    }
-    
-    return 0;
-}
-
-/**
-* Enables Output Compare operation on Timer Counter 1.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer1(tc_oc_channel channel, tc_oc_mode mode)
-{
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
-  {
-    case TC_OC_A:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK1 &= ~(1 << OCIE1A);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR1A &= (~(1 << COM1A1) & ~(1 << COM1A0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR1A &= (~(1 << WGM11) & ~(1 << WGM10));
-	    TCCR1B &= ~(1 << WGM13);
-	    TCCR1B |= (1 << WGM12);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR1A |= (1 << COM1A0);
-	    TCCR1A &= ~(1 << COM1A1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK1 |= (1 << OCIE1A);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR1A |= ((1 << COM1A1) | (1 << WGM11) | (1 << WGM10));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1A0);
-	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR1A |= ((1 << COM1A1) | (1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= (1 << WGM12);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1A0);
-	    TCCR1B &= ~(1 << WGM13);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK1 &= ~(1 << OCIE1B);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR1A &= (~(1 << COM1B1) & ~(1 << COM1B0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR1A &= (~(1 << WGM11) & ~(1 << WGM10));
-	    TCCR1B &= ~(1 << WGM13);
-	    TCCR1B |= (1 << WGM12);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR1A |= (1 << COM1B0);
-	    TCCR1A &= ~(1 << COM1B1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK1 |= (1 << OCIE1B);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR1A |= ((1 << COM1B1) | (1 << WGM11) | (1 << WGM10));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1B0);
-	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR1A |= ((1 << COM1B1) | (1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= (1 << WGM12);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1B0);
-	    TCCR1B &= ~(1 << WGM13);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_C:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK1 &= ~(1 << OCIE1C);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR1A &= (~(1 << COM1C1) & ~(1 << COM1C0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR1A &= (~(1 << WGM11) & ~(1 << WGM10));
-	    TCCR1B &= ~(1 << WGM13);
-	    TCCR1B |= (1 << WGM12);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR1A |= (1 << COM1C0);
-	    TCCR1A &= ~(1 << COM1C1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK1 |= (1 << OCIE1C);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR1A |= ((1 << COM1C1) | (1 << WGM11) | (1 << WGM10));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1C0);
-	    TCCR1B &= (~(1 << WGM13) & ~(1 << WGM12));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR1A |= ((1 << COM1C1) | (1 << WGM11) | (1 << WGM10));
-	    TCCR1B |= (1 << WGM12);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR1A &= ~(1 << COM1C0);
-	    TCCR1B &= ~(1 << WGM13);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    default:	/* No more channels available, return an error. */
-      return -1;
-    }
-    
-    return 0;
-}
-
-/**
-* Enables Output Compare operation on Timer Counter 2.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
-{
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
-  {
-    case TC_OC_A:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK2 &= ~(1 << OCIE2A);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR2A &= (~(1 << COM2A1) & ~(1 << COM2A0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	    TCCR2A &= ~(1 << WGM20);
-	    TCCR2A |= (1 << WGM21);
-	    TCCR2B &= ~(1 << WGM22);
-	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR2A |= (1 << COM2A0);
-	    TCCR2A &= ~(1 << COM2A1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK2 |= (1 << OCIE2A);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << COMB0_BIT);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB1_BIT);
 	    
 	    break;
 	  }
@@ -2844,11 +2137,11 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
 	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	    TCCR2A |= ((1 << COM2A1) | (1 << WGM20));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR2A &= (~(1 << WGM21) & ~(1 << COM2A0));
-	    TCCR2B &= ~(1 << WGM22);
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMB0_BIT));
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 	    
 	    break;
 	  }
@@ -2856,92 +2149,36 @@ int8_t enable_oc_timer2(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
 	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	    TCCR2A |= ((1 << COM2A1) | (1 << WGM21) | (1 << WGM20));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR2A &= ~(1 << COM2A0);
-	    TCCR2B &= ~(1 << WGM22);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
 		    
 	    break;
 	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK2 &= ~(1 << OCIE2B);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR2A &= (~(1 << COM2B1) & ~(1 << COM2B0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	    TCCR2A &= ~(1 << WGM20);
-	    TCCR2A |= (1 << WGM21);
-	    TCCR2B &= ~(1 << WGM22);
-	    
-	    /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR2A |= (1 << COM2B0);
-	    TCCR2A &= ~(1 << COM2B1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK2 |= (1 << OCIE2B);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM */
-	  {
-	    /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	    /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	    TCCR2A |= ((1 << COM2B1) | (1 << WGM20));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR2A &= (~(1 << WGM21) & ~(1 << COM2B0));
-	    TCCR2B &= ~(1 << WGM22);
-	    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non - inverted */
-	  {
-	    /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	    /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	    TCCR2A |= ((1 << COM2B1) | (1 << WGM21) | (1 << WGM20));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR2A &= ~(1 << COM2B0);
-	    TCCR2B &= ~(1 << WGM22);
-		    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
+	  /* More modes in here if necessary */
 	}
 	break;
     }
     default:	/* No more channels available, return an error. */
+    {
       return -1;
     }
+ }
     
     return 0;
 }
 
 /**
-* Enables Output Compare operation on Timer Counter 3.
+* Enables Output Compare operation on 8-bit Timer/Counters.
 * 
 * @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
+* @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
+int8_t enable_oc_16bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table)
 {
   /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
   switch(channel)
@@ -2956,36 +2193,36 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  case OC_NONE:
 	  {
 	    /* Disable the output compare operation */
-	    TIMSK3 &= ~(1 << OCIE3A);
+	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
 	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR3A &= (~(1 << COM3A1) & ~(1 << COM3A0));
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
 	    break;
 	  }
 	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
 	  {
 	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR3A &= (~(1 << WGM31) & ~(1 << WGM30));
-	    TCCR3B &= ~(1 << WGM33);
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    	    
 	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR3A |= (1 << COM3A0);
-	    TCCR3A &= ~(1 << COM3A1);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << COMA0_BIT);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
 	    
 	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK3 |= (1 << OCIE3A);
+	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
 	    
 	    break;
 	  }
 	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR3A |= ((1 << COM3A1) | (1 << WGM31) | (1 << WGM30));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3A0);
-	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
 		    
 	    break;
 	  }
@@ -2993,16 +2230,16 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR3A |= ((1 << COM3A1) | (1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3A0);
-	    TCCR3B &= ~(1 << WGM33);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
 	    
 	    break;
 	  }
-	  /* TODO: More modes in here if necessary */
+	  /* More modes in here if necessary */
 	}
 	break;
     }
@@ -3016,36 +2253,36 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  case OC_NONE:
 	  {
 	    /* Disable the output compare operation */
-	    TIMSK3 &= ~(1 << OCIE3B);
+	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEB_BIT);
 	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR3A &= (~(1 << COM3B1) & ~(1 << COM3B0));
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << COMB1_BIT) & ~(1 << COMB0_BIT));
 	    break;
 	  }
 	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
 	  {
 	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR3A &= (~(1 << WGM31) & ~(1 << WGM30));
-	    TCCR3B &= ~(1 << WGM33);
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    	    
 	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR3A |= (1 << COM3B0);
-	    TCCR3A &= ~(1 << COM3B1);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << COMB0_BIT);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB1_BIT);
 	    
 	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK3 |= (1 << OCIE3B);
+	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
 	    
 	    break;
 	  }
 	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR3A |= ((1 << COM3B1) | (1 << WGM31) | (1 << WGM30));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3B0);
-	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
 		    
 	    break;
 	  }
@@ -3053,16 +2290,16 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR3A |= ((1 << COM3B1) | (1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3B0);
-	    TCCR3B &= ~(1 << WGM33);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
 	    
 	    break;
 	  }
-	  /* TODO: More modes in here if necessary */
+	  /* More modes in here if necessary */
 	}
 	break;
     }
@@ -3076,36 +2313,36 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  case OC_NONE:
 	  {
 	    /* Disable the output compare operation */
-	    TIMSK3 &= ~(1 << OCIE3C);
+	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEC_BIT);
 	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR3A &= (~(1 << COM3C1) & ~(1 << COM3C0));
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << COMC1_BIT) & ~(1 << COMC0_BIT));
 	    break;
 	  }
 	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
 	  {
 	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR3A &= (~(1 << WGM31) & ~(1 << WGM30));
-	    TCCR3B &= ~(1 << WGM33);
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    	    
 	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR3A |= (1 << COM3C0);
-	    TCCR3A &= ~(1 << COM3C1);
+	    _SFR_IO8(table->TCCRA_address) |= (1 << COMC0_BIT);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMC1_BIT);
 	    
 	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK3 |= (1 << OCIE3C);
+	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
 	    
 	    break;
 	  }
 	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
 	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR3A |= ((1 << COM3C1) | (1 << WGM31) | (1 << WGM30));
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMC1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3C0);
-	    TCCR3B &= (~(1 << WGM33) & ~(1 << WGM32));	        
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMC0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
 		    
 	    break;
 	  }
@@ -3113,16 +2350,16 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
 	  {
 	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
 	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR3A |= ((1 << COM3C1) | (1 << WGM31) | (1 << WGM30));
-	    TCCR3B |= (1 << WGM32);
+	    _SFR_IO8(table->TCCRA_address) |= ((1 << COMC1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
+	    _SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
 	    
 	    /* Clear un-needed bits (safeguard) */
-	    TCCR3A &= ~(1 << COM3C0);
-	    TCCR3B &= ~(1 << WGM33);
+	    _SFR_IO8(table->TCCRA_address) &= ~(1 << COMC0_BIT);
+	    _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
 	    
 	    break;
 	  }
-	  /* TODO: More modes in here if necessary */
+	  /* More modes in here if necessary */
 	}
 	break;
     }
@@ -3131,640 +2368,6 @@ int8_t enable_oc_timer3(tc_oc_channel channel, tc_oc_mode mode)
     }
     
     return 0;
-}
-
-/**
-* Enables Output Compare operation on Timer Counter 4.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer4(tc_oc_channel channel, tc_oc_mode mode)
-{
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
-  {
-    case TC_OC_A:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK4 &= ~(1 << OCIE4A);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR4A &= (~(1 << COM4A1) & ~(1 << COM4A0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR4A &= (~(1 << WGM41) & ~(1 << WGM40));
-	    TCCR4B &= ~(1 << WGM43);
-	    TCCR4B |= (1 << WGM42);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR4A |= (1 << COM4A0);
-	    TCCR4A &= ~(1 << COM4A1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK4 |= (1 << OCIE4A);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR4A |= ((1 << COM4A1) | (1 << WGM41) | (1 << WGM40));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4A0);
-	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR4A |= ((1 << COM4A1) | (1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= (1 << WGM42);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4A0);
-	    TCCR4B &= ~(1 << WGM43);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK4 &= ~(1 << OCIE4B);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR4A &= (~(1 << COM4B1) & ~(1 << COM4B0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR4A &= (~(1 << WGM41) & ~(1 << WGM40));
-	    TCCR4B &= ~(1 << WGM43);
-	    TCCR4B |= (1 << WGM42);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR4A |= (1 << COM4B0);
-	    TCCR4A &= ~(1 << COM4B1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK4 |= (1 << OCIE4B);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR4A |= ((1 << COM4B1) | (1 << WGM41) | (1 << WGM40));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4B0);
-	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR4A |= ((1 << COM4B1) | (1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= (1 << WGM42);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4B0);
-	    TCCR4B &= ~(1 << WGM43);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_C:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK4 &= ~(1 << OCIE4C);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR4A &= (~(1 << COM4C1) & ~(1 << COM4C0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR4A &= (~(1 << WGM41) & ~(1 << WGM40));
-	    TCCR4B &= ~(1 << WGM43);
-	    TCCR4B |= (1 << WGM42);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR4A |= (1 << COM4C0);
-	    TCCR4A &= ~(1 << COM4C1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK4 |= (1 << OCIE4C);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR4A |= ((1 << COM4C1) | (1 << WGM41) | (1 << WGM40));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4C0);
-	    TCCR4B &= (~(1 << WGM43) & ~(1 << WGM42));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR4A |= ((1 << COM4C1) | (1 << WGM41) | (1 << WGM40));
-	    TCCR4B |= (1 << WGM42);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR4A &= ~(1 << COM4C0);
-	    TCCR4B &= ~(1 << WGM43);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    default:	/* No more channels available, return an error. */
-      return -1;
-    }
-    
-    return 0;
-}
-
-/**
-* Enables Output Compare operation on Timer Counter 5.
-* 
-* @param channel		Which OC channel should be enabled.
-* @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
-*/
-int8_t enable_oc_timer5(tc_oc_channel channel, tc_oc_mode mode)
-{
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
-  {
-    case TC_OC_A:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK5 &= ~(1 << OCIE5A);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR5A &= (~(1 << COM5A1) & ~(1 << COM5A0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR5A &= (~(1 << WGM51) & ~(1 << WGM50));
-	    TCCR5B &= ~(1 << WGM53);
-	    TCCR5B |= (1 << WGM52);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR5A |= (1 << COM5A0);
-	    TCCR5A &= ~(1 << COM5A1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK5 |= (1 << OCIE5A);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR5A |= ((1 << COM5A1) | (1 << WGM51) | (1 << WGM50));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5A0);
-	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR5A |= ((1 << COM5A1) | (1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= (1 << WGM52);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5A0);
-	    TCCR5B &= ~(1 << WGM53);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK5 &= ~(1 << OCIE5B);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR5A &= (~(1 << COM5B1) & ~(1 << COM5B0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR5A &= (~(1 << WGM51) & ~(1 << WGM50));
-	    TCCR5B &= ~(1 << WGM53);
-	    TCCR5B |= (1 << WGM52);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR5A |= (1 << COM5B0);
-	    TCCR5A &= ~(1 << COM5B1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK5 |= (1 << OCIE5B);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR5A |= ((1 << COM5B1) | (1 << WGM51) | (1 << WGM50));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5B0);
-	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR5A |= ((1 << COM5B1) | (1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= (1 << WGM52);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5B0);
-	    TCCR5B &= ~(1 << WGM53);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_C:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    TIMSK5 &= ~(1 << OCIE5C);
-	    /* Disconnect the output pin to allow for normal operation */
-	    TCCR5A &= (~(1 << COM5C1) & ~(1 << COM5C0));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    TCCR5A &= (~(1 << WGM51) & ~(1 << WGM50));
-	    TCCR5B &= ~(1 << WGM53);
-	    TCCR5B |= (1 << WGM52);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    TCCR5A |= (1 << COM5C0);
-	    TCCR5A &= ~(1 << COM5C1);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    TIMSK5 |= (1 << OCIE5C);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-// 	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    TCCR5A |= ((1 << COM5C1) | (1 << WGM51) | (1 << WGM50));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5C0);
-	    TCCR5B &= (~(1 << WGM53) & ~(1 << WGM52));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    TCCR5A |= ((1 << COM5C1) | (1 << WGM51) | (1 << WGM50));
-	    TCCR5B |= (1 << WGM52);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    TCCR5A &= ~(1 << COM5C0);
-	    TCCR5B &= ~(1 << WGM53);
-	    
-	    break;
-	  }
-	  /* TODO: More modes in here if necessary */
-	}
-	break;
-    }
-    default:	/* No more channels available, return an error. */
-      return -1;
-    }
-    
-    return 0;
-}
-
-/**
-* Enables input capture mode for Timer Counter 1.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-* @return 0 for success, -1 for error.
-*/
-int8_t enable_ic_timer1(tc_ic_channel channel, tc_ic_mode mode)
-{
-  /* Manipulate the necessary registers depending on which channel is supplied to function */
-  switch(channel)
-  {
-    case TC_IC_A:
-    {
-      /* Switch depending on which mode is supplied */
-      switch(mode)
-      {
-	case IC_NONE:
-	{
-	  /* TODO: Any disabling code for IC goes here */
-	  break;
-	}
-	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
-	  TCCR1B |= ((1 << ICES1) | (1 << ICNC1));
-	  break;
-	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR1B |= (1 << ICES1); 
-	  TCCR1B &= ~(1 << ICNC1);
-	  break;
-	}
-	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
-	  TCCR1B |= (1 << ICNC1);
-	  TCCR1B &= ~(1 << ICES1);
-	  break;
-	}
-	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR1B &= (~(1 << ICNC1) & ~(1 << ICES1));
-	  break;
-	}
-	default:	/* Invalid mode for timer */
-	  return -1;
-      }
-      break;
-     }
-     /*TODO: any more IC channels go here*/
-  }
-  return 0;  
-}
-
-/**
-* Enables input capture mode for Timer Counter 3.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-* @return 0 for success, -1 for error.
-*/
-int8_t enable_ic_timer3(tc_ic_channel channel, tc_ic_mode mode)
-{
-  /* Manipulate the necessary registers depending on which channel is supplied to function */
-  switch(channel)
-  {
-    case TC_IC_A:
-    {
-      /* Switch depending on which mode is supplied */
-      switch(mode)
-      {
-	case IC_NONE:
-	{
-	  /* TODO: Any disabling code for IC goes here */
-	  break;
-	}
-	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
-	  TCCR3B |= ((1 << ICES3) | (1 << ICNC3));
-	  break;
-	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR3B |= (1 << ICES3);
-	  TCCR3B &= ~(1 << ICNC3);
-	  break;
-	}
-	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
-	  TCCR3B |= (1 << ICNC3);
-	  TCCR3B &= ~(1 << ICES3);
-	  break;
-	}
-	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR3B &= (~(1 << ICNC3) & ~(1 << ICES3));
-	  break;
-	}
-	default:	/* Invalid mode for timer */
-	  return -1;
-      }
-      break;
-     }
-     /*TODO: any more IC channels go here*/
-  }
-  return 0;  
-}
-
-/**
-* Enables input capture mode for Timer Counter 4.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-* @return 0 for success, -1 for error.
-*/
-int8_t enable_ic_timer4(tc_ic_channel channel, tc_ic_mode mode)
-{
-  /* Manipulate the necessary registers depending on which channel is supplied to function */
-  switch(channel)
-  {
-    case TC_IC_A:
-    {
-      /* Switch depending on which mode is supplied */
-      switch(mode)
-      {
-	case IC_NONE:
-	{
-	  /* TODO: Any disabling code for IC goes here */
-	  break;
-	}
-	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
-	  TCCR4B |= ((1 << ICES4) | (1 << ICNC4));
-	  break;
-	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR4B |= (1 << ICES4); 
-	  TCCR4B &= ~(1 << ICNC4);
-	  break;
-	}
-	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
-	  TCCR4B |= (1 << ICNC4);
-	  TCCR4B &= ~(1 << ICES4);
-	  break;
-	}
-	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR4B &= (~(1 << ICNC4) & ~(1 << ICES4));
-	  break;
-	}
-	default:	/* Invalid mode for timer */
-	  return -1;
-      }
-      break;
-     }
-     /*TODO: any more IC channels go here*/
-  }
-  return 0;  
-}
-
-/**
-* Enables input capture mode for Timer Counter 5.  If mode to set to 'IC_NONE', then disable IC mode
-* operation for the specified channel.
-*
-* @param channel		Which IC channel should be enabled.
-* @param mode			Which mode the IC channel should be set to.
-* @return 0 for success, -1 for error.
-*/
-int8_t enable_ic_timer5(tc_ic_channel channel, tc_ic_mode mode)
-{
-  /* Manipulate the necessary registers depending on which channel is supplied to function */
-  switch(channel)
-  {
-    case TC_IC_A:
-    {
-      /* Switch depending on which mode is supplied */
-      switch(mode)
-      {
-	case IC_NONE:
-	{
-	  /* TODO: Any disabling code for IC goes here */
-	  break;
-	}
-	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
-	  TCCR5B |= ((1 << ICES5) | (1 << ICNC5));
-	  break;
-	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR5B |= (1 << ICES5); 
-	  TCCR5B &= ~(1 << ICNC5);
-	  break;
-	}
-	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
-	  TCCR5B |= (1 << ICNC5);
-	  TCCR5B &= ~(1 << ICES5);
-	  break;
-	}
-	case IC_MODE_4:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  TCCR5B &= (~(1 << ICNC5) & ~(1 << ICES5));
-	  break;
-	}
-	default:	/* Invalid mode for timer */
-	  return -1;
-      }
-      break;
-     }
-     /*TODO: any more IC channels go here*/
-  }
-  return 0;  
 }
 
 /** Declare the ISRptrs
@@ -3809,6 +2412,12 @@ ISR(TIMER1_COMPB_vect)
 {
   if (timerInterrupts[TIMER1_COMPB_int])
     timerInterrupts[TIMER1_COMPB_int]();
+}
+
+ISR(TIMER1_COMPC_vect)
+{
+  if (timerInterrupts[TIMER1_COMPC_int])
+    timerInterrupts[TIMER1_COMPC_int]();
 }
 
 ISR(TIMER1_OVF_vect)
