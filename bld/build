@@ -55,6 +55,15 @@ makeavr()
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.x
+
+		# A linker script is specified, so set the linker flags to refer to it.
+		LFLAGS="-T linker_script.x $LFLAGS"
+echo -e "$LFLAGS"
+	fi
+
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
@@ -85,6 +94,7 @@ makeavr()
 	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $P_LIBFILES $S_LIBFILES $C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
@@ -244,7 +254,7 @@ makeavr32()
 		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
 
 		# A linker script is specified, so set the linker flags to refer to it.
-		$LFLAGS="-T linker_script.ld $LFLAGS"
+		LFLAGS="-T linker_script.ld $LFLAGS"
 	fi
 
 	# Copy the relevant makefile in with the source.
@@ -340,7 +350,7 @@ makearm()
 		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
 
 		# A linker script is specified, so set the linker flags to refer to it.
-		$LFLAGS="-T linker_script.ld $LFLAGS"
+		LFLAGS="-T linker_script.ld $LFLAGS"
 	fi
 
 	# Get a list of names of source and header files.
@@ -436,6 +446,7 @@ get_rtos_files ()
 	echo -e "${CYAN}Importing common FreeRTOS files...\n${NO_COLOUR}"
 	# Copy the FreeRTOS common files into our temporary directory.
 	cp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.c $TCPATH/$BCONF_COMMON_RTOS_PATH/*.cpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.h $TCPATH/$BCONF_COMMON_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	echo -e "${CYAN}Importing port specific FreeRTOS files...\n${NO_COLOUR}"
 	# Copy the FreeRTOS port files into our temporary directory.
 	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 }
@@ -922,7 +933,7 @@ do
 	shopt -u nullglob
 
 	# Check to see if the platform is freertos.
-	if [ $PLATFORM == "freertos" }; then
+	if [ $PLATFORM == "freertos" ]; then
 	    # Fetch the freertos files.
 	    get_rtos_files
 	fi

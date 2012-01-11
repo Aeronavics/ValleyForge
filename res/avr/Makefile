@@ -112,7 +112,7 @@ PFLAGS= $(CFLAGS)
 AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
 
 # Linker flags.
-LFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS)
+LFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS) BUILD_INSERTS_LFLAGS_HERE
 
 ##### Executables ####
 

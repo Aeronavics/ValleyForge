@@ -69,6 +69,10 @@ Changes from V2.6.0
 /* If we're using the Real Time Clock counter, check the processor for Timer 0
  * or Timer 2 usage
  */
+
+#ifndef USE_RTC_TIMER
+	#define USE_RTC_TIMER
+#endif
 #ifdef USE_RTC_TIMER
 	#if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 		#define __ATmegaxx0__
@@ -671,7 +675,7 @@ void vPortSystemClockEnable( portBASE_TYPE Enable )
 	{
 		uc &= ~portCOMPARE_MATCH_A_INTERRUPT_ENABLE;
 	}
-	TIMSK = ucLowByte;
+	TIMSK = uc;
 #else
 
 #ifdef __ATmegaxx0__
@@ -695,7 +699,7 @@ void vPortSystemClockEnable( portBASE_TYPE Enable )
 	{
 		uc &= ~(1 << OCIE0);
 	}
-	TIMSK = ucLowByte;
+	TIMSK = uc;
 #endif // __ATmegaxx0__
 
 #endif // USE_RTC_TIMER
@@ -832,6 +836,8 @@ static void prvSetupTimerInterrupt( void )
 	 * the context is saved at the start of vPortYieldFromTick().  The tick
 	 * count is incremented after the context is saved.
 	 */
+
+
 	ISR( TIMER_COMPARE_SIG, ISR_NAKED ISR_SECTION )
 	{
 		vPortYieldFromTick();

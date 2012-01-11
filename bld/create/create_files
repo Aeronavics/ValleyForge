@@ -260,7 +260,7 @@ else
 	$BCONF
 
 	# Check that all the required variables were set by the build configuration.
-	if [ -z "$BCONF_NAME" ] || [ -z "$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
+	if [ -z "$BCONF_NAME" ] || [ -z "$C_COMPILER" ] || [ -z "P_$COMPILER" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ] || [ -z "$MCU_CODE" ]\
 	   || [ -z "$OBJCOPY" ] || [ -z "$IOHEADER" ]; then
 		# At least one of the required variables was not set, so skip this component and move on.
 		echo -e "${RED}Build configuration incomplete. Cannot create files for component $COMPONENT.\n${NO_COLOUR}"
