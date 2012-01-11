@@ -57,28 +57,32 @@ makeavr()
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	
 	# Get a list of all the library source and header files.
 	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
 
 	# Get a list of all the HAL source and header files.
 	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 							
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
+	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES $C_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
+	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $P_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $P_LIBFILES $S_LIBFILES $C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
@@ -131,7 +135,7 @@ makeavr_bootloader()
 	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $SOURCEPATH/*.c $SOURCEPATH/*.h $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+	cp $SOURCEPATH/*.c $SOURCEPATH/*.cpp $SOURCEPATH/*.h $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
 
 	# Preprocess the copied header files.
 	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h
@@ -147,6 +151,13 @@ makeavr_bootloader()
 		preprocess_bootloader $FILE
 	done
 
+	# Preprocess the copied source files.
+	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.cpp
+	for FILE in $FILES; do
+		# Preprocess this source file.
+		preprocess_bootloader $FILE
+	done
+
 	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default).
 	get_hal ${COMPONENT}_bootloader/hal
 
@@ -156,22 +167,25 @@ makeavr_bootloader()
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
 
 	# Get a list of all the HAL source and header files.
 	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(BOOTSTART *= *\)BUILD_INSERTS_BOOTLOADER_ADDRESS_HERE/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
@@ -232,26 +246,33 @@ makeavr32()
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	
 	# Get a list of all the library source and header files.
 	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 
 	# Get a list of all the HAL source and header files.
 	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(PART *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_C_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $S_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_C *= *\)BUILD_INSERTS_C_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_P *= *\)BUILD_INSERTS_P_FILES_HERE^\1$P_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_C *= *\)BUILD_INSERTS_LIBRARY_C_SOURCE_FILES_HERE^\1$C_LIBFILES $C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_P *= *\)BUILD_INSERTS_LIBRARY_P_SOURCE_FILES_HERE^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_S *= *\)BUILD_INSERTS_LIBRARY_S_SOURCE_FILES_HERE^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(TARGET *= *\)BUILD_INSERTS_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
@@ -315,36 +336,43 @@ makearm()
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	
 	# Get a list of all the library source and header files.
 	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 
 	# Get a list of all the HAL source and header files.
 	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -i "s^\(MCPU *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_COMPILER_HERE^\1$COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(AS *= *\)BUILD_INSERTS_ASSEMBLER_HERE^\1$ASSEMBLER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LD *= *\)BUILD_INSERTS_LINKER_HERE^\1$LINKER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(CFLAGS *= *.* *\)BUILD_INSERTS_CFLAGS_HERE^\1$CFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PFLAGS *= *.* *\)BUILD_INSERTS_PFLAGS_HERE^\1$PFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(AFLAGS *= *.* *\)BUILD_INSERTS_AFLAGS_HERE^\1$AFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_C *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(SRC_P *= *\).*^\1$P_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_H *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(SRC_S *= *\).*^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES H_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES $C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_P *= *\).*^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES $H_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(TARGET *= *\).*^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
@@ -464,6 +492,14 @@ get_suitable_libs()
 			done
 			shopt -u nullglob
 
+			# Preprocess the copied source files.
+			shopt -s nullglob
+			for FILE in $OUTPATH/$LIBRARY/*.cpp; do
+				# Preprocess this source file.
+				preprocess_library $FILE
+			done
+			shopt -u nullglob
+
 			# Preprocess the copied assembler files.
 			shopt -s nullglob
 			for FILE in $OUTPATH/$LIBRARY/*.s; do
@@ -485,6 +521,13 @@ get_suitable_libs()
 # Find suitable HAL libraries and copy them into the tmp directory.
 get_hal()
 {
+	# Check if using the HAL is disabled.
+	if [ $NOHAL ]; then
+		# The HAL is disabled, so don't do anything here.
+		echo -e "${YELLOW}'No HAL' option selected; not importing HAL.\n${NO_COLOUR}"
+		return 0
+	fi
+
 	# Check if a output location was given.
 	if [ -z $1 ]; then
 		# No specific output location was given, so use the default one for the current component.
@@ -547,6 +590,14 @@ get_hal()
 	done
 	shopt -u nullglob
 
+	# Preprocess the copied source files.
+	shopt -s nullglob
+	for FILE in $OUTPATH/*.cpp; do
+		# Preprocess this source file.
+		preprocess_hal $FILE
+	done
+	shopt -u nullglob
+
 	# Preprocess the copied assembler files.
 	shopt -s nullglob
 	for FILE in $OUTPATH/*.s; do
@@ -580,6 +631,7 @@ Options:
 	-r --retain			Retain temporary files at completion of script.
 	-l --loader			Build the bootloader for each component as well.
 	-n --name <Component Name>	Specify the name of a component to build.
+	   --nohal			Do not compile using the HAL (mostly for debugging).
 EOF
 	# All done.
 	return
@@ -600,11 +652,12 @@ NAME=
 RETAIN=
 ALL=
 LOADER=
+NOHAL=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
 SHORTOPTS="harlcn:"
-LONGOPTS="help,all,retain,loader,clean,name:"
+LONGOPTS="help,all,retain,loader,clean,nohal,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -641,6 +694,10 @@ while true; do
 			# Specify the name of the component to build.
 			shift
 			NAME="$NAME$1 " # NOTE - The space is intentional!
+			;;
+		--nohal)
+			# Select 'not using HAL'.
+			NOHAL=1
 			;;
 		--)
 			# We're done parsing options.  Anything else must be parameters.
@@ -791,13 +848,17 @@ do
 	C_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
 	echo -e "${CYAN}Found $C_COUNT C source files.\n${NO_COLOUR}"
 
+	# Count the number of CPP files in the source folder for this component.
+	P_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.cpp 2>/dev/null | wc -l`
+	echo -e "${CYAN}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
+
 	# Count the number of S files in the source folder for this component.
 	S_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.s 2>/dev/null | wc -l`
 	echo -e "${CYAN}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
 	# If there are no C source files and no assembler source files, then there is nothing to do.
-	if [ ! $C_COUNT ] && [ ! $S_COUNT ]; then
-		# There are no C source files, so skip this component and move on.
+	if [ ! $C_COUNT ] && [ ! $P_COUNT ] && [ ! $S_COUNT ]; then
+		# There are no source files, so skip this component and move on.
 		echo -e "${YELLOW}No source files present in source folder.  Skipping component $COMPONENT\n${NO_COLOUR}"
 		continue
 	fi
@@ -807,7 +868,7 @@ do
 	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 
 	# Preprocess the copied header files.
 	shopt -s nullglob
@@ -820,6 +881,14 @@ do
 	# Preprocess the copied source files.
 	shopt -s nullglob
 	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied source files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp; do
 		# Preprocess this source file.
 		preprocess_general $FILE
 	done
