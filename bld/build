@@ -238,11 +238,18 @@ makeavr32()
 	# Check if the AVR32 compiler has been uncompressed already.
 	inflate_avr32cc
 
+	# If we are using a linker script, then add the appropriate linker flags to use it.
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
+
+		# A linker script is specified, so set the linker flags to refer to it.
+		$LFLAGS="-T linker_script.ld $LFLAGS"
+	fi
+
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# TODO - At the moment I don't think the AVR32 makefile can handle assembler files.
 
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
@@ -270,6 +277,8 @@ makeavr32()
 	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(PRJSRC_C *= *\)BUILD_INSERTS_C_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(PRJSRC_P *= *\)BUILD_INSERTS_P_FILES_HERE^\1$P_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_S *= *\)BUILD_INSERTS_S_FILES_HERE^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBSRC_C *= *\)BUILD_INSERTS_LIBRARY_C_SOURCE_FILES_HERE^\1$C_LIBFILES $C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBSRC_P *= *\)BUILD_INSERTS_LIBRARY_P_SOURCE_FILES_HERE^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBSRC_S *= *\)BUILD_INSERTS_LIBRARY_S_SOURCE_FILES_HERE^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -419,6 +428,16 @@ inflate_avr32cc()
 
 	# All done.
 	return
+}
+
+# Find the rtos files and copy them into the tmp directory
+get_rtos_files ()
+{
+	echo -e "${CYAN}Importing common FreeRTOS files...\n${NO_COLOUR}"
+	# Copy the FreeRTOS common files into our temporary directory.
+	cp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.c $TCPATH/$BCONF_COMMON_RTOS_PATH/*.cpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.h $TCPATH/$BCONF_COMMON_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	# Copy the FreeRTOS port files into our temporary directory.
+	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 }
 
 # Find suitable libraries and copy them into the tmp directory.
@@ -901,6 +920,12 @@ do
 		preprocess_general $FILE
 	done
 	shopt -u nullglob
+
+	# Check to see if the platform is freertos.
+	if [ $PLATFORM == "freertos" }; then
+	    # Fetch the freertos files.
+	    get_rtos_files
+	fi
 
 	# Fetch any user library files which might be required.
 	get_suitable_libs

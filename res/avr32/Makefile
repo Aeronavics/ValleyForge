@@ -16,13 +16,15 @@ PC=BUILD_INSERTS_P_COMPILER_HERE
 # Compiler flags.
 CFLAGS= -g -O$(OPTLEVEL) -Wall -ffunction-sections -mpart=$(PART)
 PFLAGS= $(CFLAGS)
+AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
 
 # Linker flags.
-LDFLAGS= -g -Wl,--gc-sections -mpart=$(PART)
+LFLAGS= -g -Wl,--gc-sections -mpart=$(PART)
 
 # Project source files.
 PRJSRC_C=BUILD_INSERTS_C_FILES_HERE
 PRJSRC_P=BUILD_INSERTS_P_FILES_HERE
+PRJSRC_S=BUILD_INSERTS_S_FILES_HERE
 
 # Library source files.
 LIBSRC_C=BUILD_INSERTS_LIBRARY_C_SOURCE_FILES_HERE
@@ -33,7 +35,7 @@ LIBSRC_S=BUILD_INSERTS_LIBRARY_S_SOURCE_FILES_HERE
 LIBOBJ=BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE
 
 # Required object files.
-OBJECTS=$(PRJSRC_C:.c=.o) $(PRJSRC_P:.cpp=.o) $(LIBSRC_C:.c=.o) $(LIBSRC_P:.cpp=.o) $(LIBSRC_S:.s=.o) $(LIBOBJ)
+OBJECTS=$(PRJSRC_C:.c=.o) $(PRJSRC_P:.cpp=.o) $(PRJSRC_S:.s=.o) $(LIBSRC_C:.c=.o) $(LIBSRC_P:.cpp=.o) $(LIBSRC_S:.s=.o) $(LIBOBJ)
 
 # PSEUDO-TARGETS.
 
@@ -46,7 +48,7 @@ all: $(TARGET).elf
 # Target from objects.
 $(TARGET).elf: $(OBJECTS)
 	@echo "******** Linking target ${TARGET} from object files. ********"
-	$(CC) $(LDFLAGS) -o $(TARGET).elf $(OBJECTS)
+	$(CC) $(LFLAGS) -o $(TARGET).elf $(OBJECTS)
 
 #### Generating object files. ####
 
@@ -59,4 +61,9 @@ $(TARGET).elf: $(OBJECTS)
 %.o : %.cpp
 	@echo "******** Compiling $@ from $^. ********"
 	$(PC) -c $(PFLAGS) -o $*.o $<
+
+#Object from ASM
+%.o : %.s
+	@echo "******** Assembling $@ from $^. ********"
+	$(CC) $(AFLAGS) -c $< -o $@
 

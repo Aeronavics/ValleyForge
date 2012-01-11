@@ -109,7 +109,7 @@ CFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) -fpack-struct -fshort-enums -fu
 PFLAGS= $(CFLAGS)
 
 # Assembler flags.
-AFLAGS =-I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
+AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
 
 # Linker flags.
 LFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS)
@@ -183,13 +183,6 @@ $(DUMPTRG): $(TRG)
 $(TRG): $(OBJDEPS)
 	@echo "******** Linking target ${PROJECTNAME} from object files. ********"
 	$(CC) $(LFLAGS) -o $(TRG) $(OBJDEPS)
-
-#### Generating assembly. ####
-
-# ASM from (hand coded) asm
-
-%.S: %.s
-	$(CC) -S $(AFLAGS) $< > $@
 
 #### Generating object files. ####
 
