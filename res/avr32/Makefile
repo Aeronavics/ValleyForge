@@ -16,10 +16,10 @@ PC=BUILD_INSERTS_P_COMPILER_HERE
 # Compiler flags.
 CFLAGS= -g -O$(OPTLEVEL) -Wall -ffunction-sections -mpart=$(PART)
 PFLAGS= $(CFLAGS)
-AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
+AFLAGS= -I. $(INC) -mpart=$(PART) -x assembler-with-cpp -Wall -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
 
 # Linker flags.
-LFLAGS= -g -Wl,--gc-sections -mpart=$(PART)
+LFLAGS= -g -Wl,--gc-sections -mpart=$(PART) BUILD_INSERTS_LFLAGS_HERE
 
 # Project source files.
 PRJSRC_C=BUILD_INSERTS_C_FILES_HERE
