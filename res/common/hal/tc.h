@@ -48,7 +48,7 @@ enum tc_number {TC_0, TC_1, TC_2, TC_3, TC_4, TC_5};
 
 enum tc_oc_channel {TC_OC_A, TC_OC_B, TC_OC_C};
 
-enum tc_oc_mode {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3};
+enum tc_oc_mode {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3, OC_MODE_4, OC_MODE_5, OC_MODE_6, OC_MODE_7, OC_MODE_8, OC_MODE_9, OC_MODE_10, OC_MODE_11, OC_MODE_12, OC_MODE_13, OC_MODE_14, OC_MODE_15};
 
 enum tc_ic_channel {TC_IC_A};
 
@@ -134,14 +134,15 @@ class timer
 		int8_t disable_tov_interrupt(void);
 		
 		/**
-		 * Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disable OC mode
-		 * operation for the specified channel.
+		 * Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode
+		 * operation for Timer/Counter implemented.
 		 *
-		 * @param channel		Which OC channel should be enabled.
 		 * @param mode			Which mode the OC channel should be set to.
 		 * @return 0 for success, -1 for error.
 		 */
-		int8_t enable_oc(tc_oc_channel channel, tc_oc_mode mode);
+		int8_t enable_oc(tc_oc_mode mode);
+		
+		/* TODO: Add a function to enable the peripheral channel of each timer after enabling the timer counter itself */
 
 		/**
 		 * Enables the output compare interrupt for the specified OC channel.  Note that this doesn't actually

@@ -36,6 +36,7 @@
 #	define TCCR0A_ADDRESS		0x24
 
 	/* Timer/Counter 1 */
+#	define OCR1C_ADDRESS		0x8C
 #	define OCR1B_ADDRESS		0x8A
 #	define OCR1A_ADDRESS		0x88
 #	define TCNT1_ADDRESS		0x84
@@ -52,6 +53,7 @@
 #	define TIMSK2_ADDRESS		0x70
 
 	/* Timer/Counter 3 */
+#	define OCR3C_ADDRESS		0x9C
 #	define OCR3B_ADDRESS		0x9A
 #	define OCR3A_ADDRESS		0x98
 #	define TCNT3_ADDRESS		0x94
@@ -60,6 +62,7 @@
 #	define TIMSK3_ADDRESS		0x71
 
 	/* Timer/Counter 4 */
+#	define OCR4C_ADDRESS		0xAC
 #	define OCR4B_ADDRESS		0xAA
 #	define OCR4A_ADDRESS		0xA8
 #	define TCNT4_ADDRESS		0xA4
@@ -68,6 +71,7 @@
 #	define TIMSK4_ADDRESS		0x72
 
 	/* Timer/Counter 5 */
+#	define OCR5C_ADDRESS		0x12C
 #	define OCR5B_ADDRESS		0x12A
 #	define OCR5A_ADDRESS		0x128
 #	define TCNT5_ADDRESS		0x124
@@ -205,22 +209,20 @@ int8_t start_timer2(timer_rate rate, registerAddressTable_t *table);
 /**
 * Enables Output Compare operation on 8-bit Timer/Counters.
 * 
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
 * @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_8bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table);
+int8_t enable_oc_8bit(tc_oc_mode mode, registerAddressTable_t *table);
 
 /**
 * Enables Output Compare operation on 16-bit Timer/Counters.
 * 
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
 * @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_16bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table);
+int8_t enable_oc_16bit(tc_oc_mode mode, registerAddressTable_t *table);
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -243,8 +245,7 @@ class timer_imp
 	* @param  timer_rate	Settings for clock source and prescaler.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t set_rate(timer_rate rate);
-	
+	int8_t set_rate(timer_rate rate);	
 	
 	/**
 	* Loads the timer with a value.
@@ -253,8 +254,7 @@ class timer_imp
  	* @return 0 for success, -1 for error.
 	*/
 	template <typename T>
-	int8_t load_timer_value(T value);
-	
+	int8_t load_timer_value(T value);	
 
 	/**
 	* Gets the value of the timer register.
@@ -262,16 +262,14 @@ class timer_imp
 	* @return T 	The timer value
 	*/
 	template <typename T>
-	T get_timer_value(void);
-	
+	T get_timer_value(void);	
 
 	/**
 	* Starts the timer.
 	*
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t start(void);
-	
+	int8_t start(void);	
 
 	/**
 	* Stops the timer.
@@ -297,14 +295,13 @@ class timer_imp
 	int8_t disable_tov_interrupt(void);
 	
 	/**
-	* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disable OC mode
-	* operation for the specified channel.
+	* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode
+	* operation for Timer/Counter implemented.
 	*
-	* @param channel		Which OC channel should be enabled.
 	* @param mode			Which mode the OC channel should be set to.
 	* @return 0 for success, -1 for error.
 	*/
-	int8_t enable_oc(tc_oc_channel channel, tc_oc_mode mode);
+	int8_t enable_oc(tc_oc_mode mode);
 	
 	/**
 	* Enables the output compare interrupt for the specified OC channel.  Note that this doesn't actually
@@ -516,16 +513,15 @@ int8_t timer::disable_tov_interrupt(void)
 }
 
 /**
-* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disable OC mode
-* operation for the specified channel.
+* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode
+* operation for Timer/Counter implemented.
 *
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
 * @return 0 for success, -1 for error.
 */
-int8_t timer::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
+int8_t timer::enable_oc(tc_oc_mode mode)
 {
-  return (imp->enable_oc(channel, mode));
+  return (imp->enable_oc(mode));
 }
 
 /**
@@ -816,6 +812,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.TIMSK_address = TIMSK1_ADDRESS;
       registerTable.TCCRB_address = TCCR1B_ADDRESS;
       registerTable.TCCRA_address = TCCR1A_ADDRESS;
+      registerTable.OCRC_address = OCR1C_ADDRESS;
       registerTable.OCRB_address = OCR1B_ADDRESS;
       registerTable.OCRA_address = OCR1A_ADDRESS;
       registerTable.TCNT_address = TCNT1_ADDRESS;
@@ -853,6 +850,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.TIMSK_address = TIMSK3_ADDRESS;
       registerTable.TCCRB_address = TCCR3B_ADDRESS;
       registerTable.TCCRA_address = TCCR3A_ADDRESS;
+      registerTable.OCRC_address = OCR3C_ADDRESS;
       registerTable.OCRB_address = OCR3B_ADDRESS;
       registerTable.OCRA_address = OCR3A_ADDRESS;
       registerTable.TCNT_address = TCNT3_ADDRESS;
@@ -873,6 +871,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.TIMSK_address = TIMSK4_ADDRESS;
       registerTable.TCCRB_address = TCCR4B_ADDRESS;
       registerTable.TCCRA_address = TCCR4A_ADDRESS;
+      registerTable.OCRC_address = OCR4C_ADDRESS;
       registerTable.OCRB_address = OCR4B_ADDRESS;
       registerTable.OCRA_address = OCR4A_ADDRESS;
       registerTable.TCNT_address = TCNT4_ADDRESS;
@@ -893,6 +892,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.TIMSK_address = TIMSK5_ADDRESS;
       registerTable.TCCRB_address = TCCR5B_ADDRESS;
       registerTable.TCCRA_address = TCCR5A_ADDRESS;
+      registerTable.OCRC_address = OCR5C_ADDRESS;
       registerTable.OCRB_address = OCR5B_ADDRESS;
       registerTable.OCRA_address = OCR5A_ADDRESS;
       registerTable.TCNT_address = TCNT5_ADDRESS;
@@ -1151,14 +1151,13 @@ int8_t timer_imp::disable_tov_interrupt(void)
 }
 
 /**
-* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disable OC mode
-* operation for the specified channel.
+* Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode
+* operation for Timer/Counter implemented.
 *
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
-* @return 0 if successful, -1 otherwise.
+* @return 0 for success, -1 for error.
 */
-int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
+int8_t timer_imp::enable_oc(tc_oc_mode mode)
 {
   /* Switch the process of enabling output compare interrupts depending on which timer
    * has been initialised.
@@ -1166,28 +1165,12 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
   switch(timer_id)
   {
     case TC_0:
-    {
+    { 
       /* Vacate the GPIO Pin if user disables Output Compare */
-//       if (mode == OC_NONE)
-//       {
-// 	timerPin->vacate();
-//       }
-      /* Grab the GPIO Pin otherwise */
-//       else
-//       {
-// 	if (channel == TC_OC_A)
-// 	  timerPin = grabPeripheralPin({TC0_OC_A_PORT, TC0_OC_A_PIN});
-// 	else if (channel == TC_OC_B)
-// 	  timerPin = grabPeripheralPin(TC0_OC_B_PIN);
-// 	else
-// 	  return -1;
-// 	
-// 	/* Check if timer pin was correctly returned */
-// 	if (timerPin == NULL)
-// 	  return -1;
-//       }
       
-      enable_oc_8bit(channel, mode, &registerTable);
+      /* Grab the GPIO Pin otherwise */
+      
+      enable_oc_8bit(mode, &registerTable);
       break;
     }
     case TC_1:
@@ -1196,7 +1179,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       
       /* Grab the GPIO Pin otherwise */
       
-      enable_oc_16bit(channel, mode, &registerTable);
+      enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_2:
@@ -1205,7 +1188,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       
       /* Grab the GPIO Pin otherwise */
       
-      enable_oc_8bit(channel, mode, &registerTable);
+      enable_oc_8bit(mode, &registerTable);
       break;
     }
     case TC_3:
@@ -1214,7 +1197,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       
       /* Grab the GPIO Pin otherwise */
             
-      enable_oc_16bit(channel, mode, &registerTable);
+      enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_4:
@@ -1223,7 +1206,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       
       /* Grab the GPIO Pin otherwise */
       
-      enable_oc_16bit(channel, mode, &registerTable);
+      enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_5:
@@ -1232,7 +1215,7 @@ int8_t timer_imp::enable_oc(tc_oc_channel channel, tc_oc_mode mode)
       
       /* Grab the GPIO Pin otherwise */
       
-      enable_oc_16bit(channel, mode, &registerTable);
+      enable_oc_16bit(mode, &registerTable);
       break;
     }
     default:	/* No more channels available, return an error. */
@@ -1667,14 +1650,44 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
       if (timerType == TIMER_16_BIT)
       {
 	_SFR_MEM16(registerTable.OCRB_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
+	{
+	  _SFR_MEM16(registerTable.OCRA_address) = value;
+	}
       }
       else if (registerTable.OCRB_address > 0x60)
       {
 	_SFR_MEM8(registerTable.OCRB_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
+	{
+	  _SFR_MEM8(registerTable.OCRA_address) = value;
+	}
       }
       else
       {
 	_SFR_IO8(registerTable.OCRB_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
+	{
+	  _SFR_IO8(registerTable.OCRA_address) = value;
+	}
       }
       
       break;
@@ -1685,16 +1698,46 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
       if (timerType == TIMER_16_BIT)
       {
 	_SFR_MEM16(registerTable.OCRC_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
+	{
+	  _SFR_MEM16(registerTable.OCRA_address) = value;
+	}
       }
       else if (registerTable.OCRC_address > 0x60)
       {
 	_SFR_MEM8(registerTable.OCRC_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
+	{
+	  _SFR_MEM8(registerTable.OCRA_address) = value;
+	}
       }
       else
       {
 	_SFR_IO8(registerTable.OCRC_address) = value;
+	
+	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+	* with Channel B to take place. If user has already set OCRnA to less than
+	* OCRnB, problems may ensue.
+	*/
+	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
+	{
+	  _SFR_IO8(registerTable.OCRA_address) = value;
+	}
       }
-    
+      
       break;
     }
     default:		/* Not a valid channel for this timer */
@@ -2136,431 +2179,212 @@ int8_t start_timer2(timer_rate rate, registerAddressTable_t *table)
 /**
 * Enables Output Compare operation on 8-bit Timer/Counters.
 * 
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
 * @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_8bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table)
+int8_t enable_oc_8bit(tc_oc_mode mode, registerAddressTable_t *table)
 {
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
+  switch(mode)
   {
-    case TC_OC_A:
+    case OC_NONE:
     {
-	/* 
-	 * Enable/disable Output Compare Mode depending on which option is provided.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
-	    /* Disconnect the output pin to allow for normal operation */
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
-	    }
-	    else
-	    {
-	      _SFR_IO8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
-	    }
-	    
-	    break;
-	  }	  	  
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-	      _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	      
-	      /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	      _SFR_MEM8(table->TCCRA_address) |= (1 << COMA0_BIT);
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-	      _SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	      
-	      /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	      _SFR_IO8(table->TCCRA_address) |= (1 << COMA0_BIT);
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
-	    }
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM */
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	      /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	      _SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMA0_BIT));
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	      /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	      _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMA0_BIT));
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non - inverted */
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	      /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	      _SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	      /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	      _SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-		    
-	    break;
-	  }
-	  /* More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
+      /* Disable the output compare operation */
+      _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
+      /* Disconnect the output pin to allow for normal operation */
+      if (table->TCCRA_address > 0x60)
+      {
+	_SFR_MEM8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+      }
+      else
+      {
+	_SFR_IO8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+      }
+      
+      break;
+    }	  	  
+    case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
     {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEB_BIT);
-	    /* Disconnect the output pin to allow for normal operation */
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      _SFR_IO8(table->TCCRA_address) &= (~(1 << COMB1_BIT) & ~(1 << COMB0_BIT));
-	    }
-	    
-	    /* Give up the OC0A pin */    
-	    break;
-	  }
-	  /* 'Grab' the ouput capture pin */
-	  
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-	      _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	      
-	      /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	      _SFR_MEM8(table->TCCRA_address) |= (1 << COMB0_BIT);
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMB1_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x02 for CTC mode */
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-	      _SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	      
-	      /* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
-	      _SFR_IO8(table->TCCRA_address) |= (1 << COMB0_BIT);
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB1_BIT);
-	    }
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM */
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	      /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	      _SFR_MEM8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMB0_BIT));
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
-	      /* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
-	      _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMB0_BIT));
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non - inverted */
-	  {
-	    if (table->TCCRA_address > 0x60)
-	    {
-	      /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	      /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	      _SFR_MEM8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
-	      _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-	    else
-	    {
-	      /* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
-	      /* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
-	      _SFR_IO8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	      
-	      /* Clear un-needed bits (safeguard) */
-	      _SFR_IO8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
-	      _SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-	    }
-		    
-	    break;
-	  }
-	  /* More modes in here if necessary */
-	}
-	break;
+      if (table->TCCRA_address > 0x60)
+      {
+	/* Set WGMn2:0 bits to 0x02 for CTC mode */
+	_SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
+	_SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
+	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+	
+	/* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
+	_SFR_MEM8(table->TCCRA_address) |= (1 << COMA0_BIT);
+	_SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
+      }
+      else
+      {
+	/* Set WGMn2:0 bits to 0x02 for CTC mode */
+	_SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
+	_SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
+	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+	
+	/* Configure COMnX1:0 bits to 0x01 for toggling OCnX pin on compare match. */
+	_SFR_IO8(table->TCCRA_address) |= (1 << COMA0_BIT);
+	_SFR_IO8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
+      }
+      
+      break;
     }
-    default:	/* No more channels available, return an error. */
+    case OC_MODE_2:	/* Phase Correct PWM */
     {
-      return -1;
+      if (table->TCCRA_address > 0x60)
+      {
+	/* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	/* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
+	_SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM0_BIT));
+	
+	/* Clear un-needed bits (safeguard) */
+	_SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMA0_BIT));
+	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+      }
+      else
+      {
+	/* Set WGMn2:0 bits to 0x01 for Phase Correct PWM */
+	/* Set COMnX2:0 bits to 0x02 to clear OCnX pin on match when counting up, set when counting down */
+	_SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM0_BIT));
+	
+	/* Clear un-needed bits (safeguard) */
+	_SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << COMA0_BIT));
+	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+      }
+      
+      break;
     }
- }
-    
-    return 0;
+    case OC_MODE_3:	/* Fast PWM, non - inverted */
+    {
+      if (table->TCCRA_address > 0x60)
+      {
+	/* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	/* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	_SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
+	
+	/* Clear un-needed bits (safeguard) */
+	_SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
+	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+      }
+      else
+      {
+	/* Set WGMn2:0 bits to 0x03 for Fast PWM mode where TOP = 0xFF */
+	/* Set COMnX1:0 bits to 0x02 to clear OCnX at match and set at bottom */
+	_SFR_IO8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
+	
+	/* Clear un-needed bits (safeguard) */
+	_SFR_IO8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
+	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+      }
+	      
+      break;
+    }
+    /* More modes in here if necessary */
+  }
+
+return 0;
+
 }
 
 /**
 * Enables Output Compare operation on 8-bit Timer/Counters.
 * 
-* @param channel		Which OC channel should be enabled.
 * @param mode			Which mode the OC channel should be set to.
 * @param table			Table of addresses for the particular Timer/Counter registers
 * @return 0 if successful, -1 otherwise.
 */
-int8_t enable_oc_16bit(tc_oc_channel channel, tc_oc_mode mode, registerAddressTable_t *table)
-{
-  /* Switch the process of enabling output compare depending on which tc_oc_channel is selected */
-  switch(channel)
+int8_t enable_oc_16bit(tc_oc_mode mode, registerAddressTable_t *table)
+{  
+  /* Switch the process of enabling output compare mode depending on which mode is chosen and
+  * provided to function.
+  */
+  switch(mode)
   {
-    case TC_OC_A:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
-	    /* Disconnect the output pin to allow for normal operation */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    _SFR_MEM8(table->TCCRA_address) |= (1 << COMA0_BIT);
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA1_BIT);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMA1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMA0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    
-	    break;
-	  }
-	  /* More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_B:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEB_BIT);
-	    /* Disconnect the output pin to allow for normal operation */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMB1_BIT) & ~(1 << COMB0_BIT));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    _SFR_MEM8(table->TCCRA_address) |= (1 << COMB0_BIT);
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMB1_BIT);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEB_BIT);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMB1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMB0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    
-	    break;
-	  }
-	  /* More modes in here if necessary */
-	}
-	break;
-    }
-    case TC_OC_C:
-    {
-      /* Switch the process of enabling output compare mode depending on which mode is chosen and
-	* provided to function.
-	*/
-	switch(mode)
-	{
-	  case OC_NONE:
-	  {
-	    /* Disable the output compare operation */
-	    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEC_BIT);
-	    /* Disconnect the output pin to allow for normal operation */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMC1_BIT) & ~(1 << COMC0_BIT));
-	    break;
-	  }
-	  case OC_MODE_1:	/* Clear timer on Compare (CTC) mode. Toggles OCnX pin on compare-match interrupt if pin is set to output*/
-	  {
-	    /* Set WGMn3:0 bits to 0x04 for CTC mode */
-	    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    	    
-	    /* Configure COMnX1:1 bits to 0x01 for toggling OCnX pin on compare match. */
-	    _SFR_MEM8(table->TCCRA_address) |= (1 << COMC0_BIT);
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMC1_BIT);
-	    
-	    /* Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-	    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEC_BIT);
-	    
-	    break;
-	  }
-	  case OC_MODE_2:	/* Phase Correct PWM non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMC1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMC0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));	        
-		    
-	    break;
-	  }
-	  case OC_MODE_3:	/* Fast PWM, non-inverted */
-	  {
-	    /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-	    /* Set COMnX1:0 bits to 0x02 bits for non-inverted mode */
-	    _SFR_MEM8(table->TCCRA_address) |= ((1 << COMC1_BIT) | (1 << WGM1_BIT) | (1 << WGM0_BIT));
-	    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
-	    
-	    /* Clear un-needed bits (safeguard) */
-	    _SFR_MEM8(table->TCCRA_address) &= ~(1 << COMC0_BIT);
-	    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
-	    
-	    break;
-	  }
-	  /* More modes in here if necessary */
-	}
-	break;
-    }
-    default:	/* No more channels available, return an error. */
-      return -1;
-    }
+  case OC_NONE:
+  {
+    /* Reset the timer counter mode back to NORMAL */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+    _SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+    /* Disable the output compare operation */
+    _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
+    /* Disconnect the output pin to allow for normal operation */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+    break;
+  }
+  case OC_MODE_1:	/* PWM, Phase Correct, 8-bit */
+  {
+    /* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
+    _SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
     
-    return 0;
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM1_BIT));
+    	    
+    break;
+  }
+  case OC_MODE_2:	/* PWM, Phase Correct, 9-bit */
+  {
+    /* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
+    _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
+    
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM0_BIT));
+    	    
+    break;
+  }
+  case OC_MODE_3:	/* PWM, Phase Correct, 10-bit */
+  {
+    /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+    _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+    
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+    	    
+    break;
+  }
+  case OC_MODE_4:	/* Clear timer on Compare (CTC) mode */
+  {
+    /* Set WGMn3:0 bits to 0x04 for CTC mode */
+    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+    
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+    
+    /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
+    _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
+	    
+    break;
+  }
+  case OC_MODE_5:	/* Fast PWM, 8-bit */
+  {
+    /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
+    _SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
+    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+    
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
+    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+    
+    break;
+  }
+  case OC_MODE_6:	/* Fast PWM, 9-bit */
+  {
+    /* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
+    _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+    _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+    
+    /* Clear un-needed bits (safeguard) */
+    _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+    
+    break;
+  }
+  /* More modes in here if necessary */	
+  }
+  
+  return 0;
 }
+
 
 /** Declare the ISRptrs
  * 
@@ -2594,11 +2418,13 @@ ISR(TIMER1_CAPT_vect)
     timerInterrupts[TIMER1_CAPT_int]();
 }
 
+#ifndef (INC_FREERTOS_H)
 ISR(TIMER1_COMPA_vect)
 {
-  if (timerInterrupts[TIMER1_COMPA_int])
-    timerInterrupts[TIMER1_COMPA_int]();
+	  if (timerInterrupts[TIMER1_COMPA_int])
+	    timerInterrupts[TIMER1_COMPA_int]();
 }
+#endif
 
 ISR(TIMER1_COMPB_vect)
 {
