@@ -26,9 +26,11 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 # Define file names.
 
-TEMPLATE_C_FILE="res/c_template.c"
-TEMPLATE_CPP_FILE="res/cpp_template.cpp"
-TEMPLATE_H_FILE="res/h_template.h"
+TEMPLATE_C_FILE="res/templates/c_template.c"
+TEMPLATE_RTOS_C_FILE="res/templates/freertos/c_template.c"
+TEMPLATE_CPP_FILE="res/templates/cpp_template.cpp"
+TEMPLATE_RTOS_CPP_FILE="res/templates/freertos/cpp_template.cpp"
+TEMPLATE_H_FILE="res/templates/h_template.h"
 USER_CONFIG_FILE="var/config.cfg"
 BUILD_CONFIG_FILE="bld/build_configs.cfg"
 
@@ -60,6 +62,7 @@ Options:
 	-n --name <File Name>		Specify the name of the files to add to the current project.
 	-c --component			Specify the name of the component to add the files to.  Defaults to the 'active component'.
 	-t --type <File Type>		Specify the kind of files to create (either 'C' or 'CPP').
+	-p --platform			Specify the platform for which the files will be created (BareMetal/freertos)
 EOF
 	# All done.
 	return
@@ -77,8 +80,8 @@ TYPE=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="hbn:c:"
-LONGOPTS="help,batch,name:,component:"
+SHORTOPTS="hbn:c:t:"
+LONGOPTS="help,batch,name:,component:,type:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -279,7 +282,7 @@ for FILENAME in $FILENAMES; do
 	# TODO - Check if there is already a file which the specified name in the source directory.
 	
 	# Check which kind of file we are creating.
-	if [ $TYPE == "C" ]; then
+	if [ $TYPE == "C" ] && [ $PLATFORM != "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
 		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
@@ -287,7 +290,15 @@ for FILENAME in $FILENAMES; do
 		# Preprocess the two template files.
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
-	elif [ $TYPE == "CPP" ]; then
+	elif [ $TYPE == "C" ] && [ $PLATFORM == "freertos" ]; then
+		# Create the actual files by coping the templates into the source directory.
+		cp $TCPATH/$TEMPLATE_RTOS_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
+
+		# Preprocess the two template files.
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+	elif [ $TYPE == "CPP" ] && [ $PLATFORM != "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
 		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
@@ -295,8 +306,29 @@ for FILENAME in $FILENAMES; do
 		# Preprocess the two template files.
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+	elif [ $TYPE == "CPP" ] && [ $PLATFORM == "freertos" ]; then
+		# Create the actual files by coping the templates into the source directory.
+		cp $TCPATH/$TEMPLATE_RTOS_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
+
+		# Preprocess the two template files.
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
+		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
+	else
+		echo -e "${RED}Correct options not specified to create files ${NO_COLOUR}\n"
+		exit -1
 	fi
 done
+
+# Create FreeRTOSConfig.h if it doesn't exist already.
+if [ $PLATFORM = "freertos" ]; then
+	if ! [ -r "$TCPATH/src/$COMPONENT/FreeRTOSConfig.h" ]; then
+		echo -e "${CYAN}No FreeRTOSConfig.h file found in component directory. Copying FreeRTOSConfig.h template...${NO_COLOUR}\n"
+		cp $FREERTOS_CONFIG_FILE $TCPATH/src/$COMPONENT/FreeRTOSConfig.h
+		echo -e "$FREERTOS_CONFIG_FILE"
+		echo -e "${CYAN}FreeRTOSConfig.h file copied.${NO_COLOUR}\n"
+	fi
+fi
 
 # All done.
 echo -e "${CYAN}All done.\n${NO_COLOUR}"	
