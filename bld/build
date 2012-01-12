@@ -61,7 +61,6 @@ makeavr()
 
 		# A linker script is specified, so set the linker flags to refer to it.
 		LFLAGS="-T linker_script.x $LFLAGS"
-echo -e "$LFLAGS"
 	fi
 
 	# Get a list of names of source and header files.
@@ -95,6 +94,7 @@ echo -e "$LFLAGS"
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(CFLAGS *= *.* *\)BUILD_INSERTS_CFLAGS_HERE^\1$CFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
