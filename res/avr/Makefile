@@ -104,7 +104,7 @@ HEXFORMAT=ihex
 # NOTE - The assembler listings have been disabled, since this tends to flood the console with unhelpful text.
 
 # Compiler flags.
-CFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char \
+CFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char \
 	  -fno-exceptions -Wall #-Wa,-ahlms=$(firstword $(filter %.lst, $(<:.c=.lst)))
 PFLAGS= $(CFLAGS)
 
