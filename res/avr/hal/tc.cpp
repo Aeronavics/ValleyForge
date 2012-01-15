@@ -113,28 +113,59 @@
 #	define OCIEA_BIT		1
 #	define TOIE_BIT			0
 
-	/* Timer/Counter Peripheral Pin Addresses */
+	/* Timer/Counter Peripheral Pin Addresses and Associated Constants*/
 #	define TC0_OC_A_PORT		PORT_B
 #	define TC0_OC_A_PIN		PIN_7
-#	define TC0_OC_B_PIN		{PORT_G, PIN_5}
-#	define TC1_OC_A_PIN		{PORT_B, PIN_5}
-#	define TC1_OC_B_PIN		{PORT_B, PIN_6}
-#	define TC1_OC_C_PIN		{PORT_B, PIN_7}
-#	define TC1_IC_A_PIN		{PORT_D, PIN_4}
-#	define TC2_OC_A_PIN		{PORT_B, PIN_4}
-#	define TC2_OC_B_PIN		{PORT_H, PIN_6}
-#	define TC3_OC_A_PIN		{PORT_E, PIN_3}
-#	define TC3_OC_B_PIN		{PORT_E, PIN_4}
-#	define TC3_OC_C_PIN		{PORT_E, PIN_5}
-#	define TC3_IC_A_PIN		{PORT_E, PIN_7}
-#	define TC4_OC_A_PIN		{PORT_H, PIN_3}
-#	define TC4_OC_B_PIN		{PORT_H, PIN_4}
-#	define TC4_OC_C_PIN		{PORT_H, PIN_5}
-#	define TC4_IC_A_PIN		{PORT_L, PIN_0}
-#	define TC5_OC_A_PIN		{PORT_L, PIN_3}
-#	define TC5_OC_B_PIN		{PORT_L, PIN_4}
-#	define TC5_OC_C_PIN		{PORT_L, PIN_5}
-#	define TC5_IC_A_PIN		{PORT_L, PIN_1}
+#	define TC0_OC_B_PORT		PORT_G
+#	define TC0_OC_B_PIN		PIN_5
+
+#	define TC1_OC_A_PORT		PORT_B
+#	define TC1_OC_A_PIN		PIN_5
+#	define TC1_OC_B_PORT		PORT_B
+#	define TC1_OC_B_PIN		PIN_6
+#	define TC1_OC_C_PORT		PORT_B
+#	define TC1_OC_C_PIN		PIN_7
+#	define TC1_IC_A_PORT		PORT_D
+#	define TC1_IC_A_PIN		PIN_4
+
+#	define TC2_OC_A_PORT		PORT_B
+#	define TC2_OC_A_PIN		PIN_4
+#	define TC2_OC_B_PORT		PORT_H
+#	define TC2_OC_B_PIN		PIN_6
+
+#	define TC3_OC_A_PORT		PORT_E
+#	define TC3_OC_A_PIN		PIN_3
+#	define TC3_OC_B_PORT		PORT_E
+#	define TC3_OC_B_PIN		PIN_4
+#	define TC3_OC_C_PORT		PORT_E
+#	define TC3_OC_C_PIN		PIN_5
+#	define TC3_IC_A_PORT		PORT_E
+#	define TC3_IC_A_PIN		PIN_7
+
+#	define TC4_OC_A_PORT		PORT_H
+#	define TC4_OC_A_PIN		PIN_3
+#	define TC4_OC_B_PORT		PORT_H
+#	define TC4_OC_B_PIN		PIN_4
+#	define TC4_OC_C_PORT		PORT_H
+#	define TC4_OC_C_PIN		PIN_5
+#	define TC4_IC_A_PORT		PORT_L
+#	define TC4_IC_A_PIN		PIN_0
+
+#	define TC5_OC_A_PORT		PORT_L
+#	define TC5_OC_A_PIN		PIN_3
+#	define TC5_OC_B_PORT		PORT_L
+#	define TC5_OC_B_PIN		PIN_4
+#	define TC5_OC_C_PORT		PORT_L
+#	define TC5_OC_C_PIN		PIN_5
+#	define TC5_IC_A_PORT		PORT_L
+#	define TC5_IC_A_PIN		PIN_1
+
+#	define MAX_TIMER_PINS		4
+#	define IC_CHANNEL_OFFSET	3
+#	define TC_OC_CHANNEL_A		0
+#	define TC_OC_CHANNEL_B		1
+#	define TC_OC_CHANNEL_C		2
+#	define TC_IC_CHANNEL_A		3
 
 	/* Interrupt Pointer Array values and offsets */
 #	define NUM_TIMER0_INTERRUPTS	3
@@ -150,6 +181,11 @@
 #	define NUM_TIMER5_INTERRUPTS	5
 #	define TIMER5_OFFSET		21
 #	define NUM_TIMER_INTERRUPTS	NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS + NUM_TIMER4_INTERRUPTS + NUM_TIMER5_INTERRUPTS
+
+	/* Definitions required for Port Directionality Control */
+#	define PORT_REGISTER_MULTIPLIER		0x03
+#	define LOWER_REGISTER_PORT_OFFSET	0x01
+#	define HIGHER_REGISTER_PORT_OFFSET	0xEC
 #endif
 
 /*
@@ -178,6 +214,9 @@ typedef struct TIMER_COUNTER_PIN {
  * Enumerated list of Timer/Counter types
  */
 enum timer_type {TIMER_8_BIT, TIMER_16_BIT};
+
+// DECLARE IMPORTED GLOBAL VARIABLES
+extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -342,6 +381,15 @@ class timer_imp
 	*/
 	template <typename T>
 	int8_t set_ocR(tc_oc_channel channel, T value);
+	
+	/**
+	* Sets the channel value for output compare when TOP is equal to the ICRn register.
+	*
+	* @param channel	Which channel to set the OC value for.
+	* @param value		The value where when the timer reaches it, something will happen.
+	* @return 0 for success, -1 for error.
+	*/
+	int8_t set_icR(tc_oc_channel channel, uint16_t value);
 
 	/**
 	* Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
@@ -400,11 +448,11 @@ class timer_imp
 	 */
 	timer_type timerType;
 	
-// 	/**
-// 	 * Pointer to array of Timer/Counter pins to represent each of the peripheral pins available 
-// 	 * to the Timer/Counter.
-// 	 */
-// 	timerCounterPin_t *timerCounterPins;
+	/**
+	 * Pointer to array of Timer/Counter pins to represent each of the peripheral pins available 
+	 * to the Timer/Counter.
+	 */
+	timerCounterPin_t timerCounterPins[MAX_TIMER_PINS];
 
 	//Private functions & Fields
 };
@@ -586,6 +634,18 @@ int8_t timer::set_ocR(tc_oc_channel channel, T value)
 }
 
 /**
+* Sets the channel value for output compare when TOP is equal to the ICRn register.
+*
+* @param channel	Which channel to set the OC value for.
+* @param value		The value where when the timer reaches it, something will happen.
+* @return 0 for success, -1 for error.
+*/
+int8_t timer::set_icR(tc_oc_channel channel, uint16_t value)
+{
+  return (imp->set_icR(channel, value));
+}
+
+/**
  * Pre-defined function prototypes for all the template functions.
  */
 template int8_t timer::set_ocR(tc_oc_channel channel, int8_t value);
@@ -675,16 +735,26 @@ void timer::vacate(void)
   /* Check to make sure the timer has not already been vacated */
   if (imp != NULL)
   {
-    _SFR_IO8(imp->registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-    _SFR_MEM8(imp->registerTable.TIMSK_address) &= (~(1 << OCIEB_BIT) & ~(1 << OCIEA_BIT) & ~(1 << TOIE_BIT));
-    
-    /* Clear the TCNTn value upon vacating */
-    if ((imp->timer_id == TC_0) || (imp->timer_id == TC_2))
+    /* Halt the clock by clearing the prescalar bits */
+    if ((imp->registerTable.TCCRA_address > 0x60))
     {
-      _SFR_IO8(imp->registerTable.TCNT_address) = 0;
+      _SFR_IO8(imp->registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
     }
     else
     {
+      _SFR_MEM8(imp->registerTable.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+    }
+    /* Clear all the interrupt bits in the TIMSKn register */
+    /* Clear the TCNTn value upon vacating */
+    if ((imp->timer_id == TC_0) || (imp->timer_id == TC_2))
+    {
+      _SFR_MEM8(imp->registerTable.TIMSK_address) &= (~(1 << OCIEB_BIT) & ~(1 << OCIEA_BIT) & ~(1 << TOIE_BIT));
+      _SFR_IO8(imp->registerTable.TCNT_address) = 0;
+      
+    }
+    else
+    {
+      _SFR_MEM8(imp->registerTable.TIMSK_address) &= (~(1 << ICIE_BIT) & ~(1 << OCIEB_BIT) & ~(1 << OCIEA_BIT) & ~(1 << TOIE_BIT));
       _SFR_MEM16(imp->registerTable.TCNT_address) = 0;
     }
     
@@ -744,7 +814,13 @@ void timer::vacate(void)
       }
     }	
     
-    /* TODO: Release the semaphore */
+    /*
+     * Release all the semaphores 
+     */
+    for (uint8_t i = 0; i < MAX_TIMER_PINS; i++)
+    {
+      imp->timerCounterPins[i].s->vacate();
+    }
    
     /*Reset the implementation pointer to NULL */
     imp = NULL;
@@ -772,7 +848,81 @@ timer timer::grab(tc_number timerNumber)
     }
     
     /* Assign the implementation semaphore pointers to their associated peripheral pins */
+    /* Timer/Counter 0 */ /* TODO: break out into a seperate initialisation function */
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC0_OC_A_PORT;
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC0_OC_A_PIN;
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC0_OC_A_PORT][(int8_t)TC0_OC_A_PIN];
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC0_OC_B_PORT;
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC0_OC_B_PIN;
+    timer_imps[(int8_t)TC_0].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC0_OC_B_PORT][(int8_t)TC0_OC_B_PIN];
     
+    /* Timer/Counter 1 */
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC1_OC_A_PORT;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC1_OC_A_PIN;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC1_OC_A_PORT][(int8_t)TC1_OC_A_PIN];
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC1_OC_B_PORT;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC1_OC_B_PIN;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC1_OC_B_PORT][(int8_t)TC1_OC_B_PIN];
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_C].address.port = TC1_OC_C_PORT;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_C].address.pin = TC1_OC_C_PIN;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC1_OC_C_PORT][(int8_t)TC1_OC_C_PIN];
+    
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_IC_CHANNEL_A].address.port = TC1_IC_A_PORT;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_IC_CHANNEL_A].address.pin = TC1_IC_A_PIN;
+    timer_imps[(int8_t)TC_1].timerCounterPins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC1_IC_A_PORT][(int8_t)TC1_IC_A_PIN];
+    
+    /* Timer/Counter 2 */
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC2_OC_A_PORT;
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC2_OC_A_PIN;
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC2_OC_A_PORT][(int8_t)TC2_OC_A_PIN];
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC2_OC_B_PORT;
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC2_OC_B_PIN;
+    timer_imps[(int8_t)TC_2].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC2_OC_B_PORT][(int8_t)TC2_OC_B_PIN];
+    
+     /* Timer/Counter 3 */
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC3_OC_A_PORT;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC3_OC_A_PIN;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC3_OC_A_PORT][(int8_t)TC3_OC_A_PIN];
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC3_OC_B_PORT;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC3_OC_B_PIN;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC3_OC_B_PORT][(int8_t)TC3_OC_B_PIN];
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_C].address.port = TC3_OC_C_PORT;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_C].address.pin = TC3_OC_C_PIN;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC3_OC_C_PORT][(int8_t)TC3_OC_C_PIN];
+    
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_IC_CHANNEL_A].address.port = TC3_IC_A_PORT;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_IC_CHANNEL_A].address.pin = TC3_IC_A_PIN;
+    timer_imps[(int8_t)TC_3].timerCounterPins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC3_IC_A_PORT][(int8_t)TC3_IC_A_PIN];
+    
+    /* Timer/Counter 4 */
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC4_OC_A_PORT;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC4_OC_A_PIN;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC4_OC_A_PORT][(int8_t)TC4_OC_A_PIN];
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC4_OC_B_PORT;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC4_OC_B_PIN;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC4_OC_B_PORT][(int8_t)TC4_OC_B_PIN];
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_C].address.port = TC4_OC_C_PORT;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_C].address.pin = TC4_OC_C_PIN;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC4_OC_C_PORT][(int8_t)TC4_OC_C_PIN];
+    
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_IC_CHANNEL_A].address.port = TC4_IC_A_PORT;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_IC_CHANNEL_A].address.pin = TC4_IC_A_PIN;
+    timer_imps[(int8_t)TC_4].timerCounterPins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC4_IC_A_PORT][(int8_t)TC4_IC_A_PIN];
+    
+    /* Timer/Counter 5 */
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_A].address.port = TC5_OC_A_PORT;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_A].address.pin = TC5_OC_A_PIN;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC5_OC_A_PORT][(int8_t)TC5_OC_A_PIN];
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_B].address.port = TC5_OC_B_PORT;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_B].address.pin = TC5_OC_B_PIN;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC5_OC_B_PORT][(int8_t)TC5_OC_B_PIN];
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_C].address.port = TC5_OC_C_PORT;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_C].address.pin = TC5_OC_C_PIN;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC5_OC_C_PORT][(int8_t)TC5_OC_C_PIN];
+    
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_IC_CHANNEL_A].address.port = TC5_IC_A_PORT;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_IC_CHANNEL_A].address.pin = TC5_IC_A_PIN;
+    timer_imps[(int8_t)TC_5].timerCounterPins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC5_IC_A_PORT][(int8_t)TC5_IC_A_PIN];    
     
     initialised_timers = true;
   }
@@ -838,6 +988,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.OCRC_address = OCR1C_ADDRESS;
       registerTable.OCRB_address = OCR1B_ADDRESS;
       registerTable.OCRA_address = OCR1A_ADDRESS;
+      registerTable.ICR_address = ICR1_ADDRESS;
       registerTable.TCNT_address = TCNT1_ADDRESS;
       
       /* Set which timer type it is */
@@ -876,6 +1027,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.OCRC_address = OCR3C_ADDRESS;
       registerTable.OCRB_address = OCR3B_ADDRESS;
       registerTable.OCRA_address = OCR3A_ADDRESS;
+      registerTable.ICR_address = ICR3_ADDRESS;
       registerTable.TCNT_address = TCNT3_ADDRESS;
       
       /* Set which timer type it is */
@@ -897,6 +1049,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.OCRC_address = OCR4C_ADDRESS;
       registerTable.OCRB_address = OCR4B_ADDRESS;
       registerTable.OCRA_address = OCR4A_ADDRESS;
+      registerTable.ICR_address = ICR4_ADDRESS;
       registerTable.TCNT_address = TCNT4_ADDRESS;
       
       /* Set which timer type it is */
@@ -918,6 +1071,7 @@ int8_t timer_imp::set_rate(timer_rate rate)
       registerTable.OCRC_address = OCR5C_ADDRESS;
       registerTable.OCRB_address = OCR5B_ADDRESS;
       registerTable.OCRA_address = OCR5A_ADDRESS;
+      registerTable.ICR_address = ICR5_ADDRESS;
       registerTable.TCNT_address = TCNT5_ADDRESS;
       
       /* Set which timer type it is */
@@ -1273,22 +1427,27 @@ int8_t timer_imp::enable_oc_channel(tc_oc_channel channel, tc_oc_channel_mode mo
    * with a 'COM_BIT_OFFSET' (2 in this case) and the tc_oc_channel value as a multiplier to set the exact
    * bit(s) required.
    */
+
+if (mode == OC_CHANNEL_MODE_0)	/* COMnX1:0 bits set to 0x00 */
+{
+  if (registerTable.TCCRA_address > 0x60)
+  {
+    _SFR_MEM8(registerTable.TCCRA_address) &= (~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+  }
+  else
+  {
+    _SFR_IO8(registerTable.TCCRA_address) &= (~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+  }
+  
+  /* Vacate the associated GPIO semaphore */
+  timerCounterPins[(int8_t)channel].s->vacate();
+}
+/* Attempt to procure the semaphore for the GPIO pin required prior to setting the output bits */
+else if (timerCounterPins[(int8_t)channel].s->procure())
+{
   switch (mode)
   {
-    case OC_CHANNEL_MODE_1:	/* COMnX1:0 bits set to 0x00 */
-    {
-      if (registerTable.TCCRA_address > 0x60)
-      {
-	_SFR_MEM8(registerTable.TCCRA_address) &= (~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
-      }
-      else
-      {
-	_SFR_IO8(registerTable.TCCRA_address) &= (~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
-      }
-      
-      break;
-    }
-    case OC_CHANNEL_MODE_2:	/* COMnX1:0 bits set to 0x01 */
+    case OC_CHANNEL_MODE_1:	/* COMnX1:0 bits set to 0x01 */
     {
       if (registerTable.TCCRA_address > 0x60)
       {
@@ -1303,7 +1462,7 @@ int8_t timer_imp::enable_oc_channel(tc_oc_channel channel, tc_oc_channel_mode mo
       
       break;
     }
-    case OC_CHANNEL_MODE_3:	/* COMnX1:0 bits set to 0x02 */
+    case OC_CHANNEL_MODE_2:	/* COMnX1:0 bits set to 0x02 */
     {
       if (registerTable.TCCRA_address > 0x60)
       {
@@ -1319,22 +1478,44 @@ int8_t timer_imp::enable_oc_channel(tc_oc_channel channel, tc_oc_channel_mode mo
       
       break;
     }
-    case OC_CHANNEL_MODE_4:	/* COMnX1:0 bits set to 0x03 */
+    case OC_CHANNEL_MODE_3:	/* COMnX1:0 bits set to 0x03 */
     {
-      if (registerTable.TCCRA_address > 0x60)
+      if (timerCounterPins[(int8_t)channel].s->procure())
       {
-	_SFR_MEM8(registerTable.TCCRA_address) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
-      }
-      else
-      {
-	_SFR_IO8(registerTable.TCCRA_address) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+	if (registerTable.TCCRA_address > 0x60)
+	{
+	  _SFR_MEM8(registerTable.TCCRA_address) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+	}
+	else
+	{
+	  _SFR_IO8(registerTable.TCCRA_address) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+	}
       }
       
       break;
     }
+    default:
+      return -1;
+  }    
+  /* 
+   * Set the acquired GPIO pin as an OUTPUT 
+   */
+  if (timerCounterPins[(int8_t)channel].address.port < PORT_H)
+  {
+    _SFR_IO8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + LOWER_REGISTER_PORT_OFFSET) |= (1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
   }
-  
-  return 0;
+  else
+  {
+    _SFR_MEM8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + HIGHER_REGISTER_PORT_OFFSET) |= (1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
+  }
+
+}
+else
+{
+  return -1;
+}
+	
+return 0;
 }
 
 /**
@@ -1762,43 +1943,43 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
       {
 	_SFR_MEM16(registerTable.OCRB_address) = value;
 	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
-	{
-	  _SFR_MEM16(registerTable.OCRA_address) = value;
-	}
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
+// 	{
+// 	  _SFR_MEM16(registerTable.OCRA_address) = value;
+// 	}
       }
       else if (registerTable.OCRB_address > 0x60)
       {
 	_SFR_MEM8(registerTable.OCRB_address) = value;
 	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
-	{
-	  _SFR_MEM8(registerTable.OCRA_address) = value;
-	}
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
+// 	{
+// 	  _SFR_MEM8(registerTable.OCRA_address) = value;
+// 	}
       }
       else
       {
 	_SFR_IO8(registerTable.OCRB_address) = value;
 	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
-	{
-	  _SFR_IO8(registerTable.OCRA_address) = value;
-	}
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
+// 	{
+// 	  _SFR_IO8(registerTable.OCRA_address) = value;
+// 	}
       }
       
       break;
@@ -1808,45 +1989,45 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
       /* Write to the OCRnX register to set the output compare value */
       if (timerType == TIMER_16_BIT)
       {
-	_SFR_MEM16(registerTable.OCRC_address) = value;
-	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
-	{
-	  _SFR_MEM16(registerTable.OCRA_address) = value;
-	}
+// 	_SFR_MEM16(registerTable.OCRC_address) = value;
+// 	
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_MEM16(registerTable.OCRA_address) == 0x0000)
+// 	{
+// 	  _SFR_MEM16(registerTable.OCRA_address) = value;
+// 	}
       }
       else if (registerTable.OCRC_address > 0x60)
       {
 	_SFR_MEM8(registerTable.OCRC_address) = value;
 	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
-	{
-	  _SFR_MEM8(registerTable.OCRA_address) = value;
-	}
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_MEM8(registerTable.OCRA_address) == 0x00)
+// 	{
+// 	  _SFR_MEM8(registerTable.OCRA_address) = value;
+// 	}
       }
       else
       {
 	_SFR_IO8(registerTable.OCRC_address) = value;
 	
-	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
-	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
-	* with Channel B to take place. If user has already set OCRnA to less than
-	* OCRnB, problems may ensue.
-	*/
-	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
-	{
-	  _SFR_IO8(registerTable.OCRA_address) = value;
-	}
+// 	/* NOTE: TOP in CTC mode is defined as OCRnA, therefore, if 
+// 	* OCR0A has not been initialised, set it to 0CRnB to allow the compare
+// 	* with Channel B to take place. If user has already set OCRnA to less than
+// 	* OCRnB, problems may ensue.
+// 	*/
+// 	if (_SFR_IO8(registerTable.OCRA_address) == 0x00)
+// 	{
+// 	  _SFR_IO8(registerTable.OCRA_address) = value;
+// 	}
       }
       
       break;
@@ -1856,6 +2037,20 @@ int8_t timer_imp::set_ocR(tc_oc_channel channel, T value)
   }
 
   return 0;   
+}
+
+/**
+* Sets the channel value for output compare when TOP is equal to the ICRn register.
+*
+* @param channel	Which channel to set the OC value for.
+* @param value		The value where when the timer reaches it, something will happen.
+* @return 0 for success, -1 for error.
+*/
+int8_t timer_imp::set_icR(tc_oc_channel channel, uint16_t value)
+{
+  _SFR_MEM16(registerTable.ICR_address) = value;
+  
+  return 0;
 }
 
 /**
@@ -1871,86 +2066,105 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
    * Switch which mode is enabled on the input capture unit by the value
    * given to the function
    */
-  switch(channel)
+  /* Attempt to procure the required GPIO semaphore first */
+  if (timerCounterPins[(int8_t)channel + IC_CHANNEL_OFFSET].s->procure())
   {
-    case TC_IC_A:
+    switch(channel)
     {
-      /* Switch depending on which mode is supplied */
-      switch(mode)
+      case TC_IC_A:
       {
-	case IC_NONE:
+	/* Switch depending on which mode is supplied */
+	switch(mode)
 	{
-	  /* TODO: Any disabling code for IC goes here */
-	  break;
-	}
-	case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
-	  if (registerTable.TCCRB_address > 0x60)
+	  case IC_NONE:
 	  {
-	    _SFR_MEM8(registerTable.TCCRB_address) |= ((1 << ICES_BIT) | (1 << ICNC_BIT));
+	    /* Any disabling code for IC goes here */
+	    break;
 	  }
-	  else
+	  case IC_MODE_1:	/* Rising edge and input noise cancellation enabled */
 	  {
-	    _SFR_IO8(registerTable.TCCRB_address) |= ((1 << ICES_BIT) | (1 << ICNC_BIT));
+	    /* Set the ICESn bit in TCCRnB for rising edge detection & the ICNCn bit in the same register for noise cancellation */
+	    if (registerTable.TCCRB_address > 0x60)
+	    {
+	      _SFR_MEM8(registerTable.TCCRB_address) |= ((1 << ICES_BIT) | (1 << ICNC_BIT));
+	    }
+	    else
+	    {
+	      _SFR_IO8(registerTable.TCCRB_address) |= ((1 << ICES_BIT) | (1 << ICNC_BIT));
+	    }
+	    
+	    break;
 	  }
+	  case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
+	  {
+	    /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
+	    if (registerTable.TCCRB_address > 0x60)
+	    {
+	      _SFR_MEM8(registerTable.TCCRB_address) |= (1 << ICES_BIT); 
+	      _SFR_MEM8(registerTable.TCCRB_address) &= ~(1 << ICNC_BIT);		  
+	    }
+	    else
+	    {
+	      _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICES_BIT); 
+	      _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICNC_BIT);	  
+	    }
+	    
+	    break;
+	  }
+	  case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
+	  {
+	    /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
+	    if (registerTable.TCCRB_address > 0x60)
+	    {
+	      _SFR_MEM8(registerTable.TCCRB_address) |= (1 << ICNC_BIT);
+	      _SFR_MEM8(registerTable.TCCRB_address) &= ~(1 << ICES_BIT);	  
+	    }
+	    else
+	    {
+	      _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICNC_BIT);
+	      _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICES_BIT);
+	    }
 	  
-	  break;
+	    break;
+	  }
+	  case IC_MODE_4:	/* Falling edge and input noise cancellation disabled */
+	  {
+	    /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
+	    if (registerTable.TCCRB_address > 0x60)
+	    {
+	      _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));	  
+	    }
+	    else
+	    {
+	      _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));	  
+	    }
+	    
+	    break;
+	  }
+	  default:	/* Invalid mode for timer */
+	    return -1;
 	}
-	case IC_MODE_2:	/* Rising edge and input noise cancellation disabled */
-	{
-	  /* Set the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  if (registerTable.TCCRB_address > 0x60)
-	  {
-	    _SFR_MEM8(registerTable.TCCRB_address) |= (1 << ICES_BIT); 
-	    _SFR_MEM8(registerTable.TCCRB_address) &= ~(1 << ICNC_BIT);		  
-	  }
-	  else
-	  {
-	    _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICES_BIT); 
-	    _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICNC_BIT);	  
-	  }
-	  
-	  break;
-	}
-	case IC_MODE_3:	/* Falling edge and input noise cancellation enabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for falling edge detection & set the ICNCn bit in the same register for noise cancellation */
-	  if (registerTable.TCCRB_address > 0x60)
-	  {
-	    _SFR_MEM8(registerTable.TCCRB_address) |= (1 << ICNC_BIT);
-	    _SFR_MEM8(registerTable.TCCRB_address) &= ~(1 << ICES_BIT);	  
-	  }
-	  else
-	  {
-	    _SFR_IO8(registerTable.TCCRB_address) |= (1 << ICNC_BIT);
-	    _SFR_IO8(registerTable.TCCRB_address) &= ~(1 << ICES_BIT);
-	  }
-	
-	  break;
-	}
-	case IC_MODE_4:	/* Falling edge and input noise cancellation disabled */
-	{
-	  /* Clear the ICESn bit in TCCRnB for rising edge detection & clear the ICNCn bit in the same register for noise cancellation disabling */
-	  if (registerTable.TCCRB_address > 0x60)
-	  {
-	    _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));	  
-	  }
-	  else
-	  {
-	    _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));	  
-	  }
-	  
-	  break;
-	}
-	default:	/* Invalid mode for timer */
-	  return -1;
+	break;
       }
-      break;
-     }
-     /* Any more IC channels go here*/
-  }  
-  return 0;    
+      /* Any more IC channels go here*/
+    }  
+    
+    /* 
+     * Set the acquired GPIO pin as an INPUT 
+     */
+    if (timerCounterPins[(int8_t)channel].address.port < PORT_H)
+    {
+      _SFR_IO8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + LOWER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
+    }
+    else
+    {
+      _SFR_MEM8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + HIGHER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
+    }
+  
+    return 0;
+  }
+  else
+    return -1;
 }
 
 /**
@@ -2055,7 +2269,7 @@ int8_t timer_imp::disable_ic_interrupt(tc_ic_channel channel)
   }
   
   /* 
-   *Switch depending on which channel is supplied 
+   * Switch depending on which channel is supplied 
    */
   switch (channel)
   {
@@ -2068,6 +2282,11 @@ int8_t timer_imp::disable_ic_interrupt(tc_ic_channel channel)
     }
     /* TODO: more channels go here if needed */
   }
+  
+  /*
+   * Vacate the GPIO semaphore gathered
+   */
+  timerCounterPins[(int8_t)channel + IC_CHANNEL_OFFSET].s->vacate();
   
  return 0;  
 }

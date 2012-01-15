@@ -50,7 +50,7 @@ enum tc_oc_channel {TC_OC_A, TC_OC_B, TC_OC_C};
 
 enum tc_oc_mode {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3, OC_MODE_4, OC_MODE_5, OC_MODE_6, OC_MODE_7, OC_MODE_8, OC_MODE_9, OC_MODE_10, OC_MODE_11, OC_MODE_12, OC_MODE_13, OC_MODE_14, OC_MODE_15};
 
-enum tc_oc_channel_mode {OC_CHANNEL_MODE_1, OC_CHANNEL_MODE_2, OC_CHANNEL_MODE_3, OC_CHANNEL_MODE_4};
+enum tc_oc_channel_mode {OC_CHANNEL_MODE_0, OC_CHANNEL_MODE_1, OC_CHANNEL_MODE_2, OC_CHANNEL_MODE_3};
 
 enum tc_ic_channel {TC_IC_A};
 
@@ -181,7 +181,16 @@ class timer
 		 */
 		template <typename T>
 		int8_t set_ocR(tc_oc_channel channel, T value);
-
+		
+		/**
+		 * Sets the channel value for output compare when TOP is equal to the ICRn register.
+		 *
+		 * @param channel	Which channel to set the OC value for.
+		 * @param value		The value where when the timer reaches it, something will happen.
+		 * @return 0 for success, -1 for error.
+		 */
+		int8_t set_icR(tc_oc_channel channel, uint16_t value);
+		
 		/**
 		 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
 		 * operation for the specified channel.
