@@ -36,12 +36,6 @@
 // Include boolean data types.
 #include <stdbool.h>
 
-// Include the HAL libraries we use.
-#include "hal/hal.h"
-#include "hal/gpio.h"
-#include "hal/mem.h"
-#include "hal/watchdog.h"
-#include "hal/tc.h"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

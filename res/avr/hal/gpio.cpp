@@ -33,6 +33,7 @@ volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
 
 // The addresses for GPIO are PINA,DDRA,PORTA,PINB,DDRB,PORTB... i.e each type is 3 away from the same on the next port.
 #define PORT_MULTIPLIER		3
+#define P_OFFSET		232
 
 // So to access a for example PORTC would be 3 * PORT_D(2) + 3 = 0x09.
 enum port_offset	{P_READ, P_MODE, P_WRITE};
@@ -233,9 +234,9 @@ void gpio_init(void)
 // DECLARE ISRs
 
 // Each ISR calls the user specified function, by invoking the function pointer in the array of function pointers.
-
+// This offset is here because the interrupts are enumerated, not in the same order as the function array. This is because the number of interrupts changes with architecture.
 SIGNAL(INT0_vect) {
-  if(intFunc[EINT_0 - INT_DIFF_OFFSET])
+  if(intFunc[EINT_0 - INT_DIFF_OFFSET]) 
     intFunc[EINT_0 - INT_DIFF_OFFSET]();
 }
 
@@ -299,8 +300,11 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 					return -1;
 				}
 				
-				/* Set/clear data direction register pin */
-				_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
+				if ( address.port >= PORT_H )
+					_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
+				else
+					/* Set/clear data direction register pin */
+					_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
 				
 				return 0;
 		}
@@ -316,12 +320,20 @@ int8_t gpio_pin_imp::write (gpio_output_state value)
 				}
 				/* Set/clear port register register pin */
 				if (value == O_TOGGLE)
-				{		/*Toggle value*/
-				
-						_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
+				{		
+				    if ( address.port >= PORT_H )
+					    /*Toggle value*/
+					    _SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE));
+				    else
+					    /*Toggle value*/
+					    _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
 				}
 				else
 				{
+					    if ( address.port >= PORT_H )
+						/* Set or Clear pin on port*/
+						_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | (value?(1 << address.pin):(pin_t)O_LOW);
+					    else
 						/* Set or Clear pin on port*/
 						_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value?(1 << address.pin):(pin_t)O_LOW);
 				}
@@ -337,9 +349,13 @@ gpio_input_state gpio_pin_imp::read (void)
 					/* Parameter is wrong size*/
 					return I_ERROR;
 				}
-			
-				/* Read and return pin */
-				return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
+				
+				if ( address.port >= PORT_H )
+						/* Read and return pin */
+						return ((_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
+				else
+						/* Read and return pin */
+						return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
 		}
 		
 		

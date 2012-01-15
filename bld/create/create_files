@@ -325,7 +325,6 @@ if [ $PLATFORM = "freertos" ]; then
 	if ! [ -r "$TCPATH/src/$COMPONENT/FreeRTOSConfig.h" ]; then
 		echo -e "${CYAN}No FreeRTOSConfig.h file found in component directory. Copying FreeRTOSConfig.h template...${NO_COLOUR}\n"
 		cp $FREERTOS_CONFIG_FILE $TCPATH/src/$COMPONENT/FreeRTOSConfig.h
-		echo -e "$FREERTOS_CONFIG_FILE"
 		echo -e "${CYAN}FreeRTOSConfig.h file copied.${NO_COLOUR}\n"
 	fi
 fi

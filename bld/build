@@ -168,8 +168,8 @@ makeavr_bootloader()
 		preprocess_bootloader $FILE
 	done
 
-	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default).
-	get_hal ${COMPONENT}_bootloader/hal
+	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default). NOTE we aren't using any HAL anymore!!
+	#get_hal ${COMPONENT}_bootloader/hal
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
@@ -194,7 +194,7 @@ makeavr_bootloader()
 	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $P_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1${COMPONENT}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
@@ -202,7 +202,7 @@ makeavr_bootloader()
     
 	# Actually make the component.
 	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
-	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader all			
+	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -B all			
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 

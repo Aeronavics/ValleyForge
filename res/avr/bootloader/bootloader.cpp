@@ -17,15 +17,32 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
-// DEFINE CONSTANTS
+#include <avr/eeprom.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
 
-#define BLINK_PORT		<<<TC_INSERTS_BLINK_PORT_HERE>>>
-#define BLINK_PIN		<<<TC_INSERTS_BLINK_PIN_HERE>>>
+// DEFINE CONSTANTS
+enum port_offset {P_READ, P_MODE, P_WRITE};
+enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_I, PORT_J, PORT_K, PORT_L};
+enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
+enum input_state {LO,HI};
+
+#define BLINK_PORT_NUM		<<<TC_INSERTS_BLINK_PORT_HERE>>>
+#define BLINK_PIN_NUM		<<<TC_INSERTS_BLINK_PIN_HERE>>>
 #define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
-#define FORCE_BL_PORT		<<<TC_INSERTS_FORCE_BL_PORT_HERE>>>
-#define FORCE_BL_PIN		<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>
+#define FORCE_BL_PORT_NUM	<<<TC_INSERTS_FORCE_BL_PORT_HERE>>>
+#define FORCE_BL_PIN_NUM	<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>
 #define LED_LOGIC		<<<TC_INSERTS_LED_LOGIC_HERE>>>
 #define INPUT_LOGIC		<<<TC_INSERTS_INPUT_LOGIC_HERE>>>
+#define PORT_MULTIPLIER		3
+#define BLINK_READ		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define BLINK_WRITE		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define BLINK_MODE		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define FORCE_BL_READ		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define FORCE_BL_WRITE		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define FORCE_BL_MODE		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define BLINK_PIN		( 1 << BLINK_PIN_NUM )
+#define FORCE_BL_PIN		( 1 << FORCE_BL_PIN_NUM )
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define MS_P_S			1000	/* Conversion factor; milliseconds per second. */
 #define TM_PRSCL		1024
@@ -36,21 +53,17 @@
 #define LONG_FLASH		16000
 #define SHORT_FLASH		9500
 
-#define SHUTDOWNSTATE_MEM	0x0200	/* TODO - There needs to be a toolchain macro here to stick in the appropriate address.*/
+#define SHUTDOWNSTATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 
 #define CLEAN_FLAG		0xAFAF
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
+
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
-
-gpio_pin_address blinkaddress = {BLINK_PORT, BLINK_PIN};
-gpio_pin blinkenlight = gpio_pin::grab(blinkaddress);
-
-timer blink_timer = timer::grab(TC_1);
-timer bl_timeout  = timer::grab(TC_3);
 
 volatile uint8_t timeout_tick;
 
@@ -127,30 +140,27 @@ int main(void)
 	MCUCR = (1<<IVCE);
 	MCUCR |= (1<<IVSEL);
 	
-	// Initialise the hal.
-	init_hal();
-
+	// Set Blinky Pin to output.
+	BLINK_MODE |= BLINK_PIN;
+	
+	// Set Force BL Pin to input. 
+	FORCE_BL_MODE &= ~BLINK_PIN;
+	
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-	watchdog::enable(WDTO_60MS);
+	wdt_enable(WDTO_60MS);
 	
 	// Turn on the blinkenlight solidly.
-	if (blinkenlight.is_valid())
-	    blinkenlight.write(LED_LOGIC ? O_LOW : O_HIGH);
+	BLINK_WRITE = LED_LOGIC ? BLINK_WRITE | BLINK_PIN : BLINK_WRITE & ~BLINK_PIN;
 	
-	gpio_pin_address force_bl_add = {FORCE_BL_PORT, FORCE_BL_PIN};
-	gpio_pin force_bl = gpio_pin::grab(force_bl_add);
-
-	// Check to see if the pin is not already being used (this would only happen if the user specified the led and switch to be the same pin).
-	if (force_bl.is_valid())
+	
+	
+	// Check the state of the 'application run' marker.
+	if (!(is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI)))
 	{
-	    // Check the state of the 'application run' marker.
-	    if ((is_clean()) && (force_bl.read() == (INPUT_LOGIC ? I_HIGH : I_LOW)))
-	    {
-		    // The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
-	    
-		    // Run the application.
-		    run_application();
-	    }
+		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
+	
+		// Run the application.
+		run_application();
 	}
 
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
@@ -159,38 +169,37 @@ int main(void)
 	mod->init();
 
 	// Set up a timer and interrupt to flash the blinkenlight..
-	timer_rate blink_rate = {INT, TC_PRE_1024};
-	blink_timer.set_rate(blink_rate);
-	blink_timer.set_ocR(TC_OC_A,  SHORT_FLASH);
-	blink_timer.enable_oc(TC_OC_A, OC_MODE_1);
-	blink_timer.enable_oc_interrupt(TC_OC_A, &blink_func);
 	
-	// Set up a timer and interrupt to measure the time elapsed.
-	timer_rate timeout_rate = {INT, TC_PRE_1024};
-	bl_timeout.set_rate(timeout_rate);
-	bl_timeout.set_ocR(TC_OC_A, (uint32_t) TM_CHAN_VAL);
-	bl_timeout.enable_oc(TC_OC_A, OC_MODE_1);
-	bl_timeout.enable_oc_interrupt(TC_OC_A, &tick_func);
 
+	TCCR1A = 0b00000000;
+	OCR1AH = ( uint8_t )( SHORT_FLASH >> 8 );
+	OCR1AL = ( uint8_t )( SHORT_FLASH);
+	TIMSK1 = 0b00000010;
+	
+	TCCR3A = 0b00000000;
+	OCR3AH = ( uint8_t )( TM_CHAN_VAL >> 8 );
+	OCR3AL = ( uint8_t )( TM_CHAN_VAL);
+	TIMSK3 = 0b00000010;
 	
 	
 	// Enable interrupts.
-	int_on();
-
-	// TODO - Replace this with something non-target specific.
+	sei();
+	
+	TCCR1B = 0b00001101;
+	TCCR3B = 0b00001101;
 
 	// Don't start the timer until after interrupts have been enabled!
-	blink_timer.start();
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
 	{
 		// Touch the watchdog.
-		watchdog::pat();
+		wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine.
-		blink_timer.set_ocR(TC_OC_A, LONG_FLASH);
+		OCR1AH = ( uint8_t )( LONG_FLASH >> 8 );
+		OCR1AL = ( uint8_t )( LONG_FLASH);
 		
 		// Check to see if we've timed out
 		if (((!firmware_available) && timeout_expired) || firmware_finished)
@@ -199,6 +208,7 @@ int main(void)
 		    run_application();
 		}
 		
+				
 		// TODO - Wait until some firmware arrives.
 
 		//		Probably, send out a message to indicate that we're now waiting on firmware.  Then wait for some time.  If we
@@ -220,11 +230,15 @@ int main(void)
 	return 0;
 }
 
+
 void boot_mark_clean(void)
 {
 	// Set the clean flag in EEPROM.
 	uint16_t data = CLEAN_FLAG;
-	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
+	void * address = (void *)SHUTDOWNSTATE_MEM;
+	eeprom_busy_wait();
+	eeprom_write_block(&data, address, 2);
+	eeprom_busy_wait();
 
 	// All done.
 	return;
@@ -233,8 +247,11 @@ void boot_mark_clean(void)
 void boot_mark_dirty(void)
 {
 	// Clear the clean flag in EEPROM, thus making the memory 'dirty'.
-	uint8_t data = 0;
-	write_mem(SHUTDOWNSTATE_MEM, &data, 1);
+	uint16_t data = 0;
+	void * address = (void *)SHUTDOWNSTATE_MEM;
+	eeprom_busy_wait();
+	eeprom_write_block(&data,address, 2);
+	eeprom_busy_wait();
 
 	// All done.
 	return;
@@ -246,8 +263,10 @@ bool is_clean(void)
 {
 	// Read the clean flag from EEPROM.
 	uint8_t data;
-	read_mem(SHUTDOWNSTATE_MEM, &data, 1);
-
+	
+	eeprom_busy_wait();
+	eeprom_read_block(&data, (void *)SHUTDOWNSTATE_MEM, 2);
+	eeprom_busy_wait();
 	// Check if the flag was 'clean' or not.
 	if (data == CLEAN_FLAG)
 	{
@@ -261,9 +280,8 @@ bool is_clean(void)
 void run_application(void)
 {
 	// Disable interrupts.
-	int_off();
+	cli();
 
-	// TODO - Replace this with something non-target specific.
 
 	// Set the application run marker to 'dirty', so that the application must 'clean' it when it shuts down.
 	boot_mark_dirty();
@@ -273,16 +291,18 @@ void run_application(void)
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
 	mod->exit();
 
-	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started. Yes
+	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started.
 
 	// Stop the timer and interrupt for the blinkenlight.
-	blink_timer.vacate();
-	blinkenlight.write(LED_LOGIC ? O_LOW: O_HIGH);
-	blinkenlight.vacate();
+	TIMSK1 = 0b00000000;
+	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE & ~BLINK_PIN ) : ( BLINK_WRITE | BLINK_PIN );
 
 	// Put interrupts back into application-land.
 	MCUCR |= (1<<IVCE);
 	MCUCR &= ~(1<<IVSEL);
+	
+	TCCR1B = 0b00000000;
+	TCCR3B = 0b00000000;
 	
 	// Jump into the application.
 	asm("jmp 0000");
@@ -294,7 +314,7 @@ void run_application(void)
 void flash_page(volatile firmware_page& buffer)
 {
 	// Disable interrupts.
-	int_off();
+	cli();
 
 	// TODO - Replace this with something non-target specific.
 
@@ -332,25 +352,26 @@ void flash_page(volatile firmware_page& buffer)
 	buffer.current_byte = 0;
 
 	// Re-enable interrupts.
-	int_restore();
+	sei();
 
 	// All done.
 	return;
 }
 
-void blink_func(void)
+ISR(TIMER1_COMPA_vect)
 {
 	// Reset the output compare register.
-	blink_timer.set_ocR(TC_OC_A, SHORT_FLASH);
+	OCR1AH = ( uint8_t )( SHORT_FLASH >> 8 );
+	OCR1AL = ( uint8_t )( SHORT_FLASH);
 
 	// Toggle the blinkenlight.
-	blinkenlight.write(O_TOGGLE);  
+	BLINK_WRITE = ( BLINK_READ & BLINK_PIN ) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN); 
 
 	// All done.
 	return;
 }
 
-void tick_func(void)
+ISR(TIMER3_COMPA_vect)
 {
 	// Advance the tick count.
 	timeout_tick++;
