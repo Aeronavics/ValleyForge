@@ -23,7 +23,7 @@
 
 // DEFINE CONSTANTS
 enum port_offset {P_READ, P_MODE, P_WRITE};
-enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_I, PORT_J, PORT_K, PORT_L};
+enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
 enum input_state {LO,HI};
 
@@ -50,8 +50,8 @@ enum input_state {LO,HI};
 #define MAX_TICK_VALUE		10
 #define TM_CHAN_VAL		((CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10)
 
-#define LONG_FLASH		16000
-#define SHORT_FLASH		9500
+#define LONG_FLASH		1600
+#define SHORT_FLASH		800
 
 #define SHUTDOWNSTATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 
@@ -66,6 +66,7 @@ enum input_state {LO,HI};
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 volatile uint8_t timeout_tick;
+volatile uint8_t blink_tick;
 
 volatile bool timeout_expired;
 
@@ -138,7 +139,7 @@ int main(void)
 {
 	// Set interrupts into bootloader-land, rather than the application-land.
 	MCUCR = (1<<IVCE);
-	MCUCR |= (1<<IVSEL);
+	MCUCR = (1<<IVSEL);
 	
 	// Set Blinky Pin to output.
 	BLINK_MODE |= BLINK_PIN;
@@ -146,16 +147,16 @@ int main(void)
 	// Set Force BL Pin to input. 
 	FORCE_BL_MODE &= ~BLINK_PIN;
 	
+	
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-	wdt_enable(WDTO_60MS);
+	wdt_enable(WDTO_500MS);
 	
 	// Turn on the blinkenlight solidly.
-	BLINK_WRITE = LED_LOGIC ? BLINK_WRITE | BLINK_PIN : BLINK_WRITE & ~BLINK_PIN;
-	
+	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
 	
 	
 	// Check the state of the 'application run' marker.
-	if (!(is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI)))
+	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI)))
 	{
 		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
 	
@@ -170,44 +171,64 @@ int main(void)
 
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
-
+	// Normal port operation, not connected to a pin.CTC on.
 	TCCR1A = 0b00000000;
-	OCR1AH = ( uint8_t )( SHORT_FLASH >> 8 );
-	OCR1AL = ( uint8_t )( SHORT_FLASH);
+	OCR1AH = (uint8_t)( (uint16_t) LONG_FLASH >> 8 );	
+	OCR1AL = (uint8_t)( (uint16_t) LONG_FLASH);
+	// Enable Timer Output Compare interrupt.
 	TIMSK1 = 0b00000010;
 	
-	TCCR3A = 0b00000000;
-	OCR3AH = ( uint8_t )( TM_CHAN_VAL >> 8 );
-	OCR3AL = ( uint8_t )( TM_CHAN_VAL);
-	TIMSK3 = 0b00000010;
-	
+#if defined (__AVR_AT90CAN128__)
+	// CTC, no clock yet.
+	TCCR0A = 0b00001000;
+	// Enable Timer Output Compare interrupt.
+	TIMSK0 = 0b00000010;
+		
+#else
+	// CTC on
+	TCCR0A = 0b00000010;
+	OCR0A = (uint8_t)TM_CHAN_VAL;
+	// Enable Timer Output Compare interrupt
+	TIMSK0 = 0b00000010;
+#endif	
 	
 	// Enable interrupts.
 	sei();
-	
+	// Prescalar: 1024
 	TCCR1B = 0b00001101;
-	TCCR3B = 0b00001101;
-
+	
+#if defined (__AVR_AT90CAN128__)
+	// Prescalar: 1024
+	TCCR0A = 0b00001101;
+#else
+	// Prescalar: 1024
+	TCCR0B = 0b00000101;
+#endif
 	// Don't start the timer until after interrupts have been enabled!
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
 	{
+		
 		// Touch the watchdog.
 		wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
-		// If the flashing period keeps changing, we know we are making it around the loop fine.
-		OCR1AH = ( uint8_t )( LONG_FLASH >> 8 );
-		OCR1AL = ( uint8_t )( LONG_FLASH);
+		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
 		// Check to see if we've timed out
 		if (((!firmware_available) && timeout_expired) || firmware_finished)
 		{
 		    // Run the application.
-		    run_application();
+		    // run_application(); // TODO Once this stuff is setup, uncomment this line. 
 		}
 		
+		if ( ( FORCE_BL_READ & FORCE_BL_PIN ) == 0 )	// TODO This is just a demonstration, this will be removed eventually. The Force_Bl pin should be used to tell it that new firmware is arriving, not that it should run the application, as it is doing now.
+		{
+		    // Test, if button is pushed, then run the application.
+		    // Run the application.
+			run_application();
+		}
 				
 		// TODO - Wait until some firmware arrives.
 
@@ -282,7 +303,6 @@ void run_application(void)
 	// Disable interrupts.
 	cli();
 
-
 	// Set the application run marker to 'dirty', so that the application must 'clean' it when it shuts down.
 	boot_mark_dirty();
 
@@ -291,18 +311,27 @@ void run_application(void)
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
 	mod->exit();
 
-	// TODO - Does vacating the timer actually stop it?  The timer needs to end up EXACTLY as it started.
-
 	// Stop the timer and interrupt for the blinkenlight.
 	TIMSK1 = 0b00000000;
+	TIMSK0 = 0b00000000;
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE & ~BLINK_PIN ) : ( BLINK_WRITE | BLINK_PIN );
 
 	// Put interrupts back into application-land.
-	MCUCR |= (1<<IVCE);
-	MCUCR &= ~(1<<IVSEL);
+	MCUCR = (1<<IVCE);
+	MCUCR = 0;
 	
+	// Stop timers and return them to original state.
 	TCCR1B = 0b00000000;
-	TCCR3B = 0b00000000;
+	TCCR1A = 0b00000000;
+#if defined (__AVR_AT90CAN128__)
+	TCCR0A = 0b00000000;
+#else
+	TCCR0B = 0b00000000;
+#endif	
+	OCR1A = 0;
+	OCR0A = 0;
+	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
+	wdt_disable();
 	
 	// Jump into the application.
 	asm("jmp 0000");
@@ -360,18 +389,36 @@ void flash_page(volatile firmware_page& buffer)
 
 ISR(TIMER1_COMPA_vect)
 {
-	// Reset the output compare register.
-	OCR1AH = ( uint8_t )( SHORT_FLASH >> 8 );
-	OCR1AL = ( uint8_t )( SHORT_FLASH);
-
-	// Toggle the blinkenlight.
-	BLINK_WRITE = ( BLINK_READ & BLINK_PIN ) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN); 
-
+	// NOTE This can be edited to whatever is desired. Currently it toggles the led and then changes the time for the next toggle. This results on it being on more than off.
+	static int change = 1;
+	    // Toggle the blinkenlight.
+	if (change)
+	{
+		OCR1A = ( uint16_t )(SHORT_FLASH);
+		change = 0;
+	}
+	else
+	{
+		OCR1A = ( uint16_t )(LONG_FLASH);
+		change = 1;
+	}
+	BLINK_WRITE = ( BLINK_WRITE & BLINK_PIN ) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN); 
+	   // blink_tick = 0;
+	
 	// All done.
 	return;
 }
 
-ISR(TIMER3_COMPA_vect)
+#if defined (__AVR_AT90CAN128__)
+
+ISR(TIMER0_COMP_vect)
+
+#else
+
+ISR(TIMER0_COMPA_vect)
+
+#endif
+
 {
 	// Advance the tick count.
 	timeout_tick++;
@@ -382,5 +429,6 @@ ISR(TIMER3_COMPA_vect)
 	// All done.
 	return;
 }
+
 
 // ALL DONE.
