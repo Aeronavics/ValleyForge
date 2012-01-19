@@ -2154,11 +2154,11 @@ int8_t timer_imp::enable_ic(tc_ic_channel channel, tc_ic_mode mode)
      */
     if (timerCounterPins[(int8_t)channel].address.port < PORT_H)
     {
-      _SFR_IO8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + LOWER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
+      _SFR_IO8(timerCounterPins[(int8_t)channel + IC_CHANNEL_OFFSET].address.port * PORT_REGISTER_MULTIPLIER + LOWER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
     }
     else
     {
-      _SFR_MEM8(timerCounterPins[(int8_t)channel].address.port * PORT_REGISTER_MULTIPLIER + HIGHER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
+      _SFR_MEM8(timerCounterPins[(int8_t)channel + IC_CHANNEL_OFFSET].address.port * PORT_REGISTER_MULTIPLIER + HIGHER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)timerCounterPins[(int8_t)channel].address.pin));
     }
   
     return 0;
