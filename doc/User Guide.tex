@@ -1,0 +1,302 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+% These two above lines are to specify the encoding scheme of THIS, the input file.
+
+% DOCUMENT HEADER.
+
+% Declare the document.
+\documentclass[a4paper, oneside, 11pt, titlepage, onecolumn, openright]{article}
+
+% INCLUDE REQUIRED PACKAGES.
+
+% Package to support disabling output for fast syntax checking.
+\usepackage{syntonly}
+
+% Package to support logical operations.
+\usepackage{ifthen}	
+
+% Package adding some useful symbol macros.
+\usepackage{textcomp}
+
+% Package which allows the use of graphs, and ensures they work with pdftex.
+\usepackage[pdftex]{color, graphicx}
+
+% Package which sets input encoding.
+\usepackage{inputenc} 
+
+% Package allowing improved page layout configuration.
+\usepackage{geometry}
+
+% Package which allows better configuration of section heading appearance.
+\usepackage{sectsty}
+
+% Package which adds support for fancy headers.
+\usepackage{fancyhdr}
+
+% Package which modifies paragraph spacing options.
+\usepackage[parfill]{parskip}
+
+% Packages which adds support for better looking tables.
+\usepackage{booktabs}
+
+% Package which adds support for better arrays/matrices in maths environments.
+\usepackage{array}
+
+% Package which adds support for flexible list environments.
+\usepackage{paralist}
+
+% Package which adds support for improved verbatim blocks.
+\usepackage{verbatim}
+\usepackage{moreverb}
+
+% Package which allows adding multiple figures to a single float.
+\usepackage{subfig}
+
+% Package for binding the bibligraphy into the ToC.
+\usepackage[nottoc,notlof,notlot]{tocbibind}
+
+% Package allowing customization of the ToC, LoF and LoT.
+\usepackage[titles,subfigure]{tocloft}
+
+% Package which allows importing of multi-page PDF documents.
+\usepackage{pdfpages}
+
+% Package which lets you put in source code
+\usepackage{listings}
+
+% OUTPUT CONFIGURATION OPTIONS.
+
+% Disable generation of output if we just want to check the syntax.
+%\syntaxonly
+
+% If this document is going to be printed rather than viewed online, we make some optimizations.
+\newcommand{\pdfforprinting}
+
+% DOCUMENT PREAMBLE.
+
+% Specify the input file encoding.
+\inputencoding{utf8}
+
+% Configure page layout options.
+\geometry{a4paper}
+\geometry{margin=2.5cm}
+\geometry{portrait}
+
+% Update PDF page layout to match page geometry.
+\pdfpagewidth=\paperwidth
+\pdfpageheight=\paperheight
+
+% Set the title attributes.
+\newcommand{\projecttitle}{VALLEYFORGE TOOLCHAIN}
+\newcommand{\documenttitle}{USER GUIDE}
+\title{\projecttitle \\ \documenttitle}
+\author{Zac Frank}
+\date{\today}
+
+% Modify the paragraph style.  This adds roughly a single line between paragraphs.
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1em plus 0.5ex minus 0.2ex}
+
+% Modify the line spacing.  This allows a line spacing factor for proofing copies.
+\linespread{1.0}
+
+% Select fonts to use for sections.
+\allsectionsfont{\sffamily\mdseries\upshape}
+
+% Configure how headers behave.
+\pagestyle{fancy} % Options are: empty , plain or fancy.
+\renewcommand{\headrulewidth}{0pt}
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+% Configure some improved support for including source code.
+\def\sourcetabsize{4}
+\newenvironment{sourcestyle}{\begin{scriptsize}}{\end{scriptsize}}
+\def\sourceinput#1{\par\begin{sourcestyle}\verbatimtabinput[\sourcetabsize]{#1}\end{sourcestyle}\par}
+
+% Configure the hyperref package.  Due to some magic, this MUST be last in the preamble.
+\usepackage[pdftex, bookmarks, pdfstartview={XYZ null null 1.25}]{hyperref}
+\ifthenelse{\not{\isundefined{\pdfforprinting}}}
+	{
+		% Remove colored links since the PDF is going to be printed.
+		\hypersetup{colorlinks=false}}  
+	{
+		% Add coloured links since the PDF will be viewed online.
+		\hypersetup{colorlinks=true}
+		\hypersetup{linkcolor={blue}}
+	}
+\hypersetup{pdftitle=\projecttitle~--~\documenttitle}
+\hypersetup{pdfauthor=\@author}
+
+% BEGIN THE DOCUMENT PROPER.
+\begin{document}
+
+	% Create the title page.
+	\maketitle
+	
+	% The abstract goes here.
+	\begin{abstract}
+
+		The abstract goes here.
+
+	\end{abstract}
+
+	% Insert the table of contents (ToC).
+	\clearpage
+	\tableofcontents
+
+	% Insert the list of figures (LoF).
+	\clearpage
+	\listoffigures
+
+	% Insert the list of tables (LoT).
+	\clearpage
+	\listoftables
+	
+	% THE ACTUAL GIST OF THE DOCUMENT STARTS HERE.
+
+	% An article has sections as the top level sectioning command.	
+
+	% Make sure the body starts on a new page.
+	\clearpage
+
+	\section{Getting Started}
+		\label{s:Getting Started}
+
+		This section will show you how to install the ValleyForge toolchain on your computer, and how to start using it to write code for your microprocessor.
+
+		\subsection{Installation }
+			\label{ss:Installation}
+
+			It is assumed that the user has the latest version of Ubuntu installed. If not, the latest version can be downloaded from \url{http://ucmirror.canterbury.ac.nz/linux/ubuntu-releases/}. This image can be burned onto a disc, the computer booted from the disc, and on-screen instructions followed.
+			
+			Once Ubuntu has been installed, we need to install the packages that do not come preinstalled with Ubuntu but are necessary for the toolchain to run. Most of these packages can be installed using the Debian Package repository. To install these packages, open the terminal, and enter:
+			
+\begin{lstlisting}
+sudo apt-get install byacc flex gcc-avr avr-libc
+\end{lstlisting}
+
+If the user is programming the AT32UC3C0512C, don't worry, the avr32 compiler and headers are included in the toolchain itself.
+
+Next we will install the toolchain itself. Navigate to the directory where you want the toolchain to reside. This will contain a subdirectory called ``src'' where all your source code will reside.
+In the command line, type \newline
+
+\begin{lstlisting}
+sudo git clone (PUT REPOSITORY URL HERE)
+\end{lstlisting}
+to download the toolchain to your working directory.
+
+
+\subsection{Using the Toolchain }
+			\label{ss:Using The Toolchain}
+			
+You are now ready to start using the ValleyForge Toolchain. Navigate to the Toolchain Directory, and into the subdirectory ``bld''. 
+
+If the toolchain has been used by someone else betwen being cloned into its directory and now, then run the script ``resettc'', by typing
+\begin{lstlisting}
+./resettc
+\end{lstlisting}
+ into the terminal.
+ 
+ Now run the ``VFstart'' script. This will be your main interface to the toolchain, and will take care of creating and deleting components, as well as keeping track of project properties.\\
+ A prompt will appear asking you provide your user information. This will aid in creating template source files for you to start programming with. You may choose not to provide this information, but will have to fill it in yourself in template files should you let the interface create them.
+ 
+ Follow the onscreen prompts to let the toolchain carry out its operations.
+
+\subsubsection{Creating a new Component}
+			\label{sss:Create New Component}
+			
+To create a new Component, run the VFstart script, and enter ``C'' into the terminal. Choose the microprocessor you are programming on, and then when prompted, enter the name of your project. The name should not contain any spaces and should not be one of the words ``none'', ``all'', or ``exit''. Follow the onscreen prompts to complete the creation of a new component. 
+
+If a bootloader is available for your component, you will be asked to specify which bootloader you wish to use for your component. You will then be prompted to choose some other parameters. If you aren't sure about these, don't worry, you can change them later by going to your component source folder, opening the config file, and editing the required fields. A detailed description of the bootloader options can be found in section [INSERT SECTION HERE].
+
+
+Electing to create template files will place two source files (a component.h and a component.cpp or .c) files in your component's source folder, containing component details, and outlining a structure for your source files' layout. The bare metal templates contain no code other than an empty main function, while the FreeRTOS templates contain an example task to help get you started.
+
+You will then be prompted to decide whether this component will be your default component. Your default, or active component is the one that will be acted on when you don't specify a component, for example when the build script is called with no arguments. If you have no other components, the component being created will automatically become your active component and you will not be prompted.
+
+Once you have created your new component, a configuration file will also be placed in its source folder. It contains information such as which compiler to use, which micro the project will be programmed on to, and which platform is being used.
+
+
+You can type exit at any time to exit back to the terminal.
+
+
+\subsubsection{Deleting Projects}
+			\label{sss:Deleting Projects}
+
+To delete a component, start the VFstart script, and choose ``Delete''. A list of all your projects should appear. Select the component you wish to delete, and confirm the deletion when prompted.
+
+You can type exit at any time to exit back to the terminal.
+
+\subsubsection{Changing the Active Project}
+			\label{sss:Edit -> Default Proj}
+
+To change which project is the active project, run the uavstart script, choose Edit, and select ``Default Project''. The list of projects will come up, and you will be able to choose which one you want to set as your active project.
+
+\subsubsection{Changing User Info}
+			\label{sss:Change User Info} 
+To change your user info, run the uavstart script, choose Edit, and select ``User Info''. Follow the on screen prompts to change the user information.
+
+\subsection{Compiling Projects}
+			\label{ss:Compiling Projects}
+
+To compile a project, navigate through the terminal to the ``bld'' directory. Type
+
+\begin{lstlisting}
+./build
+\end{lstlisting}
+
+into the terminal to compile the active project. The output hex file, if compilation is successful, will be found in the bin folder of the toolchain directory.
+To compile a project other than the active one, add the project's name after the ./build command. To retain all output files in the ``tmp'' directory type ``retain'' as the last argument of the build command, or to build all projects, type ``all'' as the only argument. For example, \\
+
+\begin{lstlisting}
+./build radio retain
+\end{lstlisting}
+
+will build the project ``radio'' with output files retained in the tmp directory.
+
+while\\
+
+\begin{lstlisting}
+./build retain
+\end{lstlisting}
+
+will build the default project and retain all files for it (including the makefile) in the ``tmp'' subdirectory.\\
+
+\begin{lstlisting}
+./build all
+\end{lstlisting}
+
+will build all projects.
+
+\section{Bootloaders}
+\label{bootloaders}
+
+The options prompted when creating a new component with bootloader are described below:
+\begin{itemize}
+
+\item \textbf{Blink LED Port}. Specify which port will contain the pin that you will use as a bootloader status LED.
+
+\item \textbf{Blink LED Pin}. Specify which pin on this port will be the status LED.
+
+\item \textbf{LED Logic}. Specify which voltage level will turn the status LED on or off.
+
+\item \textbf{Force Bootloader Port}. Specify which port will contain the pin that will be used by the external to signal to your microprocessor that new firmware is available.
+
+\item \textbf{Force Bootloader Pin}. Specify which pin on this port will be the Force Bootloader pin.
+
+
+\item \textbf{Force Bootloader Logic}. Specify which voltage level will signal new firmware is available.
+
+\item \textbf{Clock Speed}. Specify, in MHz, the clock speed of the microprocessor.
+
+\item \textbf{Startup State EEPROM Address}. Elect an EEPROM address which the microprocessor will use to determine whether the processor last shut down cleanly. This will affect how the bootloader behaves.
+
+\end{itemize}
+
+	% THEN COMES ANY SUPPORTING MATERIAL.
+
+	% Switch to 'appendices' mode.  Alphabetic chapter headings.
+	\appendix
+
+\end{document}

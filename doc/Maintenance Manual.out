@@ -1,0 +1,37 @@
+\BOOKMARK [0][-]{chapter.1}{Linux Environment}{}
+\BOOKMARK [1][-]{section.1.1}{Installation }{chapter.1}
+\BOOKMARK [0][-]{chapter.2}{Directory Structure}{}
+\BOOKMARK [1][-]{section.2.1}{bin}{chapter.2}
+\BOOKMARK [1][-]{section.2.2}{bld}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.2.1}{bld/common}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.2}{bld/create}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.3}{bld/delete}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.4}{bld/edit}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.5}{bld/other}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.6}{bld/preprocess}{section.2.2}
+\BOOKMARK [1][-]{section.2.3}{doc}{chapter.2}
+\BOOKMARK [1][-]{section.2.4}{lib}{chapter.2}
+\BOOKMARK [1][-]{section.2.5}{res}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.5.1}{res/arm}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.2}{res/avr}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.3}{res/avr32}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.4}{res/common}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.5}{res/freertos}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.6}{res/templates}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.7}{res/vendor}{section.2.5}
+\BOOKMARK [1][-]{section.2.6}{src}{chapter.2}
+\BOOKMARK [1][-]{section.2.7}{tmp}{chapter.2}
+\BOOKMARK [1][-]{section.2.8}{var}{chapter.2}
+\BOOKMARK [1][-]{section.2.9}{TODO}{chapter.2}
+\BOOKMARK [0][-]{chapter.3}{Standard Bash Structures}{}
+\BOOKMARK [1][-]{section.3.1}{Script location}{chapter.3}
+\BOOKMARK [1][-]{section.3.2}{Colours}{chapter.3}
+\BOOKMARK [1][-]{section.3.3}{Script Parameters}{chapter.3}
+\BOOKMARK [1][-]{section.3.4}{User Prompts}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.4.1}{Given Words}{section.3.4}
+\BOOKMARK [2][-]{subsection.3.4.2}{Enumerated List}{section.3.4}
+\BOOKMARK [2][-]{subsection.3.4.3}{Text Input}{section.3.4}
+\BOOKMARK [2][-]{subsection.3.4.4}{Yes/No Prompts}{section.3.4}
+\BOOKMARK [1][-]{section.3.5}{Style}{chapter.3}
+\BOOKMARK [0][-]{chapter.4}{Script Descriptions}{}
+\BOOKMARK [1][-]{section.4.1}{VFstart}{chapter.4}
