@@ -223,6 +223,14 @@ class usart_imp
 	int8_t transmit_byte(uint8_t data);
 	
 	/**
+	* Transmits a string of data (or uint8_t array) via the configured USART connection.
+	*
+	* @param data		Byte to be transmitted via the USART
+	* @return 0 for success, -1 for error.
+	*/
+	int8_t transmit_string(uint8_t *data);
+	
+	/**
 	* Indicates whether the transmission is complete, i.e no new data
 	* exists in the transmit buffer.
 	*
@@ -386,6 +394,17 @@ bool usart::buffer_is_empty(void)
 int8_t usart::transmit_byte(uint8_t data)
 {
   return (imp->transmit_byte(data));
+}
+
+/**
+* Transmits a string of data (or uint8_t array) via the configured USART connection.
+*
+* @param data		Byte to be transmitted via the USART
+* @return 0 for success, -1 for error.
+*/
+int8_t usart::transmit_string(uint8_t *data)
+{
+  return (imp->transmit_string(data));
 }
 
 /**
@@ -790,8 +809,27 @@ bool usart_imp::buffer_is_empty(void)
 */
 int8_t usart_imp::transmit_byte(uint8_t data)
 {
+   /* Wait for the UDRn register to be free */
+  while ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UDRE_BIT)) == 0) {};
+  
   /* Copy the the data byte to transmit into the USART buffer */
   _SFR_MEM8(registerTable.UDR_address) = data;
+  
+  return 0;
+}
+
+/**
+* Transmits a string of data (or uint8_t array) via the configured USART connection.
+*
+* @param data		Byte to be transmitted via the USART
+* @return 0 for success, -1 for error.
+*/
+int8_t usart_imp::transmit_string(uint8_t *data)
+{
+  while (*data)
+  {
+    transmit_byte(*data++);
+  }
   
   return 0;
 }
@@ -836,7 +874,7 @@ bool usart_imp::receive_complete(void)
 uint8_t usart_imp::receive_byte(void)
 {
   /* Wait for new unread data to arrive */
-  //while ((_SFR_MEM8(registerTable.UCSR0A_ADDRESS) & (1 << RXC_BIT)) == 0) {};
+  //while ((_SFR_MEM8(registerTable.UCSRA_ADDRESS) & (1 << RXC_BIT)) == 0) {};
   
   return (_SFR_MEM8(registerTable.UDR_address));
 }

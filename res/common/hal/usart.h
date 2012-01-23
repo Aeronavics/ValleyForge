@@ -122,6 +122,14 @@ class usart
 		 int8_t transmit_byte(uint8_t data);
 		 
 		 /**
+		 * Transmits a string of data (or uint8_t array) via the configured USART connection.
+		 *
+		 * @param data		Byte to be transmitted via the USART
+		 * @return 0 for success, -1 for error.
+		 */
+		 int8_t transmit_string(uint8_t *data);
+		 
+		 /**
 		 * Indicates whether the transmission is complete, i.e no new data
 		 * exists in the transmit buffer.
 		 *
