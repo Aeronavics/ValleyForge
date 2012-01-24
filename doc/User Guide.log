@@ -1,25 +1,24 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2011.11.10)  25 JAN 2012 10:08
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2011.11.10)  25 JAN 2012 10:11
 entering extended mode
  %&-line parsing enabled.
-**"Maintenance Manual.tex"
-(./Maintenance Manual.tex
+**"User Guide.tex"
+(./User Guide.tex
 LaTeX2e <2009/09/24>
 Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
 yphenation, loaded.
-(/usr/share/texmf-texlive/tex/latex/base/report.cls
-Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/article.cls
+Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
 (/usr/share/texmf-texlive/tex/latex/base/size11.clo
 File: size11.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count79
-\c@chapter=\count80
-\c@section=\count81
-\c@subsection=\count82
-\c@subsubsection=\count83
-\c@paragraph=\count84
-\c@subparagraph=\count85
-\c@figure=\count86
-\c@table=\count87
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
 \abovecaptionskip=\skip41
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
@@ -107,7 +106,7 @@ Package color Info: Driver file: pdftex.def on input line 130.
 
 (/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def
 File: pdftex.def 2010/03/12 v0.04p Graphics/color for pdfTeX
-\Gread@gobject=\count88
+\Gread@gobject=\count87
 ))
 (/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
 Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
@@ -146,9 +145,9 @@ Package ifpdf Info: pdfTeX in pdf mode detected.
 Package: ifvtex 2008/11/04 v1.4 Switches for detecting VTeX and its modes (HO)
 Package ifvtex Info: VTeX not detected.
 )
-\Gm@cnth=\count89
-\Gm@cntv=\count90
-\c@Gm@tempcnt=\count91
+\Gm@cnth=\count88
+\Gm@cntv=\count89
+\c@Gm@tempcnt=\count90
 \Gm@bindingoffset=\dimen105
 \Gm@wd@mp=\dimen106
 \Gm@odd@mp=\dimen107
@@ -185,12 +184,12 @@ Package: booktabs 2005/04/14 v1.61803 publication quality tables
 \cmidrulesep=\dimen116
 \cmidrulekern=\dimen117
 \defaultaddspace=\dimen118
-\@cmidla=\count92
-\@cmidlb=\count93
+\@cmidla=\count91
+\@cmidlb=\count92
 \@aboverulesep=\dimen119
 \@belowrulesep=\dimen120
-\@thisruleclass=\count94
-\@lastruleclass=\count95
+\@thisruleclass=\count93
+\@lastruleclass=\count94
 \@thisrulewidth=\dimen121
 )
 (/usr/share/texmf-texlive/tex/latex/tools/array.sty
@@ -218,9 +217,9 @@ Package: verbatim 2003/08/22 v1.5q LaTeX2e package for verbatim enhancements
 (/usr/share/texmf-texlive/tex/latex/moreverb/moreverb.sty
 Package: moreverb 2008/06/03 v2.3 `more' verbatim facilities
 \verbatim@out=\write3
-\tab@position=\count96
-\tab@size=\count97
-\listing@line=\count98
+\tab@position=\count95
+\tab@size=\count96
+\listing@line=\count97
 )
 (/usr/share/texmf-texlive/tex/latex/subfig/subfig.sty
 Package: subfig 2005/06/28 ver: 1.3 subfig package
@@ -237,19 +236,19 @@ Package: caption3 2009/10/09 v3.1k caption3 kernel (AR)
 \caption@parindent=\dimen128
 \caption@hangindent=\dimen129
 )
-\c@ContinuedFloat=\count99
+\c@ContinuedFloat=\count98
 )
-\c@KVtest=\count100
+\c@KVtest=\count99
 \sf@farskip=\skip58
 \sf@captopadj=\dimen130
 \sf@capskip=\skip59
 \sf@nearskip=\skip60
-\c@subfigure=\count101
-\c@subfigure@save=\count102
-\c@lofdepth=\count103
-\c@subtable=\count104
-\c@subtable@save=\count105
-\c@lotdepth=\count106
+\c@subfigure=\count100
+\c@subfigure@save=\count101
+\c@lofdepth=\count102
+\c@subtable=\count103
+\c@subtable@save=\count104
+\c@lotdepth=\count105
 \sf@top=\skip61
 \sf@bottom=\skip62
 )
@@ -257,16 +256,16 @@ Package: caption3 2009/10/09 v3.1k caption3 kernel (AR)
 Package: tocbibind 2009/09/04 v1.5i extra ToC listings
 
 
-Package tocbibind Note: The document has chapter divisions.
+Package tocbibind Note: The document has section divisions.
 
 
-Package tocbibind Note: Using chapter style headings, unless overridden.
+Package tocbibind Note: Using section or other style headings.
 
 ) (/usr/share/texmf-texlive/tex/latex/tocloft/tocloft.sty
 Package: tocloft 2009/09/04 v2.3d parameterised ToC, etc., typesetting
 
 
-Package tocloft Note: The document has chapter divisions.
+Package tocloft Note: The document has section divisions.
 
 \cftparskip=\skip63
 \cftbeforetoctitleskip=\skip64
@@ -274,55 +273,52 @@ Package tocloft Note: The document has chapter divisions.
 \cftbeforepartskip=\skip66
 \cftpartnumwidth=\skip67
 \cftpartindent=\skip68
-\cftbeforechapskip=\skip69
-\cftchapindent=\skip70
-\cftchapnumwidth=\skip71
-\cftbeforesecskip=\skip72
-\cftsecindent=\skip73
-\cftsecnumwidth=\skip74
-\cftbeforesubsecskip=\skip75
-\cftsubsecindent=\skip76
-\cftsubsecnumwidth=\skip77
-\cftbeforesubsubsecskip=\skip78
-\cftsubsubsecindent=\skip79
-\cftsubsubsecnumwidth=\skip80
-\cftbeforeparaskip=\skip81
-\cftparaindent=\skip82
-\cftparanumwidth=\skip83
-\cftbeforesubparaskip=\skip84
-\cftsubparaindent=\skip85
-\cftsubparanumwidth=\skip86
-\cftbeforeloftitleskip=\skip87
-\cftafterloftitleskip=\skip88
-\cftbeforefigskip=\skip89
-\cftfigindent=\skip90
-\cftfignumwidth=\skip91
-\cftbeforelottitleskip=\skip92
-\cftafterlottitleskip=\skip93
-\cftbeforetabskip=\skip94
-\cfttabindent=\skip95
-\cfttabnumwidth=\skip96
-\cftbeforesubfigskip=\skip97
-\cftsubfigindent=\skip98
-\cftsubfignumwidth=\skip99
-\cftbeforesubtabskip=\skip100
-\cftsubtabindent=\skip101
-\cftsubtabnumwidth=\skip102
+\cftbeforesecskip=\skip69
+\cftsecindent=\skip70
+\cftsecnumwidth=\skip71
+\cftbeforesubsecskip=\skip72
+\cftsubsecindent=\skip73
+\cftsubsecnumwidth=\skip74
+\cftbeforesubsubsecskip=\skip75
+\cftsubsubsecindent=\skip76
+\cftsubsubsecnumwidth=\skip77
+\cftbeforeparaskip=\skip78
+\cftparaindent=\skip79
+\cftparanumwidth=\skip80
+\cftbeforesubparaskip=\skip81
+\cftsubparaindent=\skip82
+\cftsubparanumwidth=\skip83
+\cftbeforeloftitleskip=\skip84
+\cftafterloftitleskip=\skip85
+\cftbeforefigskip=\skip86
+\cftfigindent=\skip87
+\cftfignumwidth=\skip88
+\cftbeforelottitleskip=\skip89
+\cftafterlottitleskip=\skip90
+\cftbeforetabskip=\skip91
+\cfttabindent=\skip92
+\cfttabnumwidth=\skip93
+\cftbeforesubfigskip=\skip94
+\cftsubfigindent=\skip95
+\cftsubfignumwidth=\skip96
+\cftbeforesubtabskip=\skip97
+\cftsubtabindent=\skip98
+\cftsubtabnumwidth=\skip99
 ) (/usr/share/texmf-texlive/tex/latex/pdfpages/pdfpages.sty
 Package: pdfpages 2009/02/07 v0.4g Insert pages of external PDF documents (AM)
 
 (/usr/share/texmf-texlive/tex/latex/tools/calc.sty
 Package: calc 2007/08/22 v4.3 Infix arithmetic (KKT,FJ)
-\calc@Acount=\count107
-\calc@Bcount=\count108
+\calc@Acount=\count106
+\calc@Bcount=\count107
 \calc@Adimen=\dimen131
 \calc@Bdimen=\dimen132
-\calc@Askip=\skip103
-\calc@Bskip=\skip104
+\calc@Askip=\skip100
+\calc@Bskip=\skip101
 LaTeX Info: Redefining \setlength on input line 76.
 LaTeX Info: Redefining \addtolength on input line 77.
-\calc@Ccount=\count109
-\calc@Cskip=\skip105
+\calc@Ccount=\count108
+\calc@Cskip=\skip102
 )
 (/usr/share/texmf-texlive/tex/latex/eso-pic/eso-pic.sty
 Package: eso-pic 2006/07/14 v1.1d eso-pic (RN)
@@ -335,27 +331,27 @@ File: pppdftex.def 2009/02/07 v0.4g Pdfpages driver for pdfTeX (AM)
 )
 \AM@pagebox=\box26
 \AM@toc@title=\toks22
-\c@AM@survey=\count110
+\c@AM@survey=\count109
 \AM@templatesizebox=\box27
 )
 (/usr/share/texmf-texlive/tex/latex/listings/listings.sty
-\lst@mode=\count111
+\lst@mode=\count110
 \lst@gtempboxa=\box28
 \lst@token=\toks23
-\lst@length=\count112
+\lst@length=\count111
 \lst@currlwidth=\dimen133
-\lst@column=\count113
-\lst@pos=\count114
+\lst@column=\count112
+\lst@pos=\count113
 \lst@lostspace=\dimen134
 \lst@width=\dimen135
-\lst@newlines=\count115
-\lst@lineno=\count116
+\lst@newlines=\count114
+\lst@lineno=\count115
 \lst@maxwidth=\dimen136
 
 (/usr/share/texmf-texlive/tex/latex/listings/lstmisc.sty
 File: lstmisc.sty 2007/02/22 1.4 (Carsten Heinz)
-\c@lstnumber=\count117
-\lst@skipnumbers=\count118
+\c@lstnumber=\count116
+\lst@skipnumbers=\count117
 \lst@framebox=\box29
 )
 (/usr/share/texmf-texlive/tex/latex/listings/listings.cfg
@@ -664,8 +660,8 @@ O)
 Package: xcolor-patch 2009/10/02 xcolor patch
 ))
 \@linkdim=\dimen137
-\Hy@linkcounter=\count119
-\Hy@pagecounter=\count120
+\Hy@linkcounter=\count118
+\Hy@pagecounter=\count119
 
 (/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def
 File: pd1enc.def 2009/10/09 v6.79a Hyperref: PDFDocEncoding definition (HO)
@@ -733,7 +729,7 @@ Package pdftexcmds Info: LuaTeX not detected.
 Package pdftexcmds Info: \pdf@primitive is available.
 Package pdftexcmds Info: \pdf@ifprimitive is available.
 )))
-\Fld@menulength=\count121
+\Fld@menulength=\count120
 \Field@Width=\dimen138
 \Fld@charsize=\dimen139
 \Field@toks=\toks24
@@ -748,19 +744,23 @@ Package hyperref Info: PDF/A mode OFF on input line 4407.
 (/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty
 Package: atbegshi 2008/07/31 v1.9 At begin shipout hook (HO)
 )
-\Hy@abspage=\count122
-\c@Item=\count123
-\c@Hfootnote=\count124
+\Hy@abspage=\count121
+\c@Item=\count122
+\c@Hfootnote=\count123
 )
 *hyperref using driver hpdftex*
 (/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def
 File: hpdftex.def 2009/10/09 v6.79a Hyperref driver for pdfTeX
-\Fld@listcount=\count125
+\Fld@listcount=\count124
 )
 Package hyperref Info: Option `colorlinks' set `false' on input line 127.
 
-(./Maintenance Manual.aux)
-\openout1 = `"Maintenance Manual.aux"'.
+
+LaTeX Warning: Unused global option(s):
+    [openright].
+
+(./User Guide.aux)
+\openout1 = `"User Guide.aux"'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 132.
 LaTeX Font Info:    ... okay on input line 132.
@@ -786,15 +786,15 @@ LaTeX Font Info:    ... okay on input line 132.
 
 (/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count126
+\scratchcounter=\count125
 \scratchdimen=\dimen140
 \scratchbox=\box30
-\nofMPsegments=\count127
-\nofMParguments=\count128
+\nofMPsegments=\count126
+\nofMParguments=\count127
 \everyMPshowfont=\toks25
-\MPscratchCnt=\count129
+\MPscratchCnt=\count128
 \MPscratchDim=\dimen141
-\MPnumerator=\count130
+\MPnumerator=\count129
 \everyMPtoPDFconversion=\toks26
 )
 *geometry auto-detecting driver*
@@ -845,7 +845,7 @@ Package caption Info: hyperref package is loaded.
 Package caption Info: listings package is loaded.
 Package caption Info: End \AtBeginDocument code.
 ABD: EveryShipout initializing macros
-\c@lstlisting=\count131
+\c@lstlisting=\count130
 Package hyperref Info: Link coloring OFF on input line 132.
 
 (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
@@ -854,14 +854,14 @@ Package: nameref 2007/05/29 v2.31 Cross-referencing by name of section
 (/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty
 Package: refcount 2008/08/11 v3.1 Data extraction from references (HO)
 )
-\c@section@level=\count132
+\c@section@level=\count131
 )
 LaTeX Info: Redefining \ref on input line 132.
 LaTeX Info: Redefining \pageref on input line 132.
-
-(./Maintenance Manual.out) (./Maintenance Manual.out)
+ (./User Guide.out)
+(./User Guide.out)
 \@outlinefile=\write4
-\openout4 = `"Maintenance Manual.out"'.
+\openout4 = `"User Guide.out"'.
 
 \AtBeginShipoutBox=\box31
 LaTeX Font Info:    External font `cmex10' loaded for size
@@ -878,180 +878,75 @@ e ignored
 <to be read again> 
                    \relax 
 l.142 	\end{abstract}
-                      [1] (./Maintenance Manual.toc
+                      [1] (./User Guide.toc
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <10.95> on input line 1.
+)
+\tf@toc=\write5
+\openout5 = `"User Guide.toc"'.
+
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has 
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.40 ...ne {4.1.3}Functions}{17}{subsection.4.1.3}
-                                                   [1
+l.149 	\clearpage
+                  [1
 
+] (./User Guide.lof)
+\tf@lof=\write6
+\openout6 = `"User Guide.lof"'.
 
-])
-\tf@toc=\write5
-\openout5 = `"Maintenance Manual.toc"'.
+ [2
 
- [2]
-Chapter 1.
+] (./User Guide.lot)
+\tf@lot=\write7
+\openout7 = `"User Guide.lot"'.
 
-Overfull \hbox (96.7712pt too wide) in paragraph at lines 170--171
-[]$\OT1/cmtt/m/n/10.95 http : / / stackoverflow . com / questions / 315911 / gi
-t-[]for-[]beginners-[]the-[]definitive-[]practical-[]guide$[]\OT1/cmr/m/n/10.95
- ) 
- []
-
-(/usr/share/texmf-texlive/tex/latex/listings/lstlang1.sty
-File: lstlang1.sty 2004/09/05 1.3 listings language file
-)
-(/usr/share/texmf-texlive/tex/latex/listings/lstlang1.sty
-File: lstlang1.sty 2004/09/05 1.3 listings language file
-)
-Underfull \hbox (badness 10000) in paragraph at lines 182--184
-
- []
-
-[3
-
+ [3
 
 ]
-Chapter 2.
-LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 207.
+Underfull \hbox (badness 10000) in paragraph at lines 181--183
+
+ []
+
 [4
 
 ] [5]
-Overfull \hbox (3.11327pt too wide) in paragraph at lines 301--302
-\OT1/cmr/m/n/10.95 User de-fined li-braries are stored here. They can be ac-ces
-sed us-ing #in-clude lib/LI-BRARY[]NAME
- []
-
-[6]
-Overfull \hbox (31.78812pt too wide) in paragraph at lines 347--349
-\OT1/cmr/m/n/10.95 Contained here are the port spe-cific files for the UC3 mi-c
-ro-pro-ces-sors (so far just the AT32UC3C0512C).
- []
-
-[7] [8] [9]
-Chapter 3.
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 418.
-
-(/usr/share/texmf-texlive/tex/latex/base/omscmr.fd
-File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 418.
- [10
-
-]
-LaTeX Font Info:    Font shape `OMS/cmr/m/it' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 460.
- [11] [12]
-LaTeX Font Info:    Try loading font information for OML+cmr on input line 544.
-
-
-(/usr/share/texmf-texlive/tex/latex/base/omlcmr.fd
-File: omlcmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OML/cmm/m/it' tried instead on input line 544.
- [13] [14] [15] [16]
-Chapter 4.
-[17
-
-] [18] [19]
-Overfull \hbox (15.04068pt too wide) in paragraph at lines 834--840
-\OT1/cmr/m/n/10.95 Next, the func-tion ed-its the make-file, re-plac-ing string
-s such as ``BUILD[]INSERTS[]C[]FILES[]HERE''
- []
-
-[20]
-
-LaTeX Warning: Reference `sss:buildmakeavr' on page 21 undefined on input line 
-843.
-
-[21]
-Overfull \hbox (4.29315pt too wide) in paragraph at lines 878--886
-\OT1/cmr/m/n/10.95 The build script then finds and copies all the user source f
-iles into the build di-rec-tory \OT1/cmtt/m/n/10.95 tmp/tmp[]src\OT1/cmr/m/n/10
-.95 ,
- []
-
-[22] [23] [24]
-Underfull \hbox (badness 10000) in paragraph at lines 997--998
+Underfull \hbox (badness 10000) in paragraph at lines 249--251
 
  []
 
-[25]
-Overfull \hbox (71.55492pt too wide) in paragraph at lines 999--1001
-[]\OT1/cmr/m/n/10.95 The func-tions go through the var-i-ous files, re-plac-ing
- strings such as ``TOOLCHAIN[]INSERTS[]C[]FILES[]HERE''
- []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 999--1001
+Underfull \hbox (badness 10000) in paragraph at lines 258--259
 
  []
 
-[26] [27]
-Chapter 5.
-[28
 
-] [29]
-Chapter 6.
-[30
-
-] [31]
-Chapter 7.
-[32
-
-]
-Chapter 8.
-
-Underfull \hbox (badness 10000) in paragraph at lines 1123--1124
+Underfull \hbox (badness 10000) in paragraph at lines 264--265
 
  []
 
-[33
-
-]
-Underfull \hbox (badness 10000) in paragraph at lines 1140--1141
-
- []
-
-[34]
-Chapter 9.
-[35
-
-] [36] (./Maintenance Manual.aux)
-
-LaTeX Warning: There were undefined references.
-
- ) 
+[6] [7] (./User Guide.aux) ) 
 Here is how much of TeX's memory you used:
- 10240 strings out of 495061
- 148762 string characters out of 1182620
- 538265 words of memory out of 3000000
- 12919 multiletter control sequences out of 15000+50000
- 14286 words of font info for 50 fonts, out of 3000000 for 9000
+ 9435 strings out of 495061
+ 137632 string characters out of 1182620
+ 223766 words of memory out of 3000000
+ 12420 multiletter control sequences out of 15000+50000
+ 11147 words of font info for 40 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 44i,12n,51p,604b,1804s stack positions out of 5000i,500n,10000p,200000b,50000s
- </home/student/.texmf-var/fonts/pk/ljfour/jknappen/ec/tcti1095.600pk> </home
-/student/.texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1095.600pk></usr/share/texm
-f-texlive/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texmf-texlive/f
-onts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texmf-texlive/fonts/type1/
-public/amsfonts/cm/cmr10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfo
-nts/cm/cmr12.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr17
-.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/
-share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmss12.pfb></usr/share/texmf
--texlive/fonts/type1/public/amsfonts/cm/cmss17.pfb></usr/share/texmf-texlive/fo
-nts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/p
-ublic/amsfonts/cm/cmti10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfo
-nts/cm/cmtt10.pfb>
-Output written on "Maintenance Manual.pdf" (38 pages, 343664 bytes).
+ 44i,11n,43p,475b,974s stack positions out of 5000i,500n,10000p,200000b,50000s
+ </home/student/.texmf-var/fonts/pk/ljfour/jknappen
+/ec/tcrm1095.600pk></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmb
+x10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr10.pfb></us
+r/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texm
+f-texlive/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/fo
+nts/type1/public/amsfonts/cm/cmss10.pfb></usr/share/texmf-texlive/fonts/type1/p
+ublic/amsfonts/cm/cmss12.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfo
+nts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmtt
+10.pfb>
+Output written on "User Guide.pdf" (9 pages, 123522 bytes).
 PDF statistics:
- 941 PDF objects out of 1000 (max. 8388607)
- 331 named destinations out of 1000 (max. 500000)
- 641 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 150 PDF objects out of 1000 (max. 8388607)
+ 34 named destinations out of 1000 (max. 500000)
+ 73 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1106,7 +1106,7 @@ The boot address given in the datasheets is a \textbf{word} address, not a \text
 			\label{s:FreeRTOSCurrentStatus}
 			FreeRTOS has been made to run on all Atmel devices covered in the ValleyForge toolchain. Each was tested by running a single task that flashed an LED. There are many different options and variations within FreeRTOS, and not all have been tested or implemented. \newline
 			Some playing around with clock settings and such is required. This should be editable in FreeRTOSConfig.h, which is placed in the user's source directory when they create a component that uses FreeRTOS.\newline
-			The ATmega2560 port is different from the other AVR ports, as it needs to address a larger flash space. This has some strange effect. In any case, I had to download the port from AVR freaks, which used an old version. I finally managed to get the port working with the new version as it does now, but if the user tries to implement any other FreeRTOS functionality on the ATmega2560 and it doesn't work it may have something to do with this.
+			The ATmega2560 port is different from the other AVR ports, as it needs to address a larger flash space. This has some strange effect. In any case, I had to download the port from AVR freaks, which used an old version. I finally managed to get the port working with the new version as it does now, but if the user tries to implement any other FreeRTOS functionality on the ATmega2560 and it doesn't work it may have something to do with this. ALso, the person that ported this didn't include support for Co-Routines, so if you want to implement them you may have to do some tinkering.
 			
 			
 \chapter{Programming with the STK600}
@@ -1124,7 +1124,7 @@ The boot address given in the datasheets is a \textbf{word} address, not a \text
 			
 			Attached the 6-pin header for ISP programming, then type into the terminal:
 			
-\begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
+\begin{lstlisting}[frame=trBL, breaklines=true]
  avrdude -c stk600 -p m64 -P usb -F -v -U myfile.hex 
 \end{lstlisting}
 
@@ -1167,6 +1167,18 @@ avr32program -c USB:0048395C7318 --part UC3C0512C program -finternal@0x80000000,
 			Next, create your header file. A good example of the type of header file one could create would be \texttt{gpio.h}, found in \texttt{res/common/hal}. You do not need to have an instance of the thing you are trying to manipulate, particularly if it is just one standalone peripheral. Static functions would be fine, or find another way of doing it.\newline
 			Next you'll want to implement it for whichever microprocessor you happen to be using at that time. If the module will never be implemented for some microprocessors, use the avr-gcc preprocessor to \#ifdef the code to produce an error if a user tries to compile it for the wrong processor.\newline
 			Now add the module to the list in the relevant build configuration, in the field ``HAL\_EN\_LIST''. When you compile with that build configuration, it should now compile your new module. You will be able to debug your module from there.
+			
+\section{I want to add a new input parameter to a script. How do I do this?}
+			\label{s:FAQNewParams}
+			This is described in section \S\ref{s:ScriptParameters}
+			
+\section{There is an error during building which says something like ``Undefined reference to ``TC\_INSERTS\_NAME\_HERE''''.}
+			\label{s:FAQUndefinedError}
+			This is a problem with the preprocessing substituion. Search the preprocessing functions for the reference, and find out why it is not replacing it. It could be that you haven't specified it to be replaced with anything, it could be a difference in spelling, it could be the wrong function.
+			
+\section{FreeRTOS Won't Compile}
+			\label{s:FAQFreeRTOS}
+			Make sure all the common files are up to date. Also, make sure that the Application and Idle hooks are present in the component file. While these are configured to be active in the \texttt{FreeRTOSConfig.h}, they are required to be present in the component.
 			 
 			 
 

@@ -75,3 +75,6 @@
 \BOOKMARK [1][-]{section.8.4}{Other Observations}{chapter.8}
 \BOOKMARK [0][-]{chapter.9}{FAQ}{}
 \BOOKMARK [1][-]{section.9.1}{I want to add a new HAL module. How do I do this?}{chapter.9}
+\BOOKMARK [1][-]{section.9.2}{I want to add a new input parameter to a script. How do I do this?}{chapter.9}
+\BOOKMARK [1][-]{section.9.3}{There is an error during building which says something like ``Undefined reference to ``TC\137INSERTS\137NAME\137HERE''''.}{chapter.9}
+\BOOKMARK [1][-]{section.9.4}{FreeRTOS Won't Compile}{chapter.9}

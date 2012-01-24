@@ -101,3 +101,6 @@
 \contentsline {section}{\numberline {8.4}Other Observations}{34}{section.8.4}
 \contentsline {chapter}{\numberline {9}FAQ}{35}{chapter.9}
 \contentsline {section}{\numberline {9.1}I want to add a new HAL module. How do I do this?}{35}{section.9.1}
+\contentsline {section}{\numberline {9.2}I want to add a new input parameter to a script. How do I do this?}{35}{section.9.2}
+\contentsline {section}{\numberline {9.3}There is an error during building which says something like ``Undefined reference to ``TC\_INSERTS\_NAME\_HERE''''.}{35}{section.9.3}
+\contentsline {section}{\numberline {9.4}FreeRTOS Won't Compile}{36}{section.9.4}
