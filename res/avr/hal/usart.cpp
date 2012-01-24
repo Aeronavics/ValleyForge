@@ -274,6 +274,15 @@ class usart_imp
 	*/
 	int8_t disable_interrupt(usart_interrupt_types interrupt);
 	
+	/**
+	* Function indicates whether an error as occured with the USART transfer.
+	* This can include Frame Errors, Data OverRun incidents and Parity Erros.
+	*
+	* @param void.
+	* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
+	*/
+	usart_error_types usart_error(void);
+	
 	// Public Fields
 	/**
 	 * Field to identify each implementation by its associated USART Number.
@@ -464,6 +473,18 @@ int8_t usart::enable_interrupt(usart_interrupt_types interrupt, void (*ISRptr)(v
 int8_t usart::disable_interrupt(usart_interrupt_types interrupt)
 {
   return (imp->disable_interrupt(interrupt));
+}
+
+/**
+* Function indicates whether an error as occured with the USART transfer.
+* This can include Frame Errors, Data OverRun incidents and Parity Erros.
+*
+* @param void.
+* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
+*/
+usart_error_types usart::usart_error(void)
+{
+  return (imp->usart_error());
 }
 
 /**
@@ -954,6 +975,25 @@ int8_t usart_imp::disable_interrupt(usart_interrupt_types interrupt)
   return 0;
 }
 
+/**
+* Function indicates whether an error as occured with the USART transfer.
+* This can include Frame Errors, Data OverRun incidents and Parity Erros.
+*
+* @param void.
+* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
+*/
+usart_error_types usart_imp::usart_error(void)
+{
+  if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << FE_BIT)) == 16)
+    return FRAME_ERR;
+  else if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << DOR_BIT)) == 8)
+    return DATA_OVERRUN;
+  else if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UPE_BIT)) == 4)
+    return PARITY_ERR;
+  else
+  return NONE;
+}
+
 // IMPLEMENT EXTRANEOUS FUNCTIONS
 /**
 * Initialises the USART implementation instances and codes the required
@@ -1037,7 +1077,7 @@ void initialise_USARTs(void)
 ISR(USART0_RX_vect)
 {
   /* Clear the RXCn flag in UCSRnA as a safeguard */
-    UCSR0A &= (1 << RXC0);
+  UCSR0A &= (1 << RXC0);
     
   if (usartInterrupts[USART0_RX_int])  
     usartInterrupts[USART0_RX_int]();
@@ -1058,7 +1098,7 @@ ISR(USART0_UDRE_vect)
 ISR(USART1_RX_vect)
 {
   /* Clear the RXCn flag in UCSRnA as a safeguard */
-    UCSR1A &= (1 << RXC1);
+  UCSR1A &= (1 << RXC1);
     
   if (usartInterrupts[USART1_RX_int])  
     usartInterrupts[USART1_RX_int]();
@@ -1079,7 +1119,7 @@ ISR(USART1_UDRE_vect)
 ISR(USART2_RX_vect)
 {
   /* Clear the RXCn flag in UCSRnA as a safeguard */
-    UCSR0A &= (1 << RXC2);
+  UCSR0A &= (1 << RXC2);
     
   if (usartInterrupts[USART2_RX_int])  
     usartInterrupts[USART2_RX_int]();
@@ -1100,7 +1140,7 @@ ISR(USART2_UDRE_vect)
 ISR(USART3_RX_vect)
 {
   /* Clear the RXCn flag in UCSRnA as a safeguard */
-    UCSR3A &= (1 << RXC3);
+  UCSR3A &= (1 << RXC3);
     
   if (usartInterrupts[USART3_RX_int])  
     usartInterrupts[USART3_RX_int]();

@@ -39,16 +39,13 @@ enum usart_number {USART_0, USART_1, USART_2, USART_3};
 
 enum usart_setup_mode {ASYNCHRONOUS_USART, SYNCHRONOUS_USART, MASTER_SPI};
 
-//enum parity_option {DISABLED, EVEN_PARITY, ODD_PARITY};
 enum parity_option {N, E, O};
-
-//enum stop_bit_option {ONE_BIT, TWO_BITS};
-
-//enum character_size {FIVE_BITS, SIX_BITS, SEVEN_BITS, EIGHT_BITS};
 
 enum clock_polarity_option {OPTION_1, OPTION_2};
 
 enum usart_interrupt_types {USART_RX, USART_TX, USART_UDRE};
+
+enum usart_error_types {NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR};
 
 typedef uint16_t baud_rate;
 
@@ -172,6 +169,15 @@ class usart
 		 * @return 0 for success, -1 for error.
 		 */
 		 int8_t disable_interrupt(usart_interrupt_types interrupt);
+		 
+		 /**
+		 * Function indicates whether an error as occured with the USART transfer.
+		 * This can include Frame Errors, Data OverRun incidents and Parity Erros.
+		 *
+		 * @param void.
+		 * @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
+		 */
+		 usart_error_types usart_error(void);
 		 
 		 //TODO read receiver error codes
 
