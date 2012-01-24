@@ -449,6 +449,7 @@ get_rtos_files ()
 	echo -e "${CYAN}Importing port specific FreeRTOS files...\n${NO_COLOUR}"
 	# Copy the FreeRTOS port files into our temporary directory.
 	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	echo -e "${CYAN}Files imported.\n${NO_COLOUR}"
 }
 
 # Find suitable libraries and copy them into the tmp directory.
@@ -748,12 +749,12 @@ while true; do
 done
 
 # If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
-if [ "$NAME" == "all " ]; then  # NOTE - The space in intentional!
+if [ "$NAME" == "all " ]; then  # NOTE - The space is intentional!
 	ALL=1
 fi
 
 # If there was no component name specified, we'll just try to build the 'active component' instead.
-if [ "$NAME" == " " ] && ! [ $ALL ]; then  # NOTE - The space in intentional!
+if [ "$NAME" == " " ] && ! [ $ALL ]; then  # NOTE - The space is intentional!
 	# Try to build the 'active component' instead.
 
 	# Check to make sure the user configuration file is there.
