@@ -134,13 +134,6 @@
 	% Create the title page.
 	\maketitle
 	
-	% The abstract goes here.
-	\begin{abstract}
-
-		The abstract goes here.
-
-	\end{abstract}
-
 	% Insert the table of contents (ToC).
 	\clearpage
 	\tableofcontents
@@ -183,7 +176,7 @@ Next the toolchain will be installed.. Navigate to the directory where the toolc
 In the command line, type \newline
 
 \begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
-sudo git clone (PUT REPOSITORY URL HERE)
+git clone (PUT REPOSITORY URL HERE)
 \end{lstlisting}
 to download the toolchain to your working directory.
 
@@ -196,17 +189,17 @@ The ValleyForge Folder contains eight subdirectories, each of which will be brie
 
 \section{bin}
 			\label{s:bin}
-			This directory contains the binaries that are produced when a component is built. Binaries are copied from their compile directory in tmp, and are named after the component. If an accompanying bootloader is also being built, this is also placed in this directory with the name \texttt{COMPONENTNAME\_bootloader.hex}. The toolchain currently has no mechanism with which to delete binaries from this folder so at these stage they must be deleted manually (although when a component gets rebuilt the old binary is properly replaced by the new automatically).
+			This directory contains the binaries that are produced when a component is compiled. Binaries are copied here from where they are compiled in the \texttt{tmp} directory, and are named after the component. If an accompanying bootloader is also being built, this is also placed in this directory with the name \texttt{COMPONENTNAME\_bootloader.hex}. The toolchain currently has no mechanism with which to delete binaries from this folder so at this stage they must be deleted manually (although when a component gets rebuilt the old binary is properly replaced by the newer automatically).
 			
 \section{bld}
 			\label{s:bld}
-			The bld subdirectory contains (almost) all the bash scripts which manipulate the toolchain. There are three scripts which provide the main interface to the user. They call other scripts in other subdirectories and are the only scripts necessary to be called directly.
+			The bld subdirectory contains (almost) all the bash scripts which implement the toolchain functionality. There are three scripts which provide the main interface to the user. These call other scripts in other subdirectories and are the only scripts necessary to be called directly by the user.
 			
 \begin{itemize}
 			\label{bldscripts}
 \item \label{VFstartsummary}\textbf{\texttt{VFstart}}. This script should be the first called. It is used to create new components, edit, delete, create new files, change user info, e.t.c. A detailed description of this script can be found in section \S\ref{s:VFstart}.
 
-\item \label{buildsummary}\textbf{\texttt{build}}. This script is used to build components and bootloaders. When run without any arguments, it builds the active component.  A detailed description can be found in section \S\ref{s:build}.
+\item \label{buildsummary}\textbf{\texttt{build}}. This script is used to build components and bootloaders. When run without any arguments, it builds the component currently set as active.  A detailed description can be found in section \S\ref{s:build}.
 
 \item \label{resettcsummary}\textbf{\texttt{resettc}}. This script resets the toolchain to its default values, i.e erases user info, default component. Does not erase the source directory.
 
@@ -217,27 +210,27 @@ Two other files are contained in this directory:
 \begin{itemize}
 
 \item \textbf{\texttt{build\_configs.cfg}}. This file is used by many other scripts. Usually in the form of 
-\begin{lstlisting}
+\begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
 source bld/build_configs.cfg
-\end{lstlisting}
-which runs the file as a script. However it only contains bash functions, each of which does nothing except assign various fields. Therefore when the user calls the function, a collection of variables become assigned, corresponding to the build configuration selected. Build configurations correspond to the different combinations of platform and micrprocessor, and each has its specific variables to be set (such as Makefile used, flash address to start from).
+\end{lstlisting}[frame=trBL, breaklines=true, language = bash]
+which runs the file as a script. It contains bash function defintions, each of which does nothing except assign various fields. Therefore when the user calls the function, a collection of variables become assigned, corresponding to the build configuration selected. Build configurations correspond to the different combinations of platform and microprocessor, and each has its specific variables to be set (such as Makefile used, flash address to start from).
 
-\item \textbf{\texttt{default\_user\_config.cfg}}. A file which the user\_config file gets restored to when resettc is called.
+\item \textbf{\texttt{default\_user\_config.cfg}}. A file which the \texttt{user\_config.cfg} file gets restored to when the \texttt{resettc} script is called.
 
 \end{itemize}
 
 
 \subsection{bld/common}
 			\label{ss:bld/common}
-			Located here are small scripts that are used by many other scripts throught the bld subdirectories. 
+			Located here are small scripts that are used by many other scripts throught the \texttt{bld} subdirectories. 
 			
 \begin{itemize}
 
-\item \textbf{\texttt{clear\_bconf\_vars}}. A safety mechanism. Clears build configuration variables so that the wrong values are not used by accident. 
+\item \textbf{\texttt{clear\_bconf\_vars}}. A safety mechanism. Clears build configuration variables so that the wrong values are not used by accident. This is important because tests are often performed throughout scripts to see whether a certain variable is defined. If a variable remains defined, but with the wrong value, this can lead to serious errors.
 
 \item \textbf{\texttt{def\_colours}}. Each script, when displaying text to the user, uses a colour scheme for different types of messages, defined in this file. Colours are explained in more detail in section \S\ref{s:Colours}.
 
-\item \textbf{\texttt{load\_build\_configs}}. This tests to see if a valid build configuration exists, and loads it (sets the appropriate variables.
+\item \textbf{\texttt{load\_build\_configs}}. This checks the \texttt{build\_configs.cfg} file to see if there are any valid build configurations, and loads it (sets the appropriate variables). See how the build configurations work in section \S\ref{s:buildConfigs}.
 
 \end{itemize}			
 			
@@ -247,9 +240,9 @@ which runs the file as a script. However it only contains bash functions, each o
 			
 \begin{itemize}
 
-\item \textbf{\texttt{create\_component}}. Creates a new component. Brings up an interface prompting the user to enter component details, then creates a new subdirectory in src, and asks to create source files. A detailed description can be found in section \S\ref{s:createComponent}.
+\item \textbf{\texttt{create\_component}}. Creates a new component. Brings up an interface (if not in batch mode) prompting the user to enter component details, then creates a new subdirectory in src, and asks to create source files. A detailed description can be found in section \S\ref{s:createComponent}.
 
-\item \textbf{\texttt{create\_files}}. Creates new source files and places them in the specified source directory. A detalied description can be found in section \S\ref{s:createFiles}.
+\item \textbf{\texttt{create\_files}}. Creates new source files by copying and editing templates, and places them in the specified source directory. A detailed description can be found in section \S\ref{s:createFiles}.
 
 \item \textbf{\texttt{create\_library}}. Similar to creating a new component, creates a new library. Also asks to create source files after setting up the library.
 
@@ -264,7 +257,7 @@ which runs the file as a script. However it only contains bash functions, each o
 
 \item \textbf{\texttt{delete\_component}}. Brings up a list of the available components. Deletes the source files and folder for the specified component. If the component is the active one, resets the active component.
 
-\item \textbf{\texttt{delete\_library}}. Deletes a specified library from the toolchain.
+\item \textbf{\texttt{delete\_library}}. Brings up a list of the available libraries. Deletes the specified library from the toolchain.
 
 \end{itemize}
 
@@ -272,7 +265,7 @@ which runs the file as a script. However it only contains bash functions, each o
 			\label{ss:bld/edit}
 \begin{itemize}
 
-\item \textbf{\texttt{edit\_user\_config}}. Changes toolchain variables, such as user name and subsection.
+\item \textbf{\texttt{edit\_user\_config}}. Changes toolchain variables, such as user name and subsystem.
 
 \end{itemize}
 
@@ -294,15 +287,15 @@ which runs the file as a script. However it only contains bash functions, each o
 
 \section{doc}
 			\label{s:doc}
-			This is where the user Guide and this manual are stored, as well as the latex files for both. To edit these files, you need to have a latex editor (you can Texmaker through the Ubuntu Software Center). Please keep both files up-to-date as necessary.
+			This is where the User Guide and this manual are stored, as well as the latex files for both. To edit these files, you need to have a \LaTeX\ editor (you can acquire Texmaker through the Ubuntu Software Center). Please keep both files up-to-date as necessary.
 			
 \section{lib}
 			\label{s:lib}
-			User defined libraries are stored here. They can be accessed using \#include lib/LIBRARY\_NAME in component source files. The contents of this folder are not under version control.
+			User defined libraries are stored here. They can be accessed using \texttt{\#include lib/LIBRARY\_NAME} in component source files. For development variations of toolchain, the contents of this folder are not under version control.
 			
 \section{res}
 			\label{s:res}
-			This folder stores all the toolchain HAL libraries, bootloaders, makefiles, freertos files, and basically any external resources needed to build programs. The various sub-directories:
+			This folder stores all the toolchain HAL libraries, bootloaders, makefiles, FreeRTOS files, and basically any external resources needed to build programs. The various sub-directories:
 			
 \subsection{res/arm}
 			\label{ss:res/arm}
@@ -310,11 +303,11 @@ which runs the file as a script. However it only contains bash functions, each o
 			
 \subsection{res/avr}
 			\label{ss:res/avr}
-			This contains all files specific to the avr. Mostly hal and FreeRTOS files are contained in this subdirectory. The files at the top level:
+			This contains all files specific to the AVR architecture. Mostly HAL and FreeRTOS files are contained in this subdirectory. The files at the top level:
 			
 \begin{itemize}
 
-\item \textbf{\texttt{bconf\_specific\_config}}. This is a script called when a new component is created. Some options are specific to certain build configurations, and therefore need not be set with each component. 
+\item \textbf{\texttt{bconf\_specific\_config}}. This is a bash script called when a new component is created. Some options are specific to certain build configurations, and therefore need not be set with each component. 
 
 \item \textbf{\texttt{bload\_specific\_config}}. This is a script called when a bootloader is added to a component. Some options are specific to certain bootloaders, and do not need to be set with each bootloader. For instance, the AVR bootloader configuration needs to know which EEPROM address to store the shutdown state flag in, whereas the AVR32 microprocessor has no EEPROM to store such a flag.
 
@@ -326,16 +319,17 @@ There are three folders:
 
 \begin{itemize}
 
-\item \textbf{\texttt{bootloader}}. This contains source files for the avr bootloader, including a generic file and respective modules. At time of writing (18.01.12) it has not yet been implemented to communicate with a programmer, nor does it write to flash memory. It currently flashes an LED (D3) and then runs the application when a button (B3) is pressed.
+\item \textbf{\texttt{bootloader}}. This contains source files for the avr bootloader, including a generic file and respective modules. At time of writing it has not yet been implemented to communicate with a programmer, nor does it write to flash memory. It currently flashes an LED (D3) and then runs the application when a button (B3) is pressed.
 
-\item \textbf{\texttt{freertos}}. The FreeRTOS contains mostly common files, plus a few port-specific files. The port specific files for FreeRTOS on the various AVR microprocessors are all contained in this subdirectory.
+\item \textbf{\texttt{freertos}}. FreeRTOS consists mainly of common files, plus a few port-specific files. The port specific files for FreeRTOS on the various AVR microprocessors are all contained in this subdirectory.
 
-\item \textbf{\texttt{hal}}. The ValleyForge HAL is split into common header files, and port specific implementation .cpp files. The implementation for AVR is contained in this directory. At time of writing (18.01.12) the following modules have been implemented:
-
-gpio
-tc
-watchdog
-mem
+\item \textbf{\texttt{hal}}. The AVR specific implementations of the ValleyForge HAL are contained here in \texttt{.cpp} files. At time of writing the following modules have been implemented:
+\begin{itemize}
+\item gpio
+\item tc
+\item watchdog
+\item mem
+\end{itemize}
 
 Creating new HAL is detailed in section \S\ref{C:HAL}.
 
@@ -345,9 +339,9 @@ Creating new HAL is detailed in section \S\ref{C:HAL}.
 			\label{ss:res/avr32}
 			
 Contained here are the port specific files for the UC3 microprocessors (so far just the AT32UC3C0512C).
-While the avr compiler is installed directly onto the computer and can be accessed via the terminal, the avr32 compiler is located within the toolchain, and is called from there. 
+While the avr compiler is installed directly onto the computer and can be accessed via the terminal, the AVR32 compiler is located within the toolchain, and is called from there. 
 
-There will be one directory initally in the toolchain, but the avr32comp.tar file gets expanded into another whenever the avr32 compiler is used.
+There will be one directory initally in the toolchain, but the avr32comp.tar file gets expanded into another whenever the AVR32 compiler is used.
 
 The folder:
 
@@ -361,7 +355,7 @@ The two files:
 
 \begin{itemize}
 
-\item \textbf{\texttt{avr32comp.tar}}. This is an uncompressed tarball, it contains the AVR32 utilities used for building components for the AT32UC3C0512C.
+\item \textbf{\texttt{avr32comp.tar}}. This is an uncompressed tarball, it contains the AVR32 utilities used for building components for AVR32 microprocessors.
 
 \item \textbf{\texttt{Makefile}}. This is the makefile used whenever a component is compiled for AVR32. Like the AVR makefile, it gets preprocessed at build time, specific to the build configuration and files being compiled.
 
@@ -369,7 +363,7 @@ The two files:
 
 \subsection{res/common}
 			\label{ss:res/commmon}
-			This contains files common to all architectures. It could probably contain freertos, although currently this is in its own subdirectory in main. Currently it contains the header files for the HAL. These get copied to the build directory at compile time, along with the architecture specific hal files from the respective directories.
+			This contains files common to all architectures. It could probably contain FreeRTOS, although currently this is in its own subdirectory in \texttt{res}. Currently it contains the header files for the HAL. These get copied to the build directory at compile time, along with the architecture specific HAL files from the respective directories.
 			
 		
 \subsection{res/freertos}
@@ -382,26 +376,26 @@ The two files:
 			
 \subsection{res/vendor}
 			\label{ss:res/vendor}
-			This is where external libraries should be stored. It's not really up and running properly at this stage, but the idea is that eventually we can update external libraries with git into this folder, then put our own versions of these libraries into lib, and git merge them whenever there are updates. At the moment this contains the Atmel Software Framework, which is a massive collection of libraries and utilities for both AVR and AVR32. For developing new functionality, it is often useful to look in there first.
+			This is where external libraries should be stored. It's not really up and running properly at this stage, but the idea is that eventually we can update external libraries with Git Submodules into this folder, then put our own versions of these libraries into \texttt{lib}, and git merge them whenever there are updates. At the moment this contains the Atmel Software Framework, which is a massive collection of libraries and utilities for both AVR and AVR32. For developing new functionality, it is often useful to look in there first.
 			
 \section{src}
 			\label{s:src}
-			Here is where the user's source code is placed, as well as other component specific files, such as the component configuration file, and the FreeRTOSconfig.h header file, which specifies FreeRTOS parameters, should the user be implementing FreeRTOS as part of their project.
-			Currently, the code is all placed into one folder named after the component, as a subdirectory of src. However, future functionality could be added to support subdirectories of the component folders, in case the user wanted to include sub-modules in different folders for clarity.
-			At compile time, the source files in the src/component folder get copied to the tmp directory and preprocessed to have all the correct information.
+			Here is where the user's source code is placed, as well as other component specific files, such as the component configuration file, and the \texttt{FreeRTOSconfig.h} header file, which specifies FreeRTOS parameters, should the user be implementing FreeRTOS as part of their project.
+			Currently, the code is all placed into one folder named after the component, as a subdirectory of \texttt{src}. However, future functionality could be added to support subdirectories of the component folders, in case the user wanted to include sub-modules in different folders for clarity.
+			At compile time, the source files in the \texttt{src/component} folder get copied to the \texttt{tmp} directory and preprocessed to have all the correct information.
 			
 \section{tmp}
 			\label{s:tmp}
-			The tmp directory is used as a place to compile and link the components and bootloaders. At the start of every build session, it is cleared of all files and folders. Files get copied in from various sources, and preprocessed, then compiled and linked. The resulting hex file is copied into the bin directory. 
-			The directory is also cleared after building, but the files may be retained by adding the flag ``-r'' to the build script command (or ``--retain'').
+			The \texttt{tmp} directory is used as a place to compile and link the components and bootloaders. At the start of every build session, it is cleared of all files and folders. Files get copied in from various sources, and preprocessed, then compiled and linked. The resulting \texttt{hex} file is copied into the \texttt{bin} directory. 
+			The directory iscleared after building, but the files may be retained by adding the flag ``\texttt{-r}'' to the build script command (or ``\texttt{--retain}'').
 			
 \section{var}
 			\label{s:var}
-			Currently all this contains is the user info in the form of config.cfg. It has a few fields which are user-specific. May be added to. Not really much else to say about it.
+			Currently all this contains is the user info in the form of \texttt{config.cfg}. It has a few fields which are user-specific. May be added to. Not really much else to say about it.
 			
 \section{TODO}
 			\label{s:TODO}
-			This is updated with everything that needs to be added or changed with the toolchain. When something is fixed, remove it from the TODO file, and mention it in the comment of your the git commit.
+			This is updated with everything that needs to be added or changed with the toolchain. When something is fixed, remove it from the \texttt{TODO} file, and mention it in the comment of your Git commit.
 \pagebreak			
 \chapter{Standard Bash Structures}
 			\label{C:BashStructures}
@@ -444,7 +438,7 @@ echo -e -n "${GREEN}Enter basenames for the files to be created: (Space separate
 
 \item \textbf{\texttt{Cyan}}. Toolchain status messages use this colour, to inform the user what is happening in the background.
 
-\item \textbf{\texttt{Yellow}}. Warning messages use yellow to warn that something is not as expected, but could well be on purpose so is not considered an error.
+\item \textbf{\texttt{Yellow}}. Warning messages use yellow to warn that something is not optimal, but is not unexpected so is not considered an error.
 
 \item \textbf{\texttt{Red}}. Red is for error messages.
 
@@ -455,7 +449,7 @@ echo -e -n "${GREEN}Enter basenames for the files to be created: (Space separate
 \section{Script Parameters}
 			\label{s:ScriptParameters}
 			
-			When a script is , it often has some parameters passed to it to determine its course of action. To demonstrate the method of passing these parameters and showing the user how to manipulate them, an example using the create\_files script is provided.
+			When a script is called, it often has some parameters passed to it to determine its course of action. To demonstrate the method of parsing these parameters and showing the user how to manipulate them, an example using the \texttt{create\_files} script is provided.
 \begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
 PROGNAME=${0##*/} 
 SHORTOPTS="hbn:c:t:"
@@ -519,7 +513,7 @@ SHORTOPTS="hbn:c:t:s:"
 LONGOPTS="help,batch,name:,component:,type:,size:"
 \end{lstlisting}
 
-The ``:'' character indicates that it expects something after the option is called. If it was a flag which didn't need a parameter, but was simply a flag in and of itself, it would not need this ``:''.
+The ``:'' character indicates that it expects some value after the option is called. If it was a flag which didn't need a parameter, it would not need this ``:''.
 
 Next, add it to parameter handling section:
 \begin{lstlisting}[frame=trBL, breaklines=true, language=bash]
@@ -549,7 +543,7 @@ Options:
 EOF
 \end{lstlisting}
 
-You can now use the variable \$\{SIZE\} in the rest of the script. 
+You can now use the variable \$\{SIZE\} in the rest of the script. However, it would be advised to test if the value provided is valid and/or non-empty.
 
 \section{User Prompts}
 			\label{s:UserPrompts}
@@ -614,7 +608,7 @@ while :
 done		        
 \end{lstlisting}
 
-				The options for the read function here dictate that it should only wait for one character from the user before it parses it.
+				The options for the ``\texttt{read}'' function here dictate that it should only wait for one character from the user before it parses it.
 
 \subsection{Enumerated List}
 			\label{ss:EnumeratedList}	
@@ -682,13 +676,29 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 fi			
 \end{lstlisting}
 
+\section{Spaced Lists}
+			\label{s:SpacedLists}
+			A lot of the time, names (such as those of files or components) will be stored in variables. These are very useful for things such as copying files, or iterating through a \texttt{for} loop with each element being used once. 
+			For this reason, we must make sure that whenever we store an array of names in a variable, they are correct. This means that none of the names can have spaces, for this would treat one name as two. 
+			Also, it depends on its use, but sometimes, for example with the \texttt{ls} command, a newline separated list can result in an error. This is particularly relevant for entries into a makefile. Whenever practical, try to make sure these lists separate their elements with spaces rather than newline characters. 
+			This is shown in the \texttt{build} script:
+			
+\begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
+C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+\end{lstlisting}
+
+			In this case the sed function at the end removes all newline characters and replaces them with spaces.
 
 \section{Style}
 			\label{s:Style}
-			Try to keep the style of coding similar to that already established. Comments should appear above the relevant line, rather than to the right. Comments should be frequent and verbose.\newline
-			Variables should be in all caps, with underscores to separate words in one variable.\newline
-			Functions are lower case, with underscores to separate words.\newline
-			Tabbing should follow standard coding practice.
+			Try to keep the style of coding similar to that already established. 
+\begin{itemize}
+\item Comments should appear above the relevant line, rather than to the right. Comments should be frequent and verbose.
+\item Variables should be in all caps, with underscores to separate words in one variable.
+\item Functions are lower case, with underscores to separate words.
+\item Tabbing should follow standard coding practice.
+\end{itemize}
+			
 
 \pagebreak
 			
@@ -740,8 +750,8 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 
 \subsubsection{Loop}
 			\label{sss:VFstartLoop}
-			The while loop serves to enable the block mode, where once one task is completed, another can begin.
-			The variable ``REDRAW\_TOP'' is used to bring the user back to the starting interface if called for at certain points during the script. The script checks the state of the variable and goes back to the starting interface if set. It is reset when the while loop starts again.
+			The while loop serves to enable the ``Block Mode'', where once one task is completed, another can begin.
+			The variable ``REDRAW\_TOP'' is used to bring the user back to the top level menu if set at certain points during the script. The script checks the state of the variable and goes back to the starting interface if set. It is reset when the while loop starts again.
 			
 \subsubsection{User Config File}
 			\label{sss:VFstartUserConfigFile}
@@ -761,7 +771,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \item \textbf{Create}. To create a new component, library, or files. See section \S\ref{s:createComponent}.
 \item \textbf{Edit}. To edit user info, active a component, or edit toolchain settings.
 \item \textbf{Delete}. To delete components or libraries.
-\item \textbf{Quit}. Yep.
+\item \textbf{Quit}. Quits the script.
 \end{itemize}			
 			 
 			
@@ -772,7 +782,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \item \textbf{Create Component}. This runs the create\_component script located in bld/create. A description of the script can be found in section \S\ref{s:createComponent}.
 \item \textbf{Create Files}. This runs the create\_files script located in bld/create. A description of the script can be found in section \S\ref{s:createFiles}.
 \item \textbf{Create Library}. This runs the create\_library script located in bld/create.
-\item \textbf{Back}. Yep.
+\item \textbf{Back}. Go back one level.
 \end{itemize}				
 			
 
@@ -783,7 +793,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \begin{itemize}
 \item \textbf{Delete Component}. This runs the delete\_component script located in bld/delete.
 \item \textbf{Create Library}. This runs the delete\_library script located in bld/delete.
-\item \textbf{Back}...
+\item \textbf{Back} Go back one level.
 \end{itemize}			
 
 
@@ -794,14 +804,14 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \item \textbf{Activate Component}. This lists the existing components (determined by folders existing in the \texttt{src} directory) and lets the user choose one to be the active component.
 \item \textbf{Reconfigure Active Component}. This runs the create\_component script with the name of the active component passed as a parameter.
 \item \textbf{Edit User Config}. This runs the script \texttt{edit\_user\_config}, located in \texttt{bld/edit}. 
-\item \textbf{Back}...
+\item \textbf{Back} Go back one level.
 \end{itemize}					
 
 \subsubsection{Epilogue}
 			\label{sss:VFstartEpilogue}
 			The running of the script is checked for errors. If there are any errors and the script is in Block mode, then the script will ask for user confirmation before proceeding, because the top of the while loop clears the screen, erasing the error messages that the user would want to see.
 			
-			The script checks the REDRAW and BLOCKMODE variables and reruns the while loop or exits the script as desired.
+			The script checks the REDRAW and BLOCKMODE variables and reruns the while loop to the top level menu or exits the script as desired.
 			
 \section{Script: build}
 			\label{s:build}
@@ -809,16 +819,16 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			
 \subsection{Summary}
 			\label{ss:buildSummary}
-			Whenever the user wants to compile their component, they compile it using the build script. It is set up such that one only has to run this script, perhaps with a few parameters, to successfully build the component. With no parameters passed, it simply builds the actice component.
+			Whenever the user wants to compile their component, they compile it using the build script. It is set up such that one only has to run this script, perhaps with a few parameters, to successfully build the component. With no parameters passed, it simply builds the active component.
 			The paramaters that can be passed to this script currently are:
 			
 \begin{itemize}
 \item \texttt{\textbf{help}}. This prints the usage message, informing the user how to use the script.
 \item \texttt{\textbf{all}}. This builds all the components, one after the other. If one component fails to build, the others will still be attempted.
 \item \texttt{\textbf{retain}}. Often, to debug preprocessing errors, or inclusion errors, it is useful to look at the code that is actually being compiled, as it may differ from how it is found in the source folders. The retain functionality does not delete the files from the tmp directory, so that the user may look at them. They do, however get deleted straight away next time the build script is run.
-\item \texttt{\textbf{loader}}. This builds the corresponding bootloader as well, if there is one. It compiles in a subdirectory of \texttt{tmp\_src} called bootloader, and the resulting hex file is called COMPONENT\_NAME\_bootloader.hex and also placed in the bin directory.
+\item \texttt{\textbf{loader}}. This builds the corresponding bootloader as well, if there is one. It compiles in a subdirectory of \texttt{tmp\_src} called bootloader, and the resulting \texttt{hex} file is called COMPONENT\_NAME\_bootloader.hex and also placed in the \texttt{bin} directory.
 \item \texttt{\textbf{name}}. This will build the specified component only.
-\item \texttt{\textbf{nohal}}. While hal aspects are not yet complete, it can be useful to build components without any use of the hal. This makes sure the hal files are not put into the build directory.
+\item \texttt{\textbf{nohal}}. While HAL aspects are not yet complete, it can be useful to build components without any use of the HAL. This makes sure the HAL files are not put into the build directory.
 \end{itemize}
 
 \subsection{Prologue}
@@ -827,32 +837,32 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			
 \subsection{Functions}
 			\label{ss:buildFunctions}
-			the build script has quite a few functions...
+			The build script has quite a few functions...
 			
 \subsubsection{makeavr}
 			\label{sss:buildMakeavr}
 			This function is responsible for compiling and linking avr files into a hex binary input.\newline
 			First it copies the makefile to be used from its source, in this case \texttt{res/avr}.\newline
-			It then checks to see if a linker script has been specified for this particular build configuration. If so, it copies it from the location specified in the build configuration to the \texttt{tmp\_src/component} directory, used for compiling files.\newline
-			The build script has already copied all relevant source files to the build directory from various sources. Now the makeavr function creates a list of all the source files to be built, and their type.\newline
-			Next, the function edits the makefile, replacing strings such as ``BUILD\_INSERTS\_C\_FILES\_HERE'' with the relevant entries. This is contrast to the replacements that follow, which erase thing to the right of the ``='' and therefore can't be used to add to a line. If a variable is empty, the string is simply replaced with nothing.\newline
-			The makefile is then run. All makefile output is printed to the screen. If the makefile returns with an error, the whole script exits and doesn't attempt to do anymore.
+			It then checks to see if a linker script has been specified for this particular build configuration. If so, it copies it from the location specified in the build configuration to the \texttt{tmp\_src/component} directory, used for compiling files.\newline \newline
+			The build script has already copied all relevant source files to the build directory from various sources. Now the \texttt{makeavr} function creates a list of all the source files to be built, and their type.\newline
+			Next, the function edits the makefile, replacing strings such as ``BUILD\_INSERTS\_C\_FILES\_HERE'' with the relevant entries using \texttt{sed}. This is contrast to the replacements that follow, which erase everything to the right of the ``='' and therefore can't be used to add to a line. If a variable is empty, the string is simply replaced with nothing.\newline \newline
+			The makefile is then run. All makefile output is printed to the screen. If the makefile returns with an error, the whole script exits and doesn't attempt to do anymore, else, if it compiles successfully, it copies the binary over to the \texttt{bin} folder.
 			
 \subsubsection{make\_avr\_bootloader}
 			\label{sss:buildMakeavrbootloader}
-			This function does the same as the above in section \S\ref{sss:buildmakeavr}:makeavr except for the avr\_bootloader. Different make functions are used for each because the makefiles are different and need different fields replaced, however, it probably wouldn't be too hard to combine all these make functions together.
+			This function does the same as the above in section \S\ref{sss:buildMakeavr} except for the avr\_bootloader. Different make functions are used for each because the makefiles are different and need different fields replaced, however, it probably wouldn't be too hard to combine all these make functions together.
 			
 \subsubsection{makeavr32}
 			\label{sss:buildMakeavr32}
-			Same as above, see section \S\ref{sss:buildMakeavr}:makeavr.
+			Same as above, see section \S\ref{sss:buildMakeavr}.
 			
 \subsubsection{makearm}
 			\label{sss:buildMakearm}
-			Same as above, see section \S\ref{sss:buildMakeavr}:makeavr.
+			Same as above, see section \S\ref{sss:buildMakeavr}.
 			
 \subsubsection{inflate\_avr32cc}
 			\label{sss:buildInflateavr32cc}
-			The AVR32 compiler is kept in a tarball, and is inflated whenever required. This function simply inflates all relevant binaries.
+			The AVR32 compiler is kept in a tarball, and is inflated whenever required. This function simply inflates the tarball, which contains the relevant binaries (and header files).
 			
 \subsubsection{get\_rtos\_files}
 			\label{sss:buildGetrtosfiles}
@@ -864,8 +874,8 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			
 \subsubsection{get\_hal}
 			\label{sss:buildGethal}
-			Retrieves the relevant hal files and places them in the build directory (\texttt{tmp/tmp\_src/hal}). It first checks to see that all necessary parameters are present in order to implement hal features. Then it copies the base hal files, including semaphores, a hal layout, and a target config file, which are always implemented when the hal is used. \newline
-			It then checks which hal elements are specified to be included in the corresponding build configuration, and copies these over too. They are comprised of a header file and a target specific c++ file. All hal files are preprocessed to ensure the correct values for the build configuration.
+			Retrieves the relevant HAL files and places them in the build directory (\texttt{tmp/tmp\_src/hal}). It first checks to see that all necessary parameters are present in order to implement HAL features. Then it copies the base HAL files, including semaphores, a HAL layout, and a target config file, into \texttt{tmp/tmp\_src}. \newline
+			It then checks which HAL elements are specified to be included in the corresponding build configuration, and copies these over too. They are comprised of a header file and a target specific c++ file. All HAL files are preprocessed to ensure the correct values for the build configuration.
 			
 \subsubsection{usage}
 			\label{sss:buildUsage}
@@ -877,16 +887,16 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			\label{sss:buildScriptProper}
 			First everything in the \texttt{tmp/tmp\_src} directory is deleted. The parameters are then processed. How this process works and can be altered is shown in section \S\ref{s:ScriptParameters}.\newline
 			If the ``all'' parameter is not specified, the config file is checked to see what the active component is. The variable ``\texttt{NAME}'' is set to have the name of the component.\newline
-			If the ``all'' paramter is specified, then the variable ''\texttt{NAME}'' is set as the names of all components, spaced apart.\newline
+			If the ``all'' parameter is specified, then the variable ``\texttt{NAME}'' is set as the names of all components, space separated.\newline
 			The \texttt{build\_configs.cfg} is sourced. Note that at this stage no code is run here, since it is comprised entirely of functions that need to be called.\newline
-			A for loop is run, iterating through all components to be built. So usually just once.\newline
-			The component config file is located. If it is not found, the user is prompted to create one. Else it is sourced, i.e its variable values read in. Any build config variables are cleared by running the \texttt{build\_config\_vars} script. If you add any variables to any of the build configurations, make sure this script clears them, as otherwise values may be retained and lead to errors.\newline
+			A \texttt{for} loop is run, iterating through all components to be built. So usually just once.\newline
+			The component config file is located. If it is not found, the user is prompted to create one. Else it is sourced, i.e its variable values read in. Any build config variables are cleared by running the \texttt{clear\_bconf\_vars} script. If you add any variables to any of the build configurations, make sure this script clears them, as otherwise values may be retained and lead to errors.\newline
 			The build script then finds and copies all the user source files into the build directory \texttt{tmp/tmp\_src}, if there are none it stops building the component. All these files are then preprocessed. See a detailed description of the preprocess script in section \S\ref{s:Preprocess}.
 			The two functions, \texttt{get\_suitable\_libs} (see section \S\ref{sss:buildGetsuitablelibs}) and \texttt{get\_hal} (see section \S\ref{sss:buildGethal}) are then run.
 			
 			The actual make function is then run. These functions are described above from section \S\ref{ss:buildFunctions}.			
-			A check is then done, and the bootloader compiled if desired. This is done pretty much the same way as the application.
-			The build directory is then cleared (or not if directed not to) and the script finishes.
+			A check to see if everything ran without errors is then executed, and the bootloader compiled if the loader flag was set. This is done pretty much the same way as the application.
+			The build directory is then cleared (or not if the retain flag is set) and the script finishes.
 			
 
 \section{Script: Create\_component}
@@ -910,14 +920,14 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			
 \subsection{Prologue}
 			\label{ss:crecompPrologue}
-			Like the others, we first find out our location, define some constants, and source the colours and preprocessing scripts.
+			The script first finds out where it is located, and the absolute path of the toolchain, defines a few constants (mainly file locations), and sources the colour scheme (see \S\ref{s:Colours}), as well as the preprocessing functions (see more about the preprocessing script in section \S\ref{s:Preprocess})
 			
 \subsection{Functions}
 			\label{ss:crecompFunctions}
 			
 \subsubsection{choose\_target}
 			\label{sss:crecompChooseTarget}
-			This searches the ''\texttt{build\_configs.cfg}'' file for application build configurations, extracts the target name from each, and lists them in a list to select (selecting method can be found in section \S\ref{ss:EnumeratedList}). 
+			This searches the ``\texttt{build\_configs.cfg}'' file for application build configurations, extracts the target name from each, and lists them in a list to select (selecting method can be found in section \S\ref{ss:EnumeratedList}). 
 			The variable ``\texttt{TARGET}'' is assigned the name of the target that the user chooses.
 			
 \subsubsection{choose\_platform}
@@ -926,16 +936,16 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			
 \subsubsection{choose\_bootloader}
 			\label{sss:crecompChooseBootloader}
-			This searches the ''\texttt{build\_configs.cfg}'' file for bootloader build configurations for the specified target. If none are available, it skips onwards, else the user may choose one from an enumerated list.
+			This searches the ''\texttt{build\_configs.cfg}'' file for bootloader build configurations for the specified target. If there are bootloader build configurations available, the user selects one from an enumerated list, else this is skipped.
 			
 \subsubsection{run\_bconf\_specific\_config}
 			\label{sss:crecompRunBconfSpecificConfig}
-			Some build configurations require extra setup specific to them, so for build configurations where this is the case, an extra script kept in the res directory is run. For example for the avr bootloader, an extra script is run asking the user to specify which pins are to be used by the bootloader for the leds or for the input pin.\newline
+			Some build configurations require extra setup specific to them, so for build configurations where this is the case, an extra script kept in the \texttt{res} directory is run. 
 			This function checks to see if the build configuration specifies any extra script to run, and runs it if that is the case.
 			
 \subsubsection{run\_bload\_specific\_config}
 			\label{sss:crecompRunBloadSpecificConfig}	
-			Same as above, except for the bootloader rather than the application. The two functions are split because there are separate configurations for application and bootloader build configurations.
+			Some build configurations require extra setup specific to them, so for build configurations where this is the case, an extra script kept in the \texttt{res} directory is run. For example for the AVR bootloader, an extra script is run asking the user to specify which pins are to be used by the bootloader for the leds or for the input pin.\newline
 			
 \subsubsection{usage}
 			\label{sss:crecompUsage}
@@ -945,7 +955,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			\label{ss:crecompScriptProper}
 			
 			Fields are reset, and parameters parsed (see section \S\ref{s:ScriptParameters} for how this is done). \newline
-			The user is asked to provide a component name. This name is tested for legitimacy, then the same is done for the subsystem name.\newline
+			The user is asked to provide a component name. This name is tested for legitimacy, by checking to see it doesn't have any spaces, is not empty, does not use any illegal characters, and is not a reserved word. Then the same is done for the subsystem name.\newline
 			The user then chooses the target, platform, and bootloader. Then the component's source directory is created, and the component config file placed in this directory.\newline
 			The user is asked whether they want to make this new component the active component. If so, the value in the \texttt{config.cfg} file in \texttt{var} is edited.\newline
 			Next they are asked whether they want to create files for the new component. If so, the \texttt{create/create\_files} script is run (see section \S\ref{s:createFiles}).
@@ -956,13 +966,13 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 	
 \subsection{Summary}
 			\label{ss:crefileSummary}
-			The \texttt{create\_files} script uses the template files located in \texttt{res/templates} (see section \S\ref{ss:res/templates}). When the user specifies new files to be created, it edits values, such as subsystem, user info, component name, target name, and lays out a style to follow. It creates a header file and a source file (can be c or c++).
+			The \texttt{create\_files} script uses the template files located in \texttt{res/templates} (see section \S\ref{ss:res/templates}). When the user specifies new files to be created, it edits values, such as subsystem, user info, component name, target name, and lays out a style to follow. It creates a header file and a source file (can be C or C++).
 			The parameters are
 			
 \begin{itemize}
 \item \texttt{help}. Runs the usage function, showing the usage of the script.
 \item \texttt{batch}. Runs the script in batch mode. This means there are no prompts, and all parameters must be specified in the script parameter set.
-\item \texttt{name}. For batch mode, specifies the name of files.
+\item \texttt{name}. Specifies the name of files to be created.
 \item \texttt{component}. For batch mode, specifies the name of files.
 \item \texttt{type}. For batch mode, specifies the of file (C or C++).
 \end{itemize}
@@ -996,7 +1006,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			\label{ss:preprocessSummary}
 			This script, like \texttt{build\_configs.cfg}, has no script proper, and is just some functions. Each function corresponds to a different file being processed. In each file are different fields to be edited. \newline
 			
-			The functions go through the various files, replacing strings such as ``TOOLCHAIN\_INSERTS\_C\_FILES\_HERE'' with the relevant entries, or replacing everything to the right of a specified ``=''. If a variable is empty, the string is simply replaced with nothing.\newline
+			The functions go through the various files, replacing strings such as ``<<<TOOLCHAIN\_INSERTS\_C\_FILES\_HERE>>>'' with the relevant entries, or replacing everything to the right of a specified ``=''. If a variable is empty, the string is simply replaced with nothing.\newline
 			The only parameter passed to any of the functions is the path of the file to be preprocessed.\newline
 			
 			Each function uses sed to find and replace. Sed is hard to use, just find examples in these scripts and modify them if you are not familiar with sed.
@@ -1041,7 +1051,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			\label{C:HAL}
 			The ValleyForge Hardware Abstraction library is implemented to give a common interface to various microprocessors and make code portable between devices. \newline
 			At this stage four modules' interface structure has been completed: \texttt{gpio.h}, \texttt{mem.h}, \texttt{tc.h}, and \texttt{watchdog.h}. These have been implemented for one microprocessory only, the ATmega2560.\newline 
-			As well as this, there is a general HAL file which contains global interrupt enable/disbable, which links to the \texttt{semaphore.c/h} files, and a \texttt{target\_config.h} header file, which has a lot of ``\#define''s outlining different kinds of constants for each target.\newline
+			As well as this, there is a general HAL file which contains global interrupt enable/disable, and which links to the \texttt{semaphore} source files, and a \texttt{target\_config.h} header file, which has a lot of ``\texttt{\#define}''s outlining different kinds of constants for each target.\newline
 			The HAL modules are implemented in C++.\newline
 			Although only the ATmega2560 modules have been implemented, the AVR architectures will all use the same implementation file, by using the AVR preprocessor to select which parts of code are relevant to the specific microcontroller.
 			
@@ -1050,21 +1060,24 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			The currently implemented modules:
 			
 \begin{itemize}
-\item \textbf{\texttt{Gpio}}. The gpio module uses a two-dimensional array of binary semaphores to hold assign GPIO pin usage. A user uses the \texttt{pin\_grab} function to be given a class instance of a pin, which they can then manipulate until they relinquish hold on it again. 
-\item \textbf{\texttt{Tc}}. The Timer/Counter Module does not use semaphores, due to the scarcity of timers and then need to use one timer for multiple applications. The user is given an instance of a timer class and is able to use this to manipulate the timers. Due to timers varying greatly between different microprocessors, this module is large and messy.
-\item \textbf{\texttt{Mem}}. The memory module writes to EEPROM. For the AVR architectures it is really no more than a layer between the \texttt{avr/eeprom} module and the user.
-\item \textbf{\texttt{Watchdog}}. This implements simple watchdog timers.
+\item \textbf{\texttt{gpio}}. The gpio module uses a two-dimensional array of binary semaphores to hold assign GPIO pin usage. A user uses the \texttt{pin\_grab} function to be given a class instance of a pin, which they can then manipulate until they relinquish hold on it again. 
+\item \textbf{\texttt{tc}}. The Timer/Counter Module does not use semaphores, due to the scarcity of timers and then need to use one timer for multiple applications. The user is given an instance of a timer class and is able to use this to manipulate the timers. Due to timers varying greatly between different microprocessors, this module is large and messy.
+\item \textbf{\texttt{mem}}. The memory module writes to EEPROM. For the AVR architectures it is really no more than a layer between the \texttt{avr/eeprom} module and the user.
+\item \textbf{\texttt{watchdog}}. This implements simple watchdog timers.
 \end{itemize}			
 
 \section{Size and Use}
 			\label{s:HALSizeAndUse}
-			At this stage, the HAL is around 16kB, making it too large to fit into the bootloader section. Currently the smallest flash size of any of the micrcontrollers is 64kB (the ATmega64M1), meaning it can be used for any of the specified ValleyForge microprocessors. However, safety mechanisms in the code, as well as multiple layers of abstraction mean that it does not run super efficiently.		
+			At this stage, the HAL (for the AVR implementation) is around 16kB, making it too large to fit into the bootloader section. Currently the smallest flash size of any of the supported micrcontrollers is 64kB (the ATmega64M1), meaning it can be used for any of the specified ValleyForge microprocessors. However, safety mechanisms in the code, as well as multiple layers of abstraction mean that it does not run super efficiently.		
 						
 \chapter{Bootloader}
 			\label{C:Bootloader}
 			The bootloader is used to transfer code to the microprocessor without use of an ISP programmer. Currently an AVR bootloader has been started, and its functionality is to be able to run a bootloader program, then switch to the application code when a button is pushed.
-			There should be, floating around somewhere, a guide for creating bootloaders for AVR. It is very useful. 			 
-			Some aspects to look out for when programming the bootloader:
+			There is a useful guide on writing bootloaders at \url{http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=79206}. You need to be logged in to access it though.			 
+\section{General Design}
+			\label{s:BootloaderGeneralDesign}
+			So far only the AVR bootloader has been implemented. It has one main \texttt{bootloader.cpp} file, which takes care of writing to flash, flashing LEDs, running timers, receiving a signal of new available firmware, and switching to the application. Used in conjunction with this is the bootloader module. There are a few different modules corresponding to different transfer protocols. Which module is used depends on which is specified in the component's configuration file. 
+			The bootloader calls module functions for the transfer of data from the remote device. It then writes the flash a page at a time. When it is finished, it sets the microprocessor's register back to a default state and runs the application.
 			
 \section{Boot Address}
 			\label{s:BootloaderBootAddress}
@@ -1072,7 +1085,7 @@ The boot address given in the datasheets is a \textbf{word} address, not a \text
 
 \begin{itemize}
 \item The bootloader program may not run at all and go straight to the application code. This usually happens when the boot address given is lower than the actual. It means the program counter No-Ops all the way round to the starting address again, without ever running the bootloader code.
-\item Interrupts may not work. When you write a bootloader, it creates a new interrupt table at the bootloader start address. This means you will have two interrupt vector tables in your microprocessor. I had one instance where I set the bootloader address too high. The bootloader code still ran, but because the interrupt vector table was not where the microprocessor expected it to be, my interrupts did not fire.
+\item Interrupts may not work. When you write a bootloader, it creates a new interrupt table at the bootloader start address. This means you will have two interrupt vector tables in your microprocessor. An instance occurred where the bootloader address was set too high. The bootloader code still ran, but because the interrupt vector table was not where the microprocessor expected it to be, the interrupts did not fire.
 \end{itemize}
 
 \section{Fuses}
@@ -1106,7 +1119,7 @@ The boot address given in the datasheets is a \textbf{word} address, not a \text
 			\label{s:FreeRTOSCurrentStatus}
 			FreeRTOS has been made to run on all Atmel devices covered in the ValleyForge toolchain. Each was tested by running a single task that flashed an LED. There are many different options and variations within FreeRTOS, and not all have been tested or implemented. \newline
 			Some playing around with clock settings and such is required. This should be editable in FreeRTOSConfig.h, which is placed in the user's source directory when they create a component that uses FreeRTOS.\newline
-			The ATmega2560 port is different from the other AVR ports, as it needs to address a larger flash space. This has some strange effect. In any case, I had to download the port from AVR freaks, which used an old version. I finally managed to get the port working with the new version as it does now, but if the user tries to implement any other FreeRTOS functionality on the ATmega2560 and it doesn't work it may have something to do with this. ALso, the person that ported this didn't include support for Co-Routines, so if you want to implement them you may have to do some tinkering.
+			The ATmega2560 port is different from the other AVR ports, as it needs to address a larger flash space. This has some strange effect. In any case, I had to download the port from AVR freaks, which used an old version. I finally managed to get the port working with the new version as it does now, but if the user tries to implement any other FreeRTOS functionality on the ATmega2560 and it doesn't work it may have something to do with this. Also, the person that ported this didn't include support for Co-Routines, so if you want to implement them you may have to do some tinkering.
 			
 			
 \chapter{Programming with the STK600}
@@ -1165,16 +1178,37 @@ avr32program -c USB:0048395C7318 --part UC3C0512C program -finternal@0x80000000,
 			\label{s:FAQNewHAL}
 			The first thing you'll want to do is decide what functions are going to be available to the user. What will they require? Is it possible to implement these things on all the microprocessors? If not, which ones will it work on\newline
 			Next, create your header file. A good example of the type of header file one could create would be \texttt{gpio.h}, found in \texttt{res/common/hal}. You do not need to have an instance of the thing you are trying to manipulate, particularly if it is just one standalone peripheral. Static functions would be fine, or find another way of doing it.\newline
-			Next you'll want to implement it for whichever microprocessor you happen to be using at that time. If the module will never be implemented for some microprocessors, use the avr-gcc preprocessor to \#ifdef the code to produce an error if a user tries to compile it for the wrong processor.\newline
+			Next you'll want to implement it for whichever microprocessor you happen to be using at that time. If the module will never be implemented for some microprocessors, use the avr-gcc preprocessor to \texttt{\#ifdef} the code to produce an error if a user tries to compile it for the wrong processor.\newline
 			Now add the module to the list in the relevant build configuration, in the field ``HAL\_EN\_LIST''. When you compile with that build configuration, it should now compile your new module. You will be able to debug your module from there.
 			
 \section{I want to add a new input parameter to a script. How do I do this?}
 			\label{s:FAQNewParams}
 			This is described in section \S\ref{s:ScriptParameters}
 			
-\section{There is an error during building which says something like ``Undefined reference to ``TC\_INSERTS\_NAME\_HERE''''.}
+\section{How do I add a new build parameter used in a makefile?}
+			\label{s:FAQNewMakeParams}
+			First, you will need to edit the makefile to include what you want. This may be something like
+			
+\begin{lstlisting}[frame=trBL, breaklines=true]
+MYNEWPARAMETER=<<<BUILD_INSERTS_MYNEWPARAMETER_HERE>>>
+\end{lstlisting}			
+
+			and obviously this is going to be used somewhere later in the makefile.\newline
+			
+			Next, you will want to enter the value into the relevant build configurations. Open the \texttt{build\_configs.cfg} script (in \texttt{bld/build}), and add MYNEWPARAMETER=Seventytwelvemillion to the build configurations that you want this parameter for (you can have it in the others as an empty parameter if you wish).
+			You should also make sure that the value of the parameter is clear by the script \texttt{clear\_bconf\_vars}. Open the script, and add the name of the parameter to the list.\newline
+			
+			Navigate to the \texttt{build} script, and to the function that uses the makefile you are interested in (for example, \texttt{makeavr}).
+			Enter the line amongst the other similar lines:
+\begin{lstlisting}[frame=trBL, breaklines=true, language=bash]			
+sed -i "s^\(CC *= *\)BUILD_INSERTS_MYNEWPARAMETER_HERE^\1$MYNEWPARAMETER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile 
+\end{lstlisting}				
+
+This will insert your parameter into the makefile at build time.
+
+\section{There is an error during building which says something like ``Undefined reference to ``<<<TC\_INSERTS\_NAME\_HERE>>>>''''.}
 			\label{s:FAQUndefinedError}
-			This is a problem with the preprocessing substituion. Search the preprocessing functions for the reference, and find out why it is not replacing it. It could be that you haven't specified it to be replaced with anything, it could be a difference in spelling, it could be the wrong function.
+			This is a problem with the preprocessing substitution. Search the preprocessing functions for the reference, and find out why it is not replacing it. It could be that you haven't specified it to be replaced with anything, it could be a difference in spelling, it could be the wrong function.
 			
 \section{FreeRTOS Won't Compile}
 			\label{s:FAQFreeRTOS}

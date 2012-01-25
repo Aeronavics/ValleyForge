@@ -1,4 +1,4 @@
-% !TEX TS-program = pdflatex
+	% !TEX TS-program = pdflatex
 % !TEX encoding = UTF-8 Unicode
 % These two above lines are to specify the encoding scheme of THIS, the input file.
 
@@ -134,25 +134,10 @@
 	% Create the title page.
 	\maketitle
 	
-	% The abstract goes here.
-	\begin{abstract}
-
-		The abstract goes here.
-
-	\end{abstract}
-
 	% Insert the table of contents (ToC).
 	\clearpage
 	\tableofcontents
 
-	% Insert the list of figures (LoF).
-	\clearpage
-	\listoffigures
-
-	% Insert the list of tables (LoT).
-	\clearpage
-	\listoftables
-	
 	% THE ACTUAL GIST OF THE DOCUMENT STARTS HERE.
 
 	% An article has sections as the top level sectioning command.	
@@ -160,12 +145,12 @@
 	% Make sure the body starts on a new page.
 	\clearpage
 
-	\section{Getting Started}
-		\label{s:Getting Started}
+\section{Getting Started}
+			\label{s:Getting Started}
 
-		This section will show you how to install the ValleyForge toolchain on your computer, and how to start using it to write code for your microprocessor.
+			This section will show you how to install the ValleyForge toolchain on your computer, and how to start using it to write code for your microprocessor.
 
-		\subsection{Installation }
+	\subsection{Installation }
 			\label{ss:Installation}
 
 			It is assumed that the user has the latest version of Ubuntu installed. If not, the latest version can be downloaded from \url{http://ucmirror.canterbury.ac.nz/linux/ubuntu-releases/}. This image can be burned onto a disc, the computer booted from the disc, and on-screen instructions followed.
@@ -176,21 +161,21 @@
 sudo apt-get install byacc flex gcc-avr avr-libc
 \end{lstlisting}
 
-If the user is programming the AT32UC3C0512C, don't worry, the avr32 compiler and headers are included in the toolchain itself.
+			If the user is programming the AT32UC3C0512C, don't worry, the AVR32 compiler and headers are included in the toolchain itself.
 
-Next we will install the toolchain itself. Navigate to the directory where you want the toolchain to reside. This will contain a subdirectory called ``src'' where all your source code will reside.
+			Next we will install the toolchain itself. Navigate to the directory where you want the toolchain to reside. This will contain a subdirectory called ``src'' where all your source code will reside.
 In the command line, type \newline
 
 \begin{lstlisting}
-sudo git clone (PUT REPOSITORY URL HERE)
+sudo git clone ssh://UCUnison1.canterbury.ac.nz/data/git_data/ValleyForge
 \end{lstlisting}
-to download the toolchain to your working directory.
+			to download the toolchain to your working directory.
 
 
-\subsection{Using the Toolchain }
-			\label{ss:Using The Toolchain}
+	\subsection{Using the Toolchain }
+			\label{ss:UsingTheToolchain}
 			
-You are now ready to start using the ValleyForge Toolchain. Navigate to the Toolchain Directory, and into the subdirectory ``bld''. 
+			You are now ready to start using the ValleyForge Toolchain. Navigate to the Toolchain Directory, and into the subdirectory ``bld''. 
 
 If the toolchain has been used by someone else betwen being cloned into its directory and now, then run the script ``resettc'', by typing
 \begin{lstlisting}
@@ -198,76 +183,101 @@ If the toolchain has been used by someone else betwen being cloned into its dire
 \end{lstlisting}
  into the terminal.
  
- Now run the ``VFstart'' script. This will be your main interface to the toolchain, and will take care of creating and deleting components, as well as keeping track of project properties.\\
+ 			Now run the ``VFstart'' script. This will be your main interface to the toolchain, and will take care of creating and deleting components, as well as keeping track of component properties.\\
  A prompt will appear asking you provide your user information. This will aid in creating template source files for you to start programming with. You may choose not to provide this information, but will have to fill it in yourself in template files should you let the interface create them.
  
  Follow the onscreen prompts to let the toolchain carry out its operations.
 
-\subsubsection{Creating a new Component}
+		\subsubsection{Creating a new Component}
 			\label{sss:Create New Component}
 			
-To create a new Component, run the VFstart script, and enter ``C'' into the terminal. Choose the microprocessor you are programming on, and then when prompted, enter the name of your project. The name should not contain any spaces and should not be one of the words ``none'', ``all'', or ``exit''. Follow the onscreen prompts to complete the creation of a new component. 
+			To create a new Component, run the VFstart script, and enter ``C'' into the terminal. Choose the microprocessor you are programming on, and then when prompted, enter the name of your component. The name should not contain any spaces and should not be one of the words ``none'', ``all'', or ``exit''. Follow the onscreen prompts to complete the creation of a new component. 
 
-If a bootloader is available for your component, you will be asked to specify which bootloader you wish to use for your component. You will then be prompted to choose some other parameters. If you aren't sure about these, don't worry, you can change them later by going to your component source folder, opening the config file, and editing the required fields. A detailed description of the bootloader options can be found in section [INSERT SECTION HERE].
+If a bootloader is available for your component, you will be asked to specify which bootloader you wish to use for your component. You will then be prompted to choose some other parameters. If you aren't sure about these, don't worry, you can change them later by going to your component source folder, opening the config file, and editing the required fields. A detailed description of the bootloader options can be found in section [].
 
 
 Electing to create template files will place two source files (a component.h and a component.cpp or .c) files in your component's source folder, containing component details, and outlining a structure for your source files' layout. The bare metal templates contain no code other than an empty main function, while the FreeRTOS templates contain an example task to help get you started.
 
-You will then be prompted to decide whether this component will be your default component. Your default, or active component is the one that will be acted on when you don't specify a component, for example when the build script is called with no arguments. If you have no other components, the component being created will automatically become your active component and you will not be prompted.
+You will then be prompted to decide whether this component will be your active component. Your default, or active component is the one that will be acted on when you don't specify a component, for example when the build script is called with no arguments. If you have no other components, the component being created will automatically become your active component and you will not be prompted.
 
-Once you have created your new component, a configuration file will also be placed in its source folder. It contains information such as which compiler to use, which micro the project will be programmed on to, and which platform is being used.
+Once you have created your new component, a configuration file will also be placed in its source folder. It contains information such as which compiler to use, which micro the component will be programmed on to, and which platform is being used.
 
 
 You can type exit at any time to exit back to the terminal.
 
 
-\subsubsection{Deleting Projects}
-			\label{sss:Deleting Projects}
+		\subsubsection{Deleting components}
+			\label{sss:Deleting components}
 
-To delete a component, start the VFstart script, and choose ``Delete''. A list of all your projects should appear. Select the component you wish to delete, and confirm the deletion when prompted.
+To delete a component, start the VFstart script, and choose ``Delete''. A list of all your components should appear. Select the component you wish to delete, and confirm the deletion when prompted.
 
 You can type exit at any time to exit back to the terminal.
 
-\subsubsection{Changing the Active Project}
-			\label{sss:Edit -> Default Proj}
+		\subsubsection{Changing the Active component}
+			\label{sss:EditActiveComponent}
 
-To change which project is the active project, run the uavstart script, choose Edit, and select ``Default Project''. The list of projects will come up, and you will be able to choose which one you want to set as your active project.
+			To change which component is the active component, run the VFstart script, choose Edit, and select ``Activate Component''. The list of components will come up, and you will be able to choose which one you want to set as your active component.
 
-\subsubsection{Changing User Info}
-			\label{sss:Change User Info} 
-To change your user info, run the uavstart script, choose Edit, and select ``User Info''. Follow the on screen prompts to change the user information.
+		\subsubsection{Changing User Info}
+			\label{sss:ChangeUserInfo} 
+			To change your user info, run the VFstart script, choose Edit, and select ``Edit Settings''. Follow the on screen prompts to change the user information.
 
-\subsection{Compiling Projects}
-			\label{ss:Compiling Projects}
+	\subsection{Building Components}
+			\label{ss:CompilingComponents}
 
-To compile a project, navigate through the terminal to the ``bld'' directory. Type
+			To compile a component, navigate through the terminal to the ``bld'' directory. Type
 
 \begin{lstlisting}
 ./build
 \end{lstlisting}
 
-into the terminal to compile the active project. The output hex file, if compilation is successful, will be found in the bin folder of the toolchain directory.
-To compile a project other than the active one, add the project's name after the ./build command. To retain all output files in the ``tmp'' directory type ``retain'' as the last argument of the build command, or to build all projects, type ``all'' as the only argument. For example, \\
+into the terminal to compile the active component. The output hex file, if compilation is successful, will be found in the bin folder of the toolchain directory.
+			To compile a component other than the active one, add the component's name after the ./build command. 
+			
+\section{Scripts}
+			\label{s:Scripts}
+			This section will outline the function of each major script that the user is expected to use directly.
+			There are six of these:
+			
+\begin{itemize}
+\item VFstart
+\item build
+\item create\_component
+\item create\_library
+\item create\_files
+\item create\_library files
+\end{itemize} 
 
+	\subsection{VFstart}
+			\label{ss:VFstart}
+			This is your main interface to the toolchain, and is used for creating, modifying, and deleting components. Most of the functionality is described above in the quick start guide (section \S\ref{s:Getting Started}), but a couple of more things can be added.
+			The VFstart script can be run with parameters to change how it will behave. It has the following parameters:
+	
+\begin{itemize}
+\item \texttt{-h --help} : Show the usage message.
+\item \texttt{-b --block} : Do not quit out of the toolchain interface after a single operation.
+\end{itemize} 		
+
+These are entered into the terminal after the name of the script, like so:
 \begin{lstlisting}
-./build radio retain
+./VFstart -b
 \end{lstlisting}
 
-will build the project ``radio'' with output files retained in the tmp directory.
+			Use the smaller flag when entering things from the terminal, and the longer flag when accessing from within another script.
+			
+	\subsection{build}
+			\label{ss:build}
+			Use this script to compile your code. It produces the compiler's output to the terminal so you can debug using it. 
+			The build script, like others, has parameters and flags that can passed to it. It has the following:
+\begin{itemize}
+\item \texttt{-h --help} Show the usage help message.
+\item	\texttt{-a --all}			Build all components. This will iterate through each component and attempt to build them all individually.
+\item	\texttt{-r --retain}			Retain temporary files at completion of build. All files used to build the component will be retained in the \texttt{tmp} directory.
+\item	\texttt{-l --loader}			Build the bootloader for each component as well. The bootloader will be compiled as well, and stored in the bin directory as ``COMPONENT\_NAME\_bootloader.hex''. Although it could well be that instead we make it so that the two hex files are merged into one.
+\item	\texttt{-n --name <Component Name>}	Specify the name of a component to build. You can put multiple component names here, and the script will build all of them
+\item	   \texttt{--nohal}			Do not compile using the HAL (mostly for debugging). This is useful when parts of the the HAL are not yet complete.
+\end{itemize} 			
 
-while\\
-
-\begin{lstlisting}
-./build retain
-\end{lstlisting}
-
-will build the default project and retain all files for it (including the makefile) in the ``tmp'' subdirectory.\\
-
-\begin{lstlisting}
-./build all
-\end{lstlisting}
-
-will build all projects.
 
 \section{Bootloaders}
 \label{bootloaders}
