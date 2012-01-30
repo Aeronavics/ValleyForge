@@ -31,14 +31,6 @@
 
 volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
 
-// The addresses for GPIO are PINA,DDRA,PORTA,PINB,DDRB,PORTB... i.e each type is 3 away from the same on the next port.
-#define PORT_MULTIPLIER		3
-#define P_OFFSET		235
-
-// So to access a for example PORTC would be 3 * PORT_D(2) + 3 = 0x09.
-enum port_offset	{P_READ, P_MODE, P_WRITE};
-
-
 // DECLARE IMPORTED GLOBAL VARIABLES.
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 extern semaphore pc_int_sem[NUM_BANKS];

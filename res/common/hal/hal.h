@@ -27,11 +27,18 @@
 
 // DEFINE PUBLIC MACROS.
 
+/* The constants that allow access to the Port registers in memory (DDRx, PORTx & PINx) */
+/* NB: ATmega 2560 particular */
+#define PORT_MULTIPLIER		3
+#define P_OFFSET		235
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
 
+/* Offset constants that facilitate access to the particular GPIO registers (DDRx, PORTx, PINx) */
+enum port_offset	{P_READ, P_MODE, P_WRITE};
 
 struct gpio_pin_address
 {
