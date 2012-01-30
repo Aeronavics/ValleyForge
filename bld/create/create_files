@@ -62,7 +62,6 @@ Options:
 	-n --name <File Name>		Specify the name of the files to add to the current project.
 	-c --component			Specify the name of the component to add the files to.  Defaults to the 'active component'.
 	-t --type <File Type>		Specify the kind of files to create (either 'C' or 'CPP').
-	-p --platform			Specify the platform for which the files will be created (BareMetal/freertos)
 EOF
 	# All done.
 	return
