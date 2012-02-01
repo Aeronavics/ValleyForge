@@ -60,7 +60,6 @@ class gpio_pin
 		// Functions.
 
 		/**
-
 		 * Gets run whenever the instance of class gpio_pin goes out of scope.
 		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
 		 *

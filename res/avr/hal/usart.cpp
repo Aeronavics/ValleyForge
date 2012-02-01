@@ -221,14 +221,6 @@ class usart_imp
 	int8_t set_baud_rate(baud_rate rate);
 	
 	/**
-	* Sets the clock polarity for USART communication. (Only applies in Synchronous operation!)
-	*
-	* @param option 	Clock polarity option provided.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_clock_polarity(clock_polarity_option option);
-	
-	/**
 	* Doubles the USART transmission speed. (only applies in Asynchronous mode!)
 	*
 	* @param value		Value to set the USART Double mode to. True to set it, false to clear it.
@@ -464,17 +456,6 @@ int8_t usart::set_bit_order(mspim_bit_order order)
 int8_t usart::set_baud_rate(baud_rate rate)
 {
   return (imp->set_baud_rate(rate));
-}
-
-/**
-* Sets the clock polarity for USART communication. (Only applies in Synchronous operation!)
-*
-* @param option 	Clock polarity option provided.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_clock_polarity(clock_polarity_option option)
-{
-  return (imp->set_clock_polarity(option));
 }
 
 /**
@@ -1041,36 +1022,6 @@ int8_t usart_imp::set_baud_rate(baud_rate rate)
   /* Set the UBBR value according to the equation above */
   _SFR_MEM16(registerTable.UBRR_address) = (((F_CPU / (rate * K))) - 1);
   
-  return 0;
-}
-
-/**
-* Sets the clock polarity for USART communication. (Only applies in Synchronous operation!)
-*
-* @param option 	Clock polarity option provided.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_clock_polarity(clock_polarity_option option)
-{
-  /*
-   * Switch depending on the clock polarity option provided
-   */
-  switch (option)
-  {
-    case OPTION_1:
-    {
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UCPOL_BIT);
-      
-      break;
-    }
-    case OPTION_2:
-    {
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << UCPOL_BIT);
-      
-      break;
-    }
-  }
-    
   return 0;
 }
 

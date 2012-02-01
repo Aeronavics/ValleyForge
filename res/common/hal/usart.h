@@ -107,14 +107,6 @@ class usart
 		 int8_t set_baud_rate(baud_rate rate);
 		 
 		 /**
-		 * Sets the clock polarity for USART communication. (Only applies in Synchronous operation!)
-		 *
-		 * @param option 	Clock polarity option provided.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t set_clock_polarity(clock_polarity_option option);
-		 
-		 /**
 		 * Doubles the USART transmission speed. (only applies in Asynchronous mode!)
 		 *
 		 * @param value		Value to set the USART Double mode to. True to set it, false to clear it.

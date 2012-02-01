@@ -35,7 +35,6 @@ volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 extern semaphore pc_int_sem[NUM_BANKS];
 
-
 /**
  * A Class that implements the functions for gpio
  * One instance for each pin.
@@ -71,7 +70,6 @@ class gpio_pin_imp
 		 */
 		gpio_input_state read (void);
 		
-		
 		/**
 		 * Attaches an interrupt to the pin and enables said interrupt.
 		 * 
@@ -81,7 +79,6 @@ class gpio_pin_imp
 		 * @return inter_return_t return code
 		 */
 		inter_return_t attach_interrupt(void (*userFunc)(void), interrupt_mode mode);
-		
 		
 		/**
 		 * Detaches the interrupt from the pin and disables said interrupt.

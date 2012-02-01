@@ -1105,7 +1105,7 @@ int8_t timer_imp::load_timer_value(T value)
   }
   else
   {
-    _SFR_MEM16(registerTable.TCNT_address) = value;
+    _SFR_IO8(registerTable.TCNT_address) = value;
   }
   
  return 0;
@@ -1343,59 +1343,35 @@ int8_t timer_imp::enable_oc(tc_oc_mode mode)
   {
     case TC_0:
     { 
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-      
       enable_oc_8bit(mode, &registerTable);
       break;
     }
     case TC_1:
     {
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-      
       enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_2:
     {
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-      
       enable_oc_8bit(mode, &registerTable);
       break;
     }
     case TC_3:
     {
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-            
       enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_4:
     {
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-      
       enable_oc_16bit(mode, &registerTable);
       break;
     }
     case TC_5:
     {
-      /* Vacate the GPIO Pin if user disables Output Compare */
-      
-      /* Grab the GPIO Pin otherwise */
-      
       enable_oc_16bit(mode, &registerTable);
       break;
     }
-    default:	/* No more channels available, return an error. */
+    default:	/* No more timers available, return an error. */
     {
       return -1;
     }
