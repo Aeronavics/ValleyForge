@@ -1072,7 +1072,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \section{\textbf{\texttt{hal}} Module}
 			\label{s:HALhalModule}
 			
-			The \textbf{\texttt{hal}} module provides required functionality for all the implemented software modules listed in \ref{s:HALModules}.
+			The \textbf{\texttt{hal}} module provides required functionality for all the implemented software modules listed in \S\ref{s:HALModules}.
 			
 			For future porting of the HAL to other microprocessors, it will be necessary to edit the enumerated \textbf{\texttt{port\_t}} and \textbf{\texttt{pin\_t}} listings to cater for specific hardware.
 			
@@ -1086,7 +1086,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 			\label{ss:HALgrabFunction}
 			The \textbf{\texttt{grab}} function allows the user to create an instance of a GPIO pin that they can then use through the available methods in the \textbf{\texttt{gpio}} class. 
 			
-			This function takes as an argument a \textbf{\texttt{gpio\_pin\_address}} which must be of a valid GPIO pin on the microprocessor. Internally, the function proceed initialises the GPIO implementations the first time a GPIO pin is 'grabbed' by assigning the semaphore pointer within each GPIO to the semaphore that belongs to that particular pin. The function then attempts to procure the GPIO semaphore for the GPIO pin addressed by the user. If this is successful, a pointer to the implementation is assigned and the function will return non-NULL.
+			This function takes as an argument a \textbf{\texttt{gpio\_pin\_address}} which must be of a valid GPIO pin on the microprocessor. Internally, the function proceed initialises the GPIO implementations the first time a GPIO pin is `grabbed' by assigning the semaphore pointer within each GPIO to the semaphore that belongs to that particular pin. The function then attempts to procure the GPIO semaphore for the GPIO pin addressed by the user. If this is successful, a pointer to the implementation is assigned and the function will return non-NULL.
 			
 			Valid GPIO pin addresses for each microprocessor are made up of a specific pin and port and are contained within enumerated lists found in the \textbf{\texttt{hal.h}} file. These lists should be modified when porting to different targets by utilising the pre-processor to selectively compile different lists depending on the requirements of the new target.  			
 
@@ -1118,7 +1118,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \item \textbf{\texttt{O\_TOGGLE}}. Toggles the GPIO pin's logic irrespective of its current value.
 \end{itemize}
 
-The \textbf{\texttt{write}} function accesses the \textbf{\texttt{PORT}} registers through the same macros and constants as those discussed in \ref{ss:HALset_modeFunction}.
+The \textbf{\texttt{write}} function accesses the \textbf{\texttt{PORT}} registers through the same macros and constants as those discussed in \S\ref{ss:HALset_modeFunction}.
 
 This function returns \textbf{\texttt{0}} always.
 
@@ -1133,7 +1133,7 @@ This function returns \textbf{\texttt{0}} always.
 \item \textbf{\texttt{I\_ERROR}}. GPIO port out of bounds.
 \end{itemize}
 
-			Once again, this function accesses the AVR's \textbf{\texttt{PIN}} registers through the use of macros and constants discussed in \ref{ss:HALset_modeFunction}.
+			Once again, this function accesses the AVR's \textbf{\texttt{PIN}} registers through the use of macros and constants discussed in \S\ref{ss:HALset_modeFunction}.
 			
 \subsection{\textbf{\texttt{attach\_interrupt}} Function}
 			\label{ss:HALattach_interruptFunction}
@@ -1196,7 +1196,7 @@ This function returns \textbf{\texttt{0}} always.
 			
 			This function provides the ability to read the current value of the timer counter. No input variables are required but the user must anticapate the size of the returned timer value and apply an appropriate template to suit this.
 			
-			Practically, this function varies little from that in \ref{ss:HALtcload_timer_valueFunction}. It simply returns the value from the register that it accesses via the appropriate macro.
+			Practically, this function varies little from that in \S\ref{ss:HALtcload_timer_valueFunction}. It simply returns the value from the register that it accesses via the appropriate macro.
 			
 \subsection{\textbf{\texttt{start}} Function}
 			\label{ss:HALtcstartFunction}
@@ -1295,8 +1295,7 @@ This function returns \textbf{\texttt{0}} always.
 			
 			The \textbf{\texttt{enable\_ic\_interrupt}} function allows the user to register a ISR routine to an input capture channel associated with the implemented timer (when one is available).
 			
-			The input capture channel is provided by way of a channel number (defined in the \textbf{\texttt{tc\_ic\_channel}} enumerated list) as an input value, along with a function pointer to the user's ISR.
-			
+			The input capture channel is provided by way of a channel number (defined in the \textbf{\texttt{tc\_ic\_channel}} enumerated list) as an input value, along with a function pointer to the user's ISR.			
 			Internally, the function places the function pointer provided in the appropriate element of the global function pointer array and sets the Input Capture Interrupt Enable \textbf{\texttt{ICIE}} bit in the timer interrupt mask register.
 			
 			The functionre returns \textbf{\texttt{0}} for success and \textbf{\texttt{-1}} to indicate that input capture functionality is not available on the implemented timer.	
@@ -1392,7 +1391,7 @@ This function returns \textbf{\texttt{0}} always.
 			
 			The baud rate is another important initialisation setting for the serial communication. The user may specify whatever baud rate they wish.
 			
-			This value is then used to evaluate the the required value to be placed in the USART Baud Rate Register \textbf{\texttt{UBRR}}. The configured mode of the USART hardware also has an effect on this value, as does the micropcrocessor's CPU frequency. 
+			This value is then used to evaluate the the required value to be placed in the USART Baud Rate Register (\textbf{\texttt{UBRR}}). The configured mode of the USART hardware also has an effect on this value, as does the micropcrocessor's CPU frequency. 
 			
 			This function returns \textbf{\texttt{0}} always.
 
@@ -1422,13 +1421,149 @@ This function returns \textbf{\texttt{0}} always.
 			
 			This function has the capability to transmit a NULL-terminated string (or array) via USART. The user should provide a pointer to this string which is then transmitted in a byte-by-byte fashion. Note that this function will 'block' the processor until the transmission is complete.
 			
-			The function returns \textbf{\texttt{0}} always.			
+			The function returns \textbf{\texttt{0}} always.
 			
+\subsection{\textbf{\texttt{transmit\_array}} Function}
+			\label{ss:HALusarttransmit_arrayFunction}
 			
+			To transfer an array of arbitary size and type, this function may be employed. It has the ability to transmit such data in a byte-by-byte fashion until the routine is complete.
+			
+			A pointer cast to the array of data that has been cast to a fixed-width byte datatype is required, as is the number of elements to transmit.
+			
+			This function simply makes successive calls to the \textbf{\texttt{transmit\_byte}} function and blocks all CPU resourses until it has completed. A value of \textbf{\texttt{0}} is always returned. 
+			
+\subsection{\textbf{\texttt{transmission\_complete}} Function}
+			\label{ss:HALusarttransmission_completeFunction}
+			
+			This function returns a boolean to indicate whether there is new data that has not been transmitted in the buffer of the USART channel implemented is empty or not. The value returned is true if there is no new data and false otherwise.
+			
+\subsection{\textbf{\texttt{receive\_complete}} Function}
+			\label{ss:HALusartreceive_completeFunction}
+			
+			This function returns a boolean to indicate whether the data buffer of the USART channel implemented contains new unread data. The value returned is true if this is so and false otherwise.
+			
+\subsection{\textbf{\texttt{receive\_byte}} Function}
+			\label{ss:HALusartreceive_byteFunction}
+			
+			In order to receive data via USART, the data register buffer must be read when new unread data is present. This function checks to ensure there is in face unread data and returns the contents of the buffer if there is.
+			
+\subsection{\textbf{\texttt{enable\_interrupt}} Function}
+			\label{ss:HALusartenable_interruptFunction}	
+			
+			A user defined ISR may be attached to a number of interrupt vectors associated with the USART hardware. These interrupt vectors or types are contained in the \textbf{\texttt{usart\_interrupt\_types}} enumerated list of the \textbf{\texttt{usart.h}} file.	Broadly speaking, these interrupts can occur when a USART transmission has been completed, when new data has been received, and when the data register buffer is empty.
+			
+			When called, the function places the provided function pointer in the appropriate element of the function pointer array and enables the relevant interrupt enable bit in the USART control register.
+			
+\subsection{\textbf{\texttt{disable\_byte}} Function}
+			\label{ss:HALusartdisable_byteFunction}
+			
+			Any interrupt functions associated with a USART interrupt signal can be disabled by calling this function.
+			
+			The user must provide the one of the enumerated interrupt types available for the USART to disable a specific interrupt. This value is used to set the appropriate element of the interrupt function array to NULL.
+			
+			Lastly, the appropriate interrupt enable bit is cleared in the control registers belonging to the USART.
+			
+\subsection{\textbf{\texttt{usart\_error}} Function}
+			\label{ss:HALusart_errorFunction}
+			
+			Communication via USART may produce cases where the communicated packet is invalid or corrupted. This function provides the ability to check any errors on the USART connection.
+			
+			The function checks the status bits in the USART control register and iteratively masks the bits relating to frame errors, data over run errors and parity errors. If any of these errors exist, it will return an indicating flag, as listed in the \textbf{\texttt{usart\_error\_types}} list located in \textbf{\texttt{usart.h}}, for the first error found; or else a flag indicating no error if none exists.
+			
+\subsection{\textbf{\texttt{vacate}} Function}
+			\label{ss:HALusartvacateFunction}
+			
+			The \textbf{\texttt{vacate}} function may be called when the USART instance is no longer required; or else when it goes out of scope.
+			
+			This function vacates the semaphores that were procured upon initialisation for the required GPIO pins and sets all the interrupt function pointers associated with the instance to NULL.
+			
+			The USART transmission and reception circuitry is deactivated before the pointer to the implementation is severed by resetting it to NULL.
+
+\subsection{Master SPI Mode Functions}
+			\label{ss:HALusartMasterSPIModeFunctions}
+			
+			The USART hardware on the ATmega2560 device has the ability to operate in a SPI manner, emulating the protocol of this communication bus. This has some advantages over the conventional SPI mode including the double buffered transmitter (the SPI transmitter has no buffer).
+			
+			Access to the Master SPI Mode (MSPIM) is via the \textbf{\texttt{set\_mode}} function (see: \S\ref{ss:HALusartset_modeFunction}).
+			
+\subsubsection{\textbf{\texttt{set\_spi\_mode}} Function}
+			\label{sss:HALusartMasterSPIModeset_spi_modeFunctions}
+			
+			This function allows the user to set the desired clock phase and polarity settings for MSPIM. The options are contained in the enumerated list \textbf{\texttt{mspim\_mode}} (found in \textbf{\texttt{usart.h}} and relate directly to those modes specified for MSPIM in the ATmega2560 datasheet.
+			
+			These modes are applied only if the USART hardware has been previously initialised to MSPIM. If this is not the case, a value of \textbf{\texttt{-1}} is returned. 
+			
+			Depending on the mode selected, the function will manipulate set or clear the clock polarity and phase select bits in the USART control registers.
+			
+\subsubsection{\textbf{\texttt{set\_bit\_order}} Function}
+			\label{sss:HALusartMasterSPIModeset_bit_orderFunctions}
+			
+			This function allows the user to set the desired bit order of the MSPIM connection. The options are one of \textbf{\texttt{MSPIM\_MSB\_FIRST}}, or \textbf{\texttt{MSPIM\_LSB\_FIRST}} (defined in \textbf{\texttt{usart.h}}), which relate to either setting the most or the least significant bit first. Note, this function will only work if the USART hardware has been previously initialised to MSPIM. If this is not the case, a value of \textbf{\texttt{-1}} is returned. 
+			
+			The bit order is set by manipulating the USART control registers to set or clear the USART Data Order (\textbf{\texttt{UDORD}}) bit.
+			
+			A value of \textbf{\texttt{0}} is returned if the function is successful.
+			
+\subsubsection{\textbf{\texttt{spi\_transfer\_byte}} Function}
+			\label{sss:HALusartMasterSPIModespi_transfer_byteFunctions}
+			
+			When in MSPIM mode, the transfer of a single byte can be achieved by this function. A single byte is provided as an input argument and the function returns the byte it receives in the transfer process, or else a value of \textbf{\texttt{0}} if the USART hardware has not been configured in MSPIM.
+			
+			Internally, the function waits for the data register to become free by checking the \textbf{\texttt{UDRE}} flag. When the register is free, the outgoing data is passed into the buffer. The function then waits for the incoming data to be received, and returns this byte when it is available.
+			
+			Note that this function blocks the resources of the microprocessor until the function completes.
+			
+\subsubsection{\textbf{\texttt{spi\_transfer\_array}} Function}
+			\label{sss:HALusartMasterSPIModespi_transfer_arrayFunctions}
+			
+			An array of arbitary size and type can be received and transmitted in MSPIM via this function. A pointer to both the array to be transmitted and a location where the received data may be returned is required as well as the number of elements to transfer.
+			
+			The function sequentially transfers each of the byte elements of the array via the \texttt{spi\_transfer\_byte}} function (see: \S \ref{sss:HALusartMasterSPIModespi_transfer_byteFunctions}) and places in received data at the memory address of the pointer provided to it.
+			
+			Note that this function blocks the resources of the microprocessor until the function completes.
+			
+\subsubsection{\textbf{\texttt{spi\_dma\_transfer\_array}} Function}
+			\label{sss:HALusartMasterSPIModespi_dma_transfer_arrayFunctions}
+			
+			This function has not been implemented on the ATmega2560 platform due to the lack of a DMA or similar device. However, when implemented it is envisaged to behave very similarly to the \textbf{\texttt{spi\_transfer\_array}} function whilst facilitating a non-blocking type function.
+			
+			This will potentially be of use in datalogging applications and/or interfacing with external flash memory.
+
+\section{\textbf{\texttt{spi}} Module}
+			\label{s:HALspiModule}
+			
+			The Serial Parallel Interface (SPI) module currently consists of an interface and conceptual paltform to build the implementation on.
+			
+			The interface has been envisaged to provide appropriate and useful functionality for all required devices that support this functionality. This includes creating, initialising and using SPI connections on the device.
+			
+			Creating the SPI connection is performed by 'grabbing' an SPI implementation with the \textbf{\texttt{grab}} function. This function should perform the bare minimum initialisations that are necessary such as assigning register addresses in memory and registering the GPIO addresses of the pins required for the SPI bus.
+			
+			Initialisation processes should allow for the setting of crucial parameters to do with the SPI communication bus. The interface currently contains a number of functions for this purpose, including \textbf{\texttt{set\_data\_mode}}, \textbf{\texttt{set\_bit\_order}} and {\texttt{set\_clock\_divider}}.
+			
+			These functions should be implemented by accessing and manipulating the SPI control registers on the AVR platform. Use of macros such as \textbf{\texttt{\_SFR\_IO8}} and \textbf{\texttt{\_SFR\_MEM8}} in conjunction with the registers memory address should allow more direct access and less reliance on the built in AVR variables that contribute to larger compiled file sizes.
+			
+			The transferral of data over the SPI bus is envisaged to take two different forms; blocking and non-blocking processes. The blocking operation will consume the processor's resources until the transferral has been completed whilst the alternate option will most likely utilise a form of Direct Memory Access (DMA) controller.
+			
+			The interface includes prototypes for blocking functions that are capable of tranferring a single byte of data or an array of elements cast to a fixed-width byte data type (\textbf{\texttt{transfer}} and \textbf{\texttt{transfer\_array}} respectively). 
+			
+			There is also provision for transferring an array of arbitary size and type via the DMA controller with \textbf{\texttt{dma\_transfer}}. This function will require implementation of a DMA process and therefore only be applicable on the platforms that can support one, for example the Atmel AT32UC3C0512C.
+			
+			Functionality has been created to cater for dealing with multiple SPI slaves on one or more buses. This is carried out by the user accessing the \textbf{\texttt{spi\_slave}} class. Using this class allows for multiple slaves to be 'attached' at a specific GPIO address and then enabled or disabled individually for communication. This allows multiple slaves to be 'daisy-chained' on a single SPI bus that might only provide one Slave Select pin.
+			
+\section{\textbf{\texttt{i2c}} Module}
+			\label{s:HALi2cModule}
+			
+			 The \textbf{\texttt{i2c}} module interface has been created to cater for all the functionality required of the Inter-Integrated Circuit (I$^{2}$C) communication protocol.
+			 
+			 As it stands, the interface contains the ability for the user to initialise an instance of the \textbf{\texttt{i2c}} class and configure an \textbf{\texttt{i2c}} bus as the master device. This configuration may be carried out by the \textbf{\texttt{set\_bit\_rate}} function.
+			 
+			 The control of starting and stopping communication on the I$^{2}$C bus as well as checking for acknowledgement from the slave devices shoudl be abstracted away from the user as the current interface reflects. Rather, the implementation of the \textbf{\texttt{i2c}} module should manage these tasks automatically when the \textbf{\texttt{transmit}} and \textbf{\texttt{receive}} functions are called.
+			 
+			 The \textbf{\texttt{transmit}} and \textbf{\texttt{receive}} functions in the interface currently feature the ability to allow the user to optionally address specific locations on the slave devices they are communicating with. If implemented, this will give the module the ability to communicate with a wider range of peripherals.
 			
 \section{Size and Use}
 			\label{s:HALSizeAndUse}
-			At this stage, the HAL (for the AVR implementation) compiles to approximately 17.3kB, making it too large to fit into the bootloader section. Currently the smallest flash size of any of the supported micrcontrollers is 64kB (the ATmega64M1), meaning it can be used for any of the specified ValleyForge microprocessors. However, safety mechanisms in the code, as well as multiple layers of abstraction mean that it does not run efficiently.	
+			At this stage, the HAL (for the AVR implementation) compiles to approximately 17.3kB, making it too large to fit into the bootloader section. Currently the smallest flash size of any of the supported microcontrollers is 64kB (the ATmega64M1), meaning it can be used for any of the specified ValleyForge microprocessors. However, safety mechanisms in the code, as well as multiple layers of abstraction mean that it does not run efficiently.	
 						
 \chapter{Bootloader}
 			\label{C:Bootloader}

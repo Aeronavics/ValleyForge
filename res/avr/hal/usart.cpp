@@ -666,7 +666,10 @@ void usart::vacate(void)
     
     /* Clear the appropriate elements in the function pointer array */
     for (uint8_t i = (NUM_CHANNEL_INTERRUPTS * imp->usartNumber); i < (NUM_CHANNEL_INTERRUPTS * (imp->usartNumber + 1)); i++)
-      usartInterrupts[i] = NULL;     
+      usartInterrupts[i] = NULL; 
+    
+    /* Turn off the transmission and reception hardware circuitry */
+    _SFR_MEM8(imp->registerTable.UCSRB_address) &= (~(1 << RXEN_BIT) & ~(1 <<TXEN_BIT));
     
     /* Reset the implementation pointer to NULL */
     imp = NULL;
@@ -1145,16 +1148,12 @@ uint8_t usart_imp::spi_transfer_byte(uint8_t data)
 */
 void usart_imp::spi_transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements)
 {
-  /* Safeguard check to ensure instance is configured in MSPIM */
-  if (setMode == MASTER_SPI)
+  for (int8_t i = 0; i < numberElements; i++)
   {
-    for (int8_t i = 0; i < numberElements; i++)
-    {
-      *RXdata = spi_transfer_byte(*TXdata);
-      
-      TXdata++;
-      RXdata++;
-    }
+    *RXdata = spi_transfer_byte(*TXdata);
+    
+    TXdata++;
+    RXdata++;
   }
 }
 
