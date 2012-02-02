@@ -90,7 +90,7 @@
 \newcommand{\projecttitle}{VALLEYFORGE TOOLCHAIN}
 \newcommand{\documenttitle}{USER GUIDE}
 \title{\projecttitle \\ \documenttitle}
-\author{Zac Frank}
+\author{Zac Frank And Paul Bowler}
 \date{\today}
 
 % Modify the paragraph style.  This adds roughly a single line between paragraphs.
@@ -303,6 +303,378 @@ The options prompted when creating a new component with bootloader are described
 \item \textbf{Startup State EEPROM Address}. Elect an EEPROM address which the microprocessor will use to determine whether the processor last shut down cleanly. This will affect how the bootloader behaves.
 
 \end{itemize}
+
+\section{HAL}
+			\label{s:HAL}
+			
+\subsection{Modules}
+			\label{ss:HALModules}
+			The current modules that are fully implemented include:
+			
+\begin{itemize}
+\item \textbf{\texttt{gpio}}. A user uses the \texttt{pin\_grab} function to be given a class instance of a pin, which they can then manipulate until they relinquish hold on it again. 
+\item \textbf{\texttt{tc}}. The user is given an instance of a timer class and is able to use this to manipulate the timers. 
+\item \textbf{\texttt{mem}}. The memory module writes to EEPROM. 
+\item \textbf{\texttt{watchdog}}. This implements simple watchdog timers.
+\item \textbf{\texttt{usart}}. The USART module caters for serial communication between the target and a host of other devices. The implementation of the module allows a user to initialise a USART channel with a host of options, transmit and receive data as well as relinquish control of it.
+\end{itemize}
+
+\subsection{\textbf{\texttt{gpio}} Module}
+			\label{ss:HALgpioModule}
+			The \textbf{\texttt{gpio}} module allows the user to interact with the target's General Purpose I/O (GPIO) hardware. The module caters for the the ability to set the input/output functionality of a GPIO pin, set the pin's output logic, read the logic value of the pin and attach or disable interrupt functions to pins that support this functionality.
+
+\subsubsection{\textbf{\texttt{grab}} Function}
+			\label{sss:HALgrabFunction}
+			The \textbf{\texttt{grab}} function allows the user to create an instance of a GPIO pin that they can then use through the available methods in the \textbf{\texttt{gpio}} class. 
+			
+			This function takes as an argument a \textbf{\texttt{gpio\_pin\_address}} which must be of a valid GPIO pin on the microprocessor. If this operation is successful, a pointer to the implementation is assigned and the function will return non-NULL.
+			
+			Valid GPIO pin addresses for each microprocessor are made up of a specific pin and port and are contained within enumerated lists found in the \textbf{\texttt{hal.h}} file. 			
+
+\subsubsection{\textbf{\texttt{set\_mode}} Function}
+			\label{sss:HALset_modeFunction}
+			This function enables the user to set the desired directionality of the GPIO pin attached to the instance created. The options available for this function to supply as an argument are either \textbf{\texttt{INPUT}} or \textbf{\texttt{OUTPUT}}.
+			
+			This function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{write}} Function}
+			\label{sss:HALwriteFunction}
+			The \textbf{\texttt{write}} function gives the ability to output a logic value on a GPIO pin.
+			
+			The function accepts a value of type \textbf{\texttt{gpio\_output\_state}} and consists of one of the following:
+			
+\begin{itemize}
+\item \textbf{\texttt{O\_LOW}}. Sets the GPIO pin to logic \textbf{\texttt{0}}.
+\item \textbf{\texttt{O\_HIGH}}. Sets the GPIO pin to logic \textbf{\texttt{1}}.
+\item \textbf{\texttt{O\_TOGGLE}}. Toggles the GPIO pin's logic irrespective of its current value.
+\end{itemize}
+
+This function returns \textbf{\texttt{0}} always.
+
+\subsubsection{\textbf{\texttt{read}} Function}
+			\label{sss:HALreadFunction}
+			
+			This function accepts no input arguments but instead returns a value indicating the logic of the GPIO pin it is called with. These values will be one of the following \textbf{\texttt{gpio\_input\_state}} enumerated values:
+			
+\begin{itemize}
+\item \textbf{\texttt{I\_LOW}}. Logic \textbf{\texttt{0}}.
+\item \textbf{\texttt{I\_HIGH}}. Logic \textbf{\texttt{1}}.
+\item \textbf{\texttt{I\_ERROR}}. GPIO port out of bounds.
+\end{itemize}
+			
+\subsubsection{\textbf{\texttt{attach\_interrupt}} Function}
+			\label{sss:HALattach_interruptFunction}
+			
+			The \textbf{\texttt{attach\_interrupt}} function allows a user to register a function to be executed when an associated event occurs on the implemented GPIO pin.
+			
+			The function accepts a pointer to a user defined ISR function along with a mode that represents a value from the \textbf{\texttt{interrupt\_mode}} enumerated list found in \textbf{\texttt{gpio.h}}. 
+			
+			The function returns one of three values. (\textbf{\texttt{GP\_SUCCESS}}) indicates successful completion of the function, (\textbf{\texttt{GP\_ALREADY\_TAKEN}}) conveys the semaphore for the requested interrupt is already held elsewhere and (\textbf{\texttt{GP\_OUT\_OF\_RANGE}}) implies the pin that interrupt has been attached to does not have an interrupt vector available to it.
+			
+\subsubsection{\textbf{\texttt{disable\_interrupt}} Function}
+			\label{sss:HALdisable_interruptFunction}
+			
+			This function removes the association between a registered application ISR and the GPIO event which triggers it. 
+			
+\subsection{\textbf{\texttt{tc}} Module}
+			\label{ss:HALtcModule}
+			The \textbf{\texttt{tc}} module provides functionality for the hardware timers and counters. This abstracted control gives the user the ability to initialise, configure and run these elements in a variety of modes.
+			
+\subsubsection{\textbf{\texttt{grab}} Function}
+			\label{sss:HALtcgrabFunction}
+			The grab function instantiates a timer instance that the user can then use in conjunction with the associated methods in the class to perform the functions they wish.
+			
+			A timer counter number is required to be given to the \textbf{\texttt{grab}} function to proceed with initialisation. This timer counter number is required to be one of an enumerated list found in the \textbf{\texttt{tc\_number}} definition within the \textbf{\texttt{tc.h}} file. 
+			
+			The \textbf{\texttt{grab}} creates a pointer to the implementation requested by the user and returns a timer instance for future use. 
+			
+\subsubsection{\textbf{\texttt{set\_rate}} Function}
+			\label{sss:HALtcset_rateFunction}
+			
+			The \textbf{\texttt{set\_rate}} function prescalar and clock source settings for the implemented timer.
+			
+			This function requires the user to provide a \textbf{\texttt{rate}} value which is a custom structure made up both fields to indicate the desired clock source and prescalar for the timer counter. The options for these values are found in the enumerated lists \textbf{\texttt{tc\_clk\_src}} and \textbf{\texttt{tc\_prescalar}} respectively, within the \textbf{\texttt{tc.h}} file.
+			
+			A value of \textbf{\texttt{0}} is returned to indicated success, otherwise if an invalid prescalar setting for the timer chosen is supplied, \textbf{\texttt{-1}} is returned instead.
+			
+\subsubsection{\textbf{\texttt{load\_timer\_value}} Function}
+			\label{sss:HALtcload_timer_valueFunction}
+			
+			In order to load a specific value into the timer counter register this function should be called. An input value should be provided and an appropriate template employed depending on the size of the input value and the size of the timer counter register.
+			
+			This function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{get\_timer\_value}} Function}
+			\label{sss:HALtcget_timer_valueFunction}
+			
+			This function provides the ability to read the current value of the timer counter. No input variables are required but the user must anticapate the size of the returned timer value and apply an appropriate template to suit this.
+			
+\subsubsection{\textbf{\texttt{start}} Function}
+			\label{sss:HALtcstartFunction}
+			
+			As the name suggests, this function starts the implemented timer.
+			
+			This function returns \textbf{\texttt{0}} if the operation is successful, otherwise it will return \textbf{\texttt{-1}}. 
+						
+\subsubsection{\textbf{\texttt{stop}} Function}
+			\label{sss:HALtcstopFunction}
+			
+			The \textbf{\texttt{stop}} function causes the operation of the timer counter to cease.
+			
+			This function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{enable\_tov\_interrupt}} Function}
+			\label{sss:HALtcenable_tov_interruptFunction}
+			
+			The \textbf{\texttt{enable\_tov\_interrupt}} function facilitates the creation of function execution upon the timer counter overflowing. This is accomplished by providing the function with a pointer to a user-created interrupt service routine (ISR) that will be called at the appropriate time.
+			
+			This function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{disable\_tov\_interrupt}} Function}
+			\label{sss:HALtcdisable_tov_interruptFunction}
+			
+ 			Disabling the timer overflow interrupts on a particular timer is catered for by this function. 
+			
+			This function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{enable\_oc}} Function}
+			\label{sss:HALtcenable_ocFunction}
+			
+ 			The \textbf{\texttt{enable\_oc}} function allows the user to initiate output compare operation on a timer implementation. The choice of modes are governed by the \textbf{\texttt{tc\_oc\_mode}} enumerated list that is found in the \textbf{\texttt{tc.h}} file. These modes pertain directly to those listed in the ATmega2560's datasheet.
+			
+			This function returns \textbf{\texttt{0}} always.
+
+\subsubsection{\textbf{\texttt{enable\_oc\_channel}} Function}
+			\label{sss:HALtcenable_oc_channelFunction}
+			
+			The \textbf{\texttt{enable\_oc\_channel}} function controls the initialisation and settings relating to a channel within a timer. 
+						
+			Two input values are provided to the function. These are the desired channel to enable, and the mode to apply to it. Both of these variables are found in the enumerated lists \textbf{\texttt{tc\_oc\_channel}} and \textbf{\texttt{tc\_oc\_channel\_mode}} which are found in the \textbf{\texttt{tc.h}} file.
+			
+			A return value of \textbf{\texttt{0}} indicates successful completion of the function, whilst a value of \textbf{\texttt{-1}} indicates that the GPIO semaphores were unable to be procurred or an invalid mode was specified.
+			
+\subsubsection{\textbf{\texttt{enable\_oc\_interrupt}} Function}
+			\label{sss:HALtcenable_oc_interruptFunction}
+			
+			Attaching or enabling an ISR function to respond to an output compare interrupt is accomplished with this function.
+			
+			The function expects two input values, being the timer channel to which the interrupt is being attached and a function pointer to the user-defined ISR.
+			
+			This function returns \textbf{\texttt{0}} if the ISR was successfully attached and \textbf{\texttt{-1}} if an invalid channel was applied to the implemented timer.
+			
+\subsubsection{\textbf{\texttt{disable\_oc\_interrupt}} Function}
+			\label{sss:HALtcdisable_oc_interruptFunction}
+			
+			This function is used for de-associating ISR routines with the associated interrupt.
+			
+			Only one value is expected for the function and that is the channel of the implemented timer to disable.
+			
+			This function returns \textbf{\texttt{0}} if the ISR was successfully disabled and \textbf{\texttt{-1}} if an invalid channel was applied to the implemented timer.
+			
+\subsubsection{\textbf{\texttt{set\_icR}} Function}
+			\label{sss:HALtcset_icRFunction}
+			
+			This function allows the input capture register of suitably equipped timers to be manually set for output compare modes where this register is utilised as the timer's \textbf{\texttt{TOP}} value.
+			The function places the provided value in the \textbf{\texttt{ICR}} register and returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{enable\_ic}} Function}
+			\label{sss:HALtcenable_icFunction}
+			
+			This function enables the input capture functionality of a timer when it is provided a channel and mode value. These values represent one of the options defined in the \textbf{\texttt{tc\_ic\_channel}} and \textbf{\texttt{tc\_ic\_mode}} enumerated lists within \textbf{\texttt{tc.h}}.
+			
+			If successful a value of \textbf{\texttt{0}} is returned. Otherwise, a value of \textbf{\texttt{-1}} is returned for an invalid mode or un-available semaphore.
+			
+\subsubsection{\textbf{\texttt{enable\_ic\_interrupt}} Function}
+			\label{sss:HALtcenable_ic_interruptFunction}
+			
+			The \textbf{\texttt{enable\_ic\_interrupt}} function allows the user to register a ISR routine to an input capture channel associated with the implemented timer (when one is available).
+			
+			The input capture channel is provided by way of a channel number (defined in the \textbf{\texttt{tc\_ic\_channel}} enumerated list) as an input value, along with a function pointer to the user's ISR.			
+			
+			The function returns \textbf{\texttt{0}} for success and \textbf{\texttt{-1}} to indicate that input capture functionality is not available on the implemented timer.	
+			
+\subsubsection{\textbf{\texttt{disable\_ic\_interrupt}} Function}
+			\label{sss:HALtcdisable_ic_interruptFunction}
+			
+			In order to disable an interrupt that is attached to an input capture event, this function may be used. It once again accepts the channel for which the interrupt should be disabled as an input value.
+ 			
+ 			If the implemented timer does not feature input capture functionality, this function will return a value of \textbf{\texttt{-1}}, otherwise \textbf{\texttt{0}} is returned.
+			
+\subsubsection{\textbf{\texttt{get\_icR}} Function}
+			\label{sss:HALtcget_icR_interruptFunction}
+			
+			When provided with a valid input capture channel number and an appropriate data type template is provided in the function call, this function will return the contents of the \textbf{\texttt{ICR}} register.	
+			
+\subsubsection{\textbf{\texttt{vacate}} Function}
+			\label{sss:HALtcvacateFunction}
+			
+			This function may be called when the timer implementation is to be reset, or else it is called by default when the implementation goes out of scope.
+			
+\subsection{\textbf{\texttt{watchdog}} Module}
+			\label{ss:HALwatchdogModule}
+			
+			The \textbf{\texttt{watchdog}} module provides abstracted use of the watchdog timer on AVR targets. It allows a user to enable, pat and disable a watchdog timer easily.
+
+\subsubsection{\textbf{\texttt{enable}} Function}
+			\label{sss:HALwatchdogenableFunction}
+			
+			To enable a watchdog timer, the user simply calls this function and provides it one of a number of pre-defined time out periods. These periods are defined in \textbf{\texttt{watchdog.h}}.
+						
+\subsubsection{\textbf{\texttt{pat}} Function}
+			\label{sss:HALwatchdogpatFunction}
+			
+			In order to prevent a watchdog initiated reset, the {\textbf{\texttt{pat}}} resets the implemented watchdog.
+			
+\subsubsection{\textbf{\texttt{disable}} Function}
+			\label{sss:HALwatchdogdisableFunction}
+			
+			This function disables the watchdog timer in use.
+			
+\subsection{\textbf{\texttt{usart}} Module}
+			\label{ss:HALusartModule}
+			
+			This module provides functionality for implementing, initialising and using the USART hardware onboard AVR platforms.
+			
+\subsubsection{\textbf{\texttt{grab}} Function}
+			\label{sss:HALusartgrabFunction}
+			
+			This function may be used for creating a \textbf{\texttt{usart}} isntance with which to initialise and use. Only one variable is expected as input to these function, namely a \textbf{\texttt{usartNumber}} value which is of the enumerated list \textbf{\texttt{usart\_number}} and found in \textbf{\texttt{usart.h}}.
+						
+			If the \textbf{\texttt{grab}} function is successful, a link to the requested implementation is created and a \textbf{\texttt{usart}} instance returned, otherwise \textbf{\texttt{NULL}} is returned.
+			
+\subsubsection{\textbf{\texttt{set\_mode}} Function}
+			\label{sss:HALusartset_modeFunction}	
+			
+			The USART modules are capable of operating in multiple modes. This function allows the operation to be set and the options possible are listed in the \textbf{\texttt{usart\_setup\_mode}} list contained in \textbf{\texttt{usart.h}}.
+			
+			When called, this function disables global interrupts to allow for un-disturbed access to the control registers. These registers are then accessed and the settings applied as dictated by the specified mode.
+			
+			For modes such as \textbf{\texttt{MASTER\_SPI}} that require a GPIO pin whose directionality is not automatically set through hardware, this function is also responsible for this process.
+			
+\subsubsection{\textbf{\texttt{set\_frame}} Function}
+			\label{sss:HALusartset_frameFunction}
+			
+			The ability to define the serial format required for communication is extremely important. This function caters for this by allowing the user to specify their desired settings for packet size, parity type and number of stop bits. The parity type should be one of the options listed in the \textbf{\texttt{parity\_option}} enumerated list within \textbf{\texttt{usart.h}}. The frame size should be between five and eight bits whilst the user should specify either one or two stop bits.
+			
+			The function returns \textbf{\texttt{0}} if the function completes the task successfully, otherwise \textbf{\texttt{-1}} is returned to indicate an invalid option was specified.
+			
+\subsubsection{\textbf{\texttt{set\_baud\_rate}} Function}
+			\label{sss:HALusartset_baud_rateFunction}
+			
+			The baud rate is another important initialisation setting for the serial communication. The user may specify whatever baud rate they wish.
+					
+			This function returns \textbf{\texttt{0}} always.
+
+\subsubsection{\textbf{\texttt{double\_usart\_speed}} Function}
+			\label{sss:HALusartdouble_usart_speedFunction}
+			
+			Doubling the USART speed is an option that is only pertinent when the USART module has been configured in asynchronous operation. This function accepts a boolean value to allow the user to either enable or disable such operation depending on the value being true or false respectively.
+			
+			The function returns \textbf{\texttt{0}} always.
+
+\subsubsection{\textbf{\texttt{buffer\_is\_available}} Function}
+			\label{sss:HALusartbuffer_is_availableFunction}
+			
+			This function returns a boolean value to indicate whether the USART data register buffer is empty or not at the time of checking. A true value indicates that the buffer is available, whilst false indicates otherwise.
+			
+\subsubsection{\textbf{\texttt{transmit\_byte}} Function}
+			\label{sss:HALusarttransmit_byteFunction}
+			
+			This function allows the user to transmit a single byte value via the established USART connection by copying it to the data register buffer. 		
+			The function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{transmit\_string}} Function}
+			\label{sss:HALusarttransmit_stringFunction}
+			
+			This function has the capability to transmit a NULL-terminated string (or array) via USART. The user should provide a pointer to this string which is then transmitted in a byte-by-byte fashion. Note that this function will 'block' the processor until the transmission is complete.
+			
+			The function returns \textbf{\texttt{0}} always.
+			
+\subsubsection{\textbf{\texttt{transmit\_array}} Function}
+			\label{sss:HALusarttransmit_arrayFunction}
+			
+			To transfer an array of arbitary size and type, this function may be employed. It has the ability to transmit such data in a byte-by-byte fashion until the routine is complete.
+			
+			A pointer cast to the array of data that has been cast to a fixed-width byte datatype is required, as is the number of elements to transmit.
+			
+			This function blocks all CPU resourses until it has completed. A value of \textbf{\texttt{0}} is always returned. 
+			
+\subsubsection{\textbf{\texttt{transmission\_complete}} Function}
+			\label{sss:HALusarttransmission_completeFunction}
+			
+			This function returns a boolean to indicate whether there is new data that has not been transmitted in the buffer of the USART channel implemented is empty or not. The value returned is true if there is no new data and false otherwise.
+			
+\subsubsection{\textbf{\texttt{receive\_complete}} Function}
+			\label{sss:HALusartreceive_completeFunction}
+			
+			This function returns a boolean to indicate whether the data buffer of the USART channel implemented contains new unread data. The value returned is true if this is so and false otherwise.
+			
+\subsubsection{\textbf{\texttt{receive\_byte}} Function}
+			\label{sss:HALusartreceive_byteFunction}
+			
+			In order to receive data via USART, the data register buffer must be read when new unread data is present. This function checks to ensure there is in fact unread data and returns the contents of the buffer if there is.
+			
+\subsubsection{\textbf{\texttt{enable\_interrupt}} Function}
+			\label{sss:HALusartenable_interruptFunction}	
+			
+			A user defined ISR may be attached to a number of interrupt vectors associated with the USART hardware. These interrupt vectors or types are contained in the \textbf{\texttt{usart\_interrupt\_types}} enumerated list of the \textbf{\texttt{usart.h}} file.	Broadly speaking, these interrupts can occur when a USART transmission has been completed, when new data has been received, and when the data register buffer is empty.
+			
+\subsubsection{\textbf{\texttt{disable\_byte}} Function}
+			\label{sss:HALusartdisable_byteFunction}
+			
+			Any interrupt functions associated with a USART interrupt signal can be disabled by calling this function.
+			
+			The user must provide the one of the enumerated interrupt types available for the USART to disable a specific interrupt. 
+			
+\subsubsection{\textbf{\texttt{usart\_error}} Function}
+			\label{sss:HALusart_errorFunction}
+			
+			Communication via USART may produce cases where the communicated packet is invalid or corrupted. This function provides the ability to check any errors on the USART connection.
+			
+			If any of these errors exist, it will return an indicating flag, as listed in the \textbf{\texttt{usart\_error\_types}} list located in \textbf{\texttt{usart.h}}, for the first error found; or else a flag indicating no error if none exists.
+			
+\subsubsection{\textbf{\texttt{vacate}} Function}
+			\label{sss:HALusartvacateFunction}
+			
+			The \textbf{\texttt{vacate}} function may be called when the USART instance is no longer required; or else when it goes out of scope.
+			
+			This function vacates the semaphores that were procured upon initialisation for the required GPIO pins and sets all the interrupt function pointers associated with the instance to NULL.
+
+\subsubsection{Master SPI Mode Functions}
+			\label{sss:HALusartMasterSPIModeFunctions}
+			
+			The USART hardware on the ATmega2560 device has the ability to operate in a SPI manner, emulating the protocol of this communication bus. This has some advantages over the conventional SPI mode including the double buffered transmitter (the SPI transmitter has no buffer).
+			
+			Access to the Master SPI Mode (MSPIM) is via the \textbf{\texttt{set\_mode}} function (see: \S\ref{sss:HALusartset_modeFunction}).
+			
+\subsubsection{\textbf{\texttt{set\_spi\_mode}} Function}
+			\label{sss:HALusartMasterSPIModeset_spi_modeFunctions}
+			
+			This function allows the user to set the desired clock phase and polarity settings for MSPIM. The options are contained in the enumerated list \textbf{\texttt{mspim\_mode}} (found in \textbf{\texttt{usart.h}} and relate directly to those modes specified for MSPIM in the ATmega2560 datasheet.
+			
+			These modes are applied only if the USART hardware has been previously initialised to MSPIM. If this is not the case, a value of \textbf{\texttt{-1}} is returned. Otherwise, upon successful completion of the function a value of \textbf{\texttt{0}} is returned.
+			
+\subsubsection{\textbf{\texttt{set\_bit\_order}} Function}
+			\label{sss:HALusartMasterSPIModeset_bit_orderFunctions}
+			
+			This function allows the user to set the desired bit order of the MSPIM connection. The options are one of \textbf{\texttt{MSPIM\_MSB\_FIRST}}, or \textbf{\texttt{MSPIM\_LSB\_FIRST}} (defined in \textbf{\texttt{usart.h}}), which relate to either setting the most or the least significant bit first. Note, this function will only work if the USART hardware has been previously initialised to MSPIM. If this is not the case, a value of \textbf{\texttt{-1}} is returned. 
+			
+			A value of \textbf{\texttt{0}} is returned if the function is successful.
+			
+\subsubsection{\textbf{\texttt{spi\_transfer\_byte}} Function}
+			\label{sss:HALusartMasterSPIModespi_transfer_byteFunctions}
+			
+			When in MSPIM mode, the transfer of a single byte can be achieved by this function. A single byte is provided as an input argument and the function returns the byte it receives in the transfer process, or else a value of \textbf{\texttt{0}} if the USART hardware has not been configured in MSPIM.
+	
+			Note that this function blocks the resources of the microprocessor until the function completes.
+			
+\subsubsection{\textbf{\texttt{spi\_transfer\_array}} Function}
+			\label{sss:HALusartMasterSPIModespi_transfer_arrayFunctions}
+			
+			An array of arbitary size and type can be received and transmitted in MSPIM via this function. A pointer to both the array to be transmitted and a location where the received data may be returned is required as well as the number of elements to transfer.
+			
+			Note that this function blocks the resources of the microprocessor until the function completes.
+
 
 	% THEN COMES ANY SUPPORTING MATERIAL.
 
