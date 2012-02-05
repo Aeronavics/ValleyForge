@@ -1,17 +1,42 @@
+* Create software style guide for toolchain users, and then refactor the existing HAL libraries to make sure they comply with the style guide.
+
+* Optimize the HAL; at the moment it takes up way too much space.  Optimizing the implementations may help, but it is also possible that some redesign may be required to some bits.
+
+* Get the AVR32 bootloader working.
+
+* Create a USART module for the AVR bootloader.  Thus check that the bootloader is working properly on the ATmega2560.
+
+* Complete interfaces for SPI, I2C; this just requires a check that everything is ok.
+
+* Implement SPI and I2C libraries for Atmega2560.
+
+* Complete HAL interface design for remaining peripherals.
+
+* Complete HAL implementation for remaining peripherals and targets.
+
+* Complete booloader implementation for remaining peripherals and targets.
+
+* Add support for multiple 'tasks' on Linux based platforms.
+
+* Add support for components having source code split into subfolders.
+
+* Add python bindings for Linux platforms and toolchain support for python files (since python files are interpreted, all that one needs to do is copy the source files over into the output folder, so that they can get included in the file system image).
+
+* Create software for uploading firmware from Linux platforms to RTOS/bare-metal platforms.
+
+* Add FreeRTOS support for remaining targets, and actually test that FreeRTOS works as it is supposed to work.
+
+* Configure support for inclusion of vendor code via Git submodules.
+
+* Add support for MAVlink communications via shared messaging, including code generation.
+
 * Add the ATmega328 to the targets list.  Actually, I think I mean the ATmega328, but maybe I don't: I mean whatever the MUX/PPM controller on the ArduPilot Mega is; look this up.  Actually, possibly belay that: the new Arduino's and hence the APMv2 might have a different MCU as the USB interface (and hence the MUX/PPM controller), in which case THAT should be added to the target list instead.
 
 * res/arm should probably be renamed to res/omap, since different ARM processors have quite different peripherals, so 'arm' is not really sufficiently specific.  There are quite a few places this path will need to be updated though?
 
-* DEFERRED - Add compatibility with existing Arduino compatible projects such as the APM.  Need to have a build configuration which disables the HAL, and instead uses the existing Arduino libraries, which I guess can be in lib somewhere?  Also, need to add support back in for *.cpp extensions, and whatever other extensions the Arduino wants to use.  Also, Arduino projects probably support source in nested folders, which we don't support at the moment?
-
-* The HAL will need to provide a function to globally disable and enable interrupts as well.  I took out the inclusion of <avr/interrupt.h> from bootloader.c, so it won't compile now until a HAL replacement for the sei() and cli() functions is provided.
-
-* The location of within EEPROM which the bootloader stores the Clean/Dirty flag in (SHUTDOWNSTATE_MEM?) needs to be set by the user in the component configuration.  Needed so that bootloader.c will compile.
-
-* Implement the actual functionality of bootloader_module_isp.c; for now, all we want it to do is to register a GPIO interrupt for one of the push buttons.  Then when the button is pressed, it should set the firmware_finished flag, so that the bootloader will run the application.
+* Add compatibility with existing Arduino compatible projects such as the APM (plus any other libraries the APM depends on).  Need to have a build configuration which disables the HAL, and instead uses the existing Arduino libraries, which I guess can be in lib somewhere?  Also, need to add support for whatever other extensions the Arduino wants to use.  Also, Arduino projects probably support source in nested folders, which we don't support at the moment?
 
 * The interface for mem.h has a bunch of functions which take a pointer to the array of data to be written.  Since we are using C++, these should be changed to instead take a REFERENCE to the array of data to be written.  Similarly for anywhere else where this applies.
 
 * Maybe should split the preprocess script up into different files?
 
-* BUG - In the target specific configuration for the AVR bootloader, it asks you first to enter the clock speed in MHz, then the memory address.  Firstly, it doesn't indicate the memory addresss of WHAT (I presume it wants the bootloader clean/dirty flag?).  Secondly, when you enter a value for the memory address, it says "Selected clock speed of...".
