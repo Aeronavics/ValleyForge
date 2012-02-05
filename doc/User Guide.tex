@@ -307,6 +307,10 @@ The options prompted when creating a new component with bootloader are described
 \section{HAL}
 			\label{s:HAL}
 			
+			Any of the \textbf{\texttt{hal}} modules may be included in a project by using the pre-processor include command \textbf{\texttt{\#include}} followed by the name of the module and prefixed by the \textbf{\texttt{hal}} path.
+			
+			e.g \textbf{\texttt{\#include "hal/gpio.h"}}
+			
 \subsection{Modules}
 			\label{ss:HALModules}
 			The current modules that are fully implemented include:
