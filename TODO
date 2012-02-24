@@ -40,3 +40,9 @@
 
 * Maybe should split the preprocess script up into different files?
 
+* Add support for STM32 targets.  Only bare metal, can use the 'Summon ARM Toolchain'.
+
+* Add support for Gumstix targets (specifically, the OMAP3530 I think).
+
+* The doc folder should have 'targets' and 'platforms' subfolders containing user documentation for each of those things.  For instance, the ATmega2560 folder should at least contain the Atmel User Guide for the MCU.
+
