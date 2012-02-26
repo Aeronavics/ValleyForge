@@ -194,8 +194,17 @@ choose_bootloader()
 	echo -e "${GREEN}Which bootloader would you like to use for this component? \n${NO_COLOUR}"
 
 	# Create a menu of choices and have the user select one.
+	BOOTLOADERS=( "${BOOTLOADERS[@]} None" )
 	select BOOTLOADER in $BOOTLOADERS
 	do
+		# Check if they chose not to use a bootloader.
+		if [ "$BOOTLOADER" == "None" ]; then
+			# We don't use a bootloader.
+			echo -e "${CYAN} Not using a bootloader for this component.\n${NO_COLOUR}"
+			BOOTLOADER=
+			break
+		fi
+
 		# Check if the selected bootloader is actually valid.
 		BOOTLOADER=$(echo "$BOOTLOADERS" | grep -w -o "$BOOTLOADER")
 		if [ -z "$BOOTLOADER" ]; then
