@@ -329,6 +329,8 @@ These are entered (in either short or long form) into the terminal after the nam
 			
 					\item	\texttt{-l --loader} Build the bootloader for each component as well as the `application code'. The bootloader will be compiled as well, and stored in the bin directory as ``COMPONENT\_NAME\_bootloader.hex''.  At some later stage, there might also be an option two merge the bootloader and application code into a single binary, ready for flashing.
 			
+					\item	\texttt{-p --postpack} After the build operation has completed, pack up (remove) any compilers or other tools which needed to be unpacked as part of the build process.  This will save space and tidy things up, but means that the tools will need to be unpacked again next time, so subsequent build runs may be slower than they would be otherwise.			
+			
 					\item	\texttt{-n --name <Component Name>}	Specify the name of a component to build. You can put multiple component names here (space separated), and the script will build all of them. When specifying multiple component names, this must be the \emph{last} option provided to the script.
 			
 					\item   \texttt{--nohal} Do not include the ValleyForge HAL when compiling the project.  This is useful if the component is using an alternate HAL (for instance, when compiling an Arduino project, and including the Arduino hardware libraries manually).

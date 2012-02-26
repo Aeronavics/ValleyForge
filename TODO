@@ -14,7 +14,13 @@
 
 * Complete HAL implementation for remaining peripherals and targets.
 
-* Complete booloader implementation for remaining peripherals and targets.
+* Complete bootloader implementation for remaining peripherals and targets.
+
+* Add support for flashing both bootloader and application code direct from a PC via ISP (via a known ISP programmer with existing drivers).
+
+* Add support for flashing bare metal and RTOS application code direct from a PC via USART (via serial cable) or CAN (via CAN-USB dongle) to devices which already have the appropriate bootloader.
+
+* Add support for compiling and ISP flashing bare metal applications direct from a PC via ISP (via a known ISP programmer with existing drivers).  The difference from the bootloader case is that the application code may need to be placed into a different part of memory, and there are fuse bits to be set to switch between application code and bootloader code booting.  The principles behind VF will mean that this should never be used in practise, but being able to do it is useful for the sake of completeness, and because it will ensure that we actually know what we are doing (thus ensuring that the other use cases, which ARE important, are also being done properly).
 
 * Add support for multiple 'tasks' on Linux based platforms.
 
@@ -44,5 +50,7 @@
 
 * Add support for Gumstix targets (specifically, the OMAP3530 I think).
 
-* The doc folder should have 'targets' and 'platforms' subfolders containing user documentation for each of those things.  For instance, the ATmega2560 folder should at least contain the Atmel User Guide for the MCU.
+* The doc folder should have 'targets' and 'platforms', subfolders containing user documentation for each of those things.  For instance, the ATmega2560 folder should at least contain the Atmel User Guide for the MCU.
+
+* The user guide and maintenance guide should be split up into different files, rather than being one monolithic TeX file.
 

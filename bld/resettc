@@ -32,6 +32,9 @@ USER_CONFIG_FILE="var/config.cfg"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+# Define the functions used for set up the compilers.
+source $TCPATH/bld/other/setup_compilers
+
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Make sure we can find the default user configuration file.
@@ -45,9 +48,9 @@ else
 	exit 1
 fi
 
-# Delete the unpacked AVR32 compiler (it will be unpacked again next time it is needed).
-echo -e "${BOLD_CYAN}Removing unpacked AVR32 compiler...\n${NO_COLOUR}"
-rm -rf $TCPATH/res/arv32/avr32comp
+# Pack all the compilers up.
+echo -e "${BOLD_CYAN}Packing up compilers...\n${NO_COLOUR}"
+pack_allc
 
 # Indicate that we're done.
 echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"

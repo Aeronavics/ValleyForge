@@ -87,10 +87,10 @@
 \pdfpageheight=\paperheight
 
 % Set the title attributes.
-\newcommand{\projecttitle}{VALLEYFORGE TOOLCHAIN}
-\newcommand{\documenttitle}{Maintenance Manual}
+\newcommand{\projecttitle}{ValleyForge Embedded Toolchain}
+\newcommand{\documenttitle}{Maintenance Guide}
 \title{\projecttitle \\ \documenttitle}
-\author{Zac Frank And Paul Bowler}
+\author{Zac Frank \& Paul Bowler}
 \date{\today}
 
 % Modify the paragraph style.  This adds roughly a single line between paragraphs.
@@ -827,6 +827,7 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \item \texttt{\textbf{all}}. This builds all the components, one after the other. If one component fails to build, the others will still be attempted.
 \item \texttt{\textbf{retain}}. Often, to debug preprocessing errors, or inclusion errors, it is useful to look at the code that is actually being compiled, as it may differ from how it is found in the source folders. The retain functionality does not delete the files from the tmp directory, so that the user may look at them. They do, however get deleted straight away next time the build script is run.
 \item \texttt{\textbf{loader}}. This builds the corresponding bootloader as well, if there is one. It compiles in a subdirectory of \texttt{tmp\_src} called bootloader, and the resulting \texttt{hex} file is called COMPONENT\_NAME\_bootloader.hex and also placed in the \texttt{bin} directory.
+\item	\texttt{\textbf{postpack}} After the build operation has completed, this option will pack up (remove) any compilers or other tools which needed to be unpacked as part of the build process.  This will save space and tidy things up, but means that the tools will need to be unpacked again next time, so subsequent build runs may be slower than they would be otherwise.
 \item \texttt{\textbf{name}}. This will build the specified component only.
 \item \texttt{\textbf{nohal}}. While HAL aspects are not yet complete, it can be useful to build components without any use of the HAL. This makes sure the HAL files are not put into the build directory.
 \end{itemize}

@@ -1,0 +1,174 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		setup_compilers											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	26-02-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which checks to see if a specific compiler (and the other bits of its	###
+###			matching toolchain) are set up and ready to go, and if not, sets it up.  Also offers functions	###
+###			to 'un-set' each compiler once it is no longer required.					###
+###															###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_avrc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the AVR compiler (and associated toolchain) is	###
+###			available for use, and if not, sets it up ready to go.		###
+###											###
+###########################################################################################
+
+unpack_avrc()
+{
+	# TODO - At the moment, this doesn't do anything.
+
+	# The compiler is already set to go.
+	echo -e "${CYAN}AVR compiler available.\n${NO_COLOUR}"
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_avr32c							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the AVR32 compiler (and associated toolchain) is	###
+###			available for use, and if not, sets it up ready to go.		###
+###											###
+###########################################################################################
+
+unpack_avr32c()
+{
+	# Check if the AVR32 compiler has been uncompressed already.
+	if [ ! -d $TCPATH/res/avr32/avr32comp ]; then
+		# We need to uncompress the compiler before we continue.		
+		echo -e "${CYAN}Uncompressing the AVR32 compiler and libraries...\n${NO_COLOUR}"
+		tar -C $TCPATH/res/avr32 -xf  $TCPATH/res/avr32/avr32comp.tar
+	else
+		# The compiler is already set to go.
+		echo -e "${CYAN}AVR32 compiler available.\n${NO_COLOUR}"
+    	fi
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_armc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the ARM compiler (and associated toolchain) is	###
+###			available for use, and if not, sets it up ready to go.		###
+###											###
+###########################################################################################
+
+unpack_armc()
+{
+	# TODO - At the moment, this doesn't do anything.
+
+	# The compiler is already set to go.
+	echo -e "${CYAN}ARM compiler available.\n${NO_COLOUR}"
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_allc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		For each compiler which was previously unpacked, packs those	###
+###			compilers back again.						###
+###											###
+###########################################################################################
+
+pack_allc()
+{
+	# Just pack each of the compilers in turn.
+	pack_avrc
+	pack_avr32c
+	pack_armc
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_avrc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Doesn't do anything, for now.					###
+###											###
+###########################################################################################
+
+pack_avrc()
+{
+	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_avr32c							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the AVR32 compiler was previously unpacked, and if it	###
+###			was, then packs it back up again.				###
+###											###
+###########################################################################################
+
+pack_avr32c()
+{
+	# Check if the AVR32 compiler has been uncompressed already.
+	if [ -d $TCPATH/res/avr32/avr32comp ]; then
+		# We just delete the uncompressed copy of the compiler.		
+		echo -e "${CYAN}Cleaning up AVR32 compiler...\n${NO_COLOUR}"
+		rm -Rf $TCPATH/res/avr32/avr32comp
+    	fi
+		# Else, the compiler is already packed.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_armc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Doesn't do anything, for now.					###
+###											###
+###########################################################################################
+
+pack_armc()
+{
+	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
