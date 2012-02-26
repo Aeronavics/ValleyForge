@@ -38,6 +38,9 @@ source $TCPATH/bld/common/def_colours
 # Define the functions used for preprocessing.
 source $TCPATH/bld/preprocess/preprocess
 
+# Define the functions used for set up the compilers.
+source $TCPATH/bld/other/setup_compilers
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		makeavr								###
@@ -50,7 +53,10 @@ source $TCPATH/bld/preprocess/preprocess
 ###########################################################################################
 
 makeavr() 
-{ 
+{
+	# Set up the AVR compiler.
+	unpack_avrc
+
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
@@ -140,6 +146,9 @@ makeavr()
 
 makeavr_bootloader() 
 {
+	# Set up the AVR compiler.
+	unpack_avrc
+
 	# Make sure there aren't any old files in the spot we are about to put new files.
 	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
@@ -245,8 +254,8 @@ makeavr_bootloader()
 
 makeavr32()
 {
-	# Check if the AVR32 compiler has been uncompressed already.
-	inflate_avr32cc
+	# Set up the AVR32 compiler.
+	unpack_avr32c
 
 	# If we are using a linker script, then add the appropriate linker flags to use it.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
@@ -340,6 +349,9 @@ makeavr32()
 
 makearm()
 {
+	# Set up the ARM compiler.
+	unpack_armc
+
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
@@ -425,20 +437,6 @@ makearm()
 }
 
 ##################################### MINOR FUNCTIONS ####################################
-
-# Uncompress the AVR32 compiler if required, since it is stored in compressed form.
-inflate_avr32cc()
-{
-	# Check if the AVR32 compiler has been uncompressed already.
-	if [ ! -d $TCPATH/res/avr32/avr32comp ]; then
-		# We need to uncompress the compiler before we continue.		
-		echo -e "${CYAN}Uncompressing the AVR32 compiler and libraries...\n${NO_COLOUR}"
-		tar -C $TCPATH/res/avr32 -xf  $TCPATH/res/avr32/avr32comp.tar
-    	fi
-
-	# All done.
-	return
-}
 
 # Find the rtos files and copy them into the tmp directory
 get_rtos_files ()
@@ -684,11 +682,12 @@ RETAIN=
 ALL=
 LOADER=
 NOHAL=
+POSTPACK=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harlcn:"
-LONGOPTS="help,all,retain,loader,clean,nohal,name:"
+SHORTOPTS="harlpcn:"
+LONGOPTS="help,all,retain,loader,postpack,clean,nohal,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -714,6 +713,10 @@ while true; do
 		-l|--loader)
 			# Select 'creating bootloaders'.
 			LOADER=1
+			;;
+		-p|--postpack)
+			# Select 'pack up compilers, post build'.
+			POSTPACK=1
 			;;
 		-c|--clean)
 			# Remind the user that there is no 'clean' option here.
@@ -1004,6 +1007,19 @@ do
 		$MAKEFUNCTION
 	fi
 done
+
+# Now wer are done with the actual work, we just have to tidy up.
+echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
+
+# Check if we are supposed to be packing up the compilers after we are finished.
+if [ $POSTPACK ]; then
+	# Pack up the compilers.
+	echo -e "${CYAN}Packing compilers...\n${NO_COLOUR}"
+	pack_allc
+else
+	# Don't pack the compilers, so that subsequent build attempts are faster.
+	echo -e "${CYAN}Leaving compilers unpacked.\n${NO_COLOUR}"
+fi
 
 # Check if we are supposed to be deleting temporary files after we are finished.
 if [ ! $RETAIN ]; then
