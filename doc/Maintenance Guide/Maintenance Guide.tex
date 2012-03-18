@@ -213,7 +213,7 @@ Two other files are contained in this directory:
 \begin{lstlisting}[frame=trBL, breaklines=true, language = bash]
 source bld/build_configs.cfg
 \end{lstlisting}[frame=trBL, breaklines=true, language = bash]
-which runs the file as a script. It contains bash function defintions, each of which does nothing except assign various fields. Therefore when the user calls the function, a collection of variables become assigned, corresponding to the build configuration selected. Build configurations correspond to the different combinations of platform and microprocessor, and each has its specific variables to be set (such as Makefile used, flash address to start from).
+which runs the file as a script. It contains bash function definitions, each of which does nothing except assign various fields. Therefore when the user calls the function, a collection of variables become assigned, corresponding to the build configuration selected. Build configurations correspond to the different combinations of platform and microprocessor, and each has its specific variables to be set (such as Makefile used, flash address to start from).
 
 \item \textbf{\texttt{default\_user\_config.cfg}}. A file which the \texttt{user\_config.cfg} file gets restored to when the \texttt{resettc} script is called.
 
@@ -268,6 +268,13 @@ which runs the file as a script. It contains bash function defintions, each of w
 \item \textbf{\texttt{edit\_user\_config}}. Changes toolchain variables, such as user name and subsystem.
 
 \end{itemize}
+
+\subsection{bld/make\_functions}
+	\label{ss:bld/make_functions}
+	
+	Contains scripts with filenames of the form `\texttt{make}[architecture type]\texttt{}'.  These contain function definitions for `make-functions' which are target dependent functions which perform the actual compilation operations required to build software components (typically implemented by the make-function making some modifications to a generic make-file, which is then invoked).
+	
+All files in this folder which match the glob ``\texttt{make*}'' will be sourced into the \texttt{bld/build} script when it runs.  The functions within the file may be called any names, since they have to be identified explicitly by the build configuration of the software being compiled.  However, for consistency, the functions should be named with the form `\texttt{make}[architecture type]\texttt{}' (for building application code), `\texttt{make}[architecture type]\texttt{\_bootloader}' (for building bootloader code) or `[architecture type]\texttt{\_}[other description]' (for other support functions).
 
 \subsection{bld/other}
 			\label{ss:bld/other}
@@ -834,37 +841,12 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 
 \subsection{Prologue}
 			\label{ss:buildPrologue}
-			As per usual, the script first finds out where it is located, and the absolute path of the toolchain, defines a few constants (mainly file locations), and sources the colour scheme (see \S\ref{s:Colours}), as well as the preprocessing functions (see more about the preprocessing script in section \S\ref{s:Preprocess})
+			As per usual, the script first finds out where it is located, and the absolute path of the toolchain, defines a few constants (mainly file locations), and sources the colour scheme (see \S\ref{s:Colours}), as well as the preprocessing functions (see more about the preprocessing script in section \S\ref{s:Preprocess}) and make-functions which will be used for the `heavy-lifting'.
 			
 \subsection{Functions}
 			\label{ss:buildFunctions}
 			The build script has quite a few functions...
-			
-\subsubsection{makeavr}
-			\label{sss:buildMakeavr}
-			This function is responsible for compiling and linking avr files into a hex binary input.\newline
-			First it copies the makefile to be used from its source, in this case \texttt{res/avr}.\newline
-			It then checks to see if a linker script has been specified for this particular build configuration. If so, it copies it from the location specified in the build configuration to the \texttt{tmp\_src/component} directory, used for compiling files.\newline \newline
-			The build script has already copied all relevant source files to the build directory from various sources. Now the \texttt{makeavr} function creates a list of all the source files to be built, and their type.\newline
-			Next, the function edits the makefile, replacing strings such as ``BUILD\_INSERTS\_C\_FILES\_HERE'' with the relevant entries using \texttt{sed}. This is contrast to the replacements that follow, which erase everything to the right of the ``='' and therefore can't be used to add to a line. If a variable is empty, the string is simply replaced with nothing.\newline \newline
-			The makefile is then run. All makefile output is printed to the screen. If the makefile returns with an error, the whole script exits and doesn't attempt to do anymore, else, if it compiles successfully, it copies the binary over to the \texttt{bin} folder.
-			
-\subsubsection{make\_avr\_bootloader}
-			\label{sss:buildMakeavrbootloader}
-			This function does the same as the above in section \S\ref{sss:buildMakeavr} except for the avr\_bootloader. Different make functions are used for each because the makefiles are different and need different fields replaced, however, it probably wouldn't be too hard to combine all these make functions together.
-			
-\subsubsection{makeavr32}
-			\label{sss:buildMakeavr32}
-			Same as above, see section \S\ref{sss:buildMakeavr}.
-			
-\subsubsection{makearm}
-			\label{sss:buildMakearm}
-			Same as above, see section \S\ref{sss:buildMakeavr}.
-			
-\subsubsection{inflate\_avr32cc}
-			\label{sss:buildInflateavr32cc}
-			The AVR32 compiler is kept in a tarball, and is inflated whenever required. This function simply inflates the tarball, which contains the relevant binaries (and header files).
-			
+						
 \subsubsection{get\_rtos\_files}
 			\label{sss:buildGetrtosfiles}
 			This function retrieves the relevant rtos files for respective build configurations and places them in the build directory.
@@ -881,8 +863,6 @@ clears the variable, meaning that if it is not reassigned, an empty value will b
 \subsubsection{usage}
 			\label{sss:buildUsage}
 			This prints a message to the terminal outlining how to use the script, which parameters can be passed to it. To see the parameters, see the build summary in section \S\ref{s:build}. 
-
-			
 			
 \subsection{Script Proper}
 			\label{sss:buildScriptProper}

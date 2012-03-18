@@ -38,7 +38,7 @@
 
 * Add the ATmega328 to the targets list.  Actually, I think I mean the ATmega328, but maybe I don't: I mean whatever the MUX/PPM controller on the ArduPilot Mega is; look this up.  Actually, possibly belay that: the new Arduino's and hence the APMv2 might have a different MCU as the USB interface (and hence the MUX/PPM controller), in which case THAT should be added to the target list instead.
 
-* res/arm should probably be renamed to res/omap, since different ARM processors have quite different peripherals, so 'arm' is not really sufficiently specific.  There are quite a few places this path will need to be updated though?
+* res/arm should probably be renamed to res/omap, since different ARM processors have quite different peripherals, so 'arm' is not really sufficiently specific.  There are quite a few places this path will need to be updated though?  Actually, maybe omap4, since there might also be a need for an omap3 (or even omap5 folder as well), or maybe they should be subfolders, so res/omap/omap4. 
 
 * Add compatibility with existing Arduino compatible projects such as the APM (plus any other libraries the APM depends on).  Need to have a build configuration which disables the HAL, and instead uses the existing Arduino libraries, which I guess can be in lib somewhere?  Also, need to add support for whatever other extensions the Arduino wants to use.  Also, Arduino projects probably support source in nested folders, which we don't support at the moment?
 
@@ -53,4 +53,7 @@
 * The doc folder should have 'targets' and 'platforms', subfolders containing user documentation for each of those things.  For instance, the ATmega2560 folder should at least contain the Atmel User Guide for the MCU.
 
 * The user guide and maintenance guide should be split up into different files, rather than being one monolithic TeX file.
+
+* When the user selects the 'reconfigure component' option, then the existing configuration values should be shown or something; at the moment this is a bit of an issue because if someone wants to change one configuration setting, they need to know what all the other values should be set to, which may be an unlikely situation in multi-user development.
+
 

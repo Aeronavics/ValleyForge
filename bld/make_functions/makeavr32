@@ -1,0 +1,114 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		make_avr32											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	19-03-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which makes AVR32 type components.						###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported AVR32 make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makeavr32							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Copies AVR32 makefile into tmp directory, edits it, and uses it	###
+### 			to compile the files that are already there.		     	###
+###											###
+###########################################################################################
+
+makeavr32()
+{
+	# Set up the AVR32 compiler.
+	unpack_avr32c
+
+	# If we are using a linker script, then add the appropriate linker flags to use it.
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
+
+		# A linker script is specified, so set the linker flags to refer to it.
+		LFLAGS="-T linker_script.ld $LFLAGS"
+	fi
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Get a list of names of source and header files.
+	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	
+	# Get a list of all the library source and header files.
+	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+
+	# Get a list of all the HAL source and header files.
+	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+								
+	# Update the working makefile with the appropriate values for this component.	
+	sed -i "s^\(PART *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
+	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_C *= *\)BUILD_INSERTS_C_FILES_HERE^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_P *= *\)BUILD_INSERTS_P_FILES_HERE^\1$P_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(PRJSRC_S *= *\)BUILD_INSERTS_S_FILES_HERE^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_C *= *\)BUILD_INSERTS_LIBRARY_C_SOURCE_FILES_HERE^\1$C_LIBFILES $C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_P *= *\)BUILD_INSERTS_LIBRARY_P_SOURCE_FILES_HERE^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBSRC_S *= *\)BUILD_INSERTS_LIBRARY_S_SOURCE_FILES_HERE^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(TARGET *= *\)BUILD_INSERTS_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+    
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all			
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# The compilation worked, so now just copy across the output binaries.
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.elf $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi	
+
+	# Print out details of the size of the generated hex file.
+	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}.hex								
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	return 0
+}
+
