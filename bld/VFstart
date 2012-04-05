@@ -38,6 +38,46 @@ source $TCPATH/bld/common/def_colours
 
 ##################################### MINOR FUNCTIONS ####################################
 
+# Determine the status of the active component.
+check_active_component()
+{
+	# Check if there is an 'active component' specified by the user configuration.
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+		# Check if there are actually any components listed in the source folder.
+		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
+			# Indicate to the user that there are no source components at the moment.
+			echo -e "${YELLOW}There are no components in this project yet.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
+		else
+			# There is at least one component available, it just isn't activated.
+			echo -e "${YELLOW}No component is currently set as active. To set a component to be active, use EDIT -> ACTIVATE.\n${NO_COLOUR}"
+	    fi
+
+	# Check if the active project doesn't actually exist.
+	elif [ ! -d $TCPATH/src/$CURR ]; then
+		# The active component doesn't exist (probably they've deleted it manually).
+	
+		# Check if there are actually any components listed in the source folder.
+		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
+			# Indicate to the user that there are no source components at the moment.
+			echo -e "${YELLOW}The active component does not exist.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
+		else
+			# Indicate to the user that the active component does not exist.
+			echo -e "${YELLOW}The active component doesn't exist. Please set a component to be active using EDIT -> ACTIVATE.\n${NO_COLOUR}"
+		fi
+
+		# Change the active component to 'none'.
+		sed "s/tc_curr=.*/tc_curr=none/g" -i $TCPATH/$USER_CONFIG_FILE
+		CURR="none"
+	else
+		# An active component is set, and actually exists.
+		echo -e "${BOLD_CYAN}Your active component is $CURR.\n${NO_COLOUR}"
+	fi
+
+	# All done.
+	return 0
+}
+
 # Print a usage message.
 usage()
 {
@@ -104,98 +144,136 @@ done
 # PRESENT THE USER WITH THE MAIN INTERFACE.
 
 # Loop continuously until the user exits the script.
+REDRAW_TOP=1
 while :
 do
 	# We're at the top level.
-	REDRAW_TOP=
 
-	# Clear the terminal to keep things tidy.
-	clear
+	# Check if we should redraw the banner.
+	if [ $REDRAW_TOP ]; then
+		# Clear the terminal to keep things tidy.
+		clear
 
-	# Print welcome message.
-	echo -e "${HIGHLIGHT_BLUE}${BOLD}\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
+		# Print welcome message.
+		echo -e "${HIGHLIGHT_BLUE}${BOLD}\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
 
-	# Check if a user configuration file is present.
-	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
-		# The user configuration file is missing, so copy over the default configuration file.
-		echo -e "${CYAN}Creating user configuration file...\n${NO_COLOUR}"
-		cp $TCPATH/$DEFAULT_USER_CONFIG_FILE $TCPATH/$USER_CONFIG_FILE
+		# Check if this is the first time the toolchain has been used by this user.
+		STARTUP=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_startup | cut -d '=' -f 2)
+		if [ "$STARTUP" == "start" ]; then
+			# Print a message to the user.
+			echo -e "${YELLOW}The first time the ValleyForge toolchain is used, some initial configuration is required.\n${NO_COLOUR}"
 
-		# TODO - Should probably check this actually worked.
-	fi
-
-	# Check if this is the first time the toolchain has been used by this user.
-	STARTUP=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_startup | cut -d '=' -f 2)
-	if [ "$STARTUP" == "start" ]; then
-		# Print a message to the user.
-		echo -e "${YELLOW}The first time the ValleyForge toolchain is used, some initial configuration is required.\n${NO_COLOUR}"
-
-		# Prompt the user.
-		echo -ne  "${GREEN}Do you want to run the setup process now (or be reminded later)? (Y/N or L) ${NO_COLOUR}"
+			# Prompt the user.
+			echo -ne  "${GREEN}Do you want to run the setup process now (or be reminded later)? (Y/N or L) ${NO_COLOUR}"
 	
-		# Read a single character input from the user and select the appropriate response.
-		read -s -n 1
-		echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
-		case "$REPLY" in
-			"Y" | "y" )
-				# Run the setup script.
-				bash ${TCPATH}/bld/other/first_run
-				;;
-			"N" | "n" )
-				# The user doesn't want to run the setup.  So we'll just pretend that it has already been set up.
-				sed "s/tc_startup=.*/tc_startup=notrun/g" -i $TCPATH/$USER_CONFIG_FILE
-				;;
-			"L" | "l" )
-				# The user wants to be reminded later.
-				sed "s/tc_startup=.*/tc_startup=later/g" -i $TCPATH/$USER_CONFIG_FILE
-				;;
-		esac
-	elif [ "$STARTUP" == "later" ]; then
-		# The user has not set their details in a previous setting, so remind them to.
-	    echo -e "${YELLOW}Setup has not been completed.  To run setup process, use EDIT -> EDIT SETTINGS -> RERUN USER SETUP.\n${NO_COLOUR}"
-	fi
-
-	# Check if there is an 'active component' specified by the user configuration.
-	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
-	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
-		# Check if there are actually any components listed in the source folder.
-		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
-			# Indicate to the user that there are no source components at the moment.
-			echo -e "${YELLOW}There are no components in this project yet.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
-		else
-			# There is at least one component available, it just isn't activated.
-			echo -e "${YELLOW}No component is currently set as active. To set a component to be active, use EDIT -> ACTIVATE.\n${NO_COLOUR}"
-	    fi
-
-	# Check if the active project doesn't actually exist.
-	elif [ ! -d $TCPATH/src/$CURR ]; then
-		# The active component doesn't exist (probably they've deleted it manually).
-	
-		# Check if there are actually any components listed in the source folder.
-		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
-			# Indicate to the user that there are no source components at the moment.
-			echo -e "${YELLOW}The active component does not exist.  To create a component, use CREATE -> NEW COMPONENT.\n${NO_COLOUR}"
-		else
-			# Indicate to the user that the active component does not exist.
-			echo -e "${YELLOW}The active component doesn't exist. Please set a component to be active using EDIT -> ACTIVATE.\n${NO_COLOUR}"
+			# Read a single character input from the user and select the appropriate response.
+			read -s -n 1
+			echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+			case "$REPLY" in
+				"Y" | "y" )
+					# Run the setup script.
+					bash ${TCPATH}/bld/other/first_run
+					;;
+				"N" | "n" )
+					# The user doesn't want to run the setup.  So we'll just pretend that it has already been set up.
+					sed "s/tc_startup=.*/tc_startup=notrun/g" -i $TCPATH/$USER_CONFIG_FILE
+					;;
+				"L" | "l" )
+					# The user wants to be reminded later.
+					sed "s/tc_startup=.*/tc_startup=later/g" -i $TCPATH/$USER_CONFIG_FILE
+					;;
+			esac
+		elif [ "$STARTUP" == "later" ]; then
+			# The user has not set their details in a previous setting, so remind them to.
+		    echo -e "${YELLOW}Setup has not been completed.  To run setup process, use EDIT -> EDIT SETTINGS -> RERUN USER SETUP.\n${NO_COLOUR}"
 		fi
 
-		# Change the active component to 'none'.
-		sed "s/tc_curr=.*/tc_curr=none/g" -i $TCPATH/$USER_CONFIG_FILE
-		CURR="none"
-	else
-		# An active component is set, and actually exists.
-		echo -e "${BOLD_CYAN}Your active component is $CURR.\n${NO_COLOUR}"
+		# Check on the status of the active component in this project.
+		check_active_component
+
+		# Check if a user configuration file is present.
+		if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+			# The user configuration file is missing, so copy over the default configuration file.
+			echo -e "${CYAN}Creating user configuration file...\n${NO_COLOUR}"
+			cp $TCPATH/$DEFAULT_USER_CONFIG_FILE $TCPATH/$USER_CONFIG_FILE
+
+			# TODO - Should probably check this actually worked.
+		fi
 	fi
+	REDRAW_TOP=
 
 	# Print the prompt to the user.
 	echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
-	echo -en "\t${UNDERLINED}C${NO_COLOUR}REATE    ${UNDERLINED}E${NO_COLOUR}DIT    ${UNDERLINED}D${NO_COLOUR}ELETE    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}" 
+	echo -en "\t${UNDERLINED}I${NO_COLOUR}NFO    ${UNDERLINED}C${NO_COLOUR}REATE    ${UNDERLINED}E${NO_COLOUR}DIT    ${UNDERLINED}D${NO_COLOUR}ELETE    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}"
+	REDRAW_MENU=
 	
 	# Read a single character input from the user and select the appropriate response.
 	read -s -n 1
 	echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
 	case "$REPLY" in
+		"I" | "i" )
+			# The user wants to view information.
+
+			# Loop continuously until the user selects a suitable option.
+			while :
+			do
+				# Print the submenu prompt to the user.
+				echo -e "${GREEN}Please select an option:\n${NO_COLOUR}"
+				echo -en "\t${UNDERLINED}A${NO_COLOUR}CTIVE Component    ${UNDERLINED}P${NO_COLOUR}ROJECT Summary    ${UNDERLINED}T${NO_COLOUR}OOLCHAIN Details    ${UNDERLINED}B${NO_COLOUR}ACK"
+
+				# Read a single character input from the user and select the appropriate response.
+				read -s -n 1
+				echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+				case "$REPLY" in
+					"A" | "a" )
+						# Run the print component information script.
+						bash $TCPATH/bld/other/print_info_component
+		
+						# Redraw the top level menu, since the user will probably want to do something, based on the printed information.
+						REDRAW_MENU=1
+						break
+						;;
+
+					"P" | "p" )
+						# Run the print project information script.
+						bash $TCPATH/bld/other/print_info_project
+						
+						# Check on the status of the active component in the project.
+						check_active_component
+
+						# Redraw the top level menu, since the user will probably want to do something, based on the printed information.
+						REDRAW_MENU=1
+						break
+						;;
+
+					"T" | 't' )
+						# Run the print toolchain information script.
+						bash $TCPATH/bld/other/print_info_toolchain
+
+						# Redraw the top level menu, since the user will probably want to do something, based on the printed information.
+						REDRAW_MENU=1
+						break
+						;;
+
+					"B" | "b" | "Q" | "q" | "X" | "x" )
+						# Go back one level.  Force redrawing the top level menu, even if we aren't in block mode.
+						REDRAW_TOP=1
+						break
+						;;
+
+					*)
+						# Any other option is invalid.  We print a message to that effect and try again.
+						echo -e "${RED}Invalid choice. Try again or press Q to quit.\n${NO_COLOUR}"
+						continue
+						;;
+				esac
+				
+				# We're done here.
+				break
+			done		        
+			;;
+					
+	
 		"C" | "c" )
 			# The user wants to create something.
 
@@ -226,7 +304,7 @@ do
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
-						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						# Go back one level.  Force redrawing the top level menu, even if we aren't in block mode.
 						REDRAW_TOP=1
 						break
 						;;
@@ -268,7 +346,7 @@ do
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
-						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						# Go back one level.  Force redrawing the top level menu, even if we aren't in block mode.
 						REDRAW_TOP=1
 						break
 						;;
@@ -348,7 +426,7 @@ do
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )
-						# Go back on level.  Force redrawing the top level menu, even if we aren't in block mode.
+						# Go back one level.  Force redrawing the top level menu, even if we aren't in block mode.
 						REDRAW_TOP=1
 						break
 						;;
@@ -386,8 +464,13 @@ do
 		fi
 	fi
 
-	# Check if we are supposed to be redrawing the top level menu again.
+	# If we need to redraw the banner, then we have to draw the menu as well.
 	if [ $REDRAW_TOP ]; then
+		# Also redraw the top menu.
+		REDRAW_MENU=1
+	fi
+	# Check if we are supposed to be redrawing the top level menu again.
+	if [ $REDRAW_MENU ]; then
 		# Loop back up the top again.
 		continue
 	fi

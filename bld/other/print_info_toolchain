@@ -1,0 +1,107 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		print_info_project										###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	05-04-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script gets called by VFstart script, when the user chooses to view toolchain information.	###
+###			It simply prints a summary of information about the toolchain to the console.			###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to print toolchain information to the console.
+
+Options:
+	-h --help			Show this message.
+EOF
+	# All done.
+	return 0
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="h"
+LONGOPTS="help"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		--)
+			# We're done parsing options.  We ignore anything else.
+			shift
+			break
+			;;
+		*)
+			# We ignore anything else.
+			shift
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# COLLECT TOOLCHAIN INFORMATION.
+
+# TODO - This.  At least, figure out what build/revision/commit number/reference/tag this version of the toolchain is; then hence what it supports.
+
+# PRINT TOOLCHAIN INFORMATION.
+
+# Print a bit of a header.
+echo -e "${BOLD_CYAN}TOOLCHAIN INFORMATION:\n${NO_COLOUR}"
+
+# TODO - This.
+
+# All done.
+exit
+

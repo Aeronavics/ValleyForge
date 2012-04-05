@@ -1,0 +1,187 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		print_info_project										###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	05-04-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script gets called by VFstart script, when the user chooses to view component information.	###
+###			It simply prints a summary of information about a specified component to the console.		###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+USER_CONFIG_FILE="var/config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to print component information to the console.
+If no component is specified, then the active component is used instead.
+
+Options:
+	-h --help			Show this message.
+	-c --component [COMPONENTNAME]	Specify the name of the component to print information about.
+EOF
+	# All done.
+	return 0
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+COMPONENT=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hc"
+LONGOPTS="help,component:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-c|--component)
+			# Specify the name of the component to build.
+			shift
+			COMPONENT="$1"
+			;;
+		--)
+			# We're done parsing options.  We ignore anything else.
+			shift
+			break
+			;;
+		*)
+			# We ignore anything else.
+			shift
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# COLLECT COMPONENT INFORMATION.
+
+# If there was no component name specified, we'll just try to build the 'active component' instead.
+if [ -z $COMPONENT ]; then
+	# Try to build the 'active component' instead.
+
+	# Check to make sure the user configuration file is there.
+	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+		# The configuration file is missing, so we don't know what to compile.
+		echo -e "${BOLD_RED}FATAL - User configuration file ($USER_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# Extract the value of the 'active component' from the user configuration file.
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+
+	# Check if the toolchain has an 'active component' to build.
+	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+		# Tell the user there is nothing to compile, then exit.
+		echo -e "${RED}No active component is set; nothing to build.\n${NO_COLOUR}"
+		exit 0
+	else
+		# Schedule the 'active component' to be built.
+		COMPONENT=$CURR
+	fi
+fi
+
+# Then, check if the component actually exists.
+if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+	# The component does't have a matching source folder, so bail.
+	echo -e "${RED}No source folder found.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# We need to load the build configuration for the component.
+
+# Reset any variables which may have been set by the previous component.
+SUBSYSTEM=
+TARGET=
+PLATFORM=
+BOOTLOADER=
+
+# Check if we can find the config file for this component.
+if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+	# Just skip this component and move on.
+	echo -e "${YELLOW}No configuration file.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Extract relevant configuration information from the configuration file.
+source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
+
+# Reset any variables which may have been set by a previous component.
+source $TCPATH/bld/common/clear_bconf_vars
+
+# Check to see if we can find a matching build configuration.
+BCONF="bconf_${TARGET}_${PLATFORM}"
+if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+	# No matching build configuration was found, so skip this component and move on.
+	echo -e "${RED}No suitable build configuration found.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+	exit 1
+else
+	# There is a matching build configuration, so load it.
+	$BCONF
+
+	# Check that all the required variables were set by the build configuration.
+	if [ -z "$BCONF_NAME" ]; then
+		# At least one of the required variables was not set, so skip this component and move on.
+		echo -e "${RED}Build configuration incomplete.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+		exit 1
+	fi
+fi
+
+# PRINT COMPONENT INFORMATION.
+
+# Print a bit of a header.
+echo -e "${BOLD_CYAN}COMPONENT INFORMATION:\n${NO_COLOUR}"
+
+# TODO - This.
+
+# All done.
+exit
+

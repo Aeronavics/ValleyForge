@@ -420,6 +420,7 @@ do
 	echo -e "${CYAN}Loading component build configuration...\n${NO_COLOUR}"
 
 	# Reset any variables which may have been set by the previous component.
+	SUBSYSTEM=
 	TARGET=
 	PLATFORM=
 	BOOTLOADER=

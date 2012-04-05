@@ -1,0 +1,210 @@
+#!/bin/bash
+
+###########################################################################################################################
+###															###
+### Name:		print_info_project										###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	05-04-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script gets called by VFstart script, when the user chooses to view project information. 	###
+###			It simply prints a summary of information about the project to the console.			###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+USER_CONFIG_FILE="var/config.cfg"
+BUILD_CONFIG_FILE="bld/build_configs.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		print_component_summary						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Produces a single line summary for the specified component.	###
+###											###
+###########################################################################################
+
+print_component_summary()
+{
+	# Check if no component is currently selected.
+	if [ -z $COMPONENT ]; then
+		# No component was specified, so bail.
+		echo -e "${RED}No component selected.  Nothing to do.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Then, check if the component actually exists.
+	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+		# The component does't have a matching source folder, so bail.
+		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# To print summary information, we need to load the build configuration for the component.
+
+	# Reset any variables which may have been set by the previous component.
+	SUBSYSTEM=
+	TARGET=
+	PLATFORM=
+	BOOTLOADER=
+
+	# Check if we can find the config file for this component.
+	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+		# Just skip this component and move on.
+		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Extract relevant configuration information from the configuration file.
+	source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
+
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
+
+	# Check to see if we can find a matching build configuration.
+	BCONF="bconf_${TARGET}_${PLATFORM}"
+	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so skip this component and move on.
+		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	else
+		# There is a matching build configuration, so load it.
+		$BCONF
+
+		# Check that all the required variables were set by the build configuration.
+		if [ -z "$BCONF_NAME" ]; then
+			# At least one of the required variables was not set, so skip this component and move on.
+			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Finally, actually return the summary information.
+	echo -e "${COMPONENT}^\t^${SUBSYSTEM}^${TARGET}^${PLATFORM}\n"
+
+	# All done.
+	return
+}
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to print project information to the console.
+
+Options:
+	-h --help			Show this message.
+EOF
+	# All done.
+	return 0
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="h"
+LONGOPTS="help"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		--)
+			# We're done parsing options.  We ignore anything else.
+			shift
+			break
+			;;
+		*)
+			# We ignore anything else.
+			shift
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# COLLECT PROJECT INFORMATION.
+
+COMPONENTS=`ls -d ${TCPATH}/src/* | sed "s/.*\/src\///g"`
+COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
+
+# PRINT USER INFORMATION.
+
+# Print a bit of a header.
+echo -e "${BOLD_CYAN}USER INFORMATION:\n${NO_COLOUR}"
+
+# Print relevant user information.
+AUTHOR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_authname | cut -d '=' -f 2)
+echo -e "Author Name: ${AUTHOR}\n"
+
+# PRINT PROJECT INFORMATION.
+
+# Print a bit of a header.
+echo -e "${BOLD_CYAN}PROJECT INFORMATION:\n${NO_COLOUR}"
+
+# Print a summary for each of the components in the project.
+if [ ${COMPONENT_COUNT} == 0 ]; then
+	# There are no components, so print a message saying so.
+	echo -e "${YELLOW}The project contains no components at this time.\n"
+elif [ ${COMPONENT_COUNT} == 1 ]; then
+	# There is just a single component, so print a summary for that one.
+	echo -e "Project contains ${COMPONENT_COUNT} component:\n"
+	COMPONENT=${COMPONENTS}
+	(echo -e "COMPONENT NAME^\t^SUBSYSTEM^TARGET^PLATFORM\n";
+	print_component_summary) | column -s^ -t -n
+	echo -e ""
+else
+	# There are multiple components, so print the summary for each.
+	echo -e "Project contains ${COMPONENT_COUNT} components:\n"
+	(echo -e "COMPONENT NAME^\t^SUBSYSTEM^TARGET^PLATFORM\n";
+	for COMPONENT in ${COMPONENTS}
+	do
+		print_component_summary
+	done) | column -s^ -t -n
+	echo -e ""
+fi
+
+# All done.
+exit
+

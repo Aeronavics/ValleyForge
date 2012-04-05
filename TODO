@@ -56,4 +56,10 @@
 
 * When the user selects the 'reconfigure component' option, then the existing configuration values should be shown or something; at the moment this is a bit of an issue because if someone wants to change one configuration setting, they need to know what all the other values should be set to, which may be an unlikely situation in multi-user development.
 
+* The all important 'Test Scaffold': Dummy implementations of the HAL (and other things) so that one can compile the embedded software on a desktop computer to test the software without access to the hardware proper.  Probably then there should be a flag to pass to the build script ('-s' or '--scaffold' or similar) which results in the selected components being build for operation on the desktop instead of the actual target.  This could get somewhat complicated considering the cases for testing components intended for use on RTOS or Linux platforms?
 
+* Support for continuous integration stuff.  This is two-fold: firstly, the toolchain itself should have some kind of support for continuous integration testing systems (for example, to support the CI HITL simulation testing we want to have the autopilot code doing); and secondly, the actual development of the toolchain needs to be under continuous integration, so that changes to the implementations of the HAL etc are tested for compatibility.
+
+* Implement print_info_toolchain so that it is able to detect which version of the toolchain this is, etc.
+
+* Implement print_info_component so that it basically prints the contents of the component configuration file, but nicely formatted.
