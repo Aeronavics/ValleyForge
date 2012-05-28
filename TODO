@@ -1,3 +1,5 @@
+* Make up a pretty logo.
+
 * Doxygen suppport.
 
 * Create software style guide for toolchain users, and then refactor the existing HAL libraries to make sure they comply with the style guide.
