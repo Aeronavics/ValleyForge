@@ -1,3 +1,5 @@
+* Doxygen suppport.
+
 * Create software style guide for toolchain users, and then refactor the existing HAL libraries to make sure they comply with the style guide.
 
 * Optimize the HAL; at the moment it takes up way too much space.  Optimizing the implementations may help, but it is also possible that some redesign may be required to some bits.
