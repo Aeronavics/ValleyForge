@@ -63,3 +63,5 @@
 * Implement print_info_toolchain so that it is able to detect which version of the toolchain this is, etc.
 
 * Implement print_info_component so that it basically prints the contents of the component configuration file, but nicely formatted.
+
+* Split C and C++ header files, such that C++ header files have an .HPP extension to match the corresponding C++ file's .CPP extension.  Mostly this entails making changse to the template files, fixing up the scripts to use the new files appropriately, and making sure that the build scripts and make files include the new .HPP extension as appropriate.
