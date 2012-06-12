@@ -21,6 +21,29 @@
  * return a pointer to a <gpio_pin_imp> implementation of the GPIO. If this is a valid pointer, the program now has control 
  * of that pin until it relinquishes control using the <vacate> function. 
  * An instance of this class cannot be instantiated using a constructor, but must be created using the <gpio_pin_grab> function.
+ * 
+ * @section Example
+ * 
+ * gpio_pin_address my_pin_address;
+ * my_pin_address.port = PORT_B;
+ * my_pin_address.pin = PIN_5;
+ * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
+ * if (my_pin.is_valid())
+ * {
+ * 	my_pin.set_mode(OUTPUT);
+ * 	my_pin.write(HIGH);
+ * 	my_pin.set_mode(INPUT);
+ * 	if (my_pin.read() = HIGH)
+ * 	{
+ * 		my_pin.enable_interrupt(RISING_EDGE,&myISR);
+ * 	}
+ * }
+ * 
+ * void myISR()
+ * {
+ * 	do_something();
+ * }
+ *
  */
 
 // Only include this header file once.
@@ -80,18 +103,23 @@ class gpio_pin
 		/**
 		 * Sets the pin to an input or output. Does not have any other options (such as Pull-up, Pull-Push, Open Drain), kept simple.
 		 * If you want to use these functions, circumvent the HAL.
-		 *
-		 * @example set_mode(INPUT); 
+		 * @section	Example
+		 * set_mode(INPUT); 
 		 * 
 		 * @param  mode	Set to INPUT or OUTPUT.
 		 * @return 0 for success, -1 for error. Errors occur mostly when the pin is out of scope for this Target.
+		 * 
 		 */
 		int8_t set_mode(gpio_mode mode);
 				
 		/**
-		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH)
+		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH).
 		 * 
-		 * @example if (my_pin.read == HIGH)
+		 * @section Example 
+		 * if (my_pin.read() == HIGH)
+		 * {
+		 * 	my_pin.write(LOW);
+		 * }
 		 *
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
@@ -101,6 +129,12 @@ class gpio_pin
 		/**
 		 * Writes the value provided to the pin. A value of TOGGLE will simply change it to what it currently isn't,
 		 * i.e if it is currently HIGH it will be set LOW and vice versa.
+		 * 
+		 * @section Example
+		 * if (my_pin.read() == HIGH)
+		 * {
+		 * 	my_pin.write(LOW);
+		 * } 
 		 *
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
@@ -110,6 +144,18 @@ class gpio_pin
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode
 		 * and attach the ISR function pointer provided to the interrupt.
+		 * To use this, create a function that you will use as your ISR. Pass the
+		 * pointer to your ISR into this function.
+		 * 
+		 * @section Example
+		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR == GP_SUCCESS)
+		 * {
+		 * 	runMyThings();
+		 * }
+		 * else
+		 * {
+		 * 	giveUp();
+		 * }
 		 *
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
@@ -118,8 +164,8 @@ class gpio_pin
 		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
-
-		 * Disable an interrupt for the associated pin.
+		 *
+		 * Disable an interrupt for the associated pin. The interrupt is still set up, but is simply masked at this stage.
 		 *
 		 * @param  Nothing.
 		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
@@ -127,7 +173,16 @@ class gpio_pin
 		inter_return_t disable_interrupt(void);
 		
 		/**
-		 * Checks to see whether or not the GPIO pin implementation pointer is null or not.
+		 * Checks to see whether or not the GPIO pin implementation pointer is null or not. Use this after
+		 * using <gpio_pin_grab> to see if your pin grab was successful or not. If the pin grab was
+		 * unsuccessful then probably the pin was already being used by another peripheral.
+		 * 
+		 * @section Example
+		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
+		 * if (my_pin.is_valid())
+		 * {
+		 * 	my_pin.write(HIGH);
+		 * }
 		 *
 		 * @param  Nothing.
 		 * @return True if the implementation pointer is not NULL, false otherwise.
@@ -135,7 +190,9 @@ class gpio_pin
 		bool is_valid(void);
 		
 		/** 
-		 * Allows access to the GPIO pin to be relinquished and assumed elsewhere.
+		 * Allows access to the GPIO pin to be relinquished and assumed elsewhere. Use this
+		 * when are process has finished with a pin and no longer needs control over it. This 
+		 * lets another process grab control of that pin.
 		 *
 		 * @param  Nothing.
 		 * @return Nothing.
@@ -145,6 +202,17 @@ class gpio_pin
 		/**
 		 * Allows a process to request access to a gpio pin and manages the semaphore
 		 * indicating whether access has been granted or not.
+		 * THIS IS THE ONLY WAY (using the hal) TO GET AN INSTANCE OF A GPIO PIN.
+		 * @section Example
+		 * 
+		 * gpio_pin_address my_pin_address;
+		 * my_pin_address.port = PORT_B;
+		 * my_pin_address.pin = PIN_5;
+		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
+		 * if (my_pin.is_valid())
+		 * {
+		 * 	my_pin.write(HIGH);
+		 * }
 		 *
 		 * @param  gpio_pin_address	Address of the GPIO pin requested.
 		 * @return A gpio_pin instance.
@@ -162,7 +230,7 @@ class gpio_pin
 
 		// Fields.
 
-		/**
+		/*
 		* Pointer to the machine specific implementation of the GPIO pin.
 		*/
 		gpio_pin_imp* imp;
