@@ -1,18 +1,25 @@
-/********************************************************************************************************************************
+/**
  *
- *  FILE: 			watchdog.h
+ *  @file 		watchdog.h
  *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Zac Frank
- *
- *  DATE CREATED:	12-12-2011
- *
- *	This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
+ *  @author		Zac Frank
  * 
- ********************************************************************************************************************************/ 
+ *  @addtogroup		hal Hardware Abstraction Library
+ *
+ *  @date		12-12-2011
+ * 
+ *  @section Licence
+ *
+ *  @section Description
+ * 
+ *  This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
+ * 
+ *  The watchdog timer is a timer that constantly runs in the background. If the watchdog timer is active, then if it reaches its top value (set
+ *  by the user) it resets the micro. This is used to reset the micro when the code goes into an endless loop or some other error occurs that stops
+ *  the execution of code.
+ *  If a watchdog timer is active, the user must make sure to "pat" the dog (reset the timer) at regular intervals.
+ * 
+ */ 
 
 // Only include this header file once.
 #ifndef _WATCHDOG_H_
@@ -63,7 +70,7 @@ class watchdog
 		// Functions.
 
 		/**
-		 * Gets run whenever the instance of class gpio_pin goes out of scope.
+		 * Gets run whenever the instance of class watchdog goes out of scope.
 		 * Does nothing, since the watchdog class cannot be instantiated.
 		 *
 		 * @param  Nothing.

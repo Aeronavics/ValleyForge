@@ -1,20 +1,31 @@
-/********************************************************************************************************************************
+
+/**
  *
- *  FILE: 		mem.h
- *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Zac Frank
- *
- *  DATE CREATED:	13-12-2011
- *
- *	This is the header file which matches mem.c. Provides functionality for writing and reading to EEPROM memory.
+ * @file: 		mem.h
  * 
- *  Revised 14-12-2011 by Paul Bowler to remove options to read/write/copy to/from flash. Also removed unwarranted
- *  references to fuse-bits.
- ********************************************************************************************************************************/
+ * @author: 		Zac Frank
+ *
+ * @addtogroup		hal	Hardware Abtstraction Library
+ *
+ * @date		13-12-2011
+ *  
+ * @section Licence
+ * 
+ * LICENCE GOES HERE
+ * 
+ * @section Description
+ *
+ * This is an abstract class that provides functionality for writing to, reading from, and clearing EEPROM memory.
+ * It uses byte sized writing blocks.It does not require any set-up, just use of the static functions provided.
+ * EEPROM memory is a memory block that is included in some architectures. It is useful for maintaining memory between resets that
+ * can by edited during running of the micro.
+ * 
+ * This is the header file which matches mem.cpp. 
+ * 
+ * @section Revisions
+ * Revised 14-12-2011 by Paul Bowler to remove options to read/write/copy to/from flash. Also removed unwarranted
+ * references to fuse-bits.
+ */
 
 // Only include this header file once.
 #ifndef __MEM_H__
@@ -39,6 +50,11 @@
 */
 enum mem_return {MEM_SUCCESS, ADDRESS_OUT_OF_BOUNDS = 1, PROCESS_ERROR};
 
+/**
+ * 
+ * @class mem
+ * An abstract class that provides functionality for writing and reading to, and clearing EEPROM memory.
+ */
 class mem
 {
 
@@ -46,19 +62,20 @@ class mem
 	    
 
 	    /**
-	    * Write to an EEPROM memory address
-	    * 
+	    * This function writes to an EEPROM address. Pass a pointer that points to the data, and tell it
+	    * how many bytes you want written, and at which memory location. The implementation of the function should
+	    * include the necessary delays to be able to use write and read sequentially.	    * 
 	    *
-	    * @param  dst		16 bit EEPROM destination address
-	    * @param  data		A pointer to the start of the data to be stored
+	    * @param  dst	16 bit EEPROM destination address
+	    * @param  data	A pointer to the start of the data to be stored
 	    * @param  length	The number of bytes to be stored
 	    * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 	    */
 	    static mem_return write_mem(uint16_t dst, void* data, uint16_t length);
 
 	    /**
-	    * Read from an EEPROM memory address
-	    * 
+	    * This function reads from an EEPROM address. Pass it the EEPROM source memory address, a pointer to your micro's
+	    * RAM address, and the number of bytes you want copied.	   
 	    *
 	    * @param  src		16 bit EEPROM source address
 	    * @param  dst		A pointer to the start of the destination where the data will be stored
@@ -68,18 +85,18 @@ class mem
 	    static mem_return read_mem(uint16_t src, void* dst, uint16_t length);
 
 	    /**
-	    * Copy from one EEPROM memory location to another
-	    * 
+	    * Copies one block of EEPROM memory to another. Specify the two addresses and the number
+	    * of bytes to be copied. 
 	    *
-	    * @param  src		16 bit EEPROM source address
-	    * @param  dst		16 bit EEPROM destination address
-	    * @param  length	The number of bytes to be copied
+	    * @param  src	16 bit EEPROM source address. Must be within the range.
+	    * @param  dst	16 bit EEPROM destination address. Must be within the range.
+	    * @param  length	The number of bytes to be copied.
 	    * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
 	    */		
 	    static mem_return cpy_mem(uint16_t src, uint16_t dst, uint16_t length);
 
 	    /**
-	    * Clear a section of EEPROM memory
+	    * Clear a section of EEPROM memory. This sets the specified bytes to zero.
 	    * 
 	    *
 	    * @param  address	16 bit memory address
@@ -88,6 +105,12 @@ class mem
 	    */		
 	    static mem_return clear_mem(uint16_t address, uint16_t length);
 
+    private:
+		// Functions.
+		
+		mem(void);	// Poisoned.
+
+		mem operator =(mem const&);	// Poisoned.
 }
 #endif /*__MEM_H__*/
 

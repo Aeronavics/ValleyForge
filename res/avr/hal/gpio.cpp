@@ -130,7 +130,7 @@ int8_t gpio_pin::set_mode(gpio_mode mode)
 	return (imp->set_mode(mode));
 }
 
-int8_t gpio_pin::write(gpio_output_state value)
+void gpio_pin::write(gpio_output_state value)
 {
 	return (imp->write(value));
 }

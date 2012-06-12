@@ -1,18 +1,27 @@
-/********************************************************************************************************************************
+/**
  *
- *  FILE: 		gpio.h
+ *  @file		gpio.h
  *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Edwin Hayes
- *
- *  DATE CREATED:	7-12-2011
- *
- *	This is the header file which matches gpio.c.  Implements general IO operations for GPIO pins.
+ *  @addtogroup		hal
  * 
- ********************************************************************************************************************************/
+ *  @author 		Edwin Hayes
+ *
+ *  @date		7-12-2011
+ * 
+ *  @section 		Licence
+ * 
+ *  LICENCE GOES HERE
+ * 
+ *  @section Description
+ *
+ * This is the header file which matches gpio.cpp.  
+ * This class implements functions for general i/o. 
+ * As many pins have multiple uses, semaphores are used to make sure that pins are only being used by one peripheral at once. 
+ * In order to use a GPIO pin, one must call the static <gpio_pin_grab> function, which, if the pin is free, will
+ * return a pointer to a <gpio_pin_imp> implementation of the GPIO. If this is a valid pointer, the program now has control 
+ * of that pin until it relinquishes control using the <vacate> function. 
+ * An instance of this class cannot be instantiated using a constructor, but must be created using the <gpio_pin_grab> function.
+ */
 
 // Only include this header file once.
 #ifndef __GPIO_H__
@@ -26,7 +35,6 @@
 // Include the standard C++ definitions.
 #include <stddef.h>
 
-
 // Include the semaphore library that someone is gonna create.
 #include "semaphore.h"
 
@@ -36,12 +44,6 @@
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 typedef void (*voidFuncPtr)(void);
-
-// FORWARD DEFINE PRIVATE PROTOTYPES.
-
-class gpio_pin_imp;
-
-// DEFINE PUBLIC CLASSES.
 
 enum gpio_mode {INPUT, OUTPUT};
 
@@ -53,7 +55,12 @@ enum inter_return_t {GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF
 
 enum interrupt_mode {INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_EDGE};
 
+// FORWARD DEFINE PRIVATE PROTOTYPES.
 
+class gpio_pin_imp;
+
+
+// DEFINE PUBLIC CLASSES.
 class gpio_pin
 {
 	public:
@@ -62,6 +69,8 @@ class gpio_pin
 		/**
 		 * Gets run whenever the instance of class gpio_pin goes out of scope.
 		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
+		 * This is useful for vacating a pin automatically, without using the <vacate> function. However,
+		 * users are recommended to use the vacate function for consistency and safety.
 		 *
 		 * @param  Nothing.
 		 * @return Nothing.
@@ -69,15 +78,20 @@ class gpio_pin
 		 ~gpio_pin(void);
 		
 		/**
-		 * Sets the pin to input or output. 
+		 * Sets the pin to an input or output. Does not have any other options (such as Pull-up, Pull-Push, Open Drain), kept simple.
+		 * If you want to use these functions, circumvent the HAL.
+		 *
+		 * @example set_mode(INPUT); 
 		 * 
 		 * @param  mode	Set to INPUT or OUTPUT.
-		 * @return 0 for success, -1 for error.
+		 * @return 0 for success, -1 for error. Errors occur mostly when the pin is out of scope for this Target.
 		 */
 		int8_t set_mode(gpio_mode mode);
 				
 		/**
-		 * Read the value of the gpio pin and return it
+		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH)
+		 * 
+		 * @example if (my_pin.read == HIGH)
 		 *
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
@@ -85,12 +99,13 @@ class gpio_pin
 		gpio_input_state read(void);
 		
 		/**
-		 * Writes the value provided to the pin
+		 * Writes the value provided to the pin. A value of TOGGLE will simply change it to what it currently isn't,
+		 * i.e if it is currently HIGH it will be set LOW and vice versa.
 		 *
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
 		 */
-		int8_t write(gpio_output_state value);
+		void write(gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode
