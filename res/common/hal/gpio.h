@@ -23,7 +23,7 @@
  * An instance of this class cannot be instantiated using a constructor, but must be created using the <gpio_pin_grab> function.
  * 
  * @section Example
- * 
+ * @code
  * gpio_pin_address my_pin_address;
  * my_pin_address.port = PORT_B;
  * my_pin_address.pin = PIN_5;
@@ -43,7 +43,7 @@
  * {
  * 	do_something();
  * }
- *
+ * @endcode
  */
 
 // Only include this header file once.
@@ -103,9 +103,10 @@ class gpio_pin
 		/**
 		 * Sets the pin to an input or output. Does not have any other options (such as Pull-up, Pull-Push, Open Drain), kept simple.
 		 * If you want to use these functions, circumvent the HAL.
-		 * @section	Example
+		 * @subsubsection	Example
+		 * @code
 		 * set_mode(INPUT); 
-		 * 
+		 * @endcode
 		 * @param  mode	Set to INPUT or OUTPUT.
 		 * @return 0 for success, -1 for error. Errors occur mostly when the pin is out of scope for this Target.
 		 * 
@@ -115,12 +116,13 @@ class gpio_pin
 		/**
 		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH).
 		 * 
-		 * @section Example 
+		 * @subsubsection Example 
+		 * @code
 		 * if (my_pin.read() == HIGH)
 		 * {
 		 * 	my_pin.write(LOW);
 		 * }
-		 *
+		 * @endcode
 		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 */
@@ -130,12 +132,13 @@ class gpio_pin
 		 * Writes the value provided to the pin. A value of TOGGLE will simply change it to what it currently isn't,
 		 * i.e if it is currently HIGH it will be set LOW and vice versa.
 		 * 
-		 * @section Example
+		 * @subsubsection Example
+		 * @code
 		 * if (my_pin.read() == HIGH)
 		 * {
 		 * 	my_pin.write(LOW);
 		 * } 
-		 *
+		 * @endcode
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing.
 		 */
@@ -147,7 +150,8 @@ class gpio_pin
 		 * To use this, create a function that you will use as your ISR. Pass the
 		 * pointer to your ISR into this function.
 		 * 
-		 * @section Example
+		 * @subsubsection Example
+		 * @code
 		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR == GP_SUCCESS)
 		 * {
 		 * 	runMyThings();
@@ -156,7 +160,7 @@ class gpio_pin
 		 * {
 		 * 	giveUp();
 		 * }
-		 *
+		 * @endcode
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
@@ -177,13 +181,14 @@ class gpio_pin
 		 * using <gpio_pin_grab> to see if your pin grab was successful or not. If the pin grab was
 		 * unsuccessful then probably the pin was already being used by another peripheral.
 		 * 
-		 * @section Example
+		 * @subsubsection Example
+		 * @code
 		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
 		 * if (my_pin.is_valid())
 		 * {
 		 * 	my_pin.write(HIGH);
 		 * }
-		 *
+		 * @endcode
 		 * @param  Nothing.
 		 * @return True if the implementation pointer is not NULL, false otherwise.
 		 */
@@ -203,8 +208,8 @@ class gpio_pin
 		 * Allows a process to request access to a gpio pin and manages the semaphore
 		 * indicating whether access has been granted or not.
 		 * THIS IS THE ONLY WAY (using the hal) TO GET AN INSTANCE OF A GPIO PIN.
-		 * @section Example
-		 * 
+		 * @subsubsection Example
+		 * @code
 		 * gpio_pin_address my_pin_address;
 		 * my_pin_address.port = PORT_B;
 		 * my_pin_address.pin = PIN_5;
@@ -213,6 +218,7 @@ class gpio_pin
 		 * {
 		 * 	my_pin.write(HIGH);
 		 * }
+		 * @endcode
 		 *
 		 * @param  gpio_pin_address	Address of the GPIO pin requested.
 		 * @return A gpio_pin instance.
