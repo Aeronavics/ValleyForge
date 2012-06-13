@@ -1,11 +1,13 @@
 
 /**
  *
- * @file: 		mem.h
  * 
- * @author: 		Zac Frank
- *
- * @addtogroup		hal	Hardware Abtstraction Library
+ * @addtogroup		hal	Hardware Abstraction Library
+ * 
+ * @file
+ * This is an abstract class that provides functionality for writing to, reading from, and clearing EEPROM memory.
+ * 
+ * @author 		Zac Frank
  *
  * @date		13-12-2011
  *  
@@ -13,8 +15,10 @@
  * 
  * LICENCE GOES HERE
  * 
- * @section Description
+ * @brief
+ * This is an abstract class that provides functionality for writing to, reading from, and clearing EEPROM memory.
  *
+ * @class mem
  * This is an abstract class that provides functionality for writing to, reading from, and clearing EEPROM memory.
  * It uses byte sized writing blocks.It does not require any set-up, just use of the static functions provided.
  * EEPROM memory is a memory block that is included in some architectures. It is useful for maintaining memory between resets that
@@ -53,7 +57,10 @@ enum mem_return {MEM_SUCCESS, ADDRESS_OUT_OF_BOUNDS = 1, PROCESS_ERROR};
 /**
  * 
  * @class mem
- * An abstract class that provides functionality for writing and reading to, and clearing EEPROM memory.
+ * This is an abstract class that provides functionality for writing to, reading from, and clearing EEPROM memory.
+ * It uses byte sized writing blocks.It does not require any set-up, just use of the static functions provided.
+ * EEPROM memory is a memory block that is included in some architectures. It is useful for maintaining memory between resets that
+ * can by edited during running of the micro.
  */
 class mem
 {

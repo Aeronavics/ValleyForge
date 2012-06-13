@@ -1,17 +1,25 @@
-/********************************************************************************************************************************
+/**
  *
- *  FILE: 		hal.h
+ *  @file 		
+ *  Sets up the hal, defines types and enumerations, and regulates semaphores. This is the header file which matches hal.c.  
+ *  It provides important common functionality required to allow using the ValleyForge HAL.
  *
- *  LIBRARY:		hal
+ *  @addtogroup		hal	Hardware Abstraction Library
  *
- *  AUTHOR: 		Edwin Hayes
+ *  @author		Edwin Hayes
  *
- *  DATE CREATED:	11-12-2011
+ *  @date		11-12-2011
  *
- *	This is the header file which matches hal.c.  It provides important common functionality required to allow using the
- *	ValleyForge HAL.
  * 
- ********************************************************************************************************************************/
+ */
+
+/**
+ * @mainpage
+ * 
+ * Welcome to the ValleyForge Doxygen Documentation.
+ * This is a test.
+ * A link to a class <gpio_pin>
+ **/
 
 // Only include this header file once.
 #ifndef __HAL_H__
