@@ -2,7 +2,7 @@
  *
  *  @file		gpio.h
  *
- *  @addtogroup		hal
+ *  @addtogroup		hal Hardware Abstraction Library
  * 
  *  @author 		Edwin Hayes
  *
@@ -103,7 +103,7 @@ class gpio_pin
 		/**
 		 * Sets the pin to an input or output. Does not have any other options (such as Pull-up, Pull-Push, Open Drain), kept simple.
 		 * If you want to use these functions, circumvent the HAL.
-		 * @subsubsection	Example
+		 * @subsection	Example
 		 * @code
 		 * set_mode(INPUT); 
 		 * @endcode
@@ -116,7 +116,7 @@ class gpio_pin
 		/**
 		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH).
 		 * 
-		 * @subsubsection Example 
+		 * @subsection Example 
 		 * @code
 		 * if (my_pin.read() == HIGH)
 		 * {
@@ -132,7 +132,7 @@ class gpio_pin
 		 * Writes the value provided to the pin. A value of TOGGLE will simply change it to what it currently isn't,
 		 * i.e if it is currently HIGH it will be set LOW and vice versa.
 		 * 
-		 * @subsubsection Example
+		 * @subsection Example
 		 * @code
 		 * if (my_pin.read() == HIGH)
 		 * {
@@ -150,7 +150,7 @@ class gpio_pin
 		 * To use this, create a function that you will use as your ISR. Pass the
 		 * pointer to your ISR into this function.
 		 * 
-		 * @subsubsection Example
+		 * @subsection Example
 		 * @code
 		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR == GP_SUCCESS)
 		 * {
@@ -181,7 +181,7 @@ class gpio_pin
 		 * using <gpio_pin_grab> to see if your pin grab was successful or not. If the pin grab was
 		 * unsuccessful then probably the pin was already being used by another peripheral.
 		 * 
-		 * @subsubsection Example
+		 * @subsection Example
 		 * @code
 		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
 		 * if (my_pin.is_valid())
@@ -208,7 +208,7 @@ class gpio_pin
 		 * Allows a process to request access to a gpio pin and manages the semaphore
 		 * indicating whether access has been granted or not.
 		 * THIS IS THE ONLY WAY (using the hal) TO GET AN INSTANCE OF A GPIO PIN.
-		 * @subsubsection Example
+		 * @subsection Example
 		 * @code
 		 * gpio_pin_address my_pin_address;
 		 * my_pin_address.port = PORT_B;
