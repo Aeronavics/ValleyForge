@@ -1,17 +1,17 @@
 /**
+ *  @addtogroup		hal
  *
  *  @file 		watchdog.h
- *
- *  @author		Zac Frank
+ *  Allows control over the processor watchdog timer.
  * 
- *  @addtogroup		hal Hardware Abstraction Library
+ *  @author		Zac Frank
  *
  *  @date		12-12-2011
  * 
  *  @section Licence
- *
- *  @section Description
+ *  LICENCE GOES HERE
  * 
+ *  @section Brief
  *  This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
  * 
  *  The watchdog timer is a timer that constantly runs in the background. If the watchdog timer is active, then if it reaches its top value (set
@@ -72,17 +72,11 @@ class watchdog
 		/**
 		 * Gets run whenever the instance of class watchdog goes out of scope.
 		 * Does nothing, since the watchdog class cannot be instantiated.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
 		 */
 		 ~watchdog(void);
 		
 		/**
 		 * Resets the watchdog timer so it doesn't overflow and trigger a system reset.
-		 * 
-		 * @param  Nothing.
-		 * @return Nothing.
 		 */
 		static void pat(void);
 				
@@ -96,9 +90,6 @@ class watchdog
 		
 		/** 
 		 * Disables the watchdog timer.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
 		 */
 		static void disable(void);
 		

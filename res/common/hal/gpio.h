@@ -1,8 +1,11 @@
 /**
  *
- *  @file		gpio.h
- *
  *  @addtogroup		hal Hardware Abstraction Library
+ * 
+ *  @file		gpio.h
+ *  A header file for the GPIO module of the HAL. Contains functionality for writing to and reading from individual pins.
+ *  Uses semaphores to prevent resource conflict. The implementation of the functions provided should be in a gpio.cpp
+ *  file in the res/ARCHITECTURETYPE/hal folder.
  * 
  *  @author 		Edwin Hayes
  *
@@ -17,10 +20,10 @@
  * This is the header file which matches gpio.cpp.  
  * This class implements functions for general i/o. 
  * As many pins have multiple uses, semaphores are used to make sure that pins are only being used by one peripheral at once. 
- * In order to use a GPIO pin, one must call the static <gpio_pin_grab> function, which, if the pin is free, will
- * return a pointer to a <gpio_pin_imp> implementation of the GPIO. If this is a valid pointer, the program now has control 
- * of that pin until it relinquishes control using the <vacate> function. 
- * An instance of this class cannot be instantiated using a constructor, but must be created using the <gpio_pin_grab> function.
+ * In order to use a GPIO pin, one must call the static gpio_pin_grab function, which, if the pin is free, will
+ * return a pointer to a gpio_pin_imp implementation of the GPIO. If this is a valid pointer, the program now has control 
+ * of that pin until it relinquishes control using the vacate function. 
+ * An instance of this class cannot be instantiated using a constructor, but must be created using the gpio_pin_grab function.
  * 
  * @section Example
  * @code
@@ -33,7 +36,7 @@
  * 	my_pin.set_mode(OUTPUT);
  * 	my_pin.write(HIGH);
  * 	my_pin.set_mode(INPUT);
- * 	if (my_pin.read() = HIGH)
+ * 	if (my_pin.read() == HIGH)
  * 	{
  * 		my_pin.enable_interrupt(RISING_EDGE,&myISR);
  * 	}
@@ -82,7 +85,16 @@ enum interrupt_mode {INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_E
 
 class gpio_pin_imp;
 
-
+/**
+ * @class
+ * This class implements functions for general i/o. 
+ * As many pins have multiple uses, semaphores are used to make sure that pins are only being used by one peripheral at once. 
+ * In order to use a GPIO pin, one must call the static gpio_pin_grab function, which, if the pin is free, will
+ * return a pointer to a gpio_pin_imp implementation of the GPIO. If this is a valid pointer, the program now has control 
+ * of that pin until it relinquishes control using the vacate function. 
+ * An instance of this class cannot be instantiated using a constructor, but must be created using the gpio_pin_grab function.
+ * 
+ */
 // DEFINE PUBLIC CLASSES.
 class gpio_pin
 {
@@ -92,11 +104,8 @@ class gpio_pin
 		/**
 		 * Gets run whenever the instance of class gpio_pin goes out of scope.
 		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
-		 * This is useful for vacating a pin automatically, without using the <vacate> function. However,
+		 * This is useful for vacating a pin automatically, without using the vacate function. However,
 		 * users are recommended to use the vacate function for consistency and safety.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
 		 */
 		 ~gpio_pin(void);
 		
@@ -123,7 +132,6 @@ class gpio_pin
 		 * 	my_pin.write(LOW);
 		 * }
 		 * @endcode
-		 * @param Nothing.
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 */
 		gpio_input_state read(void);
@@ -140,7 +148,6 @@ class gpio_pin
 		 * } 
 		 * @endcode
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
-		 * @return Nothing.
 		 */
 		void write(gpio_output_state value);
 		
@@ -178,7 +185,7 @@ class gpio_pin
 		
 		/**
 		 * Checks to see whether or not the GPIO pin implementation pointer is null or not. Use this after
-		 * using <gpio_pin_grab> to see if your pin grab was successful or not. If the pin grab was
+		 * using gpio_pin_grab to see if your pin grab was successful or not. If the pin grab was
 		 * unsuccessful then probably the pin was already being used by another peripheral.
 		 * 
 		 * @subsection Example
@@ -189,7 +196,7 @@ class gpio_pin
 		 * 	my_pin.write(HIGH);
 		 * }
 		 * @endcode
-		 * @param  Nothing.
+		 * 
 		 * @return True if the implementation pointer is not NULL, false otherwise.
 		 */
 		bool is_valid(void);

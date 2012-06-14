@@ -14,6 +14,28 @@
  * 
  ********************************************************************************************************************************/
 
+/**
+ *
+ * @addtogroup		hal	Hardware Abstraction Library
+ * 
+ * @file		target_config.h
+ * Provides definitions for to be used in implementations.
+ * 
+ * @todo This file should really be split up and put into the implementation folders, not the general ones.
+ * 
+ * @author 		Zac Frank
+ *
+ * @date		15-12-2011
+ *  
+ * @section Licence
+ * 
+ * LICENCE GOES HERE
+ * 
+ * @brief
+ * This contains device specific definitions for avr. Information such as timer size, interrupt
+ * specifications and so on are defined here.
+ */
+
 // Only include this header file once.
 #ifndef __TARGET_CONFIG_H__
 #define __TARGET_CONFIG_H__
@@ -84,6 +106,11 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 #	define NUM_16_BIT_TIMERS	4
 # 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
 
+
+#	define INT_BIT			7
+
+// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The ATmega2560 has only 
+// 8 External Pin interrupts, and a range of Pin Change interrupts.
 static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
 							{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},				// B
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
@@ -134,6 +161,8 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 #	define NUM_16_BIT_TIMERS	1
 # 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
 
+#	define INT_BIT			7
+
 #elif defined (__AVR_AT90CAN128__)
 #	define NUM_PORTS		6
 #	define NUM_PINS			8
@@ -181,6 +210,8 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 #	define NUM_16_BIT_TIMERS	1
 # 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
 
+#	define INT_BIT			7
+
 #elif defined (__AT32UC3C0512C__)
 #	define NUM_PORTS		4
 #	define NUM_PINS			32
@@ -215,6 +246,8 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 
 #	define T4_SIZE			0
 #	define T5_SIZE			0
+
+
 	
 #endif
 
