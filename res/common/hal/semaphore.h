@@ -39,6 +39,8 @@ class semaphore
 		// Functions.
 		/**
 		 * Creates a new semaphore and sets it as being free.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		semaphore()
 		{
@@ -50,6 +52,7 @@ class semaphore
 		 * Checks to see if the semaphore's "is_free" state is true. If so, it returns true, then sets
 		 * the semaphore to false so that no-one else can use it.
 		 * 
+		 * @param Nothing
 		 * @return a boolean to show whether the procure was successful.
 		 */
 		bool procure(void)
@@ -68,6 +71,7 @@ class semaphore
 		 * Waits till the semaphore is free, then procures it
 		 * Warning: Uses up clock cycles doing nothing.
 		 * 
+		 * @param Nothing
 		 * @return Once the semaphore becomes free, this will always return true.
 		 */
 		bool procure_spin(void)
@@ -83,6 +87,8 @@ class semaphore
 		/** 
 		 * Sets the semaphore to be free, meaning another process or peripheral
 		 * can procure it
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		void vacate(void)
 		{

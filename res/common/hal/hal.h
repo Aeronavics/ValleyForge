@@ -90,24 +90,30 @@ struct gpio_pin_address
 
 /**
  * initialises the hal by creating semaphores and any other initialisation that is required.
+ * @param Nothing
+ * @return Nothing
  */
 void init_hal(void);
 
 /**
  * Enables global interrupts.
+ * @param Nothing
+ * @return Nothing
  */
 void int_on(void);
 
 /**
  * Disables global interrupts.
+ * @param Nothing
+ * @return Nothing
  */
 void int_off(void);
 
 /**
  * Restores interrupts to the state they were in before int_off was called.
  * 
- * @param none
- * @return none
+ * @param Nothing
+ * @return Nothing
  */
 void int_restore(void);
 

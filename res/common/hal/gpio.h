@@ -7,6 +7,10 @@
  *  Uses semaphores to prevent resource conflict. The implementation of the functions provided should be in a gpio.cpp
  *  file in the res/ARCHITECTURETYPE/hal folder.
  * 
+ *  @brief 
+ *  A class that handles GPIO. User grabs control of a GPIO pin which is an instance of this class,
+ *  and uses it to manipulate the pin.
+ * 
  *  @author 		Edwin Hayes
  *
  *  @date		7-12-2011
@@ -14,6 +18,8 @@
  *  @section 		Licence
  * 
  *  LICENCE GOES HERE
+ * 
+ *  
  * 
  *  @section Description
  *
@@ -106,6 +112,8 @@ class gpio_pin
 		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
 		 * This is useful for vacating a pin automatically, without using the vacate function. However,
 		 * users are recommended to use the vacate function for consistency and safety.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		 ~gpio_pin(void);
 		
@@ -133,6 +141,9 @@ class gpio_pin
 		 * }
 		 * @endcode
 		 * @return LOW (0), HIGH (1), or ERROR (-1).
+		 * 
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		gpio_input_state read(void);
 		
@@ -148,6 +159,7 @@ class gpio_pin
 		 * } 
 		 * @endcode
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
+		 * @return Nothing
 		 */
 		void write(gpio_output_state value);
 		
@@ -170,6 +182,7 @@ class gpio_pin
 		 * @endcode
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
+		 * @return Nothing
 		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
 		 */
 		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));
@@ -197,6 +210,7 @@ class gpio_pin
 		 * }
 		 * @endcode
 		 * 
+		 * @param Nothing
 		 * @return True if the implementation pointer is not NULL, false otherwise.
 		 */
 		bool is_valid(void);
