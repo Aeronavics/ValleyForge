@@ -187,7 +187,8 @@ class timer
 		 * operation for Timer/Counter implemented.
 		 *
 		 * @param mode			Which mode the OC channel should be set to.
-		 * Options are: {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3, OC_MODE_4, OC_MODE_5, OC_MODE_6, OC_MODE_7, OC_MODE_8, OC_MODE_9, OC_MODE_10, OC_MODE_11, OC_MODE_12, OC_MODE_13, OC_MODE_14, OC_MODE_15};
+		 * Options are: {OC_NONE, OC_MODE_1, OC_MODE_2, OC_MODE_3, OC_MODE_4, OC_MODE_5, OC_MODE_6, OC_MODE_7, OC_MODE_8, OC_MODE_9, OC_MODE_10, OC_MODE_11, OC_MODE_12, OC_MODE_13, OC_MODE_14, OC_MODE_15}
+		 * To see descriptions for these modes, see the timer section of the wiki page of your target micro: http://ucunison1.canterbury.ac.nz/trac/ValleyForge/wiki .
 		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_oc(tc_oc_mode mode);
@@ -200,6 +201,7 @@ class timer
 		 * One of {TC_OC_A, TC_OC_B, TC_OC_C}; (Make sure that this timer has the channel you are choosing)
 		 * @param mode			Which mode the OC channel should be set to.
 		 * One of {OC_CHANNEL_MODE_0, OC_CHANNEL_MODE_1, OC_CHANNEL_MODE_2, OC_CHANNEL_MODE_3}
+		 * To see descriptions for these modes, see the timer section of the wiki page of your target micro: http://ucunison1.canterbury.ac.nz/trac/ValleyForge/wiki .
 		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_oc_channel(tc_oc_channel channel, tc_oc_channel_mode mode);
@@ -254,6 +256,7 @@ class timer
 		 * Currently can only choose one (TC_IC_A). More may be added if future architecture implementations call for it.
 		 * @param mode			Which mode the IC channel should be set to.
 		 * One of {IC_NONE, IC_MODE_1, IC_MODE_2, IC_MODE_3, IC_MODE_4}.
+		 * To see descriptions for these modes, see the timer section of the wiki page of your target micro: http://ucunison1.canterbury.ac.nz/trac/ValleyForge/wiki .
 		 * @return 0 for success, -1 for error.
 		 */
 		int8_t enable_ic(tc_ic_channel channel, tc_ic_mode mode);

@@ -50,26 +50,6 @@
  * @endcode
  */
 
-uint8_t my_data[100];
-int i = 100
-usart my_usart = usart::grab(USART_0);
-
-// Set the USART for Asynchronous mode
-my_usart.set_mode(ASYNCHRONOUS_USART);
-
-// Set up USART for 9600 Baud, 8N1
-my_usart.set_baud_rate(9600);
-
-my_usart.set_frame(8,n,1);
-
-while (i--)
-{
-    if (my_usart.receive_complete())
-    {
-	my_data[i-1] = my_usart.receive_byte();
-    }
-}
-
 // Only include this header file once.
 #ifndef __USART_H__
 #define __USART_H__

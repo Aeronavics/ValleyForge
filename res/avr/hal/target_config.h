@@ -1,19 +1,3 @@
-/********************************************************************************************************************************
- *
- *  FILE: 		target_config.h
- *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Zac Frank
- *
- *  DATE CREATED:	15-12-2011
- *
- *	This contains device specific definitions for avr.
- * 
- ********************************************************************************************************************************/
-
 /**
  *
  * @addtogroup		hal	Hardware Abstraction Library
@@ -45,10 +29,15 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
+/* The constants that allow access to the Port registers in memory (DDRx, PORTx & PINx) */
+/* NB: ATmega 2560 particular */
+#define PORT_MULTIPLIER	3
+#define P_OFFSET		235
+
 enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
 
 #if defined (__AVR_ATmega2560__)
-#	define NUM_PORTS		12
+#	define NUM_PORTS		12	
 #	define NUM_PINS			8
 
 #	define T0_SIZE			8
@@ -115,13 +104,14 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 							{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},				// B
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
 							{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  			// D
-							{PCINT_2, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},				// E
+							{PCINT_1, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},				// E
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// F
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// G
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// H
-							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// I
-							{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_NONE},		 		// J
-							{PCINT_3, PCINT_3, PCINT_3, PCINT_3, PCINT_3, PCINT_3, PCINT_3, PCINT_3},				// K
+							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// I 
+							// -- There is no port I but easier to leave this in.
+							{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_NONE},		 		// J
+							{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2},				// K
 							{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};	// L
 						     
 						         
@@ -212,40 +202,7 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 
 #	define INT_BIT			7
 
-#elif defined (__AT32UC3C0512C__)
-#	define NUM_PORTS		4
-#	define NUM_PINS			32
-	
-#	define T0_SIZE			16
-#	define T0_PWM			1
-#	define T0_OC			2
-#	define T0_IC			2
-#	define T0_AS			0
-#	define T0_REV			1
 
-#	define T1_SIZE			16
-#	define T1_PWM			1
-#	define T1_OC			2
-#	define T1_IC			2
-#	define T1_AS			0
-#	define T1_REV			1
-
-#	define T2_SIZE			16
-#	define T2_PWM			1
-#	define T2_OC			2
-#	define T2_IC			2
-#	define T2_AS			0
-#	define T2_REV			1
-
-#	define T3_SIZE			32
-#	define T3_PWM			1
-#	define T3_OC			2
-#	define T3_IC			0
-#	define T3_AS			1
-#	define T3_REV			0
-
-#	define T4_SIZE			0
-#	define T5_SIZE			0
 
 
 	

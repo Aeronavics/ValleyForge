@@ -36,9 +36,9 @@
  * uint8_t my_first_data[8] = {1,2,3,4,5,6,7,8};
  * uint8_t my_second_data[8];
  * 
- * write_mem(my_eeprom_address, (void*) &my_first_data, 8);
+ * mem::write_mem(my_eeprom_address, (void*) &my_first_data, 8);
  * 
- * read_mem(my_eeprom_address, (void*) &my_second_data, 8);
+ * mem::read_mem(my_eeprom_address, (void*) &my_second_data, 8);
  *  
  * 
  * @endcode
@@ -61,7 +61,7 @@
 #include <stddef.h>
 
 // Include the common HAL stuff.
-#include "hal.h"
+#include "hal/hal.h"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -135,7 +135,7 @@ class mem
 		mem(void);	// Poisoned.
 
 		mem operator =(mem const&);	// Poisoned.
-}
+};
 #endif /*__MEM_H__*/
 
 // ALL DONE.

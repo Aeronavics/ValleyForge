@@ -161,7 +161,7 @@ class gpio_pin
 		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
 		 * @return Nothing
 		 */
-		void write(gpio_output_state value);
+		int8_t write(gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the associated pin in the specified mode
@@ -171,7 +171,7 @@ class gpio_pin
 		 * 
 		 * @subsection Example
 		 * @code
-		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR == GP_SUCCESS)
+		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR) == GP_SUCCESS)
 		 * {
 		 * 	runMyThings();
 		 * }
@@ -182,7 +182,7 @@ class gpio_pin
 		 * @endcode
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
-		 * @return Nothing
+		 * @return 		Whether it was successful. Shouldn't really need to be used.
 		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
 		 */
 		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));

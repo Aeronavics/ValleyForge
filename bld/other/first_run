@@ -43,6 +43,12 @@ echo -e ""
 sed "s/tc_authname=.*/tc_authname=$REPLY/g" -i $TCPATH/$USER_CONFIG_FILE
 echo -e "${CYAN}Changed username to $REPLY.\n${NO_COLOUR}"
 
+# Create the lib and src directories.
+
+mkdir $TCPATH/lib &>/dev/null
+mkdir $TCPATH/src &>/dev/null
+
+
 # Record that we've now completed the setup process.
 sed "s/tc_startup=.*/tc_startup=done/g" -i $TCPATH/$USER_CONFIG_FILE
 
