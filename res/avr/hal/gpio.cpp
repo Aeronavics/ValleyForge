@@ -302,11 +302,17 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 int8_t gpio_pin_imp::write (gpio_output_state value)
 
 		{
-				if (address.port >= NUM_PORTS) 
+				if (address.port >= NUM_PORTS)
 				{
 					/* Parameter is wrong size*/
 					return O_ERROR;
 				}
+#if defined (__AVR_ATmega2560__)
+				if (address.port == PORT_I) // There is no PORT_I
+				{
+				    return O_ERROR;
+				}
+#endif
 				/* Set/clear port register register pin */
 				if (value == O_TOGGLE)
 				{		

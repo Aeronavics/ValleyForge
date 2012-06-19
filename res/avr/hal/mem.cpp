@@ -1,6 +1,6 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		mem.c
+ *  FILE: 		mem.cpp
  *
  *  SUB-SYSTEM:		hal
  *
@@ -48,7 +48,7 @@
  * @param  length	The number of bytes to be stored
  * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
  */
-mem_return write_mem(uint16_t dst, void* data, uint16_t length)
+mem_return mem::write_mem(uint16_t dst, void* data, uint16_t length)
 {
 	/*Perform check to see if memory address is out of range of EEPROM*/
 	if (dst > EEPROM_END_ADDRESS)
@@ -79,7 +79,7 @@ mem_return write_mem(uint16_t dst, void* data, uint16_t length)
  * @param  length	The number of bytes to be read
  * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
  */
-mem_return read_mem(uint16_t src, void* dst, uint16_t length)
+mem_return mem::read_mem(uint16_t src, void* dst, uint16_t length)
 {
 	/*Perform check to see if memory address is out of range of EEPROM*/
 	if (src > EEPROM_END_ADDRESS)
@@ -110,7 +110,7 @@ mem_return read_mem(uint16_t src, void* dst, uint16_t length)
  * @param  length	The number of bytes to be copied
  * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
  */		
-mem_return cpy_mem(uint16_t src, uint16_t dst, uint16_t length)
+mem_return mem::cpy_mem(uint16_t src, uint16_t dst, uint16_t length)
 {
 	/*Perform check to see if memory address is out of range of EEPROM*/
 	if ((dst > EEPROM_END_ADDRESS) || (src > EEPROM_END_ADDRESS))
@@ -153,7 +153,7 @@ mem_return cpy_mem(uint16_t src, uint16_t dst, uint16_t length)
  * @param  length	The number of bytes to be cleared
  * @return uint8_t 	Result, 0 for success, various other numbers refer to error codes, such as memory out of bounds.
  */		
-mem_return clear_mem(uint16_t address, uint16_t length)
+mem_return mem::clear_mem(uint16_t address, uint16_t length)
 {
 	/*Perform check to see if memory address is out of range of EEPROM*/
 	if (address > EEPROM_END_ADDRESS)

@@ -1,18 +1,28 @@
-/********************************************************************************************************************************
+/**
+ *  @addtogroup		hal
  *
- *  FILE: 			watchdog.h
- *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Zac Frank
- *
- *  DATE CREATED:	12-12-2011
- *
- *	This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
+ *  @file 		watchdog.h
+ *  Allows control over the processor watchdog timer.
  * 
- ********************************************************************************************************************************/ 
+ *  @author		Zac Frank
+ *
+ *  @date		12-12-2011
+ * 
+ *  @brief
+ *  This is the header file which matches watchdog.c.  Allows control over the processor watchdog timer.
+ * 
+ *  @section Licence
+ *  LICENCE GOES HERE
+ * 
+ *
+ * 
+ *  @section Description
+ *  The watchdog timer is a timer that constantly runs in the background. If the watchdog timer is active, then if it reaches its top value (set
+ *  by the user) it resets the micro. This is used to reset the micro when the code goes into an endless loop or some other error occurs that stops
+ *  the execution of code.
+ *  If a watchdog timer is active, the user must make sure to "pat" the dog (reset the timer) at regular intervals.
+ * 
+ */ 
 
 // Only include this header file once.
 #ifndef _WATCHDOG_H_
@@ -63,19 +73,17 @@ class watchdog
 		// Functions.
 
 		/**
-		 * Gets run whenever the instance of class gpio_pin goes out of scope.
+		 * Gets run whenever the instance of class watchdog goes out of scope.
 		 * Does nothing, since the watchdog class cannot be instantiated.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		 ~watchdog(void);
 		
 		/**
 		 * Resets the watchdog timer so it doesn't overflow and trigger a system reset.
-		 * 
-		 * @param  Nothing.
-		 * @return Nothing.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		static void pat(void);
 				
@@ -84,14 +92,15 @@ class watchdog
 		 * 
 		 * @param time_out	One of 10 possible different values for the timeout value of the watchdog
 		 * @return 0 for success, -1 for error.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		static int8_t enable(uint8_t time_out);
 		
 		/** 
 		 * Disables the watchdog timer.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
+		 * @param Nothing
+		 * @return Nothing
 		 */
 		static void disable(void);
 		

@@ -190,7 +190,7 @@ get_hal()
 	# Copy in the common HAL files.
 	cp $TCPATH/$HAL_HEADER_PATH/hal.h $OUTPATH
 	cp $TCPATH/$HAL_HEADER_PATH/semaphore.h $OUTPATH
-	cp $TCPATH/$HAL_HEADER_PATH/target_config.h $OUTPATH
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config.h $OUTPATH		# Changed to SOURCE_PATH 18.06.12 as moved "target_config.h" to src specific path.
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.cpp $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
