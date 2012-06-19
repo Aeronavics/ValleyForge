@@ -1,3 +1,7 @@
+* Possibly need some mechanism which prevents the user from using the timer which is used by FreeRTOS, if they have chosen to use FreeRTOS.  Maybe it should just be a warning, since plausible they could use it legitimatly, without breaking FreeRTOS, if they were careful.  Anyway, there are probably any number of ways to approach this, using the preprocessor to throw warnings or errors or whatever; it's not urgent.
+
+* In mem.h, there is a function clear_mem(), which indicates it sets the specified bytes to zero.  But erasing an EEPROM sets bits to 1's, not 0's.  Setting everything to zero then requires writing to each byte, which probably the desired behaviour.
+
 * Make up a pretty logo.
 
 * Doxygen suppport.

@@ -136,7 +136,7 @@ STRIP_FROM_PATH        = /data/trac_data/ValleyForge/tmp/ValleyForgeSandpit/
 # definition is used. Otherwise one should specify the include paths that
 # are normally passed to the compiler using the -I flag.
 
-STRIP_FROM_INC_PATH    = hal
+STRIP_FROM_INC_PATH    = /data/trac_data/ValleyForge/tmp/ValleyForgeSandpit/res/common/
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but less readable) file names. This can be useful if your file system
