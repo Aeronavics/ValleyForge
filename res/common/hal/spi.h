@@ -1,19 +1,29 @@
-/********************************************************************************************************************************
+/**
  *
- *  FILE: 		spi.h
- *
- *  SUB-SYSTEM:		hal
- *
- *  COMPONENT:		hal
- *
- *  AUTHOR: 		Paul Bowler
- *
- *  DATE CREATED:	25-01-2012
- *
- *	This is the header file which matches spi.cpp.  Implements various functions relating to SPIinitialisation, transmission
- * 	and receiving of data.
+ *  @addtogroup		hal Hardware Abstraction Library
  * 
- ********************************************************************************************************************************/
+ *  @file		spi.h
+ *  A header file for the SPI Module of the HAL. SPI communication.
+ * 
+ *  @brief 
+ *  This is the header file which matches spi.cpp.  Implements various functions relating to SPIinitialisation, transmission
+ *  and receiving of data.
+ * 
+ *  @author		Paul Bowler
+ *
+ *  @date		25-01-2012
+ * 
+ *  @section 		Licence
+ * 
+ *  LICENCE GOES HERE
+ * 
+ *  
+ * 
+ *  @section Description
+ *
+ * A class for the SPI module of the HAL. Implements various functions relating to SPI 
+ *  initialisation, transmission and receiving of data.
+ */
 
 // Only include this header file once.
 #ifndef __SPI_H__
@@ -54,6 +64,13 @@ class spi_slave_imp;
 
 // DEFINE PUBLIC CLASSES.
 
+/**
+ * @class spi
+ * 
+ * Implements various functions relating to SPIinitialisation, transmission
+ * and receiving of data.
+ * 
+ */
 class spi
 {
 	public:
@@ -129,7 +146,7 @@ class spi
 		 * @param TXdata		Pointer to the array that is to be transmitted.
 		 * @param RXdata		Pointer to an array where data may be received to.
 		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return void.
+		 * @return Nothing.
 		 */
 		 void transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);	
 		 
@@ -140,7 +157,7 @@ class spi
 		 * @param TXdata		Pointer to the array that is to be transmitted.
 		 * @param RXdata		Pointer to an array where data may be received to.
 		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return void.
+		 * @return Nothing.
 		 */
 		 void dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
 		
