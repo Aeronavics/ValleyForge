@@ -16,9 +16,9 @@
 
 // INCLUDE THE MATCHING HEADER FILE.
 
-#include "tc.h"
+#include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
-// INCLUDE SYSTEM HEADER FILES
+// INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

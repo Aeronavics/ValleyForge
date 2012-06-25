@@ -37,7 +37,7 @@
 #include <stddef.h>
 
 // Include the hal library.
-#include "hal/hal.h"
+#include "hal/hal.hpp"
 
 // DEFINE PUBLIC MACROS.
 

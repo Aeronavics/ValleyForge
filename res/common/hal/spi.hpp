@@ -38,10 +38,10 @@
 #include <stddef.h>
 
 // Include the semaphore library
-#include "semaphore.h"
+#include "semaphore.hpp"
 
 // Include the hal library.
-#include "hal/hal.h"
+#include "hal/hal.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

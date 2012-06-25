@@ -23,8 +23,8 @@
  *  @section Example
  * 
  *  @code
- *  #include "hal.h"
- *  #include "gpio.h"
+ *  #include "hal/hal.hpp"
+ *  #include "hal/gpio.hpp"
  * 
  *  init_hal();
  * 
@@ -60,13 +60,12 @@
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
 
 // Include semaphores.
-#include "semaphore.h"
+#include "semaphore.hpp"
 
 // DEFINE PUBLIC MACROS.
 
-
-
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
+
 // Port and pin enumerations, these should be used by the user when creating a new gpio_pin_address.
 enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14, PIN_15}; 
@@ -81,12 +80,13 @@ struct gpio_pin_address
 };
 
 // INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
-#include "target_config.h"
+
+// Include target specific configuration.
+#include "target_config.hpp"
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
-
 
 /**
  * initialises the hal by creating semaphores and any other initialisation that is required.

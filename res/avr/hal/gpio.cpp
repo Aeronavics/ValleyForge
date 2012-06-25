@@ -16,8 +16,9 @@
 
 // INCLUDE THE MATCHING HEADER FILE.
 
-#include "gpio.h"
+#include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+// INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
 #include <avr/interrupt.h>
 #include <inttypes.h>

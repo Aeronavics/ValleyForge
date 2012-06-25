@@ -49,20 +49,20 @@ makearm()
 	# Get a list of names of source and header files.
 	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	
 	# Get a list of all the library source and header files.
 	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 
 	# Get a list of all the HAL source and header files.
 	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
 								

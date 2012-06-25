@@ -61,7 +61,7 @@
 #include <stddef.h>
 
 // Include the common HAL stuff.
-#include "hal/hal.h"
+#include "hal/hal.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

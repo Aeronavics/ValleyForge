@@ -64,13 +64,13 @@
 #include <stddef.h>
 
 // Include the gpio functionality for tying pins with PWM and input capture.
-#include "gpio.h"
+#include "gpio.hpp"
 
 // Include the semaphore library
-#include "semaphore.h"
+#include "semaphore.hpp"
 
 // Include the hal library.
-#include "hal/hal.h"
+#include "hal/hal.hpp"
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 

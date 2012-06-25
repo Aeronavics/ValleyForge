@@ -26,8 +26,10 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 # Define file names.
 
-TEMPLATE_C_FILE="res/c_library_template.c"
-TEMPLATE_H_FILE="res/h_library_template.h"
+TEMPLATE_C_FILE="res/templates/c_template.c"
+TEMPLATE_CPP_FILE="res/templates/cpp_template.cpp"
+TEMPLATE_H_FILE="res/templates/h_template.h"
+TEMPLATE_HPP_FILE="res/templates/hpp_template.hpp"
 USER_CONFIG_FILE="var/config.cfg"
 BUILD_CONFIG_FILE="bld/build_configs.cfg"
 LIB_SOURCE_PATH="lib"
@@ -278,12 +280,12 @@ for FILENAME in $FILENAMES; do
 		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
 	elif [ $TYPE == "CPP" ]; then
 		# Create the actual files by coping the templates into the source directory.
-		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
-		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
+		cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
+		cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.hpp
 
 		# Preprocess the two template files.
 		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
-		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
+		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.hpp
 	fi
 done
 

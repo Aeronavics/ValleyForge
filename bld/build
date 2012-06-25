@@ -55,10 +55,10 @@ get_rtos_files ()
 {
 	echo -e "${CYAN}Importing common FreeRTOS files...\n${NO_COLOUR}"
 	# Copy the FreeRTOS common files into our temporary directory.
-	cp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.c $TCPATH/$BCONF_COMMON_RTOS_PATH/*.cpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.h $TCPATH/$BCONF_COMMON_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	cp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.c $TCPATH/$BCONF_COMMON_RTOS_PATH/*.cpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.h $TCPATH/$BCONF_COMMON_RTOS_PATH/*.hpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 	echo -e "${CYAN}Importing port specific FreeRTOS files...\n${NO_COLOUR}"
 	# Copy the FreeRTOS port files into our temporary directory.
-	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.hpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 	echo -e "${CYAN}Files imported.\n${NO_COLOUR}"
 }
 
@@ -120,6 +120,14 @@ get_suitable_libs()
 			# Preprocess the copied header files.
 			shopt -s nullglob
 			for FILE in $OUTPATH/$LIBRARY/*.h; do
+				# Preprocess this header file.
+				preprocess_library $FILE
+			done
+			shopt -u nullglob
+
+			# Preprocess the copied header files.
+			shopt -s nullglob
+			for FILE in $OUTPATH/$LIBRARY/*.hpp; do
 				# Preprocess this header file.
 				preprocess_library $FILE
 			done
@@ -191,9 +199,9 @@ get_hal()
 	echo -e "${CYAN}Importing HAL...\n${NO_COLOUR}"
 
 	# Copy in the common HAL files.
-	cp $TCPATH/$HAL_HEADER_PATH/hal.h $OUTPATH
-	cp $TCPATH/$HAL_HEADER_PATH/semaphore.h $OUTPATH
-	cp $TCPATH/$HAL_SOURCE_PATH/target_config.h $OUTPATH		# Changed to SOURCE_PATH 18.06.12 as moved "target_config.h" to src specific path.
+	cp $TCPATH/$HAL_HEADER_PATH/hal.hpp $OUTPATH
+	cp $TCPATH/$HAL_HEADER_PATH/semaphore.hpp $OUTPATH
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.cpp $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
@@ -206,11 +214,14 @@ get_hal()
 	# Iterate through the items in the enabled HAL peripherals list.
 	for PERIPHERAL in $HAL_EN_LIST; do
 		# Copy the corresponding files over.
-		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH
+		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.h $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hpp $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.cpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
-		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null		
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null	
 	done
 
 	# Preprocess the imported files.
@@ -218,6 +229,14 @@ get_hal()
 	# Preprocess the copied header files.
 	shopt -s nullglob
 	for FILE in $OUTPATH/*.h; do
+		# Preprocess this header file.
+		preprocess_hal $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	for FILE in $OUTPATH/*.hpp; do
 		# Preprocess this header file.
 		preprocess_hal $FILE
 	done
@@ -515,11 +534,19 @@ do
 	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.hpp $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
 
 	# Preprocess the copied header files.
 	shopt -s nullglob
 	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h; do
+		# Preprocess this header file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp; do
 		# Preprocess this header file.
 		preprocess_general $FILE
 	done
@@ -575,7 +602,7 @@ do
 	if [ $LOADER ]; then
 		# We need to make the corresponding bootloader as well.
 
-		# Now, we build the application code for the component.
+		# Now, we build the bootloader code for the component.
 		echo -e "${CYAN}Building bootloader for component ${COMPONENT}...\n${NO_COLOUR}"
 		
 		# First, we need to read the configuration information for this component.

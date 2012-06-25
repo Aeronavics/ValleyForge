@@ -61,12 +61,33 @@ preprocess_template()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
 	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
@@ -151,12 +172,33 @@ preprocess_general()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
 	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
@@ -211,12 +253,33 @@ preprocess_bootloader()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the bootloader files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$NAME^g" $1
 
@@ -234,7 +297,8 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>^$CLK_SPEED_IN_MHZ^g" $1
 	sed -i "s^<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>^$ACTIVE_MODULE^g" $1
 	sed -i "s^<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>^$SHUTDOWNSTATE_MEM^g" $1
-	# 	There are also upper-case versions of some of those same macros.
+	
+# 	There are also upper-case versions of some of those same macros.
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
 
@@ -290,12 +354,33 @@ preprocess_library_template()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_BUILD_LIST_HERE>>>^$BUILDS^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
@@ -374,12 +459,33 @@ preprocess_library()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_BUILD_LIST_HERE>>>^$BUILDS^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
@@ -433,12 +539,33 @@ preprocess_hal()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	# Hence determine what some other fields should become.
+	if [ "$EXT" == "c" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "cpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	elif [ "$EXT" == "s" ]; then
+		CEXT="s"
+		HEXT=""
+	elif [ "$EXT" == "h" ]; then
+		CEXT="c"
+		HEXT="h"
+	elif [ "$EXT" == "hpp" ]; then
+		CEXT="cpp"
+		HEXT="hpp"
+	else
+		CEXT=""
+		HEXT=""
+	fi
+
 	# Replace each instance of a macro in the template files with the corresponding information.
 
 	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
 	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.h^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.c^g" $1
+	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
+	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^HAL^g" $1
 
