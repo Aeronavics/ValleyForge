@@ -45,6 +45,9 @@ for f in $TCPATH/bld/make_functions/make*; do
 	source "$f"
 done
 
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
 ##################################### MINOR FUNCTIONS ####################################
 
 # Find the rtos files and copy them into the tmp directory

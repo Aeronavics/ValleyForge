@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Create directories which don't come automatically with the toolchain.
+mkdir $TCPATH/lib &>/dev/null
+mkdir $TCPATH/src &>/dev/null
+mkdir $TCPATH/tmp &>/dev/null
+mkdir $TCPATH/bin &>/dev/null
+mkdir $TCPATH/var &>/dev/null
+
+

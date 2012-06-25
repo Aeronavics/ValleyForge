@@ -32,6 +32,9 @@ BUILD_CONFIG_FILE="bld/build_configs.cfg"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Prompt the user to enter their name.
@@ -42,12 +45,6 @@ echo -e ""
 # Update the user name in the configuration file.
 sed "s/tc_authname=.*/tc_authname=$REPLY/g" -i $TCPATH/$USER_CONFIG_FILE
 echo -e "${CYAN}Changed username to $REPLY.\n${NO_COLOUR}"
-
-# Create the lib and src directories.
-
-mkdir $TCPATH/lib &>/dev/null
-mkdir $TCPATH/src &>/dev/null
-
 
 # Record that we've now completed the setup process.
 sed "s/tc_startup=.*/tc_startup=done/g" -i $TCPATH/$USER_CONFIG_FILE

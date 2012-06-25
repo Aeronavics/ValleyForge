@@ -39,6 +39,9 @@ source $TCPATH/bld/common/def_colours
 # Define the functions used for preprocessing.
 source $TCPATH/bld/preprocess/preprocess
 
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		create_template							###

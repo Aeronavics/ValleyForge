@@ -28,6 +28,9 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Provide a list of valid components for the user to choose from.

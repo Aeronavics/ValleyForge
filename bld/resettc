@@ -35,6 +35,9 @@ source $TCPATH/bld/common/def_colours
 # Define the functions used for set up the compilers.
 source $TCPATH/bld/other/setup_compilers
 
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Make sure we can find the default user configuration file.
