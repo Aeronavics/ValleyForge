@@ -1,4 +1,3 @@
-
 #########  AVR Project Makefile Template   #########
 ######                                        ######
 ######    Copyright (C) 2003-2005,Pat Deegan, ######
@@ -21,7 +20,6 @@
 ######                                        ######
 ####################################################
 
-
 ##### This Makefile will make compiling Atmel AVR 
 ##### micro controller projects simple with Linux 
 ##### or other Unix workstations and the AVR-GCC 
@@ -40,7 +38,6 @@
 #####
 ##### See the http://electrons.psychogenic.com/ 
 ##### website for detailed instructions
-
 
 ####################################################
 #####                                          #####
