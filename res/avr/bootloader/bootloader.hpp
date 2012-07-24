@@ -37,10 +37,10 @@
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
 // Include the general bootloader module header file.
-#include "bootloader_module.h"
+#include "bootloader_module.hpp"
 
 // Include the specific bootloader module we want to use.
-#include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.h"
+#include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.hpp"
 
 // Include the STDINT fixed width types.
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>

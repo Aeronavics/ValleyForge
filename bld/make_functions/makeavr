@@ -145,28 +145,43 @@ makeavr_bootloader()
 	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $SOURCEPATH/*.c $SOURCEPATH/*.cpp $SOURCEPATH/*.h $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+	cp $SOURCEPATH/*.c $SOURCEPATH/*.cpp $SOURCEPATH/*.h $SOURCEPATH/*.hpp $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
 
 	# Preprocess the copied header files.
+	shopt -s nullglob
 	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h
 	for FILE in $FILES; do
 		# Preprocess this header file.
 		preprocess_bootloader $FILE
 	done
+	shopt -u nullglob
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.hpp
+	for FILE in $FILES; do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+	shopt -u nullglob
 
 	# Preprocess the copied source files.
+	shopt -s nullglob
 	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c
 	for FILE in $FILES; do
 		# Preprocess this source file.
 		preprocess_bootloader $FILE
 	done
+	shopt -u nullglob
 
 	# Preprocess the copied source files.
+	shopt -s nullglob
 	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.cpp
 	for FILE in $FILES; do
 		# Preprocess this source file.
 		preprocess_bootloader $FILE
 	done
+	shopt -u nullglob
 
 	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default). NOTE we aren't using any HAL anymore!!
 	#get_hal ${COMPONENT}_bootloader/hal

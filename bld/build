@@ -614,7 +614,7 @@ do
 	fi
 
 	# Check if we should also make the corresponding bootloader for this component.
-	if [ $LOADER ]; then
+	if [ $BOOTLOADER ]; then
 		# We need to make the corresponding bootloader as well.
 
 		# Now, we build the bootloader code for the component.

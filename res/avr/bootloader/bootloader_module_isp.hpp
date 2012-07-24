@@ -34,7 +34,7 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include "bootloader_module.h"
+#include "bootloader_module.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
