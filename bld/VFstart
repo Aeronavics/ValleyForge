@@ -44,7 +44,6 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 USER_CONFIG_FILE="var/config.cfg"
 DEFAULT_USER_CONFIG_FILE="bld/default_user_config.cfg"
-BUILD_CONFIG_FILE="bld/build_configs.cfg"
 TMP_SRC_DIR="tmp/tmp_src"
 OUTPUT_DIR="bin"
 

@@ -18,27 +18,42 @@
 # PARSE THE BUILD CONFIGURATIONS FILE.
 
 # Indicate we are reading the configuration file.
-echo -e "${CYAN}Reading build configuration file...\n${NO_COLOUR}"
+echo -e "${CYAN}Reading build configuration files...\n${NO_COLOUR}"
 
-# First check that the build configuration file actually exists.
-if [ ! -r $TCPATH/$BUILD_CONFIG_FILE ]; then
-	# The build configuration file is missing, so we aren't going to be able to do anything.
-	echo -e "${BOLD_RED}FATAL - Build configuration file ($BUILD_CONFIG_FILE) was not found.\n${NO_COLOUR}"
-	exit 1
-fi
+# We read all the suitable files in the build configuration path.
+BUILD_CONFIG_PATH="bld/build_configs"
+BUILD_CONFIG_FILES="*.cfg"
 
-# Then read the contents of the file.
-source $TCPATH/$BUILD_CONFIG_FILE
+# Iterate over each of the files in the path.
+COUNT_FILES=0
+for BUILD_CONFIG_FILE in $TCPATH/$BUILD_CONFIG_PATH/$BUILD_CONFIG_FILES; do
+	# Check if that file actually exists, in case we matched nothing.
+	if [ -e ${BUILD_CONFIG_FILE} ]; then
+		# Count one file.
+		COUNT_FILES=$[$COUNT_FILES + 1]
+
+		# Then read the contents of the file.
+		source $BUILD_CONFIG_FILE
+	else
+		# This only happens if we couldn't find any suitable files.
+		echo -e "${BOLD_RED}FATAL - Could not find any suitable build configuration files.\n${NO_COLOUR}"
+		exit 1
+	fi
+done
 
 # Establish how many configurations were read.
-COUNT=`declare -F | grep -o -e "bconf_.*" | wc -l`
+COUNT_TARGETS=`declare -F | grep -o -e "bconf_.*" | wc -l`
+COUNT_LOADERS=`declare -F | grep -o -e "bload_.*" | wc -l`
 
 # If no valid configurations were read, then there is no point in going any further.
-if [ $COUNT == 0 ]; then
+if [ $COUNT_TARGETS == 0 ]; then
 	# Report there were no configurations found, and exit.
-	echo -e "${BOLD_RED}FATAL - No valid build configurations were found in the build configuration file.\n${NO_COLOUR}"
+	echo -e "${BOLD_RED}FATAL - No valid build configurations were found after reading $COUNT_FILES configuration files.\n${NO_COLOUR}"
 	exit 1
 else
 	# Indicate how many build configurations were found.	
-	echo -e "${CYAN}Read in $COUNT build configurations.\n${NO_COLOUR}"
+	echo -e "${CYAN}Read in $COUNT_TARGETS build configurations and $COUNT_LOADERS boot loader configurations from $COUNT_FILES configuration files.\n${NO_COLOUR}"
 fi
+
+
+	

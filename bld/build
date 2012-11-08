@@ -41,7 +41,6 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 # Define file names.
 
 USER_CONFIG_FILE="var/config.cfg"
-BUILD_CONFIG_FILE="bld/build_configs.cfg"
 LIB_SOURCE_PATH="lib"
 TMP_SRC_DIR="tmp/tmp_src"
 OUTPUT_DIR="bin"
@@ -291,7 +290,6 @@ usage()
 {
 	# Block-concatenate the message.
 	cat << EOF
-
 Usage: $0 [Options] [Component Names]
 
 This script is used, as part of the 'Valley Forge' Embedded Toolchain to build components.
