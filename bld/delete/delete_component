@@ -48,18 +48,26 @@ source $TCPATH/bld/common/create_empty_dirs
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
+# Work out what components there are.
+COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
+
+# Check if there are actually some valid choices.
+if [ ${COMPONENT_COUNT} == 0 ]; then
+	echo -e "${YELLOW}There are currently no components in this project.  Create a new component with CREATE -> CREATE COMPONENT.\n${NO_COLOUR}"
+	exit 0
+fi
+							
 # Provide a list of valid components for the user to choose from.
 echo -e "${GREEN}Please select which component to delete:\n${NO_COLOUR}"
-						
-# TODO - This needs fixing: if there are any files in src, this will totally fail.
 
 # Create a menu of choices and have the user select one.
-select DEL in $(ls $TCPATH/src)
+DEL=
+select DEL in ${COMPONENTS}
 do
-	# Check if the selected component is actually valid.
-	DEL=$(echo $(ls $TCPATH/src) | grep -w -o "$DEL")
-	if [ -z "$DEL" ]; then
-		# The selected component was not in the list of components, so the user is apparently a moron.
+	# Check that the user wasn't a moron.
+	if [  -z "$DEL" -o -z `echo "${COMPONENTS}" | grep "$DEL"` ]; then
+		# The user is apparently a moron.
 		echo -e "${RED}Invalid choice.\n${NO_COLOUR}"
 
 		# Since deleting a component is serious business, we won't give them another try, we'll just exit.

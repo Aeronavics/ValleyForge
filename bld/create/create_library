@@ -76,16 +76,16 @@ create_template ()
 	# Check if the template files actually exist.
 	if [ -r $TCPATH/$TEMPLATE_C_FILE ] && [ -r $TCPATH/$TEMPLATE_H_FILE ]; then
 		# They do exist, so copy them over.
-		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.c
-		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.h
+		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.c
+		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.h
 	else
 		# They don't exist, so something is terribly wrong.
 		echo -e "${RED}ERROR - Could not find template files.\n${NO_COLOUR}"
 	fi
 
 	# Preprocess the two template files.
-	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.c
-	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.h
+	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.c
+	preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.h
 
 	# All done.
 	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
@@ -263,10 +263,34 @@ if [ -z $LIBRARY ] && [ ! $BATCHMODE ]; then
 			# The name contains spaces, which is invalid. Prompt the user to choose a more suitable name.
 			echo -e "${RED}The library name must not contain spaces.  Please choose another name.\n${NO_COLOUR}"
 
+		# Check if the name starts with a slash, which would suggest an unnamed subdirectory.
+		elif [[ $REPLY == /* ]]; then
+			# The name starts with a slash, which is invalid.  Prompt the user to choose a more suitable name.
+			echo -e "${RED}The library name must not start with a slash (that creates a directory with no name).  Please choose another name.\n${NO_COLOUR}"
+
 		# Check to see if this name is already taken.
 		elif [ -d "$TCPATH/$LIB_SOURCE_PATH/$REPLY" ]; then
 			# The name provided is already taken.  Prompt the user to choose an available name.
 			echo -e "${RED}The library '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
+
+		# Check if the name contains a slash, and hence will be nested.
+		elif [[ $REPLY == */* ]]; then
+			# The name contains a slash, so just check that the user knows are trying to create a nested directory.	
+			echo -e "${YELLOW}The name '$REPLY' creates a nested folder structure."
+			LIBRARY=$REPLY
+
+			# Ask if the user wants is sure that is what they want.
+			echo -e -n "${GREEN}Do you wish to create a nested library directory? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+
+			# If they responded YES, then we move on.
+			if [[ $REPLY =~ ^[Yy]$ ]]; then
+				break
+			fi
+
+			# Otherwise go back and prompt the user for a different name.
+			LIBRARY=
 
 		else
 			# The name is probably legit, so we move on.
@@ -288,7 +312,10 @@ if [ -z $BUILDS ] && [ ! $BATCHMODE ]; then
 	choose_builds
 fi
 
-# CREATE THE COMPONENT.
+# CREATE THE LIBRARY.
+
+# Since the library might be nested, figure out what the actual name of the library will be.
+LIBRARY_NAME=${LIBRARY##*/}
 
 # Check if the specified library does not exist yet.
 if [ ! -d "$TCPATH/$LIB_SOURCE_PATH/$LIBRARY" ]; then
@@ -301,8 +328,8 @@ fi
 # TODO - We should check that this actually worked, and if it didn't, bail.
 
 # Create the configuration file for the library, overriding any existing configuration file.
-echo -e "${CYAN}Creating configuration file ($LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for library $LIBRARY.\n\nBUILDS=$BUILDS\n" > $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg
+echo -e "${CYAN}Creating configuration file ($LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg)...\n${NO_COLOUR}"
+echo -e "# Configuration file for library $LIBRARY.\n\nBUILDS=$BUILDS\n" > $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg
 
 # TODO - We should actually check if this works.
 

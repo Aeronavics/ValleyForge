@@ -395,25 +395,39 @@ do
 				echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
 				case "$REPLY" in
 					"A" | "a" )
-						# Provide a list of valid components for the user to choose from.
-						
-						# TODO - This needs fixing: if there are any files in src, this will totally fail.
+						# Work out what components there are.
+						COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+						COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
 
-						# Create a menu of choices and have the user select one.
-						select CURR in $(ls $TCPATH/src)
-						do
-							# Check if the selected component is actually valid.
-							CURR=$(echo "$(ls $TCPATH/src)" | grep -w -o "$CURR")
-							if [ -z "$CURR" ]; then
-								# The selected component was not in the list of components, so the user is apparently a moron.
-								echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-							else
-								# A legitimate option was selected, so we can go now.
-								sed "s/tc_curr=.*/tc_curr=$CURR/g" -i $TCPATH/$USER_CONFIG_FILE								
-								echo -e "${BOLD_CYAN}Activated component $CURR.\n${NO_COLOUR}"
-								break
-							fi
-						done
+						# Check if there are actually some valid choices.
+						if [ ${COMPONENT_COUNT} == 0 ]; then
+							echo -e "${YELLOW}There are currently no components in this project.  Create a new component with CREATE -> CREATE COMPONENT.\n${NO_COLOUR}"
+							CURR=
+							
+
+						# Else if there is only one, then there is no choice involved.
+						elif [ ${COMPONENT_COUNT} == 0 ]; then
+							echo -e "${YELLOW}There is only one component in this project.  Create further components with CREATE -> CREATE COMPONENT.\n${NO_COLOUR}"
+							CURR=${COMPONENTS}
+
+						# Else let the user choose one of the options.
+						else
+							# Create a menu of choices and have the user select one.
+							echo -e "${GREEN}Select the component to activate from the list below:${NO_COLOUR}"
+							select CURR in ${COMPONENTS}; do
+								# Check that the user wasn't a moron.
+								if [ -z "$CURR" -o -z `echo "${COMPONENTS}" | grep "$CURR"` ]; then
+									echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+								else
+									echo -e "${BOLD_CYAN}Activated component $CURR.\n${NO_COLOUR}"
+									break
+								fi
+							done
+						fi
+
+						# Write the choice of component to file.
+						CURR_SED=`echo $CURR | sed 's/\//\\\\\//g'`
+						sed "s/tc_curr=.*/tc_curr=$CURR_SED/g" -i $TCPATH/$USER_CONFIG_FILE
 						;;
 
 					"R" | "r" )

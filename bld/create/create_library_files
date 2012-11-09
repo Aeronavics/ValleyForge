@@ -250,11 +250,14 @@ fi
 
 # CREATE THE FILES.
 
+# Since the library might be nested, figure out what the actual name of the library will be.
+LIBRARY_NAME=${LIBRARY##*/}
+
 # Parse the build configurations file.
 source $TCPATH/bld/common/load_build_configs
 
 # Check if we can find the config file for this library.
-if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg ]; then
+if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg ]; then
 	# The configuration file isn't there.  Ask the user if they want to create the file, or skip this library.
 	echo -e "${RED}No configuration file found for library $LIBRARY.\n${NO_COLOUR}"
 	echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
@@ -277,7 +280,7 @@ if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg ]; then
 fi
 
 # Extract relevant configuration information from the configuration file.
-BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg | grep "^BUILDS" | cut -d '=' -f2)
+BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg | grep "^BUILDS" | cut -d '=' -f2)
 
 # Iterate through all the filenames in the list provided.
 echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"

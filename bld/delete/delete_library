@@ -49,18 +49,26 @@ source $TCPATH/bld/common/create_empty_dirs
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
-# Provide a list of valid components for the user to choose from.
+# Work out what libraries there are.
+LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | sed "s/\/[^/]*\.cfg//g"`
+LIBRARY_COUNT=`echo ${LIBRARIES} | wc -w`
+
+# Check if there are actually some valid choices.
+if [ ${LIBRARY_COUNT} == 0 ]; then
+	echo -e "${YELLOW}There are currently no libraries in this project.  Create a new component with CREATE -> CREATE LIBRARY.\n${NO_COLOUR}"
+	exit 0
+fi
+							
+# Provide a list of valid libraries for the user to choose from.
 echo -e "${GREEN}Please select which library to delete:\n${NO_COLOUR}"
-						
-# TODO - This needs fixing: if there are any files in LIB_SOURCE_PATH, this will totally fail.
 
 # Create a menu of choices and have the user select one.
-select DEL in $(ls $TCPATH/$LIB_SOURCE_PATH)
+DEL=
+select DEL in ${LIBRARIES}
 do
-	# Check if the selected library is actually valid.
-	DEL=$(echo $(ls $TCPATH/$LIB_SOURCE_PATH) | grep -w -o "$DEL")
-	if [ -z "$DEL" ]; then
-		# The selected library was not in the list of libraries, so the user is apparently a moron.
+	# Check that the user wasn't a moron.
+	if [ -z "$DEL" -o -z `echo "${LIBRARIES}" | grep "$DEL"` ]; then
+		# The user is apparently a moron.
 		echo -e "${RED}Invalid choice.\n${NO_COLOUR}"
 
 		# Since deleting a library is serious business, we won't give them another try, we'll just exit.
@@ -76,7 +84,7 @@ do
 		# If they responded YES, then delete everything.  If NO, then we're done here.
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			# Delete the appropriate library.
-			rm -rf $TCPATH/$LIB_SOURCE_PATH/$DEL
+			rm -rf $TCPATH/${LIB_SOURCE_PATH}/$DEL
 
 			# All done.
 			echo -e "${CYAN}Deleted library $DEL.\n${NO_COLOUR}"
@@ -90,4 +98,5 @@ done
 
 # All done.
 exit 0
+
 

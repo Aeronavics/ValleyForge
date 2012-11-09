@@ -79,7 +79,7 @@ Options:
 	-h --help			Show this message.
 	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
 	-n --name <File Name>		Specify the name of the files to add to the current project.
-	-c --component			Specify the name of the component to add the files to.  Defaults to the 'active component'.
+	-c --component			Specify the component to add the files to.  Defaults to the 'active component'.
 	-t --type <File Type>		Specify the kind of files to create (either 'C' or 'CPP').
 EOF
 	# All done.
@@ -240,8 +240,11 @@ fi
 # Parse the build configurations file.
 source $TCPATH/bld/common/load_build_configs
 
+# Since the component might be nested, figure out what the actual name of the component will be.
+COMPONENT_NAME=${COMPONENT##*/}
+
 # Check if we can find the config file for this component.
-if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 	# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
 	echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
 	echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
@@ -253,7 +256,7 @@ if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
 		# Rebuild the configuration file.
 			
 		# Call the 'component_create' script: it will handle rebuilding the configuration file.
-		bash $TCPATH/bld/create/create_component --name $COMPONENT
+		bash $TCPATH/bld/create/create_component --component $COMPONENT
 
 		# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
 	else
@@ -264,7 +267,7 @@ if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
 fi
 
 # Extract relevant configuration information from the configuration file.
-source $TCPATH/src/$COMPONENT/$COMPONENT.cfg
+source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 # Reset any variables which may have been set by a previous component.
 source $TCPATH/bld/common/clear_bconf_vars

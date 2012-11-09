@@ -96,8 +96,11 @@ get_suitable_libs()
 	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
 		# TODO - This is going to totally bail if there are any files in $LIB_SOURCE_PATH.
 
+		# Since the library might be nested, figure out what the actual name of the library will be.
+		LIBRARY_NAME=${LIBRARY##*/}
+
 		# Check if we can find the config file for this library.
-		if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg ]; then
+		if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg ]; then
 			# The configuration file isn't there.  Ask the user if they want to create the file, or skip this library.
 			echo -e "${RED}No configuration file found for library $LIBRARY.\n${NO_COLOUR}"
 			echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
@@ -109,7 +112,7 @@ get_suitable_libs()
 				# Rebuild the configuration file.
 			
 				# Call the 'create_library' script: it will handle rebuilding the configuration file.
-				bash $TCPATH/bld/create/create_library --name $LIBRARY
+				bash $TCPATH/bld/create/create_library --library $LIBRARY
 
 				# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
 			else
@@ -120,7 +123,7 @@ get_suitable_libs()
 		fi
 
 		# Extract relevant configuration information from the configuration file.
-		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY.cfg | grep "^BUILDS" | cut -d '=' -f2)
+		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg | grep "^BUILDS" | cut -d '=' -f2)
 		
 		# Check if it is suitable for the current build configuration.
 		if [ ! -z $(echo $BUILDS | grep -w -o "$BCONF") ]; then
@@ -201,7 +204,7 @@ get_hal()
 	fi
 
 	# Check if the HAL header and source paths were set by the build configuration.
-	if [ -z "$HAL_EN_LIST" ] || [ -z $HAL_HEADER_PATH ] || [ -z $HAL_SOURCE_PATH ] || [ ! -d ${TCPATH}/$HAL_HEADER_PATH ] || [ ! -d ${TCPATH}/$HAL_SOURCE_PATH ]; then
+	if [ -z "$HAL_EN_LIST" ] || [ -z "$HAL_HEADER_PATH" ] || [ -z "$HAL_SOURCE_PATH" ] || [ ! -d ${TCPATH}/$HAL_HEADER_PATH ] || [ ! -d ${TCPATH}/$HAL_SOURCE_PATH ]; then
 		# We don't import the HAL at all.
 		echo -e "${YELLOW}Not importing HAL for this build configuration.\n${NO_COLOUR}"
 		return 0
@@ -454,6 +457,9 @@ do
 	# First, we need to read the configuration information for this component.
 	echo -e "${CYAN}Loading component build configuration...\n${NO_COLOUR}"
 
+	# Since the component might be nested, figure out what the actual name of the component will be.
+	COMPONENT_NAME=${COMPONENT##*/}
+
 	# Reset any variables which may have been set by the previous component.
 	SUBSYSTEM=
 	TARGET=
@@ -461,7 +467,7 @@ do
 	BOOTLOADER=
 
 	# Check if we can find the config file for this component.
-	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 		# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
 		echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
 		echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
@@ -473,7 +479,7 @@ do
 			# Rebuild the configuration file.
 			
 			# Call the 'component_create' script: it will handle rebuilding the configuration file.
-			bash $TCPATH/bld/create/create_component -c $COMPONENT
+			bash $TCPATH/bld/create/create_component --component $COMPONENT
 
 			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
 		else
@@ -484,7 +490,7 @@ do
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
 	# Reset any variables which may have been set by a previous component.
 	source $TCPATH/bld/common/clear_bconf_vars

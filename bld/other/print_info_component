@@ -122,13 +122,13 @@ source $TCPATH/bld/common/load_build_configs
 
 # COLLECT COMPONENT INFORMATION.
 
-# If there was no component name specified, we'll just try to build the 'active component' instead.
+# If there was no component name specified, we'll just try to print information for the 'active component' instead.
 if [ -z $COMPONENT ]; then
-	# Try to build the 'active component' instead.
+	# Try to print information for the 'active component' instead.
 
 	# Check to make sure the user configuration file is there.
 	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
-		# The configuration file is missing, so we don't know what to compile.
+		# The configuration file is missing, so we don't know what to print information for.
 		echo -e "${BOLD_RED}FATAL - User configuration file ($USER_CONFIG_FILE) was not found.\n${NO_COLOUR}"
 		exit 1
 	fi
@@ -139,10 +139,10 @@ if [ -z $COMPONENT ]; then
 	# Check if the toolchain has an 'active component' to build.
 	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
 		# Tell the user there is nothing to compile, then exit.
-		echo -e "${RED}No active component is set; nothing to build.\n${NO_COLOUR}"
+		echo -e "${RED}No active component is set; nothing to print information for.\n${NO_COLOUR}"
 		exit 0
 	else
-		# Schedule the 'active component' to be built.
+		# Schedule the 'active component' to have its configuration information printed.
 		COMPONENT=$CURR
 	fi
 fi
@@ -157,20 +157,20 @@ fi
 # We need to load the build configuration for the component.
 
 # Reset any variables which may have been set by the previous component.
-SUBSYSTEM=
-TARGET=
-PLATFORM=
-BOOTLOADER=
+source $TCPATH/bld/common/clear_component_vars
+
+# Since the component might be nested, figure out what the actual name of the component will be.
+COMPONENT_NAME=${COMPONENT##*/}
 
 # Check if we can find the config file for this component.
-if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 	# Just skip this component and move on.
 	echo -e "${YELLOW}No configuration file.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
 	exit 1
 fi
 
 # Extract relevant configuration information from the configuration file.
-source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
+source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
 # Reset any variables which may have been set by a previous component.
 source $TCPATH/bld/common/clear_bconf_vars
@@ -196,7 +196,17 @@ fi
 # PRINT COMPONENT INFORMATION.
 
 # Print a bit of a header.
-echo -e "${BOLD_CYAN}COMPONENT INFORMATION:\n${NO_COLOUR}"
+echo -e "${BOLD_CYAN}ACTIVE COMPONENT INFORMATION:\n${NO_COLOUR}"
+
+# Print out the most important component specific information.
+echo -e "${BOLD_WHITE}COMPONENT: ${NO_COLOUR}${COMPONENT}\n${NO_COLOUR}"
+echo -e "${BOLD_WHITE}SUBSYSTEM: ${NO_COLOUR}${SUBSYSTEM}\n${NO_COLOUR}"
+echo -e "${BOLD_WHITE}TARGET (APPLICATION) CONFIGURATION: ${NO_COLOUR}${BCONF_NAME}\n${NO_COLOUR}"
+if [ -z "${BLOAD_NAME}" ]; then
+	echo -e "${BOLD_WHITE}NO BOOTLOADER CONFIGURED.\n${NO_COLOUR}"
+else
+	echo -e "${BOLD_WHITE}TARGET BOOTLOADER CONFIGURATION: ${NO_COLOUR}${BLOAD_NAME}\n${NO_COLOUR}"
+fi
 
 # TODO - This.
 

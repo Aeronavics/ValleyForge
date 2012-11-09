@@ -93,7 +93,7 @@ makeavr32()
 	sed -i "s^\(LIBSRC_P *= *\)BUILD_INSERTS_LIBRARY_P_SOURCE_FILES_HERE^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBSRC_S *= *\)BUILD_INSERTS_LIBRARY_S_SOURCE_FILES_HERE^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(TARGET *= *\)BUILD_INSERTS_PROJECT_NAME_HERE^\1$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -i "s^\(TARGET *= *\)BUILD_INSERTS_PROJECT_NAME_HERE^\1$COMPONENT_NAME^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
@@ -109,7 +109,7 @@ makeavr32()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.elf $TCPATH/$OUTPUT_DIR/$COMPONENT.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.elf $TCPATH/$OUTPUT_DIR/$COMPONENT_NAME.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
@@ -120,10 +120,10 @@ makeavr32()
 
 	# Print out details of the size of the generated hex file.
 	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}.hex								
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT_NAME}.hex								
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT_NAME.hex.\n${NO_COLOUR}"
 	return 0
 }
 

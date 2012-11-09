@@ -43,6 +43,7 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 USER_CONFIG_FILE="var/config.cfg"
 BUILD_CONFIG_FILE="bld/build_configs.cfg"
+LIB_SOURCE_PATH="lib"
 
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
@@ -79,20 +80,20 @@ print_component_summary()
 	# To print summary information, we need to load the build configuration for the component.
 
 	# Reset any variables which may have been set by the previous component.
-	SUBSYSTEM=
-	TARGET=
-	PLATFORM=
-	BOOTLOADER=
+	source $TCPATH/bld/common/clear_component_vars
+
+	# Since the component might be nested, figure out what the actual name of the component will be.
+	COMPONENT_NAME=${COMPONENT##*/}
 
 	# Check if we can find the config file for this component.
-	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT.cfg" ]; then
+	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 		# Just skip this component and move on.
 		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 		return 1
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	source $TCPATH/src/$COMPONENT/$COMPONENT.cfg 
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
 	# Reset any variables which may have been set by a previous component.
 	source $TCPATH/bld/common/clear_bconf_vars
@@ -117,6 +118,57 @@ print_component_summary()
 
 	# Finally, actually return the summary information.
 	echo -e "${COMPONENT}^\t^${SUBSYSTEM}^${TARGET}^${PLATFORM}\n"
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		print_library_summary						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Produces a single line summary for the specified library.	###
+###											###
+###########################################################################################
+
+print_library_summary()
+{
+	# Check if no library is currently selected.
+	if [ -z $LIBRARY ]; then
+		# No library was specified, so bail.
+		echo -e "${RED}No library selected.  Nothing to do.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Then, check if the library actually exists.
+	if [ ! -d "$TCPATH/${LIB_SOURCE_PATH}/$COMPONENT" ]; then
+		# The library does't have a matching folder, so bail.
+		echo -e "${RED}No library folder found.  Skipping library $LIBRARY.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# To print summary information, we need to load the configuration for the library.
+
+	# Reset any variables which may have been set by the previous library.
+	source $TCPATH/bld/common/clear_library_vars
+
+	# Since the library might be nested, figure out what the actual name of the component will be.
+	LIBRARY_NAME=${LIBRARY##*/}
+
+	# Check if we can find the config file for this library.
+	if ! [ -r "$TCPATH/${LIB_SOURCE_PATH}/$LIBRARY/$LIBRARY_NAME.cfg" ]; then
+		# Just skip this component and move on.
+		echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Extract relevant configuration information from the configuration file.
+	source $TCPATH/${LIB_SOURCE_PATH}/$LIBRARY/$LIBRARY_NAME.cfg 
+
+	# Finally, actually return the summary information.
+	echo -e "${LIBRARY}^\t^${BUILDS}\n"
 
 	# All done.
 	return
@@ -184,8 +236,13 @@ source $TCPATH/bld/common/load_build_configs
 
 # COLLECT PROJECT INFORMATION.
 
-COMPONENTS=`ls -d ${TCPATH}/src/* | sed "s/.*\/src\///g"`
+COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
 COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
+
+# COLLECT LIBRARY INFORMATION.
+
+LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | sed "s/\/[^/]*\.cfg//g"`
+LIBRARY_COUNT=`echo ${LIBRARIES} | wc -w`
 
 # PRINT USER INFORMATION.
 
@@ -219,6 +276,28 @@ else
 	for COMPONENT in ${COMPONENTS}
 	do
 		print_component_summary
+	done) | column -s^ -t -n
+	echo -e ""
+fi
+
+# Print a summary for each of the libraries in the project.
+if [ ${LIBRARY_COUNT} == 0 ]; then
+	# There are no libraries, so print a message saying so.
+	echo -e "${YELLOW}The project contains no libraries at this time.\n"
+elif [ ${LIBRARY_COUNT} == 1 ]; then
+	# There is just a single library, so print a summary for that one.
+	echo -e "Project contains ${LIBRARY_COUNT} library:\n"
+	LIBRARY=${LIBRARIES}
+	(echo -e "LIBRARY NAME^\t^BUILDS\n";
+	print_library_summary) | column -s^ -t -n
+	echo -e ""
+else
+	# There are multiple libraries, so print the summary for each.
+	echo -e "Project contains ${LIBRARY_COUNT} libraries:\n"
+	(echo -e "COMPONENT NAME^\t^BUILDS\n";
+	for LIBRARY in ${LIBRARIES}
+	do
+		print_library_summary
 	done) | column -s^ -t -n
 	echo -e ""
 fi

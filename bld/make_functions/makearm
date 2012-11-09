@@ -116,7 +116,7 @@ makearm()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries into the appropriate format.
-	$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT $TCPATH/$OUTPUT_DIR/$OUTPUT_NAME
+	$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/$OUTPUT_DIR/$OUTPUT_NAME
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
