@@ -1485,7 +1485,7 @@ ISR(USART1_UDRE_vect)
 ISR(USART2_RX_vect)
 {
   /* Clear the RXCn flag in UCSRnA as a safeguard */
-  UCSR0A &= (1 << RXC2);
+  UCSR2A &= (1 << RXC2);
     
   if (usartInterrupts[USART2_RX_int])  
     usartInterrupts[USART2_RX_int]();
