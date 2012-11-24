@@ -52,7 +52,7 @@ unpack_avrc()
 	# TODO - Test the now the required executables actually exist.
 
 	# All done.
-	return
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -81,7 +81,7 @@ unpack_avr32c()
 	# TODO - Test the now the required executables actually exist.
 
 	# All done.
-	return
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -105,7 +105,60 @@ unpack_armc()
 	# TODO - Test the now the required executables actually exist.
 
 	# All done.
-	return
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_arduinoc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the Arduino compiler (and associated toolchain) is	###
+###			available for use, and if not, sets it up ready to go.  Note	###
+###			that because Arduino uses an old version of avr-gcc, and that	###
+###			some projects won't compile on newer versions, that this isn't	###
+###			the same as the regular AVR compiler.				###
+###											###
+###########################################################################################
+
+unpack_arduino()
+{
+	# TODO - At the moment, this doesn't do anything, since the compiler doesn't exist yet.
+
+	# The compiler is totally not ready to go.
+	echo -e "${BOLD_RED}Arduino compiler not available.\n${NO_COLOUR}"
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 1
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_nativec							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the native build system is available for use, and if	###
+###			not, sets it up ready to go.  This is required for parts of the	###
+###			toolchain which come in source form and need to be compiled for	###
+###			use, and for the test scaffold.					###
+###											###
+###########################################################################################
+
+unpack_nativec()
+{
+	# TODO - At the moment, this doesn't do anything, since the compiler doesn't exist yet.
+
+	# The compiler is totally not ready to go.
+	echo -e "${BOLD_RED}Native compiler not available.\n${NO_COLOUR}"
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 1
 }
 
 ######################################## FUNCTION #########################################
@@ -125,6 +178,8 @@ pack_allc()
 	pack_avrc
 	pack_avr32c
 	pack_armc
+	pack_arduinoc
+	pack_nativec
 }
 
 ######################################## FUNCTION #########################################
@@ -181,6 +236,42 @@ pack_avr32c()
 ###########################################################################################
 
 pack_armc()
+{
+	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_arduinoc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Doesn't do anything, for now.					###
+###											###
+###########################################################################################
+
+pack_arduinoc()
+{
+	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_nativec							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Doesn't do anything, for now.					###
+###											###
+###########################################################################################
+
+pack_nativec()
 {
 	# For now, this doesn't do anything.
 

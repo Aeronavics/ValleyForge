@@ -15,10 +15,28 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-# Reset any component configuration variables which may have been set previously.
+# RESET ANY COMPONENT CONFIGURATION VARIABLES WHICH MAY HAVE BEEN SET PREVIOUSLY.
 
 SUBSYSTEM=
 TARGET=
 PLATFORM=
 BOOTLOADER=
+LOADFUNCTION=
 
+# RESET ANY TARGET SPECIFIC COMPONENT CONFIGURATION VARIABLES WHICH MAY HAVE BEEN SET PREVIOUSLY.
+
+# Build configuration vaiables.
+
+LOLLIPOP=
+RAINBOW=
+
+# Bootloader configuration variables.
+
+BLINK_PORT=
+BLINK_PIN=
+LED_LOGIC=
+FORCE_BL_PORT=
+FORCE_BL_PIN=
+INPUT_LOGIC=
+CLK_SPEED_IN_MHZ=
+SHUTDOWNSTATE_MEM=

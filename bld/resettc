@@ -70,6 +70,10 @@ fi
 echo -e "${BOLD_CYAN}Packing up compilers...\n${NO_COLOUR}"
 pack_allc
 
+# Delete all the folders the toolchain creates (except src and lib, if they have anything in them).
+
+# TODO - This.
+
 # Indicate that we're done.
 echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
 

@@ -307,6 +307,7 @@ Options:
 	-r --retain			Retain temporary files at completion of script.
 	-l --loader			Build the bootloader for each component as well.
 	-n --name <Component Name>	Specify the name of a component to build.
+	-p --postpack			Pack up the compilers used after the build (takes longer next time).
 	   --nohal			Do not compile using the HAL (mostly for debugging).
 EOF
 	# All done.
@@ -368,7 +369,7 @@ while true; do
 		-c|--clean)
 			# Remind the user that there is no 'clean' option here.
 			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
-			echo -e "To retain files built during compilation, type ./build retain\n${NO_COLOUR}"
+			echo -e "To retain files built during compilation, use the 'retain' option.\n${NO_COLOUR}"
 			exit 0		
 			;;
 		-n|--name)
@@ -461,10 +462,7 @@ do
 	COMPONENT_NAME=${COMPONENT##*/}
 
 	# Reset any variables which may have been set by the previous component.
-	SUBSYSTEM=
-	TARGET=
-	PLATFORM=
-	BOOTLOADER=
+	source $TCPATH/bld/common/clear_component_vars
 
 	# Check if we can find the config file for this component.
 	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then

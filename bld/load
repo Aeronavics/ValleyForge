@@ -1,0 +1,433 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		load												###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	24-11-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script uploads compiled components onto their target hardware.			 	###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+USER_CONFIG_FILE="var/config.cfg"
+OUTPUT_DIR="bin"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+# Define the functions used for set up the compilers.
+source $TCPATH/bld/other/setup_compilers
+
+# Define the functions used to actually upload components.
+for f in $TCPATH/bld/upload_functions/upload*; do
+	source "$f"
+done
+
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+Usage: $0 [Options] [Component Names]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to upload components to their target hardware.
+
+Parameters:
+
+	[Component Names]		Space separated list of the components to upload, or "all".
+
+Options:
+	-h --help			Show this message.
+	-a --all			Load all components.
+	-r --retain			Retain temporary files at completion of script.
+	-b --bootloader			Upload the bootloader for each component as well (assuming a compatible method is being used).
+	-l --loaderonly			Only upload the bootloader for each component (assuming a compatible method is being used).
+	-n --name <Component Name>	Specify the name of a component to upload.
+	-p --postpack			Pack up the tools used afterwards (takes longer next time).
+	   --noload			Do not actually upload anything; mostly for debugging.
+
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Delete everything in the tmp directory.
+rm -rf  $TCPATH/tmp/*
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Indicate where we are up to in the script.
+echo -e "${BOLD_CYAN}Parsing command line parameters...\n${NO_COLOUR}"
+
+# Reset fields to be extracted from the parameters.
+NAME=
+RETAIN=
+ALL=
+UPLOAD_APPLICATION=1
+UPLOAD_BOOTLOADER=
+POSTPACK=
+NO_UPLOAD=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="harlpcbn:"
+LONGOPTS="help,all,retain,bootloader,loaderonly,postpack,clean,noload,name:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-a|--all)
+			# Select 'uploading all components'.
+			ALL=1
+			;;
+		-r|--retain)
+			# Select 'retaining temporary files'.
+			RETAIN=1
+			;;
+		-b|--bootloader)
+			# Select 'uploading both applications and bootloaders'.
+			UPLOAD_BOOTLOADER=1
+			;;
+		-l|--loaderonly)
+			# Select 'uploading bootloaders only'.
+			UPLOAD_APPLICATION=
+			UPLOAD_BOOTLOADER=1
+			;;
+		-p|--postpack)
+			# Select 'pack up tools, post upload'.
+			POSTPACK=1
+			;;
+		-c|--clean)
+			# Remind the user that there is no 'clean' option here.
+			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
+			echo -e "To retain files built during uploading, use the 'retain' option.\n${NO_COLOUR}"
+			exit 0		
+			;;
+		-n|--name)
+			# Specify the name of the component to upload.
+			shift
+			NAME="$NAME$1 " # NOTE - The space is intentional!
+			;;
+		--noload)
+			# Select 'not actually uploading'.
+			NO_UPLOAD=1
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			NAME="$NAME$* " # NOTE - The space in intentional!
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			NAME="$NAME$* " # NOTE - The space is intentional!
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
+if [ "$NAME" == "all " ]; then  # NOTE - The space is intentional!
+	ALL=1
+fi
+
+# If there was no component name specified, we'll just try to upload the 'active component' instead.
+if [ "$NAME" == " " ] && ! [ $ALL ]; then  # NOTE - The space is intentional!
+	# Try to upload the 'active component' instead.
+
+	# Check to make sure the user configuration file is there.
+	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+		# The configuration file is missing, so we don't know what to upload.
+		echo -e "${BOLD_RED}FATAL - User configuration file ($USER_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# Extract the value of the 'active component' from the user configuration file.
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+
+	# Check if the toolchain has an 'active component' to upload.
+	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+		# Tell the user there is nothing to compile, then exit.
+		echo -e "${RED}No active component is set; nothing to upload.\n${NO_COLOUR}"
+		exit 0
+	else
+		# Schedule the 'active component' to be uploaded.
+		NAME=$CURR
+	fi
+fi
+
+# If we're going to upload 'everything', then get a list of what 'everything' actually entails.
+if [ $ALL ]; then
+	# Get a list of all the components in the src folder.
+	NAME=$(ls -C $TCPATH/src)
+
+	# TODO - This part is currently broken.
+fi
+
+# UPLOAD THE COMPONENTS ONE BY ONE.
+
+# Parse the build configurations file.
+source $TCPATH/bld/common/load_build_configs
+
+# NOTE - Since each component is independent of one another, the order they are uploaded in doesn't matter.
+
+# Iterate through each of the components in the queue.
+for COMPONENT in $NAME
+do
+	# First, check if this component actually exists.
+	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+		# The component does't have a matching source folder, so skip it and move on.
+		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+
+	# Indicate we are starting the upload process for this component.
+	echo -e "${BOLD_CYAN}Uploading component $COMPONENT...\n${NO_COLOUR}"
+
+	# First, we need to read the configuration information for this component.
+	echo -e "${CYAN}Uploading component build configuration...\n${NO_COLOUR}"
+
+	# Since the component might be nested, figure out what the actual name of the component will be.
+	COMPONENT_NAME=${COMPONENT##*/}
+
+	# Reset any variables which may have been set by the previous component.
+	source $TCPATH/bld/common/clear_component_vars
+
+	# Check if we can find the config file for this component.
+	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
+		# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
+		echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			# Rebuild the configuration file.
+			
+			# Call the 'component_create' script: it will handle rebuilding the configuration file.
+			bash $TCPATH/bld/create/create_component --component $COMPONENT
+
+			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+		else
+			# Just skip this component and move on.
+			echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		fi
+	fi
+
+	# Extract relevant configuration information from the configuration file.
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
+
+	# Reset any variables which may have been set by a previous component.
+	source $TCPATH/bld/common/clear_bconf_vars
+
+	# Check to see if we can find a matching build configuration.
+	BCONF="bconf_${TARGET}_${PLATFORM}"
+	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so skip this component and move on.
+		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	else
+		# There is a matching build configuration, so load it.
+		echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+		$BCONF
+
+		# Check that all the required variables were set by the build configuration.
+		if [ -z "$BCONF_NAME" ] || [ -z "$UPLOAD_FUNCTIONS" ]; then
+			# At least one of the required variables was not set, so skip this component and move on.
+			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			continue
+		fi
+	
+		# Iterate over the list of possible upload functions.
+		for f in "$UPLOAD_FUNCTIONS"; do
+			# Check that this upload function specified by the build configuration actually exists.
+			if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
+				# The specified upload function doesn't exist, so skip this component and move on.
+				echo -e "${RED}Build configuration specifies an invalid uploading mechanism.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+				UPLOAD_FUNCTION_INVALID=1
+			fi
+		done
+		# Check if any of the upload functions in the list were invalid.
+		if [ ${LOAD_FUNCTION_INVALID} ]; then
+			# One of the specified upload functions was invalid, so skip this component.
+			UPLOAD_FUNCTION_INVALID=
+			continue
+		fi
+
+		# The build configuration was loaded successfully.
+		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+	fi
+	
+	# Check if the component configuration specifies a particular upload function to use.
+	if [ ! -z "$UPLOAD_FUNCTION" ]; then
+		# Check if this method is even in the list.	
+		if [ `echo "${UPLOAD_FUNCTIONS}" | grep "${UPLOAD_FUNCTION}" | wc -l` == 0 ]; then
+			# The configuration file defined an upload function, but is isn't valid.
+			echo -e "${RED}The configuration file for component $COMPONENT specifies an invalid method of uploading this component.\n${NO_COLOUR}"
+			UPLOAD_FUNCTION=		
+		else
+			# The proposed method is valid, but check if the user wants to use this it.
+			echo -e "${CYAN}The configuration of component $COMPONENT specifies using the '${UPLOAD_FUNCTION}' method of uploading this component to its target hardware.${NO_COLOUR}"
+			echo -e -n "${GREEN}Do you wish to use this method of uploading? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+			# If they responded YES, then use this uploading method.  If NO, then present them with a list.
+			if [ ! [ $REPLY =~ ^[Yy]$ ]]; then
+				# Clear the choice of upload function.
+				UPLOAD_FUNCTION=
+			fi
+		fi
+	fi
+
+	# Check if an upload function has been selected yet.
+	if [ -z "${UPLOAD_FUNCTION}" ]; then
+		# Check which of the available upload options the user wishes to use.
+
+		# Prompt the user.
+		echo -e "${GREEN}Which uploading method would you like to use for this component?${NO_COLOUR}"
+
+		# Create a menu of choices and have the user select one.
+		UPLOAD_FUNCTIONS=( "${UPLOAD_FUNCTIONS[@]} None" )
+		select UPLOAD_FUNCTION in ${UPLOAD_FUNCTIONS}
+		do
+			# Check if they chose not to upload the component.
+			if [ "${UPLOAD_FUNCTION}" == "None" ]; then
+				# We skip this component.
+				echo -e "${CYAN}Not loading this component.\n${NO_COLOUR}"
+				UPLOAD_FUNCTION=
+				break
+			fi
+
+			# Check if the selected load function is actually valid.
+			UPLOAD_FUNCTION=$(echo "${UPLOAD_FUNCTIONS}" | grep -w -o "${UPLOAD_FUNCTION}")
+			if [ -z "${UPLOAD_FUNCTION}" ]; then
+				# The selected load function was not in the list of bootloaders, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected the '${UPLOAD_FUNCTION}' method of loading.\n${NO_COLOUR}"
+				break
+			fi
+		done
+	fi
+
+	# Check if an upload function has been selected yet.
+	if [ -z "${UPLOAD_FUNCTION}" ]; then
+		# No upload function has been selected by now, so we are just going to skip this component.
+		echo -e "${YELLOW}No uploading method selected.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi	
+	
+	# Check if the user actually wants to proceed.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT using the method '$UPLOAD_FUNCTION'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Skip the component.
+		echo -e "${YELLOW}Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+		
+	# Now, we upload the application code.
+	echo -e "${CYAN}Loading application code...\n${NO_COLOUR}"
+
+	# Actually run the selected upload function.
+	${UPLOAD_FUNCTION}
+
+	# Check if the upload function worked.  If not, we don't go any further with this component.
+	if [ $? != 0 ]; then
+		# Report the load failed and move on.
+		echo -e "${YELLOW}Upload of component $COMPONENT failed.\n${NO_COLOUR}"
+		continue
+	fi
+done
+
+# Now wer are done with the actual work, we just have to tidy up.
+echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
+
+# Check if we are supposed to be packing up the tools after we are finished.
+if [ $POSTPACK ]; then
+	# Pack up the compilers.
+	echo -e "${CYAN}Packing tools...\n${NO_COLOUR}"
+	pack_allc
+
+	# TODO - Pack up any unpacked tools used by the load function.
+else
+	# Don't pack the tools, so that subsequent build attempts are faster.
+	echo -e "${CYAN}Leaving tools unpacked.\n${NO_COLOUR}"
+fi
+
+# Check if we are supposed to be deleting temporary files after we are finished.
+if [ ! $RETAIN ]; then
+	# Delete all the temporary files.
+	echo -e "${CYAN}Removing temporary files...\n${NO_COLOUR}"
+
+	# TODO - Delete any temporary files.
+else
+	# Don't delete any temporary files.
+	echo -e "${CYAN}Retaining temporary files.\n${NO_COLOUR}"
+fi
+
+# Indicate that we're done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+
+# All done.
+exit 0
+
