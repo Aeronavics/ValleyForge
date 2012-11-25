@@ -82,6 +82,28 @@ upload_avrdude()
 		return			
 	}
 
+	upload_avrdude_finddevice_stk600()
+	{
+		# We look to see if there is anything that might be an STK600 available.
+		echo -e "${CYAN}Searching for any available STK600 programmers...${NO_COLOUR}"
+
+		# Check to see if there is an STK600 listed.
+		if [[ -z `lsusb | grep "Atmel Corp. STK600 development board"` ]]; then
+			# We didn't find an STK600 listed, so abort.
+			echo -e "${YELLOW}No suitable STK600 device found.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE=
+			AVRDUDE_ISPDEVTYPE=
+		else
+			# There is an STK600 connected, so we use that.
+			echo -e "${CYAN}Found an STK600 connected via USB.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE="usb"
+			AVRDUDE_ISPDEVTYPE="stk600"
+		fi
+
+		# All done.
+		return			
+	}
+
 	# FUNCTION PROPER STARTS HERE.
 
 	# Check if we are supposed to be loading the application code.
@@ -187,7 +209,11 @@ upload_avrdude()
 		fi
 	fi
 
-	# Check to see if we can find a suitable device to use.		
+	# Check to see if we can find a suitable device to use.
+	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
+		# Try looking for an STK600.
+		upload_avrdude_finddevice_stk600
+	fi
 	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
 		# Try looking for an AVR ISP500.
 		upload_avrdude_finddevice_avrisp500
@@ -269,6 +295,14 @@ upload_avrdude()
 
 	# We don't need to unpack any other tools.
 
+	# If we are using the STK600, then we will require root privileges.
+	AVRDUDE_SUDO=
+	if [ ${AVRDUDE_ISPDEVTYPE} == "stk600" ]; then
+		# We will need root privileges.  Warn the user in advance.
+		echo -e "${YELLOW}Programming using the STK600 requires elevated privileges.  You will be prompted for a sudo capable password.${NO_COLOUR}"
+		AVRDUDE_SUDO="sudo"
+	fi
+
 	# Ask the user if they are sure they want to do this.
 	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via ISP device '${AVRDUDE_ISPDEVFILE}'? (Y/N) ${NO_COLOUR}"
 	read -n 1
@@ -288,7 +322,7 @@ upload_avrdude()
 		# TODO - Upload the fuse bits, if required.
 
 		# Upload the application code to flash.
-		avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i
+		${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i
 
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
@@ -298,7 +332,7 @@ upload_avrdude()
 	
 		else
 			# Verify the upload was successful.
-			avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:v:"$AVRDUDE_BINARY":i
+			${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:v:"$AVRDUDE_BINARY":i
 
 			# Check the return value from the verify operation.
 			if [ $? != 0 ]; then
@@ -327,6 +361,7 @@ upload_avrdude()
 		fi
 	fi
 	AVRDUDE_BINARY=
+	AVRDUDE_SUDO=
 
 	# All done.
 	if [ ${AVRDUDE_FAILED} ]; then
