@@ -268,9 +268,20 @@ upload_avrdude()
 	# TODO - Check if we need to write the fuse bits.
 
 	# We don't need to unpack any other tools.
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via ISP device '${AVRDUDE_ISPDEVFILE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+		AVRDUDE_FAILED=1
 	
 	# Check if we should actually upload anything.
-	if [ ! ${NO_UPLOAD} ]; then
+	elif [ ! ${NO_UPLOAD} ]; then
 		# Actually upload the component to the selected target.
 		echo -e "${BOLD_WHITE}Uploading files for component $COMPONENT via AVR ISP.\n${NO_COLOUR}"
 
@@ -307,7 +318,7 @@ upload_avrdude()
 	# Check if we need to get rid of any temporary files.
 	if [ ! $RETAIN ]; then
 		# Remove temporary files.
-		echo -e "${CYAN}Removing temporary files from upload operation...\n${NO_COLOUR}"
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
 
 		# Check if we created a combined binary which needs removing.
 		if [ -a "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" ]; then

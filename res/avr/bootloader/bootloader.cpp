@@ -37,6 +37,7 @@
 #include <avr/interrupt.h>
 
 // DEFINE CONSTANTS
+
 enum port_offset {P_READ, P_MODE, P_WRITE};
 enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
@@ -73,8 +74,6 @@ enum input_state {LO,HI};
 #define CLEAN_FLAG		0xAFAF
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
-
-
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 

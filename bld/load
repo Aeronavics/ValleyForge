@@ -74,7 +74,7 @@ Parameters:
 
 Options:
 	-h --help			Show this message.
-	-a --all			Load all components.
+	-a --all			Upload all components.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Upload the bootloader for each component as well (assuming a compatible method is being used).
 	-l --loaderonly			Only upload the bootloader for each component (assuming a compatible method is being used).
@@ -370,18 +370,6 @@ do
 	if [ -z "${UPLOAD_FUNCTION}" ]; then
 		# No upload function has been selected by now, so we are just going to skip this component.
 		echo -e "${YELLOW}No uploading method selected.  Skipping component $COMPONENT.\n${NO_COLOUR}"
-		continue
-	fi	
-	
-	# Check if the user actually wants to proceed.
-	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT using the method '$UPLOAD_FUNCTION'? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
-	# If they responded YES, then upload the component.  If NO, then skip this component.
-	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-		# Skip the component.
-		echo -e "${YELLOW}Skipping component $COMPONENT.\n${NO_COLOUR}"
 		continue
 	fi
 		
