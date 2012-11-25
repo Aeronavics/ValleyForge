@@ -25,8 +25,8 @@
 ###															###
 ### Type:		Bash Script											###
 ###															###
-### Purpose:		Resets the toolchain to its default parameters.  Note that this doesn't touch the contents of	###
-###			the src folder.										 	###
+### Purpose:		Resets the toolchain to its default condition.  Note that this doesn't touch the contents of	###
+###			the src or lib folder if they are not empty.							###
 ###															###
 ###########################################################################################################################
 
@@ -71,11 +71,22 @@ echo -e "${BOLD_CYAN}Packing up compilers...\n${NO_COLOUR}"
 pack_allc
 
 # Delete all the folders the toolchain creates (except src and lib, if they have anything in them).
+echo -e "${BOLD_CYAN}Removing directories...\n${NO_COLOUR}"
 
-# TODO - This.
+# Remove the tmp folder.
+rm -Rf ${TCPATH}/tmp
+
+# Remove the bin folder.
+rm -Rf ${TCPATH}/bin
+
+# Remove the src folder only if it empty.
+rmdir ${TCPATH}/src 2> /dev/null
+
+# Remove the lib folder only if it empty.
+rmdir ${TCPATH}/lib 2> /dev/null
 
 # Indicate that we're done.
-echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+echo -e "${BOLD_CYAN}All done.\n${NO_COLOUR}"
 
 # All done.
 exit 0
