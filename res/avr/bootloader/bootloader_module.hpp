@@ -48,15 +48,16 @@
 struct firmware_page
 {
 	bool ready_to_flash;
+	bool ready_to_read_flash;
 	uint32_t page;
-	uint8_t current_byte;
+	uint16_t current_byte;
 	uint8_t data[PAGE_SIZE];
+	uint16_t code_length;
 };
 
 class bootloader_module
 {
-	public:
-
+	public:		
 		// Functions.
 	
 		/**
@@ -90,17 +91,16 @@ class bootloader_module
 		 */
 		virtual void exit() = 0;
 
+		
+
 	private:
 };
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
-extern volatile firmware_page buffer;
+extern firmware_page buffer;
 
-extern volatile uint32_t current_page;
-
-extern volatile bool firmware_finished;
-extern volatile bool firmware_available;
+extern bool firmware_finished;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 

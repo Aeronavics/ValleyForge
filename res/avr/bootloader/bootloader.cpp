@@ -35,6 +35,8 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
+#include <avr/pgmspace.h>
 
 // DEFINE CONSTANTS
 
@@ -75,24 +77,98 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-volatile uint8_t timeout_tick;
+volatile uint8_t timeout_tick = 0;
+
 volatile uint8_t blink_tick;
 
-volatile bool timeout_expired;
+volatile bool timeout_expired = false;
 
-BOOTLOADER_MODULE mod_imp = BOOTLOADER_MODULE(); // Which ever bootloader module we are using.
-bootloader_module* mod = &mod_imp;
+BOOTLOADER_MODULE module;//This means all the modules must have an object defined in them called- extern <class name> module
+BOOTLOADER_MODULE* mod = &module;
 
-volatile firmware_page buffer;
+firmware_page buffer;
 
-volatile uint32_t current_page;
+bool firmware_finished;
 
-volatile bool firmware_finished;
-volatile bool firmware_available;
+bool communication_started = false;
+
+
+
+//
+//
+//		TESTING
+//		   v
+volatile uint8_t second_tick = 0;//Added for testing
+volatile bool wait_flag = false;//
+
+void ledon(uint8_t led)
+{
+	if(led == 0){PORTB &= ~(1<<PB0);}
+	if(led == 1){PORTB &= ~(1<<PB1);}
+	if(led == 2){PORTB &= ~(1<<PB2);}
+	if(led == 3){PORTB &= ~(1<<PB3);}
+	if(led == 4){PORTB &= ~(1<<PB4);}
+	if(led == 5){PORTB &= ~(1<<PB5);}
+	if(led == 6){PORTB &= ~(1<<PB6);}
+	if(led == 7){PORTB &= ~(1<<PB7);}
+}
+void ledoff(uint8_t led)
+{
+	if(led == 0){PORTB |= (1<<PB0);}
+	if(led == 1){PORTB |= (1<<PB1);}
+	if(led == 2){PORTB |= (1<<PB2);}
+	if(led == 3){PORTB |= (1<<PB3);}
+	if(led == 4){PORTB |= (1<<PB4);}
+	if(led == 5){PORTB |= (1<<PB5);}
+	if(led == 6){PORTB |= (1<<PB6);}
+	if(led == 7){PORTB |= (1<<PB7);}
+}
+void ledtog(uint8_t led)
+{
+	if(led == 0){PORTB ^= (1<<PB0);}
+	if(led == 1){PORTB ^= (1<<PB1);}
+	if(led == 2){PORTB ^= (1<<PB2);}
+	if(led == 3){PORTB ^= (1<<PB3);}
+	if(led == 4){PORTB ^= (1<<PB4);}
+	if(led == 5){PORTB ^= (1<<PB5);}
+	if(led == 6){PORTB ^= (1<<PB6);}
+	if(led == 7){PORTB ^= (1<<PB7);}
+}
+void wow_init(void)//
+{
+	second_tick = 0;
+	timeout_tick = 0;
+	wait_flag = false;
+	ledon(3);
+	return;
+}
+void wow(void)//
+{
+	while(wait_flag == false);
+	ledoff(3);
+	return;
+}
+void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
+{
+	DDRB |= (1<<DDB4)|(1<<DDB5)|(1<<DDB2)|(1<<DDB3)|(1<<DDB6)|(1<<DDB1)|(1<<DDB0);
+	PORTB |= (1<<PB2)|(1<<PB3)|(1<<PB4)|(1<<PB5)|(1<<PB6)|(1<<PB1)|(1<<PB0);//Initally all LEDs off
+}
+//
+//
+//		NOT TESTING
+//		    V
+
+
+
+
+
+
+
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -130,6 +206,24 @@ void run_application(void);
 void flash_page(volatile firmware_page& buffer);
 
 /**
+ *	Reads FLASH memory from a page into a buffer.
+ *
+ *	TAKES:		buffer		The firmware_page buffer to be written to.
+ *	
+ *	RETURNS:	Nothing.
+ */
+void read_flash_page(volatile firmware_page& current_firmware_page);
+
+/**
+ *	Executes the procedure required for the received message.
+ *
+ *	TAKES: 		Nothing.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void filter_message(void);
+
+/**
  *	ISR, flashes the LED. Also changes the period if in waiting mode.
  *
  *	@param 	none
@@ -147,6 +241,7 @@ void blink_func(void);
  */
 void tick_func(void);
 
+
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -163,7 +258,7 @@ int main(void)
 	
 	
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-	wdt_enable(WDTO_500MS);
+	//wdt_enable(WDTO_500MS);
 	
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
@@ -173,21 +268,22 @@ int main(void)
 	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI)))
 	{
 		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
-	
 		// Run the application.
 		run_application();
 	}
+
 
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
 	mod->init();
-
+	testing_init();
+	
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
 	// Normal port operation, not connected to a pin.CTC on.
 	TCCR1A = 0b00000000;
-	OCR1AH = (uint8_t)( (uint16_t) LONG_FLASH >> 8 );	
+	OCR1AH = (uint8_t)( (uint16_t) LONG_FLASH >> 8 );
 	OCR1AL = (uint8_t)( (uint16_t) LONG_FLASH);
 	// Enable Timer Output Compare interrupt.
 	TIMSK1 = 0b00000010;
@@ -223,33 +319,54 @@ int main(void)
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
 	{
-		
 		// Touch the watchdog.
-		wdt_reset();
+		//wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
 		// Check to see if we've timed out
-		if (((!firmware_available) && timeout_expired) || firmware_finished)
+		if (((!mod->reception_message.message_received) && timeout_expired) || firmware_finished)
 		{
-		    // Run the application.
-		    // run_application(); // TODO Once this stuff is setup, uncomment this line. 
-		}
-		
-		if ( ( FORCE_BL_READ & FORCE_BL_PIN ) == 0 )	// TODO This is just a demonstration, this will be removed eventually. The Force_Bl pin should be used to tell it that new firmware is arriving, not that it should run the application, as it is doing now.
-		{
-		    // Test, if button is pushed, then run the application.
-		    // Run the application.
 			run_application();
 		}
+		
+		//check for a new message
+		if (mod->reception_message.message_received == false)
+		{
+			//empty mailbox
+			//
+			//check if communication with host has already occured
+			if(communication_started == false)
+			{
+				//Send message to host to say that bootloader is awaiting messages
+				mod->alert_host();
 				
-		// TODO - Wait until some firmware arrives.
+				//wait_time()-wait for period of time before restarting application
+				wow_init();
+				wow();
 
-		//		Probably, send out a message to indicate that we're now waiting on firmware.  Then wait for some time.  If we
-		//		still haven't been given any firmware, then restart the application anyway, since in all likelihood this was an
-		//		unforseen crash, and if for instance, the flight controller crashes, then we want to restart it and hope it can
-		//		recover, rather than flying into the ground whilst we wait for new software to arrive.
+				//check message again
+				if (mod->reception_message.message_received== false)
+				{
+					//If still no message then run application, program may have crashed
+					run_application();
+				}
+			}
+		}
+		else
+		{
+			//Filter messages.	
+			/*//If we are filtering a message then communication with host must have occured
+			if(communication_started == false)
+			{
+				communication_started = true;
+			}
+
+			//Once can is working just put filter message - mod->filter_message(buffer, firmware_finished);*/
+						
+			filter_message();
+		}
 
 		// If the buffer is ready, write it to memory.
 		if (buffer.ready_to_flash)
@@ -257,10 +374,11 @@ int main(void)
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
 			flash_page(buffer);
 		}
-			
-		// TODO - Then check if we've now got a valid program to run.
+		/*if(buffer.ready_to_read_flash)
+		{
+			read_flash_page(buffer);	//Implemented with new filter.
+		}*/
 	}
-
 	// We should never reach here.
 	return 0;
 }
@@ -345,10 +463,10 @@ void run_application(void)
 	OCR1A = 0;
 	OCR0A = 0;
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
-	wdt_disable();
+	//wdt_disable();
 	
 	// Jump into the application.
-	asm("jmp 0000");
+	asm("jmp 0x0000");
 
 	// We will never reach here.
 	return;
@@ -367,12 +485,12 @@ void flash_page(volatile firmware_page& buffer)
 	// Wait until the EEPROM is ready.
 	eeprom_busy_wait();
 
-	// Erase the EEPROM page that we are about to write.
+	// Erase the FLASH page that we are about to write.
 	boot_page_erase(buffer.page);
 	boot_spm_busy_wait();
 
 	// Set up the page of data to write, one word (two bytes) at at time.
-	for (uint16_t i = 0; i < SPM_PAGESIZE; i += 2)
+	for (uint16_t i = 0; i < buffer.code_length; i += 2)
 	{
 		// Set up a little-endian word composed of the next two bytes of data to be written.
 		uint16_t w = *data++;
@@ -382,7 +500,7 @@ void flash_page(volatile firmware_page& buffer)
 		boot_page_fill((buffer.page + i), w);
 	}
 
-	// Write the temporary page buffer to the EEPROM.
+	// Write the temporary page buffer to the FLASH.
 	boot_page_write(buffer.page);
 	boot_spm_busy_wait();
 
@@ -401,9 +519,58 @@ void flash_page(volatile firmware_page& buffer)
 	return;
 }
 
+void read_flash_page(volatile firmware_page& current_firmware_page)
+{
+	//Read flash page out byte by byte, up until the desired length
+	for(uint16_t i = 0 ; i < current_firmware_page.code_length ; i++)
+	{
+		current_firmware_page.data[i] = pgm_read_byte_far(current_firmware_page.page + i);
+	}
+}
+
+void filter_message(void)
+{
+	//If we are filtering a message then communication with host must have occured
+	if(communication_started == false)
+	{
+		communication_started = true;
+	}
+
+	//Filter messages.
+	//Once can is working just put filter message - mod->filter();
+	if(mod->reception_message.message_type == mod->WRITE_DATA)
+	{
+		mod->write_data_procedure(buffer);
+	}
+
+	else if(mod->reception_message.message_type == mod->READ_MEMORY)
+	{
+		mod->read_memory_procedure(buffer);
+		read_flash_page(buffer);
+		mod->send_flash_page(buffer);
+	}
+
+	else if(mod->reception_message.message_type == mod->GET_INFO)
+	{
+		mod->get_info_procedure();
+	}
+
+	else if(mod->reception_message.message_type == mod->START_RESET)
+	{
+		mod->start_reset_procedure(firmware_finished);
+	}
+
+	else if(mod->reception_message.message_type == mod->WRITE_MEMORY)
+	{
+		mod->write_memory_procedure(buffer);
+	}
+
+	mod->reception_message.message_received = false;//reset message flag
+}
+
 ISR(TIMER1_COMPA_vect)
 {
-	// NOTE This can be edited to whatever is desired. Currently it toggles the led and then changes the time for the next toggle. This results on it being on more than off.
+	// NOTE This can be edited to whatever is desired. Currently it toggles the led and then changes the time for the next toggle. This results of it being on more than off.
 	static int change = 1;
 	    // Toggle the blinkenlight.
 	if (change)
@@ -417,11 +584,12 @@ ISR(TIMER1_COMPA_vect)
 		change = 1;
 	}
 	BLINK_WRITE = ( BLINK_WRITE & BLINK_PIN ) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN); 
-	   // blink_tick = 0;
+	  // blink_tick = 0;
 	
 	// All done.
 	return;
 }
+
 
 #if defined (__AVR_AT90CAN128__)
 
@@ -438,11 +606,22 @@ ISR(TIMER0_COMPA_vect)
 	timeout_tick++;
 	
 	// Check if the timeout period has now expired.
-	timeout_expired = (timeout_tick > MAX_TICK_VALUE);
+	//timeout_expired = (timeout_tick > MAX_TICK_VALUE);
+	
+	//Period of time used as wait.
+	if(timeout_tick > 254)
+	{
+		second_tick++;
+		if(second_tick > 127)
+		{
+			second_tick = 0;
+			wait_flag = true;
+		}		
+		timeout_tick = 0;
+	}
 
 	// All done.
 	return;
 }
-
 
 // ALL DONE.

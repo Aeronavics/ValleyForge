@@ -74,6 +74,7 @@ class bootloader_module_isp : public bootloader_module
 		 *	RETURNS:	Nothing.
 		 */
 		virtual void exit();
+		
 
 	private:
 };
