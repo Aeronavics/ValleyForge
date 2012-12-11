@@ -99,30 +99,16 @@ class bootloader_module_can : public bootloader_module
 		 */
 		virtual void exit();
 
-
 		/**
-		 *	Procedure when a read_memory message is received. Saves the Flash page to read and the length of code to read.
+		 *	Procedure when a start_reset message is received. Either starts the application or resets the Boot Loader.
 		 *
 		 *	NOTE - Nothing.
 		 *
-		 *	TAKES:		buffer			The firmware_page buffer to be written to.
+		 *	TAKES:		firmware_finished			The flag to tell Boot loader that the program update is completed.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void read_memory_procedure(volatile firmware_page& current_firmware_page);
-
-
-		/**
-		 *	Procedure when a write_data message is received. Saves message data into buffer which can then be written to the FLASH.
-		 *
-		 *	NOTE - Nothing.
-		 *
-		 *	TAKES:		buffer			The firmware_page buffer to be written to.
-		 *
-		 *	RETURNS:	Nothing.
-		 */
-		void write_data_procedure(volatile firmware_page& current_firmware_page);
-		
+		void start_reset_procedure(bool& firmware_finished_flag);
 
 		/**
 		 *	Procedure when a get_info message is received. Sends the host information about the microcontroller.
@@ -135,7 +121,6 @@ class bootloader_module_can : public bootloader_module
 		 */
 		void get_info_procedure(void);
 
-
 		/**
 		 *	Procedure when a write_memory message is received. Saves the Flash page to write to and the length of code to write to.
 		 *
@@ -145,8 +130,29 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_memory_procedure(volatile firmware_page& current_firmware_page);
+		void write_memory_procedure(firmware_page& current_firmware_page);
 
+		/**
+		 *	Procedure when a write_data message is received. Saves message data into buffer which can then be written to the FLASH.
+		 *
+		 *	NOTE - Nothing.
+		 *
+		 *	TAKES:		buffer			The firmware_page buffer to be written to.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void write_data_procedure(firmware_page& current_firmware_page);
+	
+		/**
+		 *	Procedure when a read_memory message is received. Saves the Flash page to read and the length of code to read.
+		 *
+		 *	NOTE - Nothing.
+		 *
+		 *	TAKES:		buffer			The firmware_page buffer to be written to.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void read_memory_procedure(firmware_page& current_firmware_page);
 
 		/**
 		 *	Sends the copy of the FLASH page in messages.
@@ -157,8 +163,20 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void send_flash_page(volatile firmware_page& current_firmware_page);
+		void send_flash_page(firmware_page& current_firmware_page);
 
+		/**
+		 *	Executes the procedure required for the received message.
+		 *
+		 *	NOTE - Nothing.
+		 *
+		 *	TAKES:		buffer			The firmware_page buffer.
+		 *
+		 *			firmware_finished	The flag to set if the host requests to start the application.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page, bool& firmware_finished_flag);
 
 		/**
 		 *	Send host a message informing that the microcontroller is awaiting firmware messages.
@@ -172,39 +190,11 @@ class bootloader_module_can : public bootloader_module
 		void alert_host(void);
 
 
-		/**
-		 *	Procedure when a start_reset message is received. Either starts the application or resets the Boot Loader.
-		 *
-		 *	NOTE - Nothing.
-		 *
-		 *	TAKES:		firmware_finished			The flag to tell Boot loader that the program update is completed.
-		 *
-		 *	RETURNS:	Nothing.
-		 */
-		void start_reset_procedure(volatile bool& firmware_finished_flag);
-		
-
-		/**
-		 *	Executes the procedure required for the received message.
-		 *
-		 *	NOTE - Nothing.
-		 *
-		 *	TAKES:		buffer			The firmware_page buffer.
-		 *
-		 *			firmware_finished	The flag to set if the host requests to start the application.
-		 *
-		 *	RETURNS:	Nothing.
-		 */
-		void filter_message(firmware_page& current_firmware_page, bool& firmware_finished_flag);
-
-
-
-
 		//
 		//
 		//TEST function
 		//
-		void can_test(uint16_t i);
+		void can_test(uint32_t i);
 
 	private:
 };

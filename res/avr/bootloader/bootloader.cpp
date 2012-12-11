@@ -82,28 +82,30 @@ enum input_state {LO,HI};
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-volatile uint8_t timeout_tick = 0;
+volatile uint16_t timeout_tick = 0;
 
 volatile uint8_t blink_tick;
 
 volatile bool timeout_expired = false;
 
-BOOTLOADER_MODULE module;//This means all the modules must have an object defined in them called- extern <class name> module
+BOOTLOADER_MODULE module;//This means all the modules must have an object defined in them called - extern <class name> module
 BOOTLOADER_MODULE* mod = &module;
 
 firmware_page buffer;
 
-bool firmware_finished;
+firmware_page read_buffer;
+
+bool firmware_finished = false;
 
 bool communication_started = false;
 
-
+#define WAIT_FOR_HOST_TIME 25535 //should allow user to define this in toolchain, same with timeout, Need to determine this time aswell
+#define BOOTLOADER_START_ADDRESS 0x1E000//This needs to be input by toolchain
 
 //
 //
 //		TESTING
 //		   v
-volatile uint8_t second_tick = 0;//Added for testing
 volatile bool wait_flag = false;//
 
 void ledon(uint8_t led)
@@ -139,24 +141,17 @@ void ledtog(uint8_t led)
 	if(led == 6){PORTB ^= (1<<PB6);}
 	if(led == 7){PORTB ^= (1<<PB7);}
 }
-void wow_init(void)//
+void waiting(void)//
 {
-	second_tick = 0;
-	timeout_tick = 0;
 	wait_flag = false;
 	ledon(3);
-	return;
-}
-void wow(void)//
-{
 	while(wait_flag == false);
 	ledoff(3);
-	return;
 }
 void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
 {
-	DDRB |= (1<<DDB4)|(1<<DDB5)|(1<<DDB2)|(1<<DDB3)|(1<<DDB6)|(1<<DDB1)|(1<<DDB0);
-	PORTB |= (1<<PB2)|(1<<PB3)|(1<<PB4)|(1<<PB5)|(1<<PB6)|(1<<PB1)|(1<<PB0);//Initally all LEDs off
+	DDRB |= (1<<DDB3);
+	PORTB |= (1<<PB3);//Initally all LEDs off
 }
 //
 //
@@ -203,7 +198,7 @@ void run_application(void);
  *
  *	RETURNS: 	Nothing.
  */
-void flash_page(volatile firmware_page& buffer);
+void flash_page(firmware_page& buffer);
 
 /**
  *	Reads FLASH memory from a page into a buffer.
@@ -212,16 +207,7 @@ void flash_page(volatile firmware_page& buffer);
  *	
  *	RETURNS:	Nothing.
  */
-void read_flash_page(volatile firmware_page& current_firmware_page);
-
-/**
- *	Executes the procedure required for the received message.
- *
- *	TAKES: 		Nothing.
- *
- *	RETURNS: 	Nothing.
- */
-void filter_message(void);
+void read_flash_page(firmware_page& current_firmware_page);
 
 /**
  *	ISR, flashes the LED. Also changes the period if in waiting mode.
@@ -263,21 +249,26 @@ int main(void)
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
 	
-	
+	testing_init();//	TESTING!
+
 	// Check the state of the 'application run' marker.
-	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI)))
+	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? HI : LO)))//if clean a pin not held
 	{
 		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
 		// Run the application.
 		run_application();
 	}
+	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.	
 
-
-	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
+	//If pin is held then set the communication to started so we can just wait for firmware as we are not worried about restarting quickly
+	if((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI))
+	{
+		communication_started = true;
+	}
 
 	// Start up whichever peripherals are required by the modules we're using.
 	mod->init();
-	testing_init();
+	
 	
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
@@ -343,11 +334,10 @@ int main(void)
 				mod->alert_host();
 				
 				//wait_time()-wait for period of time before restarting application
-				wow_init();
-				wow();
+				waiting();
 
 				//check message again
-				if (mod->reception_message.message_received== false)
+				if (mod->reception_message.message_received == false)
 				{
 					//If still no message then run application, program may have crashed
 					run_application();
@@ -357,27 +347,24 @@ int main(void)
 		else
 		{
 			//Filter messages.	
-			/*//If we are filtering a message then communication with host must have occured
+			//If we are filtering a message then communication with host must have occured
 			if(communication_started == false)
 			{
 				communication_started = true;
 			}
-
-			//Once can is working just put filter message - mod->filter_message(buffer, firmware_finished);*/
-						
-			filter_message();
+			mod->filter_message(buffer, read_buffer, firmware_finished);
 		}
 
 		// If the buffer is ready, write it to memory.
-		if (buffer.ready_to_flash)
+		if(buffer.ready_to_flash)
 		{
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
 			flash_page(buffer);
 		}
-		/*if(buffer.ready_to_read_flash)
+		if(read_buffer.ready_to_read_flash)
 		{
-			read_flash_page(buffer);	//Implemented with new filter.
-		}*/
+			read_flash_page(read_buffer);
+		}
 	}
 	// We should never reach here.
 	return 0;
@@ -472,100 +459,67 @@ void run_application(void)
 	return;
 }
 
-void flash_page(volatile firmware_page& buffer)
+void flash_page(firmware_page& buffer)
 {
-	// Disable interrupts.
-	cli();
-
-	// TODO - Replace this with something non-target specific.
-
-	// Get a pointer to the start of the data we're going to write.
-	uint8_t* data = (uint8_t*) buffer.data;	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
-
-	// Wait until the EEPROM is ready.
-	eeprom_busy_wait();
-
-	// Erase the FLASH page that we are about to write.
-	boot_page_erase(buffer.page);
-	boot_spm_busy_wait();
-
-	// Set up the page of data to write, one word (two bytes) at at time.
-	for (uint16_t i = 0; i < buffer.code_length; i += 2)
+	//Limit the page number to above boot loader section
+	if(buffer.page < BOOTLOADER_START_ADDRESS)
 	{
-		// Set up a little-endian word composed of the next two bytes of data to be written.
-		uint16_t w = *data++;
-		w += (*data++) << 8;
+		// Disable interrupts.
+		cli();
 
-		// Fill the temporary page buffer with the created word.
-		boot_page_fill((buffer.page + i), w);
+		// TODO - Replace this with something non-target specific.
+
+		// Get a pointer to the start of the data we're going to write.
+		uint8_t* data = (uint8_t*) buffer.data;	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
+
+		// Wait until the EEPROM is ready.
+		eeprom_busy_wait();
+
+		// Erase the FLASH page that we are about to write.
+		boot_page_erase(buffer.page);
+		boot_spm_busy_wait();
+
+		// Set up the page of data to write, one word (two bytes) at at time.
+		for (uint16_t i = 0; i < buffer.code_length; i += 2)
+		{
+			// Set up a little-endian word composed of the next two bytes of data to be written.
+			uint16_t w = *data++;
+			w += (*data++) << 8;
+
+			// Fill the temporary page buffer with the created word.
+			boot_page_fill((buffer.page + i), w);
+		}
+
+		// Write the temporary page buffer to the FLASH.
+		boot_page_write(buffer.page);
+		boot_spm_busy_wait();
+
+		// Reenable the RWW EEPROM again.
+		boot_rww_enable();
+
+		// Clear the buffer so that it may be used again.
+		buffer.ready_to_flash = false;
+		buffer.page = 0;
+		buffer.current_byte = 0;
+
+		// Re-enable interrupts.
+		sei();
 	}
-
-	// Write the temporary page buffer to the FLASH.
-	boot_page_write(buffer.page);
-	boot_spm_busy_wait();
-
-	// Reenable the RWW EEPROM again.
-	boot_rww_enable();
-	
-	// Clear the buffer so that it may be used again.
-	buffer.ready_to_flash = false;
-	buffer.page = 0;
-	buffer.current_byte = 0;
-
-	// Re-enable interrupts.
-	sei();
 
 	// All done.
 	return;
 }
 
-void read_flash_page(volatile firmware_page& current_firmware_page)
+void read_flash_page(firmware_page& current_firmware_page)
 {
-	//Read flash page out byte by byte, up until the desired length
-	for(uint16_t i = 0 ; i < current_firmware_page.code_length ; i++)
+	if(read_buffer.page < BOOTLOADER_START_ADDRESS)
 	{
-		current_firmware_page.data[i] = pgm_read_byte_far(current_firmware_page.page + i);
+		//Read flash page out byte by byte, up until the desired length
+		for(uint16_t i = 0 ; i < current_firmware_page.code_length ; i++)
+		{
+			current_firmware_page.data[i] = pgm_read_byte_far(current_firmware_page.page + i);
+		}
 	}
-}
-
-void filter_message(void)
-{
-	//If we are filtering a message then communication with host must have occured
-	if(communication_started == false)
-	{
-		communication_started = true;
-	}
-
-	//Filter messages.
-	//Once can is working just put filter message - mod->filter();
-	if(mod->reception_message.message_type == mod->WRITE_DATA)
-	{
-		mod->write_data_procedure(buffer);
-	}
-
-	else if(mod->reception_message.message_type == mod->READ_MEMORY)
-	{
-		mod->read_memory_procedure(buffer);
-		read_flash_page(buffer);
-		mod->send_flash_page(buffer);
-	}
-
-	else if(mod->reception_message.message_type == mod->GET_INFO)
-	{
-		mod->get_info_procedure();
-	}
-
-	else if(mod->reception_message.message_type == mod->START_RESET)
-	{
-		mod->start_reset_procedure(firmware_finished);
-	}
-
-	else if(mod->reception_message.message_type == mod->WRITE_MEMORY)
-	{
-		mod->write_memory_procedure(buffer);
-	}
-
-	mod->reception_message.message_received = false;//reset message flag
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -609,15 +563,9 @@ ISR(TIMER0_COMPA_vect)
 	//timeout_expired = (timeout_tick > MAX_TICK_VALUE);
 	
 	//Period of time used as wait.
-	if(timeout_tick > 254)
+	if(timeout_tick > WAIT_FOR_HOST_TIME)
 	{
-		second_tick++;
-		if(second_tick > 127)
-		{
-			second_tick = 0;
-			wait_flag = true;
-		}		
-		timeout_tick = 0;
+		wait_flag = true;
 	}
 
 	// All done.

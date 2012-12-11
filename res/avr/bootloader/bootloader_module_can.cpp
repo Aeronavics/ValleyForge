@@ -82,6 +82,8 @@ void CAN_reset(void);
  */
 void confirm_reception(void);
 
+
+
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 bootloader_module_can::~bootloader_module_can()
@@ -95,7 +97,8 @@ void bootloader_module_can::init(void)
 {
 	//Initialize the CAN controller
 	CAN_init();
-	
+	DDRB |= (1<<DDB2);
+	PORTB |= (1<<PB2);
 	//
 	
 	return;
@@ -114,12 +117,14 @@ void bootloader_module_can::exit(void)
 //
 //TEST function
 //
-void bootloader_module_can::can_test(uint16_t i)
+void bootloader_module_can::can_test(uint32_t i)
 {
-	transmission_message.dlc = 2;
+	transmission_message.dlc = 4;
 	transmission_message.message_type = 0x4ff;
-	transmission_message.message[0] = (i >> 8);
-	transmission_message.message[1] = i;
+	transmission_message.message[0] = (i >> 24);
+	transmission_message.message[1] = (i >> 16);
+	transmission_message.message[2] = (i >> 8);
+	transmission_message.message[3] = i;
 	transmit_CAN_message(transmission_message);
 }
 //
@@ -127,32 +132,49 @@ void bootloader_module_can::can_test(uint16_t i)
 //
 //
 
-void bootloader_module_can::read_memory_procedure(volatile firmware_page& current_firmware_page)
+void bootloader_module_can::start_reset_procedure(bool& firmware_finished_flag)
 {
 	confirm_reception();
-
-	//Store the 16bit page number
-	current_firmware_page.page = (reception_message.message[0] << 8)|(reception_message.message[1]);
 	
-	//Store the 16bit code_length
-	current_firmware_page.code_length = (reception_message.message[2] << 8)|(reception_message.message[3]);
+	if(reception_message.message[0] == 0)
+	{
+		//use watchdog timer to reset the micro
+		wdt_disable();
+		wdt_enable(0);//WDT0_15MS = 0
+		while(1){}
+	}
+	else
+	{
+		firmware_finished_flag = true;
+	}
+}
 
+void bootloader_module_can::write_memory_procedure(firmware_page& current_firmware_page)
+{
+	//Store the 32bit page number
+	current_firmware_page.page = (((uint32_t)reception_message.message[0]) << 24)|(((uint32_t)reception_message.message[1]) << 16)|(((uint32_t)reception_message.message[2]) << 8)|((uint32_t)reception_message.message[3]);
+
+	//Store the 16bit code_length
+	current_firmware_page.code_length = (reception_message.message[4] << 8)|(reception_message.message[5]);
+	
 	//Limit code_length to page size
 	if(current_firmware_page.code_length > PAGE_SIZE)
 	{
 		current_firmware_page.code_length = PAGE_SIZE;
 	}
+	
+	//Start at the beginning of the page
+	current_firmware_page.current_byte = 0;
+
+	confirm_reception();
 }
 
-
-void bootloader_module_can::write_data_procedure(volatile firmware_page& current_firmware_page)
+void bootloader_module_can::write_data_procedure(firmware_page& current_firmware_page)
 {
-	confirm_reception();
-	
 	//Check for possible array overflow
-	if((current_firmware_page.current_byte + reception_message.dlc) > PAGE_SIZE)
+	if((current_firmware_page.current_byte + reception_message.dlc) > current_firmware_page.code_length)
 	{
-		reception_message.dlc = PAGE_SIZE - current_firmware_page.current_byte;//Limit the dlc
+		reception_message.dlc = current_firmware_page.code_length - current_firmware_page.current_byte;//Limit the dlc
 	}
 
 	//store data from filter buffer(message data of 7 bytes) into the current_firmware_page(byte by byte)
@@ -171,9 +193,9 @@ void bootloader_module_can::write_data_procedure(volatile firmware_page& current
 		current_firmware_page.ready_to_flash = true;
 		current_firmware_page.current_byte = 0;
 	}
+
+	confirm_reception();
 }
-
-
 void bootloader_module_can::get_info_procedure(void)
 {
 	transmission_message.dlc = 8;//if is longer than 8 bytes then must transmitt more messages
@@ -186,32 +208,35 @@ void bootloader_module_can::get_info_procedure(void)
 	transmit_CAN_message(transmission_message);
 }
 
-
-void bootloader_module_can::write_memory_procedure(volatile firmware_page& current_firmware_page)
+void bootloader_module_can::read_memory_procedure(firmware_page& current_firmware_page)
 {
-	confirm_reception();
-
 	//Store the 16bit page number
-	current_firmware_page.page = (reception_message.message[0] << 8)|(reception_message.message[1]);
+	current_firmware_page.page = (((uint32_t)reception_message.message[0]) << 24)|(((uint32_t)reception_message.message[1]) << 16)|(((uint32_t)reception_message.message[2]) << 8)|((uint32_t)reception_message.message[3]);
+
+	/*//Limit the page number to above boot loader section
+	if(current_firmware_page.page >= BOOTLOADER_START_ADDRESS)
+	{
+		//Send an error or restart,
+	}*/
 	
 	//Store the 16bit code_length
-	current_firmware_page.code_length = (reception_message.message[2] << 8)|(reception_message.message[3]);
-	
+	current_firmware_page.code_length = (reception_message.message[4] << 8)|(reception_message.message[5]);
+
 	//Limit code_length to page size
 	if(current_firmware_page.code_length > PAGE_SIZE)
 	{
 		current_firmware_page.code_length = PAGE_SIZE;
 	}
 	
-	//Start at the beginning of the page	
-	current_firmware_page.current_byte = 0;
+	confirm_reception();
 }
 
 
-void bootloader_module_can::send_flash_page(volatile firmware_page& current_firmware_page)
+void bootloader_module_can::send_flash_page(firmware_page& current_firmware_page)
 {
-	transmission_message.message_type = READ_DATA;//Same as host message
+	transmission_message.message_type = READ_DATA;
 	current_firmware_page.current_byte = 0;//Start at the start of buffer
+	reception_message.confirmed_send = false;//Initialize for this procedure
 	while(current_firmware_page.current_byte < current_firmware_page.code_length)
 	{
 		//Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message
@@ -228,17 +253,67 @@ void bootloader_module_can::send_flash_page(volatile firmware_page& current_firm
 		}
 
 		//Increment the current_byte for next loop
-		current_firmware_page.current_byte = current_firmware_page.current_byte + transmission_message.dlc;//Last loop should make this equal to code_length		
+		current_firmware_page.current_byte += transmission_message.dlc;		
 		
 		//Send the message
 		transmit_CAN_message(transmission_message);
 		
 		//Wait for confirmation message to return from host
-		while(reception_message.confirmed_send == false){};
+		while(reception_message.confirmed_send == false && reception_message.message_received == false){}
+		
+		//Allow the host to stop the the reading if it sees a message is lost. Host must send another message to the bootloader
+		if((reception_message.message_received == true))
+		{
+			break;//breaks the while loop
+		}
+
 		reception_message.confirmed_send = false;
 	}
 }
 
+void bootloader_module_can::filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page, bool& firmware_finished_flag)
+{
+	if(reception_message.message_type == START_RESET)
+	{
+		start_reset_procedure(firmware_finished_flag);
+		reception_message.message_received = false;
+	}	
+
+	else if(reception_message.message_type == GET_INFO)
+	{
+		get_info_procedure();
+		reception_message.message_received = false;
+	}
+
+	else if(reception_message.message_type == WRITE_MEMORY)
+	{
+		write_memory_procedure(current_firmware_page);
+		reception_message.message_received = false;
+	}
+
+	else if(reception_message.message_type == WRITE_DATA)
+	{
+		write_data_procedure(current_firmware_page);
+		reception_message.message_received = false;
+	}
+
+	else if(reception_message.message_type == READ_MEMORY)
+	{
+		//Allow for reading the flash
+		if(read_current_firmware_page.ready_to_read_flash == false)
+		{	
+			read_memory_procedure(read_current_firmware_page);
+			read_current_firmware_page.ready_to_read_flash = true;
+		}
+		else
+		{
+			reception_message.message_received = false;//Reseting here allows the program to loop again in order to read the flash page. Also before sending so host 									//can send another read memory message to reset the read memory
+			read_current_firmware_page.ready_to_read_flash = false;//Must be above sending to ensure the sending can be reset
+			send_flash_page(read_current_firmware_page);
+		}
+	}
+
+}
 
 void bootloader_module_can::alert_host(void)//Send host a message to inform that the bootloader is awaiting messages
 {
@@ -250,70 +325,6 @@ void bootloader_module_can::alert_host(void)//Send host a message to inform that
 	}
 	transmit_CAN_message(transmission_message);
 }
-
-
-void bootloader_module_can::start_reset_procedure(volatile bool& firmware_finished_flag)
-{
-	confirm_reception();
-	
-	if(reception_message.message[0] == 0)
-	{
-		//use watchdog timer to reset the micro
-		wdt_disable();
-		wdt_enable(0);//WDT0_15MS = 0
-		while(1){}
-	}
-	else
-	{
-		firmware_finished_flag = true;
-	}
-}
-
-
-void bootloader_module_can::filter_message(firmware_page& current_firmware_page, bool& firmware_finished_flag)
-{
-	//Filter messages.
-	if(reception_message.message_type == WRITE_DATA)
-	{
-		//write_data_procedure(buffer);//Need to take out the hard codes
-		reception_message.message_received = false;
-	}
-
-	else if(reception_message.message_type == READ_MEMORY)
-	{
-		//Allow for reading the flash
-		if(current_firmware_page.ready_to_read_flash == false)
-		{	
-			read_memory_procedure(buffer);
-			current_firmware_page.ready_to_read_flash == true;
-		}
-		else
-		{
-			send_flash_page(buffer);
-			current_firmware_page.ready_to_read_flash == false;
-			reception_message.message_received = false;//Reseting here allows the program to loop again in order to read the flash page
-		}
-	}
-
-	else if(reception_message.message_type == GET_INFO)
-	{
-		get_info_procedure();
-		reception_message.message_received = false;
-	}
-
-	else if(reception_message.message_type == START_RESET)
-	{
-		start_reset_procedure(firmware_finished_flag);
-		reception_message.message_received = false;
-	}
-
-	else if(reception_message.message_type == WRITE_MEMORY)
-	{
-		write_memory_procedure(buffer);
-		reception_message.message_received = false;
-	}
-}
-
 
 
 // IMPLEMENT PRIVATE FUNCTIONS.
@@ -347,7 +358,9 @@ void CAN_init(void)
 	//Set up bit-timing and CAN timing (use data sheet to select desired bit timing)
 	CANBT1 = 0x02;//125kbps	0x1E	1Mbps   0x02
 	CANBT2 = 0x04;//	0x04		0x04
-	CANBT3 = 0x13;//	0x13		0x13
+	CANBT3 = 0x13;//	0x13		0x13n the atmel canlib is the secret I think.
+
+
 	//CANCON = ?;//CAN timing prescalar
 
 	
@@ -359,6 +372,7 @@ void CAN_init(void)
 	//
 	//
 	//MOB NUMBER 0
+
 	//Reception MOb
 	mob_number = 0;
 	CANPAGE = (mob_number<<4);
@@ -432,7 +446,8 @@ void transmit_CAN_message(bootloader_module_can::message_info& transmit_message)
 	CANCDMOB = (1<<CONMOB0)|(transmit_message.dlc);
 	
 	//Wait until the message has sent
-	while ((CANSTMOB & (1<<TXOK)) == 0){};//May need to check for errors otherwise we will be in here forever
+	while (((CANSTMOB & (1<<TXOK)) == 0)&&((CANSTMOB & (1<<AERR)) == 0))//May need to check for more errors otherwise we will be in here forever
+	{}	
 
 	//Disable transmit
 	CANCDMOB = 0x00;
@@ -502,7 +517,6 @@ ISR(CANIT_vect)//Different for ATMega64M1
 
 	//Restore previous MOb page
 	CANPAGE = saved_MOb;
-
 }
 
 // ALL DONE.
