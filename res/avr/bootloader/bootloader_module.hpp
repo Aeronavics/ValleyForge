@@ -38,10 +38,9 @@
 
 // Include boolean data types.
 #include <stdbool.h>
+#include <avr/io.h>
 
 // DEFINE PREPROCESSOR MACROS.
-
-#define PAGE_SIZE		256
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -51,7 +50,7 @@ struct firmware_page
 	bool ready_to_read_flash;
 	uint32_t page;
 	uint16_t current_byte;
-	uint8_t data[PAGE_SIZE];
+	uint8_t data[SPM_PAGESIZE];
 	uint16_t code_length;
 };
 
@@ -100,7 +99,6 @@ class bootloader_module
 
 extern firmware_page buffer;
 extern firmware_page read_buffer;
-
 extern bool firmware_finished;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.

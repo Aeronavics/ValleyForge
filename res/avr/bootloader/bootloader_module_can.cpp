@@ -140,7 +140,7 @@ void bootloader_module_can::start_reset_procedure(bool& firmware_finished_flag)
 	{
 		//use watchdog timer to reset the micro
 		wdt_disable();
-		wdt_enable(0);//WDT0_15MS = 0
+		wdt_enable(0);//smallest watchdog timeout 
 		while(1){}
 	}
 	else
@@ -158,9 +158,9 @@ void bootloader_module_can::write_memory_procedure(firmware_page& current_firmwa
 	current_firmware_page.code_length = (reception_message.message[4] << 8)|(reception_message.message[5]);
 	
 	//Limit code_length to page size
-	if(current_firmware_page.code_length > PAGE_SIZE)
+	if(current_firmware_page.code_length > SPM_PAGESIZE)
 	{
-		current_firmware_page.code_length = PAGE_SIZE;
+		current_firmware_page.code_length = SPM_PAGESIZE;
 	}
 	
 	//Start at the beginning of the page
@@ -180,15 +180,14 @@ void bootloader_module_can::write_data_procedure(firmware_page& current_firmware
 	//store data from filter buffer(message data of 7 bytes) into the current_firmware_page(byte by byte)
 	for(uint8_t i = 0 ; i < reception_message.dlc ; i++)
 	{
-		//may need to check not to overflow data buffer
-		current_firmware_page.data[current_firmware_page.current_byte + i] = reception_message.message[i];//May need to check for overflow
+		current_firmware_page.data[current_firmware_page.current_byte + i] = reception_message.message[i];
 	}
 
 	//Increment the current byte in buffer
 	current_firmware_page.current_byte += reception_message.dlc;
 	
 	//Check if the buffer is reay to be written to the flash
-	if(current_firmware_page.current_byte >= (current_firmware_page.code_length -1))//check if buffer is full of desired code
+	if(current_firmware_page.current_byte >= (current_firmware_page.code_length -1))
 	{
 		current_firmware_page.ready_to_flash = true;
 		current_firmware_page.current_byte = 0;
@@ -198,13 +197,18 @@ void bootloader_module_can::write_data_procedure(firmware_page& current_firmware
 }
 void bootloader_module_can::get_info_procedure(void)
 {
-	transmission_message.dlc = 8;//if is longer than 8 bytes then must transmitt more messages
+	transmission_message.dlc = 5;
 	transmission_message.message_type = GET_INFO;
 	
-	for(uint8_t i = 0 ; i < transmission_message.dlc ; i++)
-	{
-		transmission_message.message[i] = i;//Not yet determined
-	}
+	//Insert Device signaure
+	transmission_message.message[0] = boot_signature_byte_get(0x00);
+	transmission_message.message[1] = boot_signature_byte_get(0x02);
+	transmission_message.message[2] = boot_signature_byte_get(0x04);
+	
+	//Insert bootloader version
+	transmission_message.message[3] = (BOOTLOADER_VERSION >> 8);
+	transmission_message.message[4] = BOOTLOADER_VERSION;
+	
 	transmit_CAN_message(transmission_message);
 }
 
@@ -212,20 +216,14 @@ void bootloader_module_can::read_memory_procedure(firmware_page& current_firmwar
 {
 	//Store the 16bit page number
 	current_firmware_page.page = (((uint32_t)reception_message.message[0]) << 24)|(((uint32_t)reception_message.message[1]) << 16)|(((uint32_t)reception_message.message[2]) << 8)|((uint32_t)reception_message.message[3]);
-
-	/*//Limit the page number to above boot loader section
-	if(current_firmware_page.page >= BOOTLOADER_START_ADDRESS)
-	{
-		//Send an error or restart,
-	}*/
 	
 	//Store the 16bit code_length
 	current_firmware_page.code_length = (reception_message.message[4] << 8)|(reception_message.message[5]);
 
 	//Limit code_length to page size
-	if(current_firmware_page.code_length > PAGE_SIZE)
+	if(current_firmware_page.code_length > SPM_PAGESIZE)
 	{
-		current_firmware_page.code_length = PAGE_SIZE;
+		current_firmware_page.code_length = SPM_PAGESIZE;
 	}
 	
 	confirm_reception();
@@ -339,13 +337,12 @@ void confirm_reception(void)
 void CAN_init(void)
 {
 	uint8_t mob_number = 0;
-	uint8_t number_of_mobs = 15;//ATmega64m1 = 6, AT90CAN128 = 15
 
 	//resets the CAN controller
 	CANGCON = (1<<SWRES);
 	
 	//reset all of the MObs as they have no default value(may not need to reset all as they do not all need to be used)
-	for(mob_number = 0 ; mob_number < number_of_mobs ; mob_number++)
+	for(mob_number = 0 ; mob_number < NUMBER_OF_MOB_PAGES ; mob_number++)
 	{
 		//select can page	
 		CANPAGE = (mob_number<<4);
@@ -358,7 +355,7 @@ void CAN_init(void)
 	//Set up bit-timing and CAN timing (use data sheet to select desired bit timing)
 	CANBT1 = 0x02;//125kbps	0x1E	1Mbps   0x02
 	CANBT2 = 0x04;//	0x04		0x04
-	CANBT3 = 0x13;//	0x13		0x13n the atmel canlib is the secret I think.
+	CANBT3 = 0x13;//	0x13		0x13
 
 
 	//CANCON = ?;//CAN timing prescalar
@@ -464,7 +461,15 @@ void CAN_reset(void)
 
 //Interupt service routine for interupts from CAN controller
 //This routine only operates on received messages, reads the ID, DLC, data. Sets a flag to tell Boot loader that a new message has been received.
-ISR(CANIT_vect)//Different for ATMega64M1
+#if defined (__AVR_AT90CAN128__)
+
+ISR(CANIT_vect)
+
+#else
+
+ISR(CAN_INT_vect)
+
+#endif
 {
 	//Save curent MOb page for current program operations. 
 	uint8_t saved_MOb = CANPAGE;

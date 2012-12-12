@@ -38,13 +38,23 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
+#include <avr/boot.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
+#define BOOTLOADER_VERSION 0x0100//Tool chain should define this//#define DEVICE_SIGNATURE		<<<TC_INSERTS_DEVICE_SIGNATURE_HERE>>>
 #define MESSAGE_LENGTH 8 //CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
-#define NODE_ID 0xAA //Will be chosen by user by toolchain
+#define NODE_ID 0xAA //Tool chain should define this//#define NODE_ID		<<<TC_INSERTS_NODE_ID_HERE>>>
 #define base_id 0x120 //Yet to be finalised
 
+#if defined (__AVR_AT90CAN128__)
+
+#define NUMBER_OF_MOB_PAGES 15
+
+#else
+
+#define NUMBER_OF_MOB_PAGES 6
+
+#endif
 
 class bootloader_module_can : public bootloader_module
 {

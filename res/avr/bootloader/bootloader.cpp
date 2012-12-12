@@ -35,7 +35,6 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>
 #include <avr/pgmspace.h>
 
 // DEFINE CONSTANTS
@@ -100,12 +99,36 @@ bool firmware_finished = false;
 bool communication_started = false;
 
 #define WAIT_FOR_HOST_TIME 25535 //should allow user to define this in toolchain, same with timeout, Need to determine this time aswell
+
+#if defined (__AVR_AT90CAN128__)
+
 #define BOOTLOADER_START_ADDRESS 0x1E000//This needs to be input by toolchain
+
+#else
+
+#define BOOTLOADER_START_ADDRESS 0xF000//ATmega64m1 This needs to be input by toolchain
+
+#endif
+
+
+//Read flash byte. Different function required for different MCU's.
+#if defined (__AVR_AT90CAN128__)
+
+#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
+
+#else
+
+#define READ_FLASH_BYTE(address) pgm_read_byte(address)
+
+#endif
+
+
 
 //
 //
 //		TESTING
 //		   v
+
 volatile bool wait_flag = false;//
 
 void ledon(uint8_t led)
@@ -141,17 +164,10 @@ void ledtog(uint8_t led)
 	if(led == 6){PORTB ^= (1<<PB6);}
 	if(led == 7){PORTB ^= (1<<PB7);}
 }
-void waiting(void)//
-{
-	wait_flag = false;
-	ledon(3);
-	while(wait_flag == false);
-	ledoff(3);
-}
 void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
 {
-	DDRB |= (1<<DDB3);
-	PORTB |= (1<<PB3);//Initally all LEDs off
+	DDRB |= (1<<DDB3)|(1<<DDB4)|(1<<DDB5);
+	PORTB |= (1<<PB3)|(1<<PB4)|(1<<PB5);//Initally all LEDs off
 }
 //
 //
@@ -244,6 +260,7 @@ int main(void)
 	
 	
 	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
+	wdt_disable();//May be required if the as the watchdog timer is not switched off after reset
 	//wdt_enable(WDTO_500MS);
 	
 	// Turn on the blinkenlight solidly.
@@ -263,7 +280,7 @@ int main(void)
 	//If pin is held then set the communication to started so we can just wait for firmware as we are not worried about restarting quickly
 	if((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI))
 	{
-		communication_started = true;
+		//communication_started = true;
 	}
 
 	// Start up whichever peripherals are required by the modules we're using.
@@ -284,11 +301,12 @@ int main(void)
 	TCCR0A = 0b00001000;
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;
+	//OCR0A = 0xFF;
 		
 #else
 	// CTC on
 	TCCR0A = 0b00000010;
-	OCR0A = (uint8_t)TM_CHAN_VAL;
+	//OCR0A = (uint8_t)TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt
 	TIMSK0 = 0b00000010;
 #endif	
@@ -334,8 +352,11 @@ int main(void)
 				mod->alert_host();
 				
 				//wait_time()-wait for period of time before restarting application
-				waiting();
-
+				wait_flag = false;
+				ledon(3);//DB
+				while(wait_flag == false){};
+				ledoff(3);//DB
+				
 				//check message again
 				if (mod->reception_message.message_received == false)
 				{
@@ -517,7 +538,7 @@ void read_flash_page(firmware_page& current_firmware_page)
 		//Read flash page out byte by byte, up until the desired length
 		for(uint16_t i = 0 ; i < current_firmware_page.code_length ; i++)
 		{
-			current_firmware_page.data[i] = pgm_read_byte_far(current_firmware_page.page + i);
+			current_firmware_page.data[i] = READ_FLASH_BYTE(current_firmware_page.page + i);
 		}
 	}
 }
@@ -562,6 +583,15 @@ ISR(TIMER0_COMPA_vect)
 	// Check if the timeout period has now expired.
 	//timeout_expired = (timeout_tick > MAX_TICK_VALUE);
 	
+	
+	//Check for a message every xth tick check a message has been received
+	if((timeout_tick%500) == 0)
+	{
+		if(mod->reception_message.message_received == true)
+		{
+			wait_flag = true;
+		}
+	}
 	//Period of time used as wait.
 	if(timeout_tick > WAIT_FOR_HOST_TIME)
 	{
