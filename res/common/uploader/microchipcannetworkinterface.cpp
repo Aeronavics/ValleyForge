@@ -78,6 +78,9 @@
 #define DATA_END 13
 #define INDEX 14
 
+#define SET_ATOMIC(var) (__sync_bool_compare_and_swap(&(var), false, true))
+#define RESET_ATOMIC(var) (__sync_bool_compare_and_swap(&(var), true, false))
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 class libUSBContextHolder
@@ -161,7 +164,10 @@ bool sendUSBMessage(USBMessage& msg, libusb_device_handle* device);
 
 MicrochipCANNetworkInterface::MicrochipCANNetworkInterface() :
 	CANDevice(NULL),
-	quit(0),
+	quit(false),
+	drain(false),
+	transmitted(false),
+	overflow(false),
 	recvQueueLock(PTHREAD_MUTEX_INITIALIZER)
 {
 	ctxHolder = new libUSBContextHolder;
@@ -169,7 +175,7 @@ MicrochipCANNetworkInterface::MicrochipCANNetworkInterface() :
 
 MicrochipCANNetworkInterface::~MicrochipCANNetworkInterface()
 {
-	__sync_fetch_and_add(&quit, 1);
+	SET_ATOMIC(quit);
 	int rc = pthread_join(USBThread, NULL);
 	if (CANDevice)
 	{
@@ -180,6 +186,7 @@ MicrochipCANNetworkInterface::~MicrochipCANNetworkInterface()
 
 bool MicrochipCANNetworkInterface::init(Params params)
 {
+	index = 0;
 	bool haveBitrate = false;
 	int bitrate = 1000;
 	bool termination= false;
@@ -261,9 +268,9 @@ bool MicrochipCANNetworkInterface::init(Params params)
 		std::cerr << "Could not send termination change message" << std::endl;
 	}
 	
-	__sync_fetch_and_add(&drain,1);
+	SET_ATOMIC(drain);
 	usleep(500000);
-	__sync_fetch_and_add(&drain,-1);
+	RESET_ATOMIC(drain);
 	
 	std::cout << "Sleeping" << std::endl;
 	usleep(500000);
@@ -275,7 +282,7 @@ bool MicrochipCANNetworkInterface::init(Params params)
 bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t timeout)
 {
 	USBMessage sendMessage;
-	
+	timeval start, now;
 	//Transmit Message command.
 	sendMessage.getContent()[0] = TRANSMIT_MESSAGE_EV;
 	char buf[9];
@@ -289,10 +296,13 @@ bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t t
 	{
 		sendMessage.getContent()[DATA_START+i] = msg.getData()[i];
 	}
-	sendMessage.getContent()[INDEX] = 0;
+	sendMessage.getContent()[INDEX] = index++;
+	if (index > 2)
+	{
+		index = 0;
+	}
 	sendMessage.setChecksum(sendMessage.calculateChecksum());
 	sendUSBMessage(sendMessage, CANDevice);
-	timeval start, now;
 	gettimeofday(&start, NULL);
 	while (!__sync_fetch_and_add(&transmitted, 0))
 	{
@@ -304,13 +314,20 @@ bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t t
 			return false;
 		}
 	}
-	__sync_fetch_and_add(&transmitted, -1);
+	RESET_ATOMIC(transmitted);
 	return true;
 }
 
 
 bool MicrochipCANNetworkInterface::receiveMessage( CANMessage& msg, uint32_t timeout)
 {
+	if (__sync_fetch_and_add(&overflow, 0))
+	{
+		drainMessages();
+		RESET_ATOMIC(overflow);
+		return false;
+	}
+		
 	timeval start, now;
 	gettimeofday(&start, NULL);
 	while (recvQueue.empty())
@@ -344,21 +361,22 @@ bool MicrochipCANNetworkInterface::drainMessages()
 void* MicrochipCANNetworkInterface::USBThreadFunc(void* param)
 {
 	MicrochipCANNetworkInterface* obj = static_cast<MicrochipCANNetworkInterface*> (param);
+	MessageQueue messageQueue;
 	while (__sync_fetch_and_add(&obj->quit, 0) == 0)
 	{
-		obj->processUSBEvents();
+		obj->processUSBEvents(&messageQueue);
 	}
 	return 0;
 }
 
-void MicrochipCANNetworkInterface::processUSBEvents()
+void MicrochipCANNetworkInterface::processUSBEvents(void* m)
 {
 	uint8_t buffer[IN_ENDPOINT_READ_SIZE];
 	size_t length = 0;
 	int transferred;
 	//~ timeval now, then;
 	//~ int period = 5;
-	MessageQueue messageQueue;
+	MessageQueue& messageQueue = *(static_cast<MessageQueue*>(m));
 	
 	//~ USBMessage sendMessage;
 	//~ 
@@ -381,7 +399,7 @@ void MicrochipCANNetworkInterface::processUSBEvents()
 		{
 			std::cerr << "Could not read from the in endpoint: " << libusb_error_name(rc) << std::endl;
 			perror("Actual Error");
-			__sync_fetch_and_add(&quit, 1);
+			SET_ATOMIC(quit);
 			return;
 		}
 		
@@ -428,14 +446,17 @@ void MicrochipCANNetworkInterface::processUSBEvents()
 			length = length - curPos;
 		}
 		
-		if (!messageQueue.empty())
+		int processed = 0;
+		
+		while (!messageQueue.empty() && processed < 10)
 		{
+			//std::cout << "Processing: " << processed << std::endl;
 			USBMessage m = messageQueue.front();
 			messageQueue.pop_front();
 			//printBuffer(&(m.getContent()[0]), m.getContent().size());
 			printMessage(&(m.getContent()[0]), m.getContent().size());
 			processMessage(m);
-			
+			processed++;
 		}
 		
 		//~ gettimeofday(&now, NULL);
@@ -462,7 +483,15 @@ void MicrochipCANNetworkInterface::processMessage(USBMessage& m)
 	}
 	if (m.getContent()[0] == TRANSMIT_MESSAGE_RESPONSE)
 	{
-		__sync_fetch_and_add(&transmitted, 1);
+		SET_ATOMIC(transmitted);
+	}
+	if (m.getContent()[0] == CAN_ALIVE)
+	{
+		if (m.getContent()[3])
+		{
+			std::cout << "Overflow" << std::endl;
+			SET_ATOMIC(overflow);
+		}
 	}
 }
 

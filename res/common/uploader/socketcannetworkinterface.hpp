@@ -16,13 +16,13 @@
 /**
  *
  * 
- *  @file		options.hpp
- *  A header file for the command line option parser.
+ *  @file		socketcannetworkinterface.hpp
+ *  A header file for a generic SocketCAN network interface.
  * 
  * 
  *  @author 		Paul Davey
  *
- *  @date		26-11-2012
+ *  @date		10-12-2012
  * 
  *  @section 		Licence
  * 
@@ -44,14 +44,14 @@
  */
  
 //Only include header once.
-#ifndef OPTIONS_H_
-#define OPTIONS_H_
+#ifndef SOCKETCANNETWORKINTERFACE_H_
+#define SOCKETCANNETWORKINTERFACE_H_
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include <getopt.h>
-#include <string>
-#include "comm.hpp"
+#include "cannetworkinterface.hpp"
+
+#include <sys/socket.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -59,40 +59,40 @@
 
 // DEFINE PUBLIC CLASSES.
 
-class Options
+class SocketCANNetworkInterface : public CANNetworkInterface
 {
 public:
 
-	
-	// Functions.
-	Options();
-	~Options();
-	
-	bool readFromArgs(int argc, char* argv[]);
-	void printUsage();
-	
-	const char* getInputFile();
-	CommModule* getCommsModule();
-	Params getCommsParams();
-	size_t getMemorySize();
-	size_t getPageSize();
-	uint32_t getSignature();
 
-	
-private:
 	// Functions.
-
+	SocketCANNetworkInterface();
+	virtual ~SocketCANNetworkInterface();
 	
+	virtual bool init(Params params);
+	
+	virtual bool sendMessage(const CANMessage& msg, uint32_t timeout);
+	virtual bool receiveMessage( CANMessage& msg, uint32_t timeout);
+	virtual bool drainMessages();
+	
+protected:
+	// Functions.
+	static void* SocketThreadFunc(void*);
+	void processSocketEvents();
 	
 	//Fields.
-	const char* inputFile;
-	const char* commsModule;
-	const char* commsParams;
-	const char* memorySize;
-	const char* pageSize;
-	const char* signature;
+	CANMessageQueue recvQueue;
+	pthread_mutex_t recvQueueLock;
+	
+	
+	
+	pthread_t SocketThread;
+	
+	int CANSocket;
+	bool quit;
+	
 };
+
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*OPTIONS_H_*/
+#endif /*SOCKETCANNETWORKINTERFACE_H_*/

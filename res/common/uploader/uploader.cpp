@@ -43,6 +43,8 @@
 
 #include <unistd.h>
 
+#define MAX_RETRIES 10
+
 // DECLARE PRIVATE FUNCTION PROTOTYPES.
 
 // IMPLEMENT MAIN FUNCTION.
@@ -62,7 +64,8 @@ int main(int argc, char* argv[])
 	
 	if (!memory.readFromFile(filename))
 	{
-		std::cerr << "Exiting" << std::endl;
+		std::cerr << "Failed to read input file." << std::endl;
+		opts.printUsage();
 		return 1;
 	}
 	
@@ -88,29 +91,79 @@ int main(int argc, char* argv[])
 	}
 	
 	std::cout << "Name: " << info.getName() << " Signature: " << info.getSignature() << std::endl;
+	//Check signature.
+	if (info.getSignature() != opts.getSignature())
+	{
+		std::cerr << "Signature Mismatch" << std::endl;
+		return 1;
+	}
 	
 	size_t endPage;
 	if (!memory.findLastAllocatedPage(opts.getPageSize(), endPage))
 	{
-		std::cerr << "Memory map empty?" << std::endl;
+		std::cerr << "Could not find a last allocated page, is the memory map empty?" << std::endl;
 		return 1;
 	}
 	
+	//~ for (size_t i = 0; i < endPage+opts.getPageSize(); i++)
+	//~ {
+		//~ std::cout << ((memory.getAllocatedMap()[i] == MemoryMap::ALLOCATED) ? (uint8_t)memory.getMemory()[i] : (uint8_t)0xFF);
+	//~ }
+	
+	
+	int retries = 0;
+	bool failed = false;
+	int maxPage = endPage/opts.getPageSize();
+	
 	for (size_t pageAddress = 0; pageAddress <= endPage; pageAddress += opts.getPageSize())
 	{
-		if (!commModule->writePage(memory, opts.getPageSize(), pageAddress))
+		retries = 0;
+		int pageNumber = pageAddress/opts.getPageSize();
+		do
+		{
+			std::cout << "Writing page: " <<  pageNumber << " of : " << maxPage << std::endl;
+			if (!commModule->writePage(memory, opts.getPageSize(), pageAddress))
+			{
+				failed = true;
+			}
+			else
+			{
+				failed = false;
+			}
+			retries++;
+		
+		}
+		while (failed && retries < MAX_RETRIES);
+		
+		if (failed)
 		{
 			std::cerr << "Failed to write flash page at: " << pageAddress << std::endl;
 			return 1;
 		}
 		
-		if (!commModule->verifyPage(memory, opts.getPageSize(), pageAddress))
+		retries = 0;
+		do
+		{
+			std::cout << "Verifying page: " <<  pageNumber << " of : " << maxPage << std::endl;
+			if (!commModule->verifyPage(memory, opts.getPageSize(), pageAddress))
+			{
+				failed = true;
+			}
+			else
+			{
+				failed = false;
+			}
+			retries++;
+		}
+		while (failed && retries < MAX_RETRIES);
+		
+		if (failed)
 		{
 			std::cerr << "Verify flash page at: " << pageAddress << " Failed" << std::endl;
 			return 1;
 		}
 	}
-	
+	//~ 
 	
 	
 	//~ if (!commModule->writePage(memory, 256, 256))
