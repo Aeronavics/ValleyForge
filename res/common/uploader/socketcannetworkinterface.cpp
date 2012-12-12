@@ -35,6 +35,7 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <memory.h>
 #include <vector>
@@ -92,7 +93,7 @@ bool SocketCANNetworkInterface::init(Params params)
 	
 	
 	bool haveBitrate = false;
-	int bitrate = 1000;
+	int bitrate = 1000000;
 	bool termination = false;
 	bool haveCanIface = false;
 	std::string canIface; 
@@ -105,7 +106,6 @@ bool SocketCANNetworkInterface::init(Params params)
 	if (haveBitrate)
 	{
 		bitrate = strtoul(bitrateStr.c_str(), NULL, 10);
-		bitrate /= 1000;
 	}
 	if (params.find("termination") != params.end())
 	{
@@ -125,6 +125,21 @@ bool SocketCANNetworkInterface::init(Params params)
 		std::cerr << "No can interface specified." << std::endl;
 		return false;
 	}
+	
+	//Change bitrate?
+	std::stringstream ss;
+	ss << "sudo ip link set " << canIface << " down; sudo ip link set " << canIface << " up type can bitrate " << bitrate << std::endl;
+	
+	system(ss.str().c_str());
+	
+	
+	//Change mode?
+	
+	
+	//Change termination? 
+	
+	
+	
 	//Do socket init here.
 	CANSocket =  socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (CANSocket < 0)
@@ -162,16 +177,6 @@ bool SocketCANNetworkInterface::init(Params params)
 		return false;
 	}
 	
-	//Replace these with what might be needed for socketCAN, may be impossible to specify bitrate here and may need to be done with ip command before hand.
-	
-	
-	//Change bitrate?
-	
-	
-	//Change mode?
-	
-	
-	//Change termination? 
 	
 	
 	//~ SET_ATOMIC(drain);
