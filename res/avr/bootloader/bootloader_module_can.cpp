@@ -97,8 +97,6 @@ void bootloader_module_can::init(void)
 {
 	//Initialize the CAN controller
 	CAN_init();
-	DDRB |= (1<<DDB2);
-	PORTB |= (1<<PB2);
 	//
 	
 	return;
@@ -117,7 +115,7 @@ void bootloader_module_can::exit(void)
 //
 //TEST function
 //
-void bootloader_module_can::can_test(uint32_t i)
+void bootloader_module_can::can_test32(uint32_t i)
 {
 	transmission_message.dlc = 4;
 	transmission_message.message_type = 0x4ff;
@@ -125,6 +123,14 @@ void bootloader_module_can::can_test(uint32_t i)
 	transmission_message.message[1] = (i >> 16);
 	transmission_message.message[2] = (i >> 8);
 	transmission_message.message[3] = i;
+	transmit_CAN_message(transmission_message);
+}
+
+void bootloader_module_can::can_test8(uint8_t i)
+{
+	transmission_message.dlc = 1;
+	transmission_message.message_type = 0x4ff;
+	transmission_message.message[0] = i;
 	transmit_CAN_message(transmission_message);
 }
 //
@@ -138,9 +144,7 @@ void bootloader_module_can::start_reset_procedure(bool& firmware_finished_flag)
 	
 	if(reception_message.message[0] == 0)
 	{
-		//use watchdog timer to reset the micro
-		wdt_disable();
-		wdt_enable(0);//smallest watchdog timeout 
+		//Reset the bootloader by waiting for the 500ms watchdog to run out.
 		while(1){}
 	}
 	else
@@ -201,9 +205,9 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message_type = GET_INFO;
 	
 	//Insert Device signaure
-	transmission_message.message[0] = boot_signature_byte_get(0x00);
-	transmission_message.message[1] = boot_signature_byte_get(0x02);
-	transmission_message.message[2] = boot_signature_byte_get(0x04);
+	transmission_message.message[0] = SIGNATURE_0;
+	transmission_message.message[1] = SIGNATURE_1;
+	transmission_message.message[2] = SIGNATURE_2;
 	
 	//Insert bootloader version
 	transmission_message.message[3] = (BOOTLOADER_VERSION >> 8);
@@ -363,13 +367,12 @@ void CAN_init(void)
 	
 	//Id's for reception
 	uint16_t id;
-	id = base_id;
+	id = BASE_ID;
 
 	//Choose the MObs to set up
 	//
 	//
 	//MOB NUMBER 0
-
 	//Reception MOb
 	mob_number = 0;
 	CANPAGE = (mob_number<<4);
