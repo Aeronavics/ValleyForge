@@ -67,6 +67,27 @@ void DeviceInfo::setSignature(uint32_t newSignature)
 	signature = newSignature;
 }
 
+uint8_t DeviceInfo::getVersionMinor()
+{
+	return versionMinor;
+}
+
+void DeviceInfo::setVersionMinor(uint8_t newVersion)
+{
+	versionMinor = newVersion;
+}
+
+uint8_t DeviceInfo::getVersionMajor()
+{
+	return versionMajor;
+}
+
+void DeviceInfo::setVersionMajor(uint8_t newVersion)
+{
+	versionMajor = newVersion;
+}
+
+
 CommModule::CommModule(std::string name)
 {
 	if (getRegistry().find(name) == getRegistry().end())

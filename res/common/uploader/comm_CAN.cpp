@@ -39,8 +39,10 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
 
 #include "microchipcannetworkinterface.hpp"
+#include "socketcannetworkinterface.hpp"
 
 
 // DEFINE PRIVATE MACROS.
@@ -109,7 +111,14 @@ bool CANModule::init(Params params)
 	}
 	if (haveCANType)
 	{
-		
+		if (canType == "socket")
+		{
+			iface = new SocketCANNetworkInterface;
+		}
+		if (canType == "microchip")
+		{
+			iface = new MicrochipCANNetworkInterface;
+		}
 	}
 	else
 	{
@@ -233,18 +242,24 @@ bool CANModule::getDeviceInfo( DeviceInfo& info)
 		return false;
 	}
 	info.setName("CAN Bootloader");
-	info.setSignature(target);
+	const uint8_t* data = getInfo.getData();
+	uint32_t signature = (data[0] << 16) | (data[1] << 8) | (data[2]);
+	info.setSignature(signature);
+	info.setVersionMajor(data[3]);
+	info.setVersionMinor(data[4]);
 	return true;
 }
 
 bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 {
-	CANMessage writeMemory = makeCommand(WRITE_MEMORY, target, 5);
+	CANMessage writeMemory = makeCommand(WRITE_MEMORY, target, 7);
 	uint8_t* data = writeMemory.getContent();
-	data[1] = (address >> 8) & 0xFF;
-	data[2] = (address) & 0xFF;
-	data[3] = (size >> 8) &0xFF;
-	data[4] = (size) & 0xFF;
+	data[1] = (address >> 24) & 0xFF;
+	data[2] = (address >> 16) & 0xFF;
+	data[3] = (address >> 8) &0xFF;
+	data[4] = (address) & 0xFF;
+	data[5] = (size >> 8) &0xFF;
+	data[6] = (size) & 0xFF;
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -281,7 +296,7 @@ bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 	size_t currentMessage = 0;
 	while (remaining > 0)
 	{
-		std::cout << "Sending Message: " << currentMessage << std::endl;
+		//std::cout << "Sending Message: " << currentMessage << std::endl;
 		size_t packetSize = (remaining > 7) ? 7 : remaining;
 		writeMemory = makeCommand(WRITE_DATA, target, packetSize+1);
 		for (size_t j = 0; j < packetSize; j++)
@@ -301,6 +316,7 @@ bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 			std::cerr << "Failed to send data packet: " << currentMessage << std::endl;
 			return false;
 		}
+		//usleep(1*1000);
 		if (!iface->receiveMessage(writeMemory, TIMEOUT*1000))
 		{
 			std::cerr << "Failed to receive message acknowledge: " << currentMessage << std::endl;
@@ -314,14 +330,17 @@ bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 
 bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 {
-	CANMessage readMemory = makeCommand(READ_MEMORY, target, 5);
+	CANMessage readMemory = makeCommand(READ_MEMORY, target, 7);
 	uint8_t* data = readMemory.getContent();
-	data[1] = (address >> 8) & 0xFF;
-	data[2] = (address) & 0xFF;
-	data[3] = (size >> 8) &0xFF;
-	data[4] = (size) & 0xFF;
+	data[1] = (address >> 24) & 0xFF;
+	data[2] = (address >> 16) & 0xFF;
+	data[3] = (address >> 8) &0xFF;
+	data[4] = (address) & 0xFF;
+	data[5] = (size >> 8) & 0xFF;
+	data[6] = (size) & 0xFF;
+	
 	int numberOfMessages = (size/8);
-	std::cout << numberOfMessages << std::endl;
+	//std::cout << numberOfMessages << std::endl;
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -364,7 +383,7 @@ bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 		}
 		for (size_t j = 0; j < readMemory.getLength(); j++)
 		{
-			std::cout << "Verifying address: " << (address+(i*8)+j) << std::endl;
+			//std::cout << "Verifying address: " << (address+(i*8)+j) << std::endl;
 			if (expected.getAllocatedMap()[address+(i*8)+j] == MemoryMap::ALLOCATED)
 			{
 				if (expected.getMemory()[address+(i*8)+j] != readMemory.getData()[j])
@@ -375,6 +394,7 @@ bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 			}
 		}
 		readMemory = makeCommand(READ_DATA, target, 1);
+		//usleep(1*1000);
 		if (!iface->sendMessage(readMemory, TIMEOUT*1000))
 		{
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;
@@ -386,14 +406,16 @@ bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 
 bool CANModule::readPage(MemoryMap& destination, size_t size, size_t address)
 {
-	CANMessage readMemory = makeCommand(READ_MEMORY, target, 5);
+	CANMessage readMemory = makeCommand(READ_MEMORY, target, 7);
 	uint8_t* data = readMemory.getContent();
-	data[1] = (address >> 8) & 0xFF;
-	data[2] = (address) & 0xFF;
-	data[3] = (size >> 8) &0xFF;
-	data[4] = (size) & 0xFF;
+	data[1] = (address >> 24) & 0xFF;
+	data[2] = (address >> 16) & 0xFF;
+	data[3] = (address >> 8) &0xFF;
+	data[4] = (address) & 0xFF;
+	data[5] = (size >> 8) & 0xFF;
+	data[6] = (size) & 0xFF;
 	int numberOfMessages = (size/8);
-	std::cout << numberOfMessages << std::endl;
+	//std::cout << numberOfMessages << std::endl;
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -435,11 +457,12 @@ bool CANModule::readPage(MemoryMap& destination, size_t size, size_t address)
 		}
 		for (size_t j = 0; j < readMemory.getLength(); j++)
 		{
-			std::cout << "Writing to address: " << (address+(i*8)+j) << std::endl;
+			//std::cout << "Writing to address: " << (address+(i*8)+j) << std::endl;
 			destination.getMemory()[address+(i*8)+j] = readMemory.getData()[j];
 			destination.getAllocatedMap()[address+(i*8)+j] = MemoryMap::ALLOCATED;
 		}
 		readMemory = makeCommand(READ_DATA, target, 1);
+		//usleep(1*1000);
 		if (!iface->sendMessage(readMemory, TIMEOUT*1000))
 		{
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;

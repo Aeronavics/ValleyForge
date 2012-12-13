@@ -80,6 +80,10 @@ public:
 	void setName(std::string newName);
 	uint32_t getSignature();
 	void setSignature(uint32_t newSignature);
+	uint8_t getVersionMinor();
+	void setVersionMinor(uint8_t newVersion);
+	uint8_t getVersionMajor();
+	void setVersionMajor(uint8_t vewVersion);
 	
 private:
 	
@@ -88,6 +92,8 @@ private:
 	// Fields.
 	std::string name;
 	uint32_t signature;
+	uint8_t versionMinor;
+	uint8_t versionMajor;
 };
 
 /**

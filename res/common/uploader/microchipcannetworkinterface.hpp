@@ -80,7 +80,7 @@ public:
 protected:
 	// Functions.
 	static void* USBThreadFunc(void*);
-	void processUSBEvents();
+	void processUSBEvents(void* m);
 	void processMessage(USBMessage& m);
 	
 	//Fields.
@@ -93,9 +93,11 @@ protected:
 	
 	libusb_device_handle* CANDevice;
 	libUSBContextHolder* ctxHolder;
-	int quit;
-	int drain;
-	int transmitted;
+	bool quit;
+	bool drain;
+	bool transmitted;
+	bool overflow;
+	int index;
 	
 };
 

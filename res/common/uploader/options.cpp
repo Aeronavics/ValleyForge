@@ -37,10 +37,11 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <stdint.h>
 
 // DEFINE PRIVATE MACROS.
 
-#define NUMBER_OF_LONGOPTS 5
+#define NUMBER_OF_LONGOPTS 6
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -55,10 +56,11 @@ static ::option longopts[NUMBER_OF_LONGOPTS + 1] =
 	{ "communication-params", 1, NULL, 'C'},
 	{ "memory-size", 1, NULL, 's'},
 	{ "page-size", 1, NULL, 'p'},
+	{ "target-signature", 1, NULL, 'S'},
 	{0, 0, 0, 0}
 };
 
-static std::string shortopts = "f:c:s:C:p:";
+static std::string shortopts = "f:c:s:C:p:S:";
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -88,6 +90,7 @@ bool Options::readFromArgs(int argc, char* argv[])
 	bool haveCommsParams = false;
 	bool haveMemorySize = false;
 	bool havePageSize = false;
+	bool haveSignature = false;
 	int optIndex = -1;
 	while (haveOpts)
 	{
@@ -116,12 +119,16 @@ bool Options::readFromArgs(int argc, char* argv[])
 				pageSize = optarg;
 				havePageSize = true;
 				break;
+			case 'S':
+				signature = optarg;
+				haveSignature = true;
+				break;
 			default:
 				
 				break;
 		}
 	}
-	if (!(haveInFile && haveMemorySize && havePageSize && haveCommsModule))
+	if (!(haveInFile && haveMemorySize && havePageSize && haveCommsModule && haveSignature))
 	{
 		return false;
 	}
@@ -130,7 +137,8 @@ bool Options::readFromArgs(int argc, char* argv[])
 
 void Options::printUsage()
 {
-	std::cerr << "Usage: uploader -f file.hex -s memorySize -c commsModule" << std::endl;
+	std::cerr << "Usage: uploader -f file.hex -s memorySize -c commsModule -C comsparams -p pagesize -S signature" << std::endl;
+	std::cerr << "       comsparams is of the form name=val:name=val... " << std::endl;
 }
 
 const char* Options::getInputFile()
@@ -164,6 +172,18 @@ size_t Options::getPageSize()
 	return parseMemorySize(pageSize);
 }
 
+uint32_t Options::getSignature()
+{
+	std::string signatureStr = signature;
+	char *end;
+	uint32_t signatureInt = strtoul(signatureStr.c_str(), &end, 0);
+	if ((end - signatureStr.c_str()) != signatureStr.length())
+	{
+		std::cerr << "Signature value not recognised." << std::endl;
+		return 0;
+	}
+	return signatureInt;
+}
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 

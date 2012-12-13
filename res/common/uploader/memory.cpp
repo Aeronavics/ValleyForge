@@ -144,6 +144,13 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 						nextaddr = baseaddr + record.getAddress();
 						for (size_t i = 0; i < record.getLength(); i++)
 						{
+							if (nextaddr + i >= size)
+							{
+								line.clear();
+								record.describe(line);
+								std::cerr << "Data outside of available memory (" << lineNumber << ") " << line << std::endl;
+								return false;
+							}
 							memory[nextaddr + i] = record.getData()[i];
 							allocatedMap[nextaddr + i] = ALLOCATED;
 						}
