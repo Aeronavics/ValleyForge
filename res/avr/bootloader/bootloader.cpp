@@ -60,12 +60,12 @@ enum input_state {LO,HI};
 #define FORCE_BL_MODE		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
 #define BLINK_PIN		( 1 << BLINK_PIN_NUM )
 #define FORCE_BL_PIN		( 1 << FORCE_BL_PIN_NUM )
+
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
-#define MS_P_S			1000	/* Conversion factor; milliseconds per second. */
 #define TM_PRSCL		1024
-#define BOOT_TIMEOUT		500	/* Timeout in milliseconds. */
-#define MAX_TICK_VALUE		10
-#define TM_CHAN_VAL		((CLK_SPEED/TM_PRSCL)/(MS_P_S / BOOT_TIMEOUT)/10)
+#define TM_CHAN_VAL	((CLK_SPEED/TM_PRSCL)/1000)
+#define BOOT_TIMEOUT		20000	//Timeout in milliseconds. Allow user to select this time.
+#define WAIT_FOR_HOST_TIME 100 //Time(in ms) bootloader waits for communication after dirty shutdown before starting application
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -98,18 +98,18 @@ bool firmware_finished = false;
 
 bool communication_started = false;
 
-#define WAIT_FOR_HOST_TIME 25535 //should allow user to define this in toolchain, same with timeout, Need to determine this time aswell
+volatile bool wait_flag = false;
+
 
 #if defined (__AVR_AT90CAN128__)
 
-#define BOOTLOADER_START_ADDRESS 0x1E000//This needs to be input by toolchain
+#define BOOTLOADER_START_ADDRESS 0x1E000//BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BLINK_PORT_HERE>>>
 
 #else
 
-#define BOOTLOADER_START_ADDRESS 0xF000//ATmega64m1 This needs to be input by toolchain
+#define BOOTLOADER_START_ADDRESS 0xF000
 
 #endif
-
 
 //Read flash byte. Different function required for different MCU's.
 #if defined (__AVR_AT90CAN128__)
@@ -121,65 +121,6 @@ bool communication_started = false;
 #define READ_FLASH_BYTE(address) pgm_read_byte(address)
 
 #endif
-
-
-
-//
-//
-//		TESTING
-//		   v
-
-volatile bool wait_flag = false;//
-
-void ledon(uint8_t led)
-{
-	if(led == 0){PORTB &= ~(1<<PB0);}
-	if(led == 1){PORTB &= ~(1<<PB1);}
-	if(led == 2){PORTB &= ~(1<<PB2);}
-	if(led == 3){PORTB &= ~(1<<PB3);}
-	if(led == 4){PORTB &= ~(1<<PB4);}
-	if(led == 5){PORTB &= ~(1<<PB5);}
-	if(led == 6){PORTB &= ~(1<<PB6);}
-	if(led == 7){PORTB &= ~(1<<PB7);}
-}
-void ledoff(uint8_t led)
-{
-	if(led == 0){PORTB |= (1<<PB0);}
-	if(led == 1){PORTB |= (1<<PB1);}
-	if(led == 2){PORTB |= (1<<PB2);}
-	if(led == 3){PORTB |= (1<<PB3);}
-	if(led == 4){PORTB |= (1<<PB4);}
-	if(led == 5){PORTB |= (1<<PB5);}
-	if(led == 6){PORTB |= (1<<PB6);}
-	if(led == 7){PORTB |= (1<<PB7);}
-}
-void ledtog(uint8_t led)
-{
-	if(led == 0){PORTB ^= (1<<PB0);}
-	if(led == 1){PORTB ^= (1<<PB1);}
-	if(led == 2){PORTB ^= (1<<PB2);}
-	if(led == 3){PORTB ^= (1<<PB3);}
-	if(led == 4){PORTB ^= (1<<PB4);}
-	if(led == 5){PORTB ^= (1<<PB5);}
-	if(led == 6){PORTB ^= (1<<PB6);}
-	if(led == 7){PORTB ^= (1<<PB7);}
-}
-void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
-{
-	DDRB |= (1<<DDB3)|(1<<DDB4)|(1<<DDB5);
-	PORTB |= (1<<PB3)|(1<<PB4)|(1<<PB5);//Initally all LEDs off
-}
-//
-//
-//		NOT TESTING
-//		    V
-
-
-
-
-
-
-
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -252,16 +193,16 @@ int main(void)
 	MCUCR = (1<<IVCE);
 	MCUCR = (1<<IVSEL);
 	
+	// Disable the watchdog timer before enabling it.  Even the bootloader must satisfy the watchdog.
+	MCUSR &= ~(1 << WDRF);
+	wdt_disable();
+	wdt_enable(WDTO_500MS);
+
 	// Set Blinky Pin to output.
 	BLINK_MODE |= BLINK_PIN;
 	
 	// Set Force BL Pin to input. 
 	FORCE_BL_MODE &= ~BLINK_PIN;
-	
-	
-	// Enable the watchdog timer.  Even the bootloader must satisfy the watchdog.
-	wdt_disable();//May be required if the as the watchdog timer is not switched off after reset
-	//wdt_enable(WDTO_500MS);
 	
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
@@ -280,7 +221,7 @@ int main(void)
 	//If pin is held then set the communication to started so we can just wait for firmware as we are not worried about restarting quickly
 	if((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI))
 	{
-		//communication_started = true;
+		communication_started = true;
 	}
 
 	// Start up whichever peripherals are required by the modules we're using.
@@ -299,14 +240,15 @@ int main(void)
 #if defined (__AVR_AT90CAN128__)
 	// CTC, no clock yet.
 	TCCR0A = 0b00001000;
+	OCR0A = (uint8_t)TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;
-	//OCR0A = 0xFF;
+	
 		
 #else
 	// CTC on
 	TCCR0A = 0b00000010;
-	//OCR0A = (uint8_t)TM_CHAN_VAL;
+	OCR0A = (uint8_t)TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt
 	TIMSK0 = 0b00000010;
 #endif	
@@ -329,7 +271,7 @@ int main(void)
 	while (1)
 	{
 		// Touch the watchdog.
-		//wdt_reset();
+		wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine
@@ -352,10 +294,9 @@ int main(void)
 				mod->alert_host();
 				
 				//wait_time()-wait for period of time before restarting application
+				timeout_tick = 0;
 				wait_flag = false;
-				ledon(3);//DB
 				while(wait_flag == false){};
-				ledoff(3);//DB
 				
 				//check message again
 				if (mod->reception_message.message_received == false)
@@ -470,8 +411,10 @@ void run_application(void)
 #endif	
 	OCR1A = 0;
 	OCR0A = 0;
+	
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
-	//wdt_disable();
+	MCUSR &= ~(1 << WDRF);
+	wdt_disable();
 	
 	// Jump into the application.
 	asm("jmp 0x0000");
@@ -581,11 +524,11 @@ ISR(TIMER0_COMPA_vect)
 	timeout_tick++;
 	
 	// Check if the timeout period has now expired.
-	//timeout_expired = (timeout_tick > MAX_TICK_VALUE);
+	timeout_expired = (timeout_tick > BOOT_TIMEOUT);
 	
 	
-	//Check for a message every xth tick check a message has been received
-	if((timeout_tick%500) == 0)
+	//Check for a message every 10th of the waiting time
+	if((timeout_tick%(WAIT_FOR_HOST_TIME/10)) == 0)
 	{
 		if(mod->reception_message.message_received == true)
 		{

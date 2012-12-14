@@ -37,14 +37,13 @@
 #include "bootloader_module.hpp"
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/wdt.h>
 #include <avr/boot.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
-#define BOOTLOADER_VERSION 0x0100//Tool chain should define this//#define DEVICE_SIGNATURE		<<<TC_INSERTS_DEVICE_SIGNATURE_HERE>>>
+#define BOOTLOADER_VERSION 0x0100//#define BOOTLOADER_VERSION		<<<TC_INSERTS_DEVICE_SIGNATURE_HERE>>>
 #define MESSAGE_LENGTH 8 //CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
 #define NODE_ID 0xAA //Tool chain should define this//#define NODE_ID		<<<TC_INSERTS_NODE_ID_HERE>>>
-#define base_id 0x120 //Yet to be finalised
+#define BASE_ID 0x120 //Yet to be finalised
 
 #if defined (__AVR_AT90CAN128__)
 
@@ -60,7 +59,7 @@ class bootloader_module_can : public bootloader_module
 {
 	public:
 		
-		enum message_id {START_RESET = base_id, GET_INFO = base_id+1, WRITE_MEMORY = base_id+2, WRITE_DATA = base_id+3, READ_MEMORY = base_id+4, READ_DATA = base_id+5, ALERT_HOST = 0x2FF};
+		enum message_id {START_RESET = BASE_ID, GET_INFO = BASE_ID+1, WRITE_MEMORY = BASE_ID+2, WRITE_DATA = BASE_ID+3, READ_MEMORY = BASE_ID+4, READ_DATA = BASE_ID+5, ALERT_HOST = 0x2FF};
 
 
 		//Struct for CAN message information
@@ -204,7 +203,10 @@ class bootloader_module_can : public bootloader_module
 		//
 		//TEST function
 		//
-		void can_test(uint32_t i);
+		void can_test32(uint32_t i);
+		void can_test8(uint8_t i);
+		
+		
 
 	private:
 };
