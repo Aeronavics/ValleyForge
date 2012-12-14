@@ -237,16 +237,16 @@ bool CANModule::getDeviceInfo( DeviceInfo& info)
 	{
 		return false;
 	}
-	if (getInfo.getId() != GET_INFO)
+	if (getInfo.getId() != GET_INFO || getInfo.getLength() < 7)
 	{
 		return false;
 	}
 	info.setName("CAN Bootloader");
 	const uint8_t* data = getInfo.getData();
-	uint32_t signature = (data[0] << 16) | (data[1] << 8) | (data[2]);
+	uint32_t signature = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
 	info.setSignature(signature);
-	info.setVersionMajor(data[3]);
-	info.setVersionMinor(data[4]);
+	info.setVersionMajor(data[4]);
+	info.setVersionMinor(data[5]);
 	return true;
 }
 

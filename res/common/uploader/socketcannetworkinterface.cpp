@@ -128,7 +128,7 @@ bool SocketCANNetworkInterface::init(Params params)
 	
 	//Change bitrate?
 	std::stringstream ss;
-	ss << "sudo ip link set " << canIface << " down; sudo ip link set " << canIface << " up type can bitrate " << bitrate << std::endl;
+	ss << "sudo ip link set " << canIface << " down; sudo ip link set " << canIface << " up type can bitrate " << bitrate << " restart-ms 100 " <<  std::endl;
 	
 	system(ss.str().c_str());
 	
