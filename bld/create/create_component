@@ -481,7 +481,7 @@ if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 			echo -e "${RED}The component '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
 
 		# Check if the component name would be nested INSIDE another component.
-		elif [ -n "$COMPONENTS" -a ! -z `echo "$REPLY" | grep "$COMPONENTS"` ]; then
+		elif [ -n "$COMPONENTS" -a ! -z "$(echo "$REPLY" | grep "$COMPONENTS")" ]; then
 			# The nesting passes through another component, which isn't legit.
 			echo -e "${RED}The component cannot be nested INSIDE another component.  Please choose another name.\n${NO_COLOUR}"
 
