@@ -90,7 +90,16 @@ class bootloader_module
 		 */
 		virtual void exit() = 0;
 
-		
+		/**
+		 *	Performs functionality which must be executed every cycle.
+		 *
+		 *	NOTE - Flash pages received asynchronously will not be written to flash if this blocks continuously.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		virtual void periodic() = 0;
 
 	private:
 };
@@ -99,9 +108,37 @@ class bootloader_module
 
 extern firmware_page buffer;
 extern firmware_page read_buffer;
-extern bool firmware_finished;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
+
+// NOTE - These functions do not have definitions in bootloader.hpp, since they should only be used by bootloader modules.
+
+/**
+ *	Commands the bootloader shell to reboot the microcontroller.  The bootloader will remain resident after the restart.
+ *
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	This function will NEVER return.
+ */
+extern void reboot_to_bootloader(void);
+
+/**
+ *	Commands the bootloader shell to reboot the microcontroller.  The bootloader will NOT remain resident after the restart.
+ *
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	This function will NEVER return.
+ */
+extern void reboot_to_application(void);
+
+/**
+ *	Commands the bootloader shell to start the application code as normal (without a CPU reset first).
+ *
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	This function will NEVER return.
+ */
+extern void start_application(void);
 
 #endif /*__BOOTLOADER_MODULE_H__*/
 

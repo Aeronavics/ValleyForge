@@ -76,7 +76,7 @@ int main(void);
 void boot_mark_clean(void);
 
 /**
- *	Marks the 'application run' indicatro in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
+ *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
  *	
  *	This is the default state, so usually indicates to the boot loader that the application code crashed without shutting down cleanly.
  *	Alternatively, this function may be called deliberately to force the bootloader to check for new application firmware to download.

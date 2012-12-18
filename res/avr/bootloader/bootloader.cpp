@@ -87,14 +87,11 @@ volatile uint8_t blink_tick;
 
 volatile bool timeout_expired = false;
 
-BOOTLOADER_MODULE module;//This means all the modules must have an object defined in them called - extern <class name> module
-BOOTLOADER_MODULE* mod = &module;
+bootloader_module& mod = module; // This means all the modules must have an object defined in them called - extern <class name> module.
 
 firmware_page buffer;
 
 firmware_page read_buffer;
-
-bool firmware_finished = false;
 
 bool communication_started = false;
 
@@ -123,6 +120,15 @@ volatile bool wait_flag = false;
 #endif
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
+
+/**
+ *	Forces a CPU reset by striking the watchdog.
+ *
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	This function will NEVER return.
+ */
+void reboot(void);
 
 /**
  *	Checks the value of the 'application run' mark in EEPROM.
@@ -184,7 +190,6 @@ void blink_func(void);
  */
 void tick_func(void);
 
-
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -206,8 +211,6 @@ int main(void)
 	
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
-	
-	testing_init();//	TESTING!
 
 	// Check the state of the 'application run' marker.
 	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? HI : LO)))//if clean a pin not held
@@ -225,8 +228,7 @@ int main(void)
 	}
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod->init();
-	
+	mod.init();
 	
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
@@ -276,14 +278,17 @@ int main(void)
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
+		// Perform any periodic processing required by the bootloader module.
+		mod.periodic();
+
 		// Check to see if we've timed out
-		if (((!mod->reception_message.message_received) && timeout_expired) || firmware_finished)
+		if (((!mod.reception_message.message_received) && timeout_expired))
 		{
 			run_application();
 		}
 		
 		//check for a new message
-		if (mod->reception_message.message_received == false)
+		if (mod.reception_message.message_received == false)
 		{
 			//empty mailbox
 			//
@@ -291,7 +296,7 @@ int main(void)
 			if(communication_started == false)
 			{
 				//Send message to host to say that bootloader is awaiting messages
-				mod->alert_host();
+				mod.alert_host();
 				
 				//wait_time()-wait for period of time before restarting application
 				timeout_tick = 0;
@@ -299,7 +304,7 @@ int main(void)
 				while(wait_flag == false){};
 				
 				//check message again
-				if (mod->reception_message.message_received == false)
+				if (mod.reception_message.message_received == false)
 				{
 					//If still no message then run application, program may have crashed
 					run_application();
@@ -314,7 +319,7 @@ int main(void)
 			{
 				communication_started = true;
 			}
-			mod->filter_message(buffer, read_buffer, firmware_finished);
+			mod.filter_message(buffer, read_buffer, firmware_finished);
 		}
 
 		// If the buffer is ready, write it to memory.
@@ -331,7 +336,6 @@ int main(void)
 	// We should never reach here.
 	return 0;
 }
-
 
 void boot_mark_clean(void)
 {
@@ -359,7 +363,60 @@ void boot_mark_dirty(void)
 	return;
 }
 
+void reboot_to_bootloader(void)
+{
+	// Mark the status flag as 'dirty' so that the bootloader will remain resident next time.
+	boot_mark_dirty();
+
+	// NOTE - We don't bother to tidy anything up, the CPU reset will take care of that.
+
+	// Reboot the microcontroller.
+	reboot();
+
+	// We should never reach here.
+	return;
+}
+
+void reboot_to_application(void)
+{
+	// Mark the status flag as 'clean' so that the bootloader will start the application directly next time.
+	boot_mark_clean();
+
+	// NOTE - We don't bother to tidy anything up, the CPU reset will take care of that.
+	
+	// Reboot the microcontroller.
+	reboot();
+
+	// We should never reach here.
+	return;
+}
+
+void start_application(void)
+{
+	// Run the application.
+	run_application()
+	
+	// We should never reach here.
+	return;
+}
+
 // IMPLEMENT PRIVATE FUNCTIONS.
+
+void reboot(void)
+{
+	// Make sure the watchdog is set to strike as quickly as possible.
+	wdt_disable();
+	wdt_enable(WDTO_15MS);
+
+	// Loop continuously until the watchdog strikes.
+	while(true)
+	{
+		// Do nothing while we wait for the watchdog to strike.
+	}
+
+	// We should never reach here.
+	return;
+}
 
 bool is_clean(void)
 {
@@ -390,7 +447,7 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	mod->exit();
+	mod.exit();
 
 	// Stop the timer and interrupt for the blinkenlight.
 	TIMSK1 = 0b00000000;
@@ -530,7 +587,7 @@ ISR(TIMER0_COMPA_vect)
 	//Check for a message every 10th of the waiting time
 	if((timeout_tick%(WAIT_FOR_HOST_TIME/10)) == 0)
 	{
-		if(mod->reception_message.message_received == true)
+		if(mod.reception_message.message_received == true)
 		{
 			wait_flag = true;
 		}
