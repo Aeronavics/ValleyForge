@@ -32,7 +32,7 @@
 #ifndef __BOOTLOADER_MODULE_CAN_H__
 #define __BOOTLOADER_MODULE_CAN_H__
 
-// INCLUDE REQUIRED HEADER FILES.
+// INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
 #include "bootloader_module.hpp"
 #include <avr/io.h>
@@ -40,11 +40,14 @@
 #include <avr/boot.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
-#define BOOTLOADER_VERSION 0x0100//#define BOOTLOADER_VERSION		<<<TC_INSERTS_BOOTLOADER_VERSION_HERE>>>
-#define MESSAGE_LENGTH 8 //CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
-#define NODE_ID	 <<<TC_INSERTS_NODE_ID_HERE>>>
-#define BASE_ID 0x120 //Yet to be finalised
 
+const uint16_t BOOTLOADER_VERSION = 0x0100; // const uint8_t BOOTLOADER_VERSION = <<<TC_INSERTS_BOOTLOADER_VERSION_HERE>>>;
+
+#define MESSAGE_LENGTH 8 // CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
+
+const uint8_t NODE_ID = 0xFF; // const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
+
+#define BASE_ID 0x120 // Yet to be finalised.
 
 //In case of using a  microcontroller with a 32-bit device signature.
 #define DEVICE_SIGNATURE_0 0x00
@@ -54,110 +57,76 @@
 
 //The CAN controller MObs
 #if defined (__AVR_AT90CAN128__)
-
-#define NUMBER_OF_MOB_PAGES 15
-
+	#define NUMBER_OF_MOB_PAGES 15
 #else
-
-#define NUMBER_OF_MOB_PAGES 6
-
+	#define NUMBER_OF_MOB_PAGES 6
 #endif
 
 //CAN Baud rate values
-#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
-#define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>//May need a check for more clock speed, calculation would be better but more difficult
+#define CAN_BAUD_RATE		1000	// TODO - Replace with this. <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> // TODO - May need a check for more clock speed, calculation would be better but more difficult.
 
 #if (CLK_SPEED_IN_MHZ == 16)
-
 	#if (CAN_BAUD_RATE == 1000)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x02
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x02
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 500)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x06
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x06
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 250)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x0E
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x0E
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 200)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x12
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x12
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 125)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x1E
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x1E
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 100)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x26
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x26
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#endif
-	
 #elif (CLK_SPEED_IN_MHZ == 8)
-
 	#if (CAN_BAUD_RATE == 1000)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x00
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x12
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x00
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x12
 	#elif (CAN_BAUD_RATE == 500)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x02
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x02
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 250)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x06
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x06
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 200)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x08
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x08
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 125)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x0E
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x0E
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#elif (CAN_BAUD_RATE == 100)
-
-	#define CAN_BAUD_RATE_CONFIG_1	0x12
-	#define CAN_BAUD_RATE_CONFIG_2	0x04
-	#define CAN_BAUD_RATE_CONFIG_3	0x13
-
+		#define CAN_BAUD_RATE_CONFIG_1	0x12
+		#define CAN_BAUD_RATE_CONFIG_2	0x04
+		#define CAN_BAUD_RATE_CONFIG_3	0x13
 	#endif
-
 #endif
-
-
 
 class bootloader_module_can : public bootloader_module
 {
 	public:
 		
-		enum message_id {RESET_REQUEST = BASE_ID, GET_INFO = BASE_ID+1, WRITE_MEMORY = BASE_ID+2, WRITE_DATA = BASE_ID+3, READ_MEMORY = BASE_ID+4, READ_DATA = BASE_ID+5, ALERT_UPLOADER = 0x2FF};
+		enum message_id {RESET_REQUEST = BASE_ID, GET_INFO = BASE_ID + 1, WRITE_MEMORY = BASE_ID + 2, WRITE_DATA = BASE_ID + 3, READ_MEMORY = BASE_ID + 4, READ_DATA = BASE_ID + 5, ALERT_UPLOADER = 0x2FF};
 		
-		//Struct for CAN message information
+		//Struct for CAN message information.
 		struct message_info
 		{
 			bool confirmed_send;
@@ -166,7 +135,7 @@ class bootloader_module_can : public bootloader_module
 			uint16_t dlc;
 			uint8_t message[MESSAGE_LENGTH];
 		};
-		volatile message_info reception_message;//(will be updated by CANIT ISR)
+		volatile message_info reception_message; // This will be updated by CANIT ISR.
 		message_info transmission_message;
 
 		bool communication_started;
@@ -205,20 +174,41 @@ class bootloader_module_can : public bootloader_module
 		virtual void exit();
 
 		/**
-		 *	Procedure when a start_reset message is received. Either starts the application or resets the Boot Loader.
+		 *	Performs functionality which must be executed every cycle of the bootloader mainloop.
 		 *
-		 *	NOTE - Nothing.
+		 *	NOTE - Flash pages received asynchronously will not be written to flash if this blocks continuously.
 		 *
-		 *	TAKES:		firmware_finished			The flag to tell Boot loader that the program update is completed.
+		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void reset_request_procedure(bool& firmware_finished_flag);
+		virtual void event_idle();
+
+		/**
+		 *	Performs functionality which must be executed on a periodic basis.  The function will be called with a period defined by the const
+		 *	value MODULE_EVENT_PERIOD.
+		 *
+		 *	NOTE - This function is called from an ISR.  It must not block for extended periods.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		virtual void event_periodic();
+
+		// TODO - All these below should really be private?
+
+		/**
+		 *	Procedure when a start_reset message is received. Either starts the application or resets the Boot Loader.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void reset_request_procedure();
 
 		/**
 		 *	Procedure when a get_info message is received. Sends the host information about the microcontroller.
-		 *
-		 *	NOTE - Nothing.
 		 *
 		 *	TAKES:		Nothing.
 		 *
@@ -229,8 +219,6 @@ class bootloader_module_can : public bootloader_module
 		/**
 		 *	Procedure when a write_memory message is received. Saves the Flash page to write to and the length of code to write to.
 		 *
-		 *	NOTE - Nothing.
-		 *
 		 *	TAKES:		buffer			The firmware_page buffer to be written to.
 		 *
 		 *	RETURNS:	Nothing.
@@ -239,8 +227,6 @@ class bootloader_module_can : public bootloader_module
 
 		/**
 		 *	Procedure when a write_data message is received. Saves message data into buffer which can then be written to the FLASH.
-		 *
-		 *	NOTE - Nothing.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer to be written to.
 		 *
@@ -251,8 +237,6 @@ class bootloader_module_can : public bootloader_module
 		/**
 		 *	Procedure when a read_memory message is received. Saves the Flash page to read and the length of code to read.
 		 *
-		 *	NOTE - Nothing.
-		 *
 		 *	TAKES:		buffer			The firmware_page buffer to be written to.
 		 *
 		 *	RETURNS:	Nothing.
@@ -261,8 +245,6 @@ class bootloader_module_can : public bootloader_module
 
 		/**
 		 *	Sends the copy of the FLASH page in messages.
-		 *
-		 *	NOTE - Nothing.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer to be written to.
 		 *
@@ -273,46 +255,29 @@ class bootloader_module_can : public bootloader_module
 		/**
 		 *	Executes the procedure required for the received message.
 		 *
-		 *	NOTE - Nothing.
-		 *
 		 *	TAKES:		buffer			The firmware_page buffer.
 		 *
 		 *			firmware_finished	The flag to set if the host requests to start the application.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page, bool& firmware_finished_flag);
+		void filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page);
 
 		/**
 		 *	Send host a message informing that the microcontroller is awaiting firmware messages.
-		 *
-		 *	NOTE - Nothing.
 		 *
 		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
 		void alert_uploader(void);
-		
-		
-		
-		/**
-		 *	Function called from the bootlaoder to execute commands
-		 *
-		 *	TAKES:		Nothing.
-		 *
-		 *	RETURNS:	Nothing.
-		 */
-		virtual void periodic();
-		
 
 	private:
 };
 
-extern bootloader_module_can module;
-
-
 // DECLARE PUBLIC GLOBAL VARIABLES.
+
+extern bootloader_module_can module;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 

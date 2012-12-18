@@ -32,6 +32,8 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+// INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
+
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
@@ -64,8 +66,8 @@ enum input_state {LO,HI};
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
 #define TM_CHAN_VAL	((CLK_SPEED/TM_PRSCL)/1000)
-#define BOOT_TIMEOUT		5000	//Timeout in milliseconds. Allow user to select this time.
-#define WAIT_FOR_HOST_TIME 100 //Time(in ms) bootloader waits for communication after dirty shutdown before starting application
+#define BOOT_TIMEOUT		5000	// Timeout in milliseconds. Allow user to select this time.
+//#define WAIT_FOR_HOST_TIME 100 // Time(in ms) bootloader waits for communication after dirty shutdown before starting application.
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -76,7 +78,6 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
-
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -86,36 +87,27 @@ volatile uint16_t timeout_tick = 0;
 volatile uint8_t blink_tick;
 
 volatile bool timeout_expired = false;
+volatile bool timeout_enable = true;
 
-bootloader_module& mod = module;//This means all the modules must have an object defined in them called - extern <class name> module
+BOOTLOADER_MODULE module; // This means all the modules must have an object defined in them called - extern <class name> module
+bootloader_module& mod = module;
 
 firmware_page buffer;
-
 firmware_page read_buffer;
 
-
-#if defined (__AVR_AT90CAN128__)	//CAN just import the BOOT_START from the avr.cfg
-
-#define BOOTLOADER_START_ADDRESS 	0x1E000//BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
-
+// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
+#if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
+	#define BOOTLOADER_START_ADDRESS 	0x1E000 // BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 #else
-
-#define BOOTLOADER_START_ADDRESS 0xF000
-
+	#define BOOTLOADER_START_ADDRESS 0xF000
 #endif
 
-//Read flash byte. Different function required for different MCU's.
+// Define the function used to read a flash byte. A different function call is required for different MCUs.
 #if defined (__AVR_AT90CAN128__)
-
-#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
-
+	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
 #else
-
-#define READ_FLASH_BYTE(address) pgm_read_byte(address)
-
+	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
 #endif
-
-
 
 //~ void ledon(uint8_t led)
 //~ {
@@ -155,8 +147,6 @@ firmware_page read_buffer;
 	//~ DDRB |= (1<<DDB3)|(1<<DDB4)|(1<<DDB2);
 	//~ PORTB |= (1<<PB3)|(1<<PB4)|(1<<PB2);//Initally all LEDs off
 //~ }
-
-
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -211,25 +201,6 @@ void flash_page(firmware_page& buffer);
  */
 void read_flash_page(firmware_page& current_firmware_page);
 
-/**
- *	ISR, flashes the LED. Also changes the period if in waiting mode.
- *
- *	@param 	none
- *
- *	@return	Nothing.
- */
-void blink_func(void);
-
-/**
- *	ISR, increments tick to start application programme. Also changes the period if in waiting mode.
- *
- *	@param 	none
- *
- *	@return	Nothing.
- */
-void tick_func(void);
-
-
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -239,7 +210,7 @@ int main(void)
 	MCUCR = (1<<IVSEL);
 	
 	// Disable the watchdog timer before enabling it.  Even the bootloader must satisfy the watchdog.
-	MCUSR &= ~(1 << WDRF);
+	MCUSR &= ~(1 << WDRF);	// TODO - What is this?
 	wdt_disable();
 	wdt_enable(WDTO_500MS);
 
@@ -285,9 +256,7 @@ int main(void)
 	TCCR0A = 0b00001000;
 	OCR0A = (uint8_t)TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
-	TIMSK0 = 0b00000010;
-	
-		
+	TIMSK0 = 0b00000010;	
 #else
 	// CTC on
 	TCCR0A = 0b00000010;
@@ -311,22 +280,25 @@ int main(void)
 	// Don't start the timer until after interrupts have been enabled!
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
-	while (1)
+	while (true)
 	{
-		//~ if(
 		// Touch the watchdog.
 		wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
-		// Is timeout necessary, will only time out during uploading?
-		if (firmware_finished)// || timeout_expired == true)
+		// If we wait around for a long time without any sign of some new firmware arriving, then start the application anyway.
+		if (timeout_expired)
 		{
+			// For whatever reason, no new firmware is coming, so just start the application instead.
 			run_application();
+
+			// We should never reach here.
 		}
 
-		//~ mod.periodic();
+		// Perform any module specific functionality which needs to be executed as fast as possible.		
+		mod.event_idle();
 	
 		// If the buffer is ready, write it to memory.
 		if(buffer.ready_to_flash)
@@ -340,10 +312,10 @@ int main(void)
 			read_flash_page(read_buffer);
 		}
 	}
+
 	// We should never reach here.
 	return 0;
 }
-
 
 void boot_mark_clean(void)
 {
@@ -405,6 +377,20 @@ void start_application(void)
 	run_application();
 	
 	// We should never reach here.
+	return;
+}
+
+void set_bootloader_timeout(bool enable)
+{
+	// NOTE - This isn't interrupt safe, but a race condition will only cause mistiming, so it's not a biggie.
+
+	// Set the state of the bootloader timeout enable flag.
+	timeout_enable = enable;
+
+	// If the timeout is now disabled, then we want to reset the associated counter so we start again from the beginning.
+	timeout_tick = (enable)?timeout_tick:0;
+
+	// All done.
 	return;
 }
 
@@ -484,7 +470,7 @@ void run_application(void)
 	// Jump into the application.
 	asm("jmp 0x0000");
 
-	// We will never reach here.
+	// We should never reach here.
 	return;
 }
 
@@ -549,47 +535,78 @@ void read_flash_page(firmware_page& current_firmware_page)
 			current_firmware_page.data[i] = READ_FLASH_BYTE(current_firmware_page.page + i);
 		}
 	}
+
+	// All done.
+	return;
 }
 
+/**
+ *	This ISR is called by a timer compare event on Timer/Counter 1; this is used to flash the bootloader status LED.
+ *
+ */
 ISR(TIMER1_COMPA_vect)
 {
-	// NOTE This can be edited to whatever is desired. Currently it toggles the led and then changes the time for the next toggle. This results of it being on more than off.
-	static int change = 1;
-	    // Toggle the blinkenlight.
+	// NOTE - This can be edited to whatever is desired. Currently it toggles the bootloader status LED and then changes the time for the next toggle. 
+	// 	  This results in the LED duty cycle being greater than 50%.
+
+	static bool change = true;
+
+	// Toggle the blinkenlight.
 	if (change)
 	{
-		OCR1A = ( uint16_t )(SHORT_FLASH);
-		change = 0;
+		OCR1A = (uint16_t)(SHORT_FLASH);
+		change = false;
 	}
 	else
 	{
-		OCR1A = ( uint16_t )(LONG_FLASH);
-		change = 1;
+		OCR1A = (uint16_t)(LONG_FLASH);
+		change = true;
 	}
-	BLINK_WRITE = ( BLINK_WRITE & BLINK_PIN ) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN); 
-	  // blink_tick = 0;
+	BLINK_WRITE = (BLINK_WRITE & BLINK_PIN)?(BLINK_WRITE & ~BLINK_PIN):(BLINK_WRITE | BLINK_PIN);
 	
 	// All done.
 	return;
 }
 
-
+/**
+ *	This ISR is called by a timer compare event on Timer/Counter 0; this is used to provide a 1ms periodic event which is used for boot timeout detection
+ *	and other periodic functionality.
+ *
+ */
 #if defined (__AVR_AT90CAN128__)
-
 ISR(TIMER0_COMP_vect)
-
 #else
-
 ISR(TIMER0_COMPA_vect)
-
 #endif
-
 {
-	// Advance the tick count.
-	timeout_tick++;
+	// Count how long has elapsed since the last time the module periodic event was fired.
+	static uint16_t module_periodic_count = 0;
+	module_periodic_count++;
+
+	// Check if it is time for the event to be fired again.
+	if (module_periodic_count >= MODULE_EVENT_PERIOD)
+	{
+		// Perform any module specific functionality which needs to be performed on a periodic basis.
+		mod.event_periodic();
+
+		// Start counting again.
+		module_periodic_count = 0;
+	}
+
+	// Check if the bootloader timeout is actually enabled.
+	if (timeout_enable)
+	{
+		// Advance the tick count.
+		timeout_tick++;
 	
-	// Check if the timeout period has now expired.
-	timeout_expired = (timeout_tick > BOOT_TIMEOUT);
+		// Check if the timeout period has now expired.
+		timeout_expired = (timeout_tick > BOOT_TIMEOUT);
+	}
+	else
+	{
+		// Reset the timeout count, so that if we restart the timeout, the counter starts again.
+		timeout_tick = 0;
+	}
 
 	// All done.
 	return;

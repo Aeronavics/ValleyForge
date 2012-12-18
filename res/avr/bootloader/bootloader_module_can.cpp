@@ -31,6 +31,8 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+// INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
+
 // DEFINE CONSTANTS
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
@@ -38,10 +40,9 @@
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
+
 /**
  *	CAN controller initialization function.
- *
- *	NOTE - Nothing.
  *
  *	TAKES:		Nothing.
  *
@@ -82,8 +83,6 @@ void CAN_reset(void);
  */
 void confirm_reception(void);
 
-
-
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 bootloader_module_can::~bootloader_module_can()
@@ -92,39 +91,86 @@ bootloader_module_can::~bootloader_module_can()
 	return;
 }
 
-
 void bootloader_module_can::init(void)
 {
-	//Initialize the CAN controller
+	//Initialize the CAN controller.
 	CAN_init();
-	//
 	
+	// All done.
 	return;
 }
-
 
 void bootloader_module_can::exit(void)
 {
-	//Reset the CAN controller to original conditions
+	//Reset the CAN controller to original conditions.
 	CAN_reset();
-	//
+
+	// All done.
 	return;
 }
 
+void bootloader_module_can::event_idle()
+{
+	// All done.
+	return;
+}
 
-void bootloader_module_can::reset_request_procedure(bool& firmware_finished_flag)
+void bootloader_module_can::event_periodic()
+{
+	// Check for a new message.
+	if (!reception_message.message_received)
+	{
+		// The mailbox is empty.
+
+		// Check if communication with host has already occured.
+		if(!communication_started)
+		{
+			// TODO - This is going to send the alert message once every 10ms at the moment.  This might be too often?  If so, then you will to
+			//	  only send the alert once every so many times through here.
+		
+			// Send message to host to say that bootloader is awaiting messages.
+			alert_uploader();
+		}
+	}
+	else
+	{
+		//Filter messages.	
+		filter_message(buffer, read_buffer);
+
+		//If we are filtering a message then communication with host must have occured
+		communication_started = true;
+
+		// Restart the bootloader timeout.
+		set_bootloader_timeout(false);
+		set_bootloader_timeout(true);
+	}
+}
+
+// TODO - These ones below should probably all be private.
+
+void bootloader_module_can::reset_request_procedure()
 {
 	confirm_reception();
 	
 	if(reception_message.message[0] == 0)
 	{
-		//Reset the bootloader by waiting for the 500ms watchdog to run out.
-		while(1){}
+		// Reboot the microcontroller back to the bootloader again.
+		reboot_to_bootloader();
+
+		// We will never reach here.
 	}
 	else
 	{
-		firmware_finished_flag = true;
+		// TODO - This starts the application directly without a reboot.  There is also reboot_to_application() if you wanted that instead?
+
+		// Start the application.
+		start_application();
+
+		// We will never reach here.
 	}
+
+	// We will never reach here.
+	return;
 }
 
 void bootloader_module_can::get_info_procedure(void)
@@ -139,8 +185,8 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[3] = DEVICE_SIGNATURE_3;
 	
 	//Insert bootloader version
-	transmission_message.message[4] = (BOOTLOADER_VERSION >> 8);
-	transmission_message.message[5] = BOOTLOADER_VERSION;
+	transmission_message.message[4] = static_cast<uint8_t>(BOOTLOADER_VERSION >> 8);
+	transmission_message.message[5] = static_cast<uint8_t>(BOOTLOADER_VERSION);
 	
 	//test
 	//transmission_message.message[6] = NODE_ID;
@@ -212,7 +258,6 @@ void bootloader_module_can::read_memory_procedure(firmware_page& current_firmwar
 	confirm_reception();
 }
 
-
 void bootloader_module_can::send_flash_page(firmware_page& current_firmware_page)
 {
 	transmission_message.message_type = READ_DATA;
@@ -252,12 +297,15 @@ void bootloader_module_can::send_flash_page(firmware_page& current_firmware_page
 	}
 }
 
-void bootloader_module_can::filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page, bool& firmware_finished_flag)
+void bootloader_module_can::filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page)
 {
 	if(reception_message.message_type == RESET_REQUEST)
 	{
-		reset_request_procedure(firmware_finished_flag);
-		reception_message.message_received = false;
+		reset_request_procedure();
+
+		// TODO - The above function will never return, because it results in a CPU reset.  Is that what you wanted?
+
+		// We will never reach here.
 	}	
 
 	else if(reception_message.message_type == GET_INFO)
@@ -307,56 +355,14 @@ void bootloader_module_can::alert_uploader(void)//Send host a message to inform 
 	transmit_CAN_message(transmission_message);
 }
 
-
-
-void bootloader_module_can::periodic()
-{
-	//check for a new message
-	if (reception_message.message_received == false)
-	{
-		//empty mailbox
-		//
-		//check if communication with host has already occured
-		if(communication_started == false)
-		{
-			//Send message to host to say that bootloader is awaiting messages
-			alert_uploader();
-			
-			//wait_time()-wait for period of time before restarting application
-			//~ timeout_tick = 0;
-			//~ wait_flag = false;
-			//~ while(wait_flag == false){};
-			
-			
-			//check message again
-			if (reception_message.message_received == false)
-			{
-				//If still no message then run application, program may have crashed
-				firmware_finished = true;
-			}
-		}
-	}
-	else
-	{
-		//Filter messages.	
-		//If we are filtering a message then communication with host must have occured
-		if(communication_started == false)
-		{
-			communication_started = true;
-		}
-		filter_message(buffer, read_buffer, firmware_finished);
-	}
-}
-
-
 // IMPLEMENT PRIVATE FUNCTIONS.
+
 void confirm_reception(void)
 {
 	module.transmission_message.dlc = 0;//currently reply empty message with host message id
 	module.transmission_message.message_type = module.reception_message.message_type;
 	transmit_CAN_message(module.transmission_message);
 }
-
 
 void CAN_init(void)
 {
@@ -480,17 +486,12 @@ void CAN_reset(void)
 	CANGCON = (1<<SWRES);
 }
 
-
 //Interupt service routine for interupts from CAN controller
 //This routine only operates on received messages, reads the ID, DLC, data. Sets a flag to tell Boot loader that a new message has been received.
 #if defined (__AVR_AT90CAN128__)
-
 ISR(CANIT_vect)
-
 #else
-
 ISR(CAN_INT_vect)
-
 #endif
 {
 	//Save curent MOb page for current program operations. 
@@ -545,22 +546,5 @@ ISR(CAN_INT_vect)
 	//Restore previous MOb page
 	CANPAGE = saved_MOb;
 }
-
-
-
-//Another timer isr
-	//~ //Check for a message every 10th of the waiting time
-	//~ if((timeout_tick%(WAIT_FOR_HOST_TIME/10)) == 0)
-	//~ {
-		//~ if(mod->reception_message.message_received == true)
-		//~ {
-			//~ wait_flag = true;
-		//~ }
-	//~ }
-	//~ //Period of time used as wait.
-	//~ if(timeout_tick > WAIT_FOR_HOST_TIME)
-	//~ {
-		//~ wait_flag = true;
-	//~ }
 	
 // ALL DONE.
