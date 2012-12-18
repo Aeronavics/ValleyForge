@@ -42,19 +42,19 @@
 
 // DEFINE PREPROCESSOR MACROS.
 
-// DEFINE PUBLIC TYPES AND ENUMERATIONS.
+// DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
 // Time in milliseconds between calls of event_periodic() for the bootloader module.
 const uint16_t MODULE_EVENT_PERIOD = 10;
 
 struct firmware_page
 {
-	bool ready_to_flash;
-	bool ready_to_read_flash;
-	uint32_t page;
-	uint16_t current_byte;
-	uint8_t data[SPM_PAGESIZE];
-	uint16_t code_length;
+		bool ready_to_write;
+		bool ready_to_read;
+		uint32_t page;
+		uint16_t current_byte;
+		uint8_t data[SPM_PAGESIZE];
+		uint16_t code_length;
 };
 
 class bootloader_module
@@ -166,6 +166,6 @@ void start_application(void);
  */
 void set_bootloader_timeout(bool enable);
 
-#endif /*__BOOTLOADER_MODULE_H__*/
+#endif // __BOOTLOADER_MODULE_H__
 
 // ALL DONE.

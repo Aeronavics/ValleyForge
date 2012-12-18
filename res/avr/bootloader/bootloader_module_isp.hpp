@@ -107,6 +107,6 @@ extern bootloader_module_isp module;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
-#endif /*__BOOTLOADER_MODULE_ISP_H__*/
+#endif // __BOOTLOADER_MODULE_ISP_H__
 
 // ALL DONE.

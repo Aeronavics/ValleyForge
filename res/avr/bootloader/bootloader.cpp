@@ -65,9 +65,8 @@ enum input_state {LO,HI};
 
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
-#define TM_CHAN_VAL	((CLK_SPEED/TM_PRSCL)/1000)
+#define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
 #define BOOT_TIMEOUT		5000	// Timeout in milliseconds. Allow user to select this time.
-//#define WAIT_FOR_HOST_TIME 100 // Time(in ms) bootloader waits for communication after dirty shutdown before starting application.
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -93,7 +92,6 @@ BOOTLOADER_MODULE module; // This means all the modules must have an object defi
 bootloader_module& mod = module;
 
 firmware_page buffer;
-firmware_page read_buffer;
 
 // Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
 #if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
@@ -180,7 +178,7 @@ bool is_clean(void);
 void run_application(void);
 
 /**
- *	Flashes a single page of data to RWW EEPROM.
+ *	Flashes a single page of data to NRWW EEPROM.
  *
  *	Blocks until EEPROM IO operations are completed.
  *
@@ -190,18 +188,22 @@ void run_application(void);
  *
  *	RETURNS: 	Nothing.
  */
-void flash_page(firmware_page& buffer);
+void write_flash_page(firmware_page& buffer);
 
 /**
- *	Reads FLASH memory from a page into a buffer.
+ *	Reads a single page of data from NRWW EEPROM into a buffer.
  *
- *	TAKES:		buffer		The firmware_page buffer to be written to.
+ *	Blocks until EEPROM IO operations are completed.
+ *
+ *	NOTE - There is no testing that the arguments provided are valid; invalid arguments may result in undefined behaviour.
+ *
+ *	TAKES:		buffer		A firmware_page buffer to read into, with the appropriate address details completed.
  *	
  *	RETURNS:	Nothing.
  */
-void read_flash_page(firmware_page& current_firmware_page);
+void read_flash_page(firmware_page& buffer);
 
-// IMPLEMENT PUBLIC FUNCTIONS.
+// IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
 int main(void)
 {
@@ -221,26 +223,20 @@ int main(void)
 	FORCE_BL_MODE &= ~BLINK_PIN;
 	
 	// Turn on the blinkenlight solidly.
-	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
+	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE|BLINK_PIN):(BLINK_WRITE & ~BLINK_PIN);
 
-	// Check the state of the 'application run' marker.
-	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? HI : LO)))//if clean and pin not held
+	// Check the state of the 'application run' marker, and the state of the force-bootloader input pin.
+	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC?HI:LO)))
 	{
-		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
+		// The marker seemed clean, and the force-bootloader input is not asserted, so start the application immediately.
+
 		// Run the application.
 		run_application();
 	}
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.	
 
-	//If pin is held then the bootloader will be forced to wait for new firmware. Will only restart if the bootloader times out.
-	if((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI))
-	{
-		//~ communication_started = true;
-	}
-
 	// Start up whichever peripherals are required by the modules we're using.
-	//~ mod.init();
-	//~ testing_init();
+	mod.init();
 	
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
@@ -258,15 +254,18 @@ int main(void)
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;	
 #else
-	// CTC on
+	// CTC on.
 	TCCR0A = 0b00000010;
 	OCR0A = (uint8_t)TM_CHAN_VAL;
-	// Enable Timer Output Compare interrupt
+	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;
 #endif	
 	
 	// Enable interrupts.
 	sei();
+
+	// NOTE - Don't start the timer until after interrupts have been enabled!
+
 	// Prescalar: 1024
 	TCCR1B = 0b00001101;
 	
@@ -277,16 +276,14 @@ int main(void)
 	// Prescalar: 1024
 	TCCR0B = 0b00000101;
 #endif
-	// Don't start the timer until after interrupts have been enabled!
 
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (true)
 	{
+		// During this loop, the blinken light should be flashing, which tell us that things are still working as expected.
+
 		// Touch the watchdog.
 		wdt_reset();
-
-		// The blinkenlight should flash some kind of pattern to indicate what is going on.
-		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
 		// If we wait around for a long time without any sign of some new firmware arriving, then start the application anyway.
 		if (timeout_expired)
@@ -300,16 +297,18 @@ int main(void)
 		// Perform any module specific functionality which needs to be executed as fast as possible.		
 		mod.event_idle();
 	
-		// If the buffer is ready, write it to memory.
-		if(buffer.ready_to_flash)
+		// If the buffer is ready to be written, write it to memory.
+		if (buffer.ready_to_write)
 		{
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
-			flash_page(buffer);
+			write_flash_page(buffer);
 		}
-		// Read memory to buffer.
-		if(read_buffer.ready_to_read_flash)
+
+		// If the buffer is ready to be read from, read it back again.
+		if (buffer.ready_to_read)
 		{
-			read_flash_page(read_buffer);
+			// Read from flash into the buffer.  This blocks, with interrupts disabled, whilst the operation is in progress.
+			read_flash_page(buffer);
 		}
 	}
 
@@ -321,7 +320,7 @@ void boot_mark_clean(void)
 {
 	// Set the clean flag in EEPROM.
 	uint16_t data = CLEAN_FLAG;
-	void * address = (void *)SHUTDOWNSTATE_MEM;
+	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
 	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
@@ -334,9 +333,9 @@ void boot_mark_dirty(void)
 {
 	// Clear the clean flag in EEPROM, thus making the memory 'dirty'.
 	uint16_t data = 0;
-	void * address = (void *)SHUTDOWNSTATE_MEM;
+	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
-	eeprom_write_block(&data,address, 2);
+	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
 
 	// All done.
@@ -394,7 +393,7 @@ void set_bootloader_timeout(bool enable)
 	return;
 }
 
-// IMPLEMENT PRIVATE FUNCTIONS.
+// IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
 void reboot(void)
 {
@@ -418,8 +417,9 @@ bool is_clean(void)
 	uint8_t data;
 	
 	eeprom_busy_wait();
-	eeprom_read_block(&data, (void *)SHUTDOWNSTATE_MEM, 2);
+	eeprom_read_block(&data, static_cast<void*>(SHUTDOWNSTATE_MEM), 2);
 	eeprom_busy_wait();
+
 	// Check if the flag was 'clean' or not.
 	if (data == CLEAN_FLAG)
 	{
@@ -441,15 +441,15 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	//~ mod.exit();
+	mod.exit();
 
 	// Stop the timer and interrupt for the blinkenlight.
 	TIMSK1 = 0b00000000;
 	TIMSK0 = 0b00000000;
-	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE & ~BLINK_PIN ) : ( BLINK_WRITE | BLINK_PIN );
+	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE & ~BLINK_PIN):(BLINK_WRITE | BLINK_PIN);
 
 	// Put interrupts back into application-land.
-	MCUCR = (1<<IVCE);
+	MCUCR = (1 << IVCE);
 	MCUCR = 0;
 	
 	// Stop timers and return them to original state.
@@ -474,18 +474,18 @@ void run_application(void)
 	return;
 }
 
-void flash_page(firmware_page& buffer)
+void write_flash_page(firmware_page& buffer)
 {
-	//Limit the page number to above boot loader section
+	// Disable interrupts.
+	cli();
+
+	// TODO - Replace this with something non-target specific.
+
+	// Limit the page number to outside the bootloader (RWW) section.
 	if(buffer.page < BOOTLOADER_START_ADDRESS)
 	{
-		// Disable interrupts.
-		cli();
-
-		// TODO - Replace this with something non-target specific.
-
 		// Get a pointer to the start of the data we're going to write.
-		uint8_t* data = (uint8_t*) buffer.data;	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
+		uint8_t* data = static_cast<uint8_t*>(buffer.data);	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
 
 		// Wait until the EEPROM is ready.
 		eeprom_busy_wait();
@@ -513,32 +513,54 @@ void flash_page(firmware_page& buffer)
 		boot_rww_enable();
 
 		// Clear the buffer so that it may be used again.
-		buffer.ready_to_flash = false;
+		buffer.ready_to_write = false;
 		buffer.page = 0;
 		buffer.current_byte = 0;
-
-		// Re-enable interrupts.
-		sei();
 	}
+	// Else something went terribly wrong, but we assume bootloader code always works.
+
+	// Re-enable interrupts.
+	sei();
 
 	// All done.
 	return;
 }
 
-void read_flash_page(firmware_page& current_firmware_page)
+void read_flash_page(firmware_page& buffer)
 {
-	if(read_buffer.page < BOOTLOADER_START_ADDRESS)
+	// Disable interrupts.
+	cli();
+
+	// TODO - Replace this with something non-target specific.
+
+	// Limit the page number to outside the bootloader (RWW) section.
+	if(buffer.page < BOOTLOADER_START_ADDRESS)
 	{
-		//Read flash page out byte by byte, up until the desired length
-		for(uint16_t i = 0 ; i < current_firmware_page.code_length ; i++)
+		// Wait until the EEPROM is ready.
+		eeprom_busy_wait();
+
+		// Read flash page out byte by byte, up until the desired length.
+		for(uint16_t i = 0; i < buffer.code_length; i++)
 		{
-			current_firmware_page.data[i] = READ_FLASH_BYTE(current_firmware_page.page + i);
+			// Read a single byte from the flash.
+			buffer.data[i] = READ_FLASH_BYTE(buffer.page + i);
 		}
+
+		// Clear the buffer so that it may be used again.
+		buffer.ready_to_read = false;
+		buffer.page = 0;
+		buffer.current_byte = 0;
 	}
+	// Else something went terribly wrong, but we assume bootloader code always works.
+
+	// Re-enable interrupts.
+	sei();
 
 	// All done.
 	return;
 }
+
+// IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
 /**
  *	This ISR is called by a timer compare event on Timer/Counter 1; this is used to flash the bootloader status LED.
@@ -554,12 +576,12 @@ ISR(TIMER1_COMPA_vect)
 	// Toggle the blinkenlight.
 	if (change)
 	{
-		OCR1A = (uint16_t)(SHORT_FLASH);
+		OCR1A = static_cast<uint16_t>(SHORT_FLASH);
 		change = false;
 	}
 	else
 	{
-		OCR1A = (uint16_t)(LONG_FLASH);
+		OCR1A = static_cast<uint16_t>(LONG_FLASH);
 		change = true;
 	}
 	BLINK_WRITE = (BLINK_WRITE & BLINK_PIN)?(BLINK_WRITE & ~BLINK_PIN):(BLINK_WRITE | BLINK_PIN);
