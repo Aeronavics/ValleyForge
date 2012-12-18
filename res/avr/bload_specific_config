@@ -175,6 +175,48 @@ do
 	fi
 done
 
+#if ["$BOOTLOADER" == "$CAN"]; then
+	# Prompt the user to enter the CAN Baudrate for CAN bootloader communication.
+	echo -e "${GREEN}Please enter the CAN Baudrate ${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select CAN_BAUD_RATES in 1000 500 250 200 125 100
+		do
+			# Check if the selected component is actually valid.
+			CAN_BAUD_RATES=$(echo "1000 500 250 200 125 100" | grep -w -o "$CAN_BAUD_RATES")
+			if [ -z "$CAN_BAUD_RATES" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected.
+				echo -e "${CYAN}Selected CAN Baudrate is $CAN_BAUD_RATES.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+	# Prompt the user to enter the node identifier for their component.
+	echo -e -n "${GREEN}Please enter the node identifier for this component in the form \"03\". Number must be between 0x00 and 0xFF. ${NO_COLOUR}"
+	# We loop continuously until the user enters a valid choice.
+	while :
+	do
+		# Read a line of input from the user.
+		read
+		# Check if the user input a valid response (a hex number).
+		if ! [[ "$REPLY" =~ ^[A-F0-9]+$ ]]; then
+			# The user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		#need a check for a smaller number
+		elif [[ $(echo "ibase=16; $REPLY" | bc) -gt $(echo "ibase=16; FF" | bc) ]]; then
+			echo -e "${RED}Number is too large. Please enter a smaller number\n${NO_COLOUR}"
+		
+		else
+			# A legitimate value was entered, so we can go now.
+			NODE_ID="0x$REPLY"
+			echo -e "${CYAN}Selected node identifier of ${NODE_ID}.\n${NO_COLOUR}"
+			break
+		fi
+	done
+#fi
+
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### BOOTLOADER SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
@@ -187,5 +229,6 @@ echo -e "FORCE_BL_PIN=PIN_${FORCE_BL_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_
 echo -e "INPUT_LOGIC=${INPUT_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "SHUTDOWNSTATE_MEM=${SHUTDOWNSTATE_MEM}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "CAN_BAUD_RATES=${CAN_BAUD_RATES}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "NODE_ID=${NODE_ID}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 # All done.
-

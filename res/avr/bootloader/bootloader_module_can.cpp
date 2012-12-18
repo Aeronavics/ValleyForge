@@ -111,34 +111,8 @@ void bootloader_module_can::exit(void)
 	return;
 }
 
-//
-//
-//TEST function
-//
-void bootloader_module_can::can_test32(uint32_t i)
-{
-	transmission_message.dlc = 4;
-	transmission_message.message_type = 0x4ff;
-	transmission_message.message[0] = (i >> 24);
-	transmission_message.message[1] = (i >> 16);
-	transmission_message.message[2] = (i >> 8);
-	transmission_message.message[3] = i;
-	transmit_CAN_message(transmission_message);
-}
 
-void bootloader_module_can::can_test8(uint8_t i)
-{
-	transmission_message.dlc = 1;
-	transmission_message.message_type = 0x4ff;
-	transmission_message.message[0] = i;
-	transmit_CAN_message(transmission_message);
-}
-//
-//
-//
-//
-
-void bootloader_module_can::start_reset_procedure(bool& firmware_finished_flag)
+void bootloader_module_can::reset_request_procedure(bool& firmware_finished_flag)
 {
 	confirm_reception();
 	
@@ -151,6 +125,27 @@ void bootloader_module_can::start_reset_procedure(bool& firmware_finished_flag)
 	{
 		firmware_finished_flag = true;
 	}
+}
+
+void bootloader_module_can::get_info_procedure(void)
+{
+	transmission_message.dlc = 7;
+	transmission_message.message_type = GET_INFO;
+	
+	//Insert Device signaure
+	transmission_message.message[0] = DEVICE_SIGNATURE_0;
+	transmission_message.message[1] = DEVICE_SIGNATURE_1;
+	transmission_message.message[2] = DEVICE_SIGNATURE_2;
+	transmission_message.message[3] = DEVICE_SIGNATURE_3;
+	
+	//Insert bootloader version
+	transmission_message.message[4] = (BOOTLOADER_VERSION >> 8);
+	transmission_message.message[5] = BOOTLOADER_VERSION;
+	
+	//test
+	//transmission_message.message[6] = NODE_ID;
+	
+	transmit_CAN_message(transmission_message);
 }
 
 void bootloader_module_can::write_memory_procedure(firmware_page& current_firmware_page)
@@ -198,22 +193,6 @@ void bootloader_module_can::write_data_procedure(firmware_page& current_firmware
 	}
 
 	confirm_reception();
-}
-void bootloader_module_can::get_info_procedure(void)
-{
-	transmission_message.dlc = 5;
-	transmission_message.message_type = GET_INFO;
-	
-	//Insert Device signaure
-	transmission_message.message[0] = SIGNATURE_0;
-	transmission_message.message[1] = SIGNATURE_1;
-	transmission_message.message[2] = SIGNATURE_2;
-	
-	//Insert bootloader version
-	transmission_message.message[3] = (BOOTLOADER_VERSION >> 8);
-	transmission_message.message[4] = BOOTLOADER_VERSION;
-	
-	transmit_CAN_message(transmission_message);
 }
 
 void bootloader_module_can::read_memory_procedure(firmware_page& current_firmware_page)
@@ -275,9 +254,9 @@ void bootloader_module_can::send_flash_page(firmware_page& current_firmware_page
 
 void bootloader_module_can::filter_message(firmware_page& current_firmware_page, firmware_page& read_current_firmware_page, bool& firmware_finished_flag)
 {
-	if(reception_message.message_type == START_RESET)
+	if(reception_message.message_type == RESET_REQUEST)
 	{
-		start_reset_procedure(firmware_finished_flag);
+		reset_request_procedure(firmware_finished_flag);
 		reception_message.message_received = false;
 	}	
 
@@ -317,15 +296,56 @@ void bootloader_module_can::filter_message(firmware_page& current_firmware_page,
 
 }
 
-void bootloader_module_can::alert_host(void)//Send host a message to inform that the bootloader is awaiting messages
+void bootloader_module_can::alert_uploader(void)//Send host a message to inform that the bootloader is awaiting messages
 {
 	transmission_message.dlc = 8;
-	transmission_message.message_type = ALERT_HOST;//First bit will alway be zero so choose from 0-7 for it
+	transmission_message.message_type = ALERT_UPLOADER;
 	for(uint8_t i = 0 ; i < transmission_message.dlc ; i++)
 	{
 		transmission_message.message[i] = 0xFF;//No significance
 	}
 	transmit_CAN_message(transmission_message);
+}
+
+
+
+void bootloader_module_can::periodic()
+{
+	//check for a new message
+	if (reception_message.message_received == false)
+	{
+		//empty mailbox
+		//
+		//check if communication with host has already occured
+		if(communication_started == false)
+		{
+			//Send message to host to say that bootloader is awaiting messages
+			alert_uploader();
+			
+			//wait_time()-wait for period of time before restarting application
+			//~ timeout_tick = 0;
+			//~ wait_flag = false;
+			//~ while(wait_flag == false){};
+			
+			
+			//check message again
+			if (reception_message.message_received == false)
+			{
+				//If still no message then run application, program may have crashed
+				firmware_finished = true;
+			}
+		}
+	}
+	else
+	{
+		//Filter messages.	
+		//If we are filtering a message then communication with host must have occured
+		if(communication_started == false)
+		{
+			communication_started = true;
+		}
+		filter_message(buffer, read_buffer, firmware_finished);
+	}
 }
 
 
@@ -356,12 +376,11 @@ void CAN_init(void)
 		CANCDMOB = 0x00;//Disables MObs
 	}
 	
-	//Set up bit-timing and CAN timing (use data sheet to select desired bit timing)
-	CANBT1 = 0x02;//125kbps	0x1E	1Mbps   0x02
-	CANBT2 = 0x04;//	0x04		0x04
-	CANBT3 = 0x13;//	0x13		0x13
-
-
+	//Set up bit-timing and CAN timing
+	CANBT1 = CAN_BAUD_RATE_CONFIG_1;
+	CANBT2 = CAN_BAUD_RATE_CONFIG_2;
+	CANBT3 = CAN_BAUD_RATE_CONFIG_3;
+	
 	//CANCON = ?;//CAN timing prescalar
 
 	
@@ -527,4 +546,21 @@ ISR(CAN_INT_vect)
 	CANPAGE = saved_MOb;
 }
 
+
+
+//Another timer isr
+	//~ //Check for a message every 10th of the waiting time
+	//~ if((timeout_tick%(WAIT_FOR_HOST_TIME/10)) == 0)
+	//~ {
+		//~ if(mod->reception_message.message_received == true)
+		//~ {
+			//~ wait_flag = true;
+		//~ }
+	//~ }
+	//~ //Period of time used as wait.
+	//~ if(timeout_tick > WAIT_FOR_HOST_TIME)
+	//~ {
+		//~ wait_flag = true;
+	//~ }
+	
 // ALL DONE.

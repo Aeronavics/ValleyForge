@@ -40,11 +40,19 @@
 #include <avr/boot.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
-#define BOOTLOADER_VERSION 0x0100//#define BOOTLOADER_VERSION		<<<TC_INSERTS_DEVICE_SIGNATURE_HERE>>>
+#define BOOTLOADER_VERSION 0x0100//#define BOOTLOADER_VERSION		<<<TC_INSERTS_BOOTLOADER_VERSION_HERE>>>
 #define MESSAGE_LENGTH 8 //CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
-#define NODE_ID 0xAA //Tool chain should define this//#define NODE_ID		<<<TC_INSERTS_NODE_ID_HERE>>>
+#define NODE_ID	 <<<TC_INSERTS_NODE_ID_HERE>>>
 #define BASE_ID 0x120 //Yet to be finalised
 
+
+//In case of using a  microcontroller with a 32-bit device signature.
+#define DEVICE_SIGNATURE_0 0x00
+#define DEVICE_SIGNATURE_1 SIGNATURE_0
+#define DEVICE_SIGNATURE_2 SIGNATURE_1
+#define DEVICE_SIGNATURE_3 SIGNATURE_2
+
+//The CAN controller MObs
 #if defined (__AVR_AT90CAN128__)
 
 #define NUMBER_OF_MOB_PAGES 15
@@ -55,13 +63,100 @@
 
 #endif
 
+//CAN Baud rate values
+#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>//May need a check for more clock speed, calculation would be better but more difficult
+
+#if (CLK_SPEED_IN_MHZ == 16)
+
+	#if (CAN_BAUD_RATE == 1000)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x02
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 500)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x06
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 250)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x0E
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 200)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x12
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 125)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x1E
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 100)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x26
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#endif
+	
+#elif (CLK_SPEED_IN_MHZ == 8)
+
+	#if (CAN_BAUD_RATE == 1000)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x00
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x12
+
+	#elif (CAN_BAUD_RATE == 500)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x02
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 250)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x06
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 200)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x08
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 125)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x0E
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#elif (CAN_BAUD_RATE == 100)
+
+	#define CAN_BAUD_RATE_CONFIG_1	0x12
+	#define CAN_BAUD_RATE_CONFIG_2	0x04
+	#define CAN_BAUD_RATE_CONFIG_3	0x13
+
+	#endif
+
+#endif
+
+
+
 class bootloader_module_can : public bootloader_module
 {
 	public:
 		
-		enum message_id {START_RESET = BASE_ID, GET_INFO = BASE_ID+1, WRITE_MEMORY = BASE_ID+2, WRITE_DATA = BASE_ID+3, READ_MEMORY = BASE_ID+4, READ_DATA = BASE_ID+5, ALERT_HOST = 0x2FF};
-
-
+		enum message_id {RESET_REQUEST = BASE_ID, GET_INFO = BASE_ID+1, WRITE_MEMORY = BASE_ID+2, WRITE_DATA = BASE_ID+3, READ_MEMORY = BASE_ID+4, READ_DATA = BASE_ID+5, ALERT_UPLOADER = 0x2FF};
+		
 		//Struct for CAN message information
 		struct message_info
 		{
@@ -71,9 +166,10 @@ class bootloader_module_can : public bootloader_module
 			uint16_t dlc;
 			uint8_t message[MESSAGE_LENGTH];
 		};
-		volatile message_info reception_message;//(VOLATILE - will be updated by CANIT ISR)
+		volatile message_info reception_message;//(will be updated by CANIT ISR)
 		message_info transmission_message;
 
+		bool communication_started;
 
 		// Functions.
 	
@@ -117,7 +213,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void start_reset_procedure(bool& firmware_finished_flag);
+		void reset_request_procedure(bool& firmware_finished_flag);
 
 		/**
 		 *	Procedure when a get_info message is received. Sends the host information about the microcontroller.
@@ -196,16 +292,18 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void alert_host(void);
-
-
-		//
-		//
-		//TEST function
-		//
-		void can_test32(uint32_t i);
-		void can_test8(uint8_t i);
+		void alert_uploader(void);
 		
+		
+		
+		/**
+		 *	Function called from the bootlaoder to execute commands
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		virtual void periodic();
 		
 
 	private:

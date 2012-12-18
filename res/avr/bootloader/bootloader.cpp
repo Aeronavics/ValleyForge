@@ -64,7 +64,7 @@ enum input_state {LO,HI};
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
 #define TM_CHAN_VAL	((CLK_SPEED/TM_PRSCL)/1000)
-#define BOOT_TIMEOUT		20000	//Timeout in milliseconds. Allow user to select this time.
+#define BOOT_TIMEOUT		5000	//Timeout in milliseconds. Allow user to select this time.
 #define WAIT_FOR_HOST_TIME 100 //Time(in ms) bootloader waits for communication after dirty shutdown before starting application
 
 #define LONG_FLASH		1600
@@ -87,20 +87,16 @@ volatile uint8_t blink_tick;
 
 volatile bool timeout_expired = false;
 
-bootloader_module& mod = module; // This means all the modules must have an object defined in them called - extern <class name> module.
+bootloader_module& mod = module;//This means all the modules must have an object defined in them called - extern <class name> module
 
 firmware_page buffer;
 
 firmware_page read_buffer;
 
-bool communication_started = false;
 
-volatile bool wait_flag = false;
+#if defined (__AVR_AT90CAN128__)	//CAN just import the BOOT_START from the avr.cfg
 
-
-#if defined (__AVR_AT90CAN128__)
-
-#define BOOTLOADER_START_ADDRESS 0x1E000//BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BLINK_PORT_HERE>>>
+#define BOOTLOADER_START_ADDRESS 	0x1E000//BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 
 #else
 
@@ -118,6 +114,49 @@ volatile bool wait_flag = false;
 #define READ_FLASH_BYTE(address) pgm_read_byte(address)
 
 #endif
+
+
+
+//~ void ledon(uint8_t led)
+//~ {
+	//~ if(led == 0){PORTB &= ~(1<<PB0);}
+	//~ if(led == 1){PORTB &= ~(1<<PB1);}
+	//~ if(led == 2){PORTB &= ~(1<<PB2);}
+	//~ if(led == 3){PORTB &= ~(1<<PB3);}
+	//~ if(led == 4){PORTB &= ~(1<<PB4);}
+	//~ if(led == 5){PORTB &= ~(1<<PB5);}
+	//~ if(led == 6){PORTB &= ~(1<<PB6);}
+	//~ if(led == 7){PORTB &= ~(1<<PB7);}
+//~ }
+//~ void ledoff(uint8_t led)
+//~ {
+	//~ if(led == 0){PORTB |= (1<<PB0);}
+	//~ if(led == 1){PORTB |= (1<<PB1);}
+	//~ if(led == 2){PORTB |= (1<<PB2);}
+	//~ if(led == 3){PORTB |= (1<<PB3);}
+	//~ if(led == 4){PORTB |= (1<<PB4);}
+	//~ if(led == 5){PORTB |= (1<<PB5);}
+	//~ if(led == 6){PORTB |= (1<<PB6);}
+	//~ if(led == 7){PORTB |= (1<<PB7);}
+//~ }
+//~ void ledtog(uint8_t led)
+//~ {
+	//~ if(led == 0){PORTB ^= (1<<PB0);}
+	//~ if(led == 1){PORTB ^= (1<<PB1);}
+	//~ if(led == 2){PORTB ^= (1<<PB2);}
+	//~ if(led == 3){PORTB ^= (1<<PB3);}
+	//~ if(led == 4){PORTB ^= (1<<PB4);}
+	//~ if(led == 5){PORTB ^= (1<<PB5);}
+	//~ if(led == 6){PORTB ^= (1<<PB6);}
+	//~ if(led == 7){PORTB ^= (1<<PB7);}
+//~ }
+//~ void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
+//~ {
+	//~ DDRB |= (1<<DDB3)|(1<<DDB4)|(1<<DDB2);
+	//~ PORTB |= (1<<PB3)|(1<<PB4)|(1<<PB2);//Initally all LEDs off
+//~ }
+
+
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -190,6 +229,7 @@ void blink_func(void);
  */
 void tick_func(void);
 
+
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
@@ -213,7 +253,7 @@ int main(void)
 	BLINK_WRITE = ( LED_LOGIC ) ? ( BLINK_WRITE | BLINK_PIN ) : ( BLINK_WRITE & ~BLINK_PIN );
 
 	// Check the state of the 'application run' marker.
-	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? HI : LO)))//if clean a pin not held
+	if ((is_clean()) && ((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? HI : LO)))//if clean and pin not held
 	{
 		// The marker seemed clean, and there was no forcing of the bootloader firmware loading so start the application immediately.
 		// Run the application.
@@ -221,14 +261,15 @@ int main(void)
 	}
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.	
 
-	//If pin is held then set the communication to started so we can just wait for firmware as we are not worried about restarting quickly
+	//If pin is held then the bootloader will be forced to wait for new firmware. Will only restart if the bootloader times out.
 	if((( FORCE_BL_READ & FORCE_BL_PIN ) >> FORCE_BL_PIN_NUM ) == (INPUT_LOGIC ? LO : HI))
 	{
-		communication_started = true;
+		//~ communication_started = true;
 	}
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod.init();
+	//~ mod.init();
+	//~ testing_init();
 	
 	// Set up a timer and interrupt to flash the blinkenlight..
 	
@@ -272,62 +313,28 @@ int main(void)
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (1)
 	{
+		//~ if(
 		// Touch the watchdog.
 		wdt_reset();
 
 		// The blinkenlight should flash some kind of pattern to indicate what is going on.
 		// If the flashing period keeps changing, we know we are making it around the loop fine
 		
-		// Perform any periodic processing required by the bootloader module.
-		mod.periodic();
-
-		// Check to see if we've timed out
-		if (((!mod.reception_message.message_received) && timeout_expired))
+		// Is timeout necessary, will only time out during uploading?
+		if (firmware_finished)// || timeout_expired == true)
 		{
 			run_application();
 		}
-		
-		//check for a new message
-		if (mod.reception_message.message_received == false)
-		{
-			//empty mailbox
-			//
-			//check if communication with host has already occured
-			if(communication_started == false)
-			{
-				//Send message to host to say that bootloader is awaiting messages
-				mod.alert_host();
-				
-				//wait_time()-wait for period of time before restarting application
-				timeout_tick = 0;
-				wait_flag = false;
-				while(wait_flag == false){};
-				
-				//check message again
-				if (mod.reception_message.message_received == false)
-				{
-					//If still no message then run application, program may have crashed
-					run_application();
-				}
-			}
-		}
-		else
-		{
-			//Filter messages.	
-			//If we are filtering a message then communication with host must have occured
-			if(communication_started == false)
-			{
-				communication_started = true;
-			}
-			mod.filter_message(buffer, read_buffer, firmware_finished);
-		}
 
+		//~ mod.periodic();
+	
 		// If the buffer is ready, write it to memory.
 		if(buffer.ready_to_flash)
 		{
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
 			flash_page(buffer);
 		}
+		// Read memory to buffer.
 		if(read_buffer.ready_to_read_flash)
 		{
 			read_flash_page(read_buffer);
@@ -336,6 +343,7 @@ int main(void)
 	// We should never reach here.
 	return 0;
 }
+
 
 void boot_mark_clean(void)
 {
@@ -394,7 +402,7 @@ void reboot_to_application(void)
 void start_application(void)
 {
 	// Run the application.
-	run_application()
+	run_application();
 	
 	// We should never reach here.
 	return;
@@ -447,7 +455,7 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
-	mod.exit();
+	//~ mod.exit();
 
 	// Stop the timer and interrupt for the blinkenlight.
 	TIMSK1 = 0b00000000;
@@ -582,21 +590,6 @@ ISR(TIMER0_COMPA_vect)
 	
 	// Check if the timeout period has now expired.
 	timeout_expired = (timeout_tick > BOOT_TIMEOUT);
-	
-	
-	//Check for a message every 10th of the waiting time
-	if((timeout_tick%(WAIT_FOR_HOST_TIME/10)) == 0)
-	{
-		if(mod.reception_message.message_received == true)
-		{
-			wait_flag = true;
-		}
-	}
-	//Period of time used as wait.
-	if(timeout_tick > WAIT_FOR_HOST_TIME)
-	{
-		wait_flag = true;
-	}
 
 	// All done.
 	return;
