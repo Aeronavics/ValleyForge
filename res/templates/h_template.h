@@ -22,7 +22,7 @@
 #ifndef __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 #define __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
-// INCLUDE REQUIRED HEADER FILES.
+// INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
 // Include the required IO header file.
 #include >>>TC_INSERTS_IO_FILE_NAME_HERE<<<
@@ -51,6 +51,6 @@
  */
 int main(void);
 
-#endif /*__<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__*/
+#endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
 // ALL DONE.
