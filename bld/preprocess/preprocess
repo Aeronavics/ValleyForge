@@ -312,6 +312,9 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>^$CLK_SPEED_IN_MHZ^g" $1
 	sed -i "s^<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>^$ACTIVE_MODULE^g" $1
 	sed -i "s^<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>^$SHUTDOWNSTATE_MEM^g" $1
+	sed -i "s^<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>^$CAN_BAUD_RATES^g" $1
+	sed -i "s^<<<TC_INSERTS_NODE_ID_HERE>>>^$NODE_ID^g" $1
+	#sed -i "s^<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>^$BOOT_START^g" $1
 	
 # 	There are also upper-case versions of some of those same macros.
 

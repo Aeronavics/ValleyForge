@@ -22,6 +22,8 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+// INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
+
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -36,69 +38,75 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-#define TEST_FUNC_PRIORITY			( tskIDLE_PRIORITY + 2 )
+#define TEST_FUNC_PRIORITY	(tskIDLE_PRIORITY + 2)
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 static void testFunction (void *pvParameters);
 
-/*
- * The idle hook is used to scheduler co-routines.
+/**
+ *	The idle hook is used to scheduler co-routines.
+ *
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	Nothing.
  */
-void vApplicationIdleHook( void );
+void vApplicationIdleHook(void);
 
-void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed char *pcTaskName );
-
-
+void vApplicationStackOverflowHook(xTaskHandle* pxTask, signed char* pcTaskName);
 
 // IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
 int main(void)
 {
-	/* Create the tasks defined within this file. */
-	xTaskCreate( testFunction, ( signed char * ) "Tester", configMINIMAL_STACK_SIZE, NULL, TEST_FUNC_PRIORITY, NULL );
+	// Create the tasks defined within this file.
+	xTaskCreate(testFunction, (signed char*) "Tester", configMINIMAL_STACK_SIZE, NULL, TEST_FUNC_PRIORITY, NULL );
 	
-	/* In this port, to use preemptive scheduler define configUSE_PREEMPTION 
-	as 1 in portmacro.h.  To use the cooperative scheduler define 
-	configUSE_PREEMPTION as 0. */
+	// In this port, to use preemptive scheduler define configUSE_PREEMPTION as 1 in portmacro.h.  To use the cooperative scheduler define configUSE_PREEMPTION as 0.
 	vTaskStartScheduler();
 
+	// All done.
 	return 0;
 }
 
 // IMPLEMENT PUBLIC CLASS FUNCTIONS.
 
-static void testFunction (void *pvParameters)
+static void testFunction(void *pvParameters)
 {
-	const portTickType xDelay = 500/ portTICK_RATE_MS;	
+	const portTickType xDelay = 500 / portTICK_RATE_MS;	
 
-     for( ;; )
-     {
-        //Do Something
-         vTaskDelay( xDelay );
-     }
+	while (true)
+	{
+		// Do something.
+		vTaskDelay(xDelay);
+	}
     
+	// We will never reach here.
+	return;
 }
-/*-----------------------------------------------------------*/
 
-void vApplicationIdleHook( void )
+void vApplicationIdleHook(void)
 {
-	 
+	// All done.
+	return;	 
 }
 
-void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed char *pcTaskName )
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed char *pcTaskName)
 {
 	( void ) pcTaskName;
 	( void ) pxTask;
 
-	/* Run time stack overflow checking is performed if
-	configconfigCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-	function is called if a stack overflow is detected. */
+	// Run time stack overflow checking is performed if configconfigCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook function is called if a stack overflow is detected.
 	taskDISABLE_INTERRUPTS();
-	for( ;; );
+
+	while (true)
+	{
+		// Do nothing.
+	}
+
+	// We will never reach here.
+	return;
 }
-
-
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 

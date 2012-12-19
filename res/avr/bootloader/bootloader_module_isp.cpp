@@ -49,10 +49,7 @@ bootloader_module_isp::~bootloader_module_isp()
 
 void bootloader_module_isp::init(void)
 {
-	// TODO - This.
-
-	// For the moment, we just tell the bootloader to run the application right away.
-	firmware_finished = true;
+	// There is nothing to set up, since this module doesn't do anything.
 
 	// All done.
 	return;
@@ -60,12 +57,26 @@ void bootloader_module_isp::init(void)
 
 void bootloader_module_isp::exit(void)
 {
-	// TODO - This.
+	// There is nothing to undo, since this module doesn't do anything.
 
 	// All done.
 	return;
 }
 
+void bootloader_module_isp::event_idle(void)
+{
+	// Start the application code immediately.
+	start_application();
+
+	// We will never reach here.
+	return;
+}
+
+void bootloader_module_isp::event_periodic(void)
+{
+	// All done.
+	return;
+}
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
