@@ -66,7 +66,7 @@ enum input_state {LO,HI};
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
 #define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
-#define BOOT_TIMEOUT		5000	// Timeout in milliseconds. Allow user to select this time.
+#define BOOT_TIMEOUT		5000	// Timeout in milliseconds.
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -106,45 +106,6 @@ firmware_page buffer;
 #else
 	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
 #endif
-
-//~ void ledon(uint8_t led)
-//~ {
-	//~ if(led == 0){PORTB &= ~(1<<PB0);}
-	//~ if(led == 1){PORTB &= ~(1<<PB1);}
-	//~ if(led == 2){PORTB &= ~(1<<PB2);}
-	//~ if(led == 3){PORTB &= ~(1<<PB3);}
-	//~ if(led == 4){PORTB &= ~(1<<PB4);}
-	//~ if(led == 5){PORTB &= ~(1<<PB5);}
-	//~ if(led == 6){PORTB &= ~(1<<PB6);}
-	//~ if(led == 7){PORTB &= ~(1<<PB7);}
-//~ }
-//~ void ledoff(uint8_t led)
-//~ {
-	//~ if(led == 0){PORTB |= (1<<PB0);}
-	//~ if(led == 1){PORTB |= (1<<PB1);}
-	//~ if(led == 2){PORTB |= (1<<PB2);}
-	//~ if(led == 3){PORTB |= (1<<PB3);}
-	//~ if(led == 4){PORTB |= (1<<PB4);}
-	//~ if(led == 5){PORTB |= (1<<PB5);}
-	//~ if(led == 6){PORTB |= (1<<PB6);}
-	//~ if(led == 7){PORTB |= (1<<PB7);}
-//~ }
-//~ void ledtog(uint8_t led)
-//~ {
-	//~ if(led == 0){PORTB ^= (1<<PB0);}
-	//~ if(led == 1){PORTB ^= (1<<PB1);}
-	//~ if(led == 2){PORTB ^= (1<<PB2);}
-	//~ if(led == 3){PORTB ^= (1<<PB3);}
-	//~ if(led == 4){PORTB ^= (1<<PB4);}
-	//~ if(led == 5){PORTB ^= (1<<PB5);}
-	//~ if(led == 6){PORTB ^= (1<<PB6);}
-	//~ if(led == 7){PORTB ^= (1<<PB7);}
-//~ }
-//~ void testing_init(void)//Initialize LEDs 0,1,2,3,4,5,6 and SW 0,1,2,3,4,6,5 for testing
-//~ {
-	//~ DDRB |= (1<<DDB3)|(1<<DDB4)|(1<<DDB2);
-	//~ PORTB |= (1<<PB3)|(1<<PB4)|(1<<PB2);//Initally all LEDs off
-//~ }
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -296,7 +257,7 @@ int main(void)
 
 		// Perform any module specific functionality which needs to be executed as fast as possible.		
 		mod.event_idle();
-	
+
 		// If the buffer is ready to be written, write it to memory.
 		if (buffer.ready_to_write)
 		{
@@ -414,7 +375,7 @@ void reboot(void)
 bool is_clean(void)
 {
 	// Read the clean flag from EEPROM.
-	uint8_t data;
+	uint16_t data;
 	
 	eeprom_busy_wait();
 	eeprom_read_block(&data, static_cast<void*>(SHUTDOWNSTATE_MEM), 2);
@@ -618,7 +579,7 @@ ISR(TIMER0_COMPA_vect)
 	// Check if the bootloader timeout is actually enabled.
 	if (timeout_enable)
 	{
-		// Advance the tick count.
+		//~ // Advance the tick count.
 		timeout_tick++;
 	
 		// Check if the timeout period has now expired.

@@ -122,7 +122,6 @@ class bootloader_module
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 extern firmware_page buffer;
-extern firmware_page read_buffer;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 

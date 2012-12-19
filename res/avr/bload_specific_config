@@ -177,7 +177,7 @@ done
 
 #if ["$BOOTLOADER" == "$CAN"]; then
 	# Prompt the user to enter the CAN Baudrate for CAN bootloader communication.
-	echo -e "${GREEN}Please enter the CAN Baudrate ${NO_COLOUR}"
+	echo -e "${GREEN}Which CAN Baudrate would you like to use?(in kbps)${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select CAN_BAUD_RATES in 1000 500 250 200 125 100
 		do
