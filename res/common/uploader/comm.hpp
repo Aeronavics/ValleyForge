@@ -111,17 +111,46 @@ public:
 	CommModule(std::string name);
 	virtual ~CommModule()=0;
 	
+	/**
+	 *  This function is called to initialise the communication module,
+	 *  currently the uploader assumes that after calling this all other methods of this class will work.
+	 */
 	virtual bool init(Params params)=0;
+	/**
+	 *  This function is used to connect to the bootloader on the device.
+	 */
 	virtual bool connectToDevice()=0;
 	
+	/**
+	 *  This function is called by the uploader to retrieve the device info of the connected device,
+	 *  this information is used by the uploader to determine if the device it is connected to is the device it was told to program.
+	 */
 	virtual bool getDeviceInfo( DeviceInfo& info)=0;
 	
+	/**
+	 *  This function is called by the uploader to write a page to the device,
+	 *  it supplies the memory map to read the page from, the size of the page and the start address of the page.
+	 */
 	virtual bool writePage(MemoryMap& source, size_t size, size_t address)=0;
+	/**
+	 *  This function is called by the uploader to verify that a page has been written correctly,
+	 *  it supplies the memory map containing the expected memory contents, the size of the page and the starting address.
+	 */
 	virtual bool verifyPage(MemoryMap& expected, size_t size, size_t address)=0;
+	/**
+	 *  This function is called by the uploader to read a page of memory from the device into a memory map,
+	 *  it supplies the memory map to write into, the size of the page to read and the start address.
+	 */
 	virtual bool readPage(MemoryMap& destination, size_t size, size_t address)=0;
 	
+	/**
+	 *  The uploader will call this function to reset the target, with a boolean parameter specifying whether it starts the application or returns to the bootloader.
+	 */
 	virtual bool resetDevice(bool runApplication)=0;
 	
+	/**
+	 *  This method will return the map that holds all of the existing communication modules.
+	 */
 	static CommModuleRegistry& getRegistry();
 	
 	

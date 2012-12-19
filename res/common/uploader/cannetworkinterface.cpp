@@ -136,12 +136,22 @@ bool CANNetworkInterface::clearFilter()
 }
 
 bool CANNetworkInterface::filter(uint32_t id)
-{
-	if (inclusionFilter.find(id) != inclusionFilter.end())
+{	
+	switch (filterMode)
 	{
+	case INCLUDE_ALL:
 		return true;
+		break;
+	case EXCLUDE_ALL_BUT_FILTER:
+		return inclusionFilter.find(id) != inclusionFilter.end();
+		break;
+	case INCLUDE_ALL_BUT_FILTER:
+		return exclusionFilter.find(id) != exclusionFilter.end();
+		break;
+	default:
+		return false;
+		break;
 	}
-	return false;
 }
 
 
