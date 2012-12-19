@@ -63,6 +63,10 @@ typedef std::set<uint32_t> FilterSet;
 
 // DEFINE PUBLIC CLASSES.
 
+/**
+ *  A CAN message class, this class represents a CAN message that could be received or transmitted over a CAN network.
+ * 
+ */
 class CANMessage
 {
 public:
@@ -89,8 +93,14 @@ private:
 	uint8_t data[8];
 };
 
+/**
+ * A queue of CAN Messages.
+ */
 typedef std::deque<CANMessage> CANMessageQueue;
 
+/**
+ *  This class implements a generic can network interface.
+ */
 class CANNetworkInterface
 {
 public:

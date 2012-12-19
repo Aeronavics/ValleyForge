@@ -197,10 +197,7 @@ bool CANModule::connectToDevice()
 	}
 	if (msg.getId() == 0x2FF)
 	{
-		if (!iface->clearFilter())
-		{
-			return false;
-		}
+		
 		DeviceInfo temp;
 		if (getDeviceInfo(temp))
 		{
@@ -219,6 +216,10 @@ bool CANModule::connectToDevice()
 bool CANModule::getDeviceInfo( DeviceInfo& info)
 {
 	CANMessage getInfo = makeCommand(GET_INFO, target, 1);
+	if (!iface->clearFilter())
+	{
+		return false;
+	}
 	
 	if (!iface->setFilter(GET_INFO, CANNetworkInterface::INCLUDE))
 	{
@@ -237,7 +238,7 @@ bool CANModule::getDeviceInfo( DeviceInfo& info)
 	{
 		return false;
 	}
-	if (getInfo.getId() != GET_INFO || getInfo.getLength() < 7)
+	if (getInfo.getId() != GET_INFO || getInfo.getLength() < 6)
 	{
 		return false;
 	}
