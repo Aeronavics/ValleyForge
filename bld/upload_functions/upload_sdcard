@@ -187,7 +187,7 @@ upload_sdcard()
 			SD_SECTORS=32
 			SD_CYLINDERS=$(( ($SD_SIZE * $SD_BLOCKSIZE) / ($SD_HEADS * $SD_SECTORS * $SD_BLOCKSIZE) ))
 			SD_BOOT_PARTITION_CYLINDERS=24	# If this value is too small, then the device just won't boot!
-			echo -e "${WHITE}SD card will have $SD_CYLINDERS cylinders, each of $SD_HEADS heads of $SD_SECTORS sectors."
+			echo -e "${WHITE}SD card will have $SD_CYLINDERS cylinders, each of $SD_HEADS heads of $SD_SECTORS sectors.\n${NO_COLOUR}"
 
 			# Format the card with two empty partitions.
 			echo -e "${WHITE}Formatting the SD card...\n${NO_COLOUR}"
