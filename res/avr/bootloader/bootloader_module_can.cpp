@@ -34,6 +34,7 @@
 // INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
 #include <avr/interrupt.h>
+#include <avr/eeprom.h>
 
 // DEFINE CONSTANTS
 
@@ -95,6 +96,12 @@ bootloader_module_can::~bootloader_module_can()
 
 void bootloader_module_can::init(void)
 {
+	//Initialize flags
+	communication_started = false;
+	ready_to_send_page = false;
+	write_address_stored = false;
+	reception_message.message_received = false;
+	
 	//Initialize the CAN controller.
 	CAN_init();
 	
@@ -104,7 +111,7 @@ void bootloader_module_can::init(void)
 
 void bootloader_module_can::exit(void)
 {
-	//Reset the CAN controller to its original state.
+	// Reset the CAN controller to its original state.
 	CAN_reset();
 
 	// All done.
@@ -113,12 +120,21 @@ void bootloader_module_can::exit(void)
 
 void bootloader_module_can::event_idle()
 {
+	if(!buffer.ready_to_read && ready_to_send_page)// Send the buffer once it has been read to
+	{
+		ready_to_send_page = false;
+		send_flash_page(buffer);
+	}
+	
 	// All done.
 	return;
 }
 
+
 void bootloader_module_can::event_periodic()
 {
+	static uint8_t alert_count = 0; 
+	 
 	// Check for a new message.
 	if (!reception_message.message_received)
 	{
@@ -127,20 +143,22 @@ void bootloader_module_can::event_periodic()
 		// Check if communication with host has already occured.
 		if(!communication_started)
 		{
-			// TODO - This is going to send the alert message repeatedly, once every 10ms at the moment.  This might be too often?  If so, then you
-			//	  will want to only send the alert once every so many times through here.
-		
-			// Send message to host to say that bootloader is awaiting messages.
-			alert_uploader();
+			alert_count++;
+			if(alert_count == ALERT_UPLOADER_PERIOD)
+			{
+				// Send message to host to say that bootloader is awaiting messages.
+				alert_uploader();
+				alert_count = 0;
+			}
 		}
 	}
 	else
 	{
-		//Filter messages.	
-		filter_message(buffer);
-
-		//If we are filtering a message then communication with host must have occured
+		// If we are filtering a message then communication with host must have occured
 		communication_started = true;
+		
+		// Filter messages.	
+		filter_message(buffer);
 
 		// Restart the bootloader timeout.
 		set_bootloader_timeout(false);
@@ -153,10 +171,18 @@ void bootloader_module_can::event_periodic()
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
-void confirm_reception(void)
+void confirm_reception(bool confirmation_successful)
 {
-	// We currently reply with an empty message with the host's message ID.
-	module.transmission_message.dlc = 0;
+	//Reply to the host whether the received message was successful or not
+	module.transmission_message.dlc = 1;
+	if(confirmation_successful)
+	{
+		module.transmission_message.message[0] = 1;
+	}
+	else
+	{
+		module.transmission_message.message[0] = 0;
+	}
 	module.transmission_message.message_type = module.reception_message.message_type;
 	transmit_CAN_message(module.transmission_message);
 
@@ -301,7 +327,7 @@ void CAN_reset(void)
 
 void bootloader_module_can::reset_request_procedure()
 {
-	confirm_reception();
+	confirm_reception(message_confirmation_success);// Always successful
 	
 	if(reception_message.message[0] == 0)
 	{
@@ -312,10 +338,8 @@ void bootloader_module_can::reset_request_procedure()
 	}
 	else
 	{
-		// TODO - This starts the application directly without a reboot.  There is also reboot_to_application() if you wanted that instead?
-
-		// Start the application.
-		start_application();
+		// Reboot to the application.
+		reboot_to_application();
 
 		// We will never reach here.
 	}
@@ -326,7 +350,7 @@ void bootloader_module_can::reset_request_procedure()
 
 void bootloader_module_can::get_info_procedure(void)
 {
-	transmission_message.dlc = 7;
+	transmission_message.dlc = 6;
 	transmission_message.message_type = GET_INFO;
 	
 	//Insert Device signaure
@@ -355,17 +379,22 @@ void bootloader_module_can::write_memory_procedure(firmware_page& current_firmwa
 
 	// Store the 16bit code_length.
 	current_firmware_page.code_length = (reception_message.message[4] << 8) | (reception_message.message[5]);
-	
-	// Limit code_length to page size.
-	if (current_firmware_page.code_length > SPM_PAGESIZE)
-	{
-		current_firmware_page.code_length = SPM_PAGESIZE;
-	}
-	
-	// Start at the beginning of the page.
-	current_firmware_page.current_byte = 0;
 
-	confirm_reception();
+	//Check for errors in message details
+	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)//TODO - import the value from TC
+	{
+		//Message failure
+		message_confirmation_success = false;
+		write_address_stored = false;
+	}
+	else
+	{
+		//Message success
+		write_address_stored = true;
+		current_firmware_page.current_byte = 0;
+	}
+
+	confirm_reception(message_confirmation_success);
 
 	// All done.
 	return;
@@ -373,29 +402,39 @@ void bootloader_module_can::write_memory_procedure(firmware_page& current_firmwa
 
 void bootloader_module_can::write_data_procedure(firmware_page& current_firmware_page)
 {
-	// Check for possible array overflow.
-	if ((current_firmware_page.current_byte + reception_message.dlc) > current_firmware_page.code_length)
+	// Only wrtie to buffer if a memory address and length have been provided
+	if(write_address_stored)
 	{
-		reception_message.dlc = current_firmware_page.code_length - current_firmware_page.current_byte; // Limit the dlc.
+		// Check for possible array overflow.
+		if ((current_firmware_page.current_byte + reception_message.dlc) > current_firmware_page.code_length)
+		{
+			reception_message.dlc = current_firmware_page.code_length - current_firmware_page.current_byte; // Limit the dlc.
+		}
+
+		// Store data from filter buffer(message data of 7 bytes) into the current_firmware_page(byte by byte).
+		for (uint8_t i = 0; i < reception_message.dlc; i++)
+		{
+			current_firmware_page.data[current_firmware_page.current_byte + i] = reception_message.message[i];
+		}
+
+		// Increment the current byte in buffer.
+		current_firmware_page.current_byte += reception_message.dlc;
+
+		// Check if the buffer is ready to be written to the flash.
+		if (current_firmware_page.current_byte >= (current_firmware_page.code_length))
+		{
+			current_firmware_page.ready_to_write = true;
+			current_firmware_page.current_byte = 0;
+			write_address_stored = false;
+		}
+	}
+	else
+	{
+		// Message failure
+		message_confirmation_success = false;
 	}
 
-	// Store data from filter buffer(message data of 7 bytes) into the current_firmware_page(byte by byte).
-	for (uint8_t i = 0; i < reception_message.dlc; i++)
-	{
-		current_firmware_page.data[current_firmware_page.current_byte + i] = reception_message.message[i];
-	}
-
-	// Increment the current byte in buffer.
-	current_firmware_page.current_byte += reception_message.dlc;
-	
-	// Check if the buffer is ready to be written to the flash.
-	if (current_firmware_page.current_byte >= (current_firmware_page.code_length - 1))
-	{
-		current_firmware_page.ready_to_write = true;
-		current_firmware_page.current_byte = 0;
-	}
-
-	confirm_reception();
+	confirm_reception(message_confirmation_success);
 
 	// All done.
 	return;
@@ -412,13 +451,20 @@ void bootloader_module_can::read_memory_procedure(firmware_page& current_firmwar
 	// Store the 16bit code_length.
 	current_firmware_page.code_length = (reception_message.message[4] << 8) | (reception_message.message[5]);
 
-	// Limit code_length to page size.
-	if (current_firmware_page.code_length > SPM_PAGESIZE)
+	// Check for errors in message details
+	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)//TODO - import the value from TC
 	{
-		current_firmware_page.code_length = SPM_PAGESIZE;
+		// Message failure
+		message_confirmation_success = false;
+	}
+	else
+	{
+		// Message success
+		current_firmware_page.ready_to_read = true;
+		ready_to_send_page = true;// Allow sending the flash page once it is read
 	}
 	
-	confirm_reception();
+	confirm_reception(message_confirmation_success);
 
 	// All done.
 	return;
@@ -428,7 +474,7 @@ void bootloader_module_can::send_flash_page(firmware_page& current_firmware_page
 {
 	transmission_message.message_type = READ_DATA;
 	current_firmware_page.current_byte = 0; // Start at the start of buffer.
-	reception_message.confirmed_send = false; // Initialize for this procedure.
+	reception_message.confirmed_send = false; // Require confirmation after every flash page sent
 	while (current_firmware_page.current_byte < current_firmware_page.code_length)
 	{
 		// Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message.
@@ -501,18 +547,8 @@ void bootloader_module_can::filter_message(firmware_page& current_firmware_page)
 
 	else if(reception_message.message_type == READ_MEMORY)
 	{
-		//Allow for reading the flash
-		if(current_firmware_page.ready_to_read == false)
-		{	
-			read_memory_procedure(current_firmware_page);
-			current_firmware_page.ready_to_read = true;
-		}
-		else
-		{
-			reception_message.message_received = false;//Reseting here allows the program to loop again in order to read the flash page. Also before sending so host 									//can send another read memory message to reset the read memory
-			current_firmware_page.ready_to_read = false;//Must be above sending to ensure the sending can be reset
-			send_flash_page(current_firmware_page);
-		}
+		read_memory_procedure(current_firmware_page);
+		reception_message.message_received = false;
 	}
 
 	// All done.
@@ -584,6 +620,9 @@ ISR(CAN_INT_vect)
 			
 				// Tell Boot loader that the message was received.
 				module.reception_message.message_received = true;
+				
+				//Default the message confirmation to successful
+				module.message_confirmation_success = true;
 			}
 		}
 	}

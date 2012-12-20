@@ -40,13 +40,10 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
+	//Device infromation
 const uint16_t BOOTLOADER_VERSION = 0x0100; // const uint8_t BOOTLOADER_VERSION = <<<TC_INSERTS_BOOTLOADER_VERSION_HERE>>>;
 
-#define MESSAGE_LENGTH 8 // CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
-
-const uint8_t NODE_ID = 0xFF; // const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
-
-#define BASE_ID 0x120 // TODO - Yet to be finalised.
+const uint8_t ALERT_UPLOADER_PERIOD = 10;//x10 ms to send each alert_host message before communication has begun
 
 // In case of using a  microcontroller with a 32-bit device signature.
 #define DEVICE_SIGNATURE_0 0x00
@@ -54,6 +51,15 @@ const uint8_t NODE_ID = 0xFF; // const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_H
 #define DEVICE_SIGNATURE_2 SIGNATURE_1
 #define DEVICE_SIGNATURE_3 SIGNATURE_2
 
+// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
+#if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
+	#define BOOTLOADER_START_ADDRESS 	0x1E000 // BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+#else
+	#define BOOTLOADER_START_ADDRESS 0xF000
+#endif
+
+
+	// CAN communicaton infromation
 // The CAN controller MObs.
 #if defined (__AVR_AT90CAN128__)
 	#define NUMBER_OF_MOB_PAGES 15
@@ -62,7 +68,7 @@ const uint8_t NODE_ID = 0xFF; // const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_H
 #endif
 
 // CAN Baud rate values.
-#define CAN_BAUD_RATE		1000	// TODO - Replace with this: <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
 #define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> // TODO - May need a check for more clock speed, calculation would be better but more difficult.
 
 #if (CLK_SPEED_IN_MHZ == 16)
@@ -119,6 +125,12 @@ const uint8_t NODE_ID = 0xFF; // const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_H
 	#endif
 #endif
 
+#define BASE_ID 0x120 // TODO - Yet to be finalised.
+
+const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
+
+#define MESSAGE_LENGTH 8 // CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
+
 class bootloader_module_can : public bootloader_module
 {
 	public:
@@ -143,7 +155,11 @@ class bootloader_module_can : public bootloader_module
 		volatile message_info reception_message; // This will be updated by CANIT ISR.
 		message_info transmission_message;
 
+			//class flags
 		bool communication_started;
+		bool ready_to_send_page;
+		bool message_confirmation_success; 
+		bool write_address_stored;
 
 		// Class methods.
 	
