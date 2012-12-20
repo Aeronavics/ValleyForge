@@ -198,7 +198,7 @@ upload_sdcard()
 				return 1
 			fi
 			echo -e ""
-			sleep 2
+			sync
 			sudo parted -s /dev/${SD_DEVICE_FILE} mklabel msdos
 			if [ $? -ne "0" ]; then
 				# Something went wrong during formatting.
