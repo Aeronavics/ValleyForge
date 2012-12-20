@@ -1,0 +1,406 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_sdcard											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	18-12-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions for uploading data to SD cards.						###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported SD card upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_sdcard							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Flashes an embedded linux filesystem (plus bootloader) to an	###
+###			SD card, making it bootable.					###
+###											###
+###########################################################################################
+
+upload_sdcard() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+#	# Check if we are supposed to be loading the application code.
+#	if [ $UPLOAD_APPLICATION ]; then
+#		# Check that the expected binaries are available in the toolchain output folder.
+#		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}.tar.bz2" ]; then
+#			# The expected binary file was not present.		
+#			echo -e "${RED}Could not find application files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+#			return 1
+#		fi
+#	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# Check that the expected files are available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage" ]; then
+			# The expected binary file was not present.
+			echo -e "${RED}Could not find bootloader files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading an entire filesystem.
+	if [ $UPLOAD_FILESYSTEM ]; then
+		# Check that the expected image is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+#	# Check if we are supposed to be loading a complete (flat) image.
+#	if [ $UPLOAD_IMAGE ]; then
+#		# Check that the expected image is available in the toolchain output folder.
+#		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_image.img.gz" ]; then
+#			# The expected binary file was not present.		
+#			echo -e "${RED}Could not find card image for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+#			return 1
+#		fi
+#	fi
+
+	# TODO - Later these options will be removed, in favor of figuring stuff out based on the component configuration and output files.
+
+	# Ask if the user wants to reformat the card.
+	echo -e -n "${GREEN}Do you wish to reformat the SD card prior to writing to it? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then note that down.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Set the reformatting flag.
+		SD_REFORMAT=1
+		echo -e "${CYAN}SD card will be reformatted prior to writing.\n${NO_COLOUR}"
+	fi
+
+	# Figure out what the SD card device is.  We ALWAYs ask the user this, since a wrong answer may damage the host PC.
+
+	# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+	while :
+	do
+		# We will need to prompt the user for the value to use.
+		echo -e -n "${GREEN}Enter the device filename for the SD card to write to (this will be something like 'sdc'): ${NO_COLOUR}"
+		read
+		echo -e "" 
+
+		# Check the user actually entered something.
+		if [ -z "$REPLY" ]; then
+			# We'll just prompt again.
+			continue
+
+		# Check if the user actually just wants to exit without uploading anything.
+		elif [ "$REPLY" == "exit" ]; then
+			# Exit the script.
+			return 1
+		fi
+
+		# Test if the entered value is actually a real device.
+		if [ ! -b "/dev/$REPLY" ]; then
+			# The specified device file does not exist, so we abort.
+			echo -e "${RED}Device file /dev/$REPLY does not exist.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+		
+		# Else we use whatever they entered.
+		SD_DEVICE_FILE="$REPLY"
+		break
+	done
+
+	# If we are writing a root file-system image or reformatting the card, then we will require root privileges.
+	if [ "${UPLOAD_IMAGE}" -o "${UPLOAD_FILESYSTEM}" -o "${SD_REFORMAT}" ]; then
+		# We will need root privileges.  Warn the user in advance.
+		echo -e "${YELLOW}The selected SD card operations require elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	fi
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT to SD card at '${SD_DEVICE_FILE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT to device /dev/${SD_DEVICE_FILE}.\n${NO_COLOUR}"
+
+		# Make sure the card is not mounted.
+		echo -e "${WHITE}Unmounting existing partitions...\n${NO_COLOUR}"
+		for F in $(mount | grep "/dev/${SD_DEVICE_FILE}" | cut -d " " -s -f 1); do
+			udisks --unmount $F
+		done
+
+#		# First, if we are going to write an image, we do that.
+#		if [ $UPLOAD_IMAGE ]; then
+#			# TODO - Upload the image directly using DD.
+#		fi
+
+		# See if we need to reformat the card.
+		if [ ${SD_REFORMAT} ]; then
+			# Reformat the SD card.
+
+			# Figure out how big the card is.
+			SD_BLOCKSIZE=512 # In bytes.
+			SD_SIZE=$(cat /sys/class/block/${SD_DEVICE_FILE}/size) # In blocks.
+			if [ "${SD_SIZE}" -lt "1" ]; then
+				# We were unable to detect the SD card size, so abort.
+				echo -e "${RED}Unable to detect SD card size during formatting.\n${NO_COLOUR}"
+				return 1
+			else
+				# We detected the card size successfully.
+				echo -e "${WHITE}SD card capacity detected as ${SD_SIZE} blocks of ${SD_BLOCKSIZE} bytes.\n${NO_COLOUR}"
+			fi
+			SD_HEADS=128
+			SD_SECTORS=32
+			SD_CYLINDERS=$(( ($SD_SIZE * $SD_BLOCKSIZE) / ($SD_HEADS * $SD_SECTORS * $SD_BLOCKSIZE) ))
+			SD_BOOT_PARTITION_CYLINDERS=24	# If this value is too small, then the device just won't boot!
+			echo -e "${WHITE}SD card will have $SD_CYLINDERS cylinders, each of $SD_HEADS heads of $SD_SECTORS sectors."
+
+			# Format the card with two empty partitions.
+			echo -e "${WHITE}Formatting the SD card...\n${NO_COLOUR}"
+			sudo dd if="/dev/zero" of="/dev/${SD_DEVICE_FILE}" bs=${SD_BLOCKSIZE} count=1 &>/dev/null
+			if [ $? -ne "0" ]; then
+				# Something went wrong during formatting.
+				echo -e "${RED}SD card formatting failed: could not erase card.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+			echo -e ""
+			sleep 2
+			sudo parted -s /dev/${SD_DEVICE_FILE} mklabel msdos
+			if [ $? -ne "0" ]; then
+				# Something went wrong during formatting.
+				echo -e "${RED}SD card formatting failed: could not create MBR.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+			{
+				echo ,${SD_BOOT_PARTITION_CYLINDERS},0x0C,*
+				echo ,,,-
+			} | sudo sfdisk -D -H $SD_HEADS -S $SD_SECTORS -C $SD_CYLINDERS /dev/${SD_DEVICE_FILE}
+			
+			# Create the boot filesystem on the boot partition.
+			echo -e "${WHITE}Creating filesystem on boot partition...\n${NO_COLOUR}"
+			if [ ! -b /dev/${SD_DEVICE_FILE}1 ]; then
+				# Something went wrong during formatting.
+				echo -e "${RED}Could not locate block device for boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1		
+			fi
+			sudo mkfs.vfat -F 32 -n "sd_boot" /dev/${SD_DEVICE_FILE}1 &>/dev/null
+			if [ $? -ne "0" ]; then
+				# Something went wrong creating the filesystem.
+				echo -e "${RED}Could not create the boot filesystem.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# Create the root filesystem on the root partition.
+			echo -e "${WHITE}Creating filesystem on root partition...\n${NO_COLOUR}"
+			if [ ! -b /dev/${SD_DEVICE_FILE}2 ]; then
+				# Something went wrong during formatting.
+				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
+				return 1		
+			fi
+			sudo mke2fs -j -L "sd_root" /dev/${SD_DEVICE_FILE}2 &>/dev/null
+			if [ $? -ne "0" ]; then
+				# Something went wrong creating the filesystem.
+				echo -e "${RED}Could not create the root filesystem.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# Make sure the modifications have been written to the card.
+			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
+			sync
+		fi
+
+		# See if we need to copy on the bootloader files.
+		if [ $UPLOAD_BOOTLOADER ]; then
+			# Mount the first partition.
+			echo -e "${WHITE}Mounting the boot partition...\n${NO_COLOUR}"
+			if [ -b /dev/${SD_DEVICE_FILE}1 ]; then
+				udisks --mount /dev/${SD_DEVICE_FILE}1 &>/dev/null
+				if [ $? -ne "0" ]; then
+					# Something went wrong mounting the partition.
+					echo -e "${RED}Could not mount the boot partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
+			else			
+				# Something isn't right.
+				echo -e "${RED}Could not locate block device for boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1		
+			fi
+
+			# Work out where the partition is now mounted.
+			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}1 | cut -d " " -s -f 3)
+			if [ -z ${SD_MOUNT} ]; then
+				# A match mount entry wasn't there, so something went wrong.
+				echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi 
+
+			# TODO - Check there is enough available space.			
+			
+			# Copy the files onto the sd_boot partition.
+			echo -e "${WHITE}Copying bootloader files onto the boot partition...\n${NO_COLOUR}"
+			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO ${SD_MOUNT}/MLO
+			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img ${SD_MOUNT}/u-boot.img
+			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage ${SD_MOUNT}/uImage
+			#cp $TCPATH/bin/MLO ${SD_MOUNT}/MLO
+			#cp $TCPATH/bin/u-boot.bin ${SD_MOUNT}/u-boot.bin
+			#cp $TCPATH/bin/boot.scr ${SD_MOUNT}/boot.scr
+			#cp $TCPATH/bin/uImage ${SD_MOUNT}/uImage
+			#cp $TCPATH/bin/uInited ${SD_MOUNT}/uInitrd
+
+			# Sync and unmount the partition.
+			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
+			sync
+			echo -e "${WHITE}Unmounting the boot partition...\n${NO_COLOUR}"
+			udisks --unmount /dev/${SD_DEVICE_FILE}1
+			if [ $? -ne "0" ]; then
+				# Something went wrong unmounting the partition.
+				echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+		fi
+
+		# See if we need to copy on the root filesystem.
+		if [ $UPLOAD_FILESYSTEM ]; then
+			# Mount the second partition.
+			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
+			if [ -b /dev/${SD_DEVICE_FILE}2 ]; then
+				udisks --mount /dev/${SD_DEVICE_FILE}2 &>/dev/null
+				if [ $? -ne "0" ]; then
+					# Something went wrong mounting the partition.
+					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
+			else			
+				# Something isn't right.
+				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
+				return 1		
+			fi
+
+			# Work out where the partition is now mounted.
+			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}2 | cut -d " " -s -f 3)
+			if [ -z ${SD_MOUNT} ]; then
+				# A match mount entry wasn't there, so something went wrong.
+				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi 
+
+			# TODO - Check there is enough available space.
+
+			# Copy the files onto the sd_root partition.
+			echo -e "${WHITE}Extracting packed root filesystem onto the root partition...\n${NO_COLOUR}"
+			sudo cp $TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2 ${SD_MOUNT}/filesystem.tar.bz2
+			sudo tar xf ${SD_MOUNT}/filesystem.tar.bz2 -C ${SD_MOUNT}/
+			sudo rm ${SD_MOUNT}/filesystem.tar.bz2
+
+			# Sync and unmount the partition.
+			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
+			sync
+			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
+			udisks --unmount /dev/${SD_DEVICE_FILE}2
+			if [ $? -ne "0" ]; then
+				# Something went wrong unmounting the partition.
+				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+		fi
+
+#		# See if we need to copy on the application files.
+#		if [ $UPLOAD_APPLICATION ]; then
+#			# Mount the second partition.
+#			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
+#			if [ -b /dev/${SD_DEVICE_FILE}2 ]; then
+#				udisks --mount /dev/${SD_DEVICE_FILE}2 &>/dev/null
+#				if [ $? -ne "0" ]; then
+#					# Something went wrong mounting the partition.
+#					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
+#					return 1
+#				fi
+#			else			
+#				# Something isn't right.
+#				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
+#				return 1		
+#			fi
+#
+#			# Work out where the partition is now mounted.
+#			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}2 | cut -d " " -s -f 3)
+#			if [ -z ${SD_MOUNT} ]; then
+#				# A match mount entry wasn't there, so something went wrong.
+#				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
+#				return 1
+#			fi 
+#
+#			# TODO - Check there is enough available space.
+#
+#			# TODO - Copy the files onto the sd_root partition.
+#
+#			# Sync and unmount the partition.
+#			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
+#			sync
+#			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
+#			udisks --unmount /dev/${SD_DEVICE_FILE}2
+#			if [ $? -ne "0" ]; then
+#				# Something went wrong unmounting the partition.
+#				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
+#				return 1
+#			fi
+#		fi
+
+		# If we make it here, uploading was successful.
+		echo -e "${CYAN}SD card operations completed successfully.\n${NO_COLOUR}"
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+	fi
+	SD_DEVICE_FILE=
+	SD_REFORMAT=
+	SD_MOUNT=
+
+	# All done.
+	if [ ${OPERATION_FAILED} ]; then
+		OPERATION_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+

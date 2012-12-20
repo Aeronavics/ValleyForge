@@ -77,7 +77,8 @@ Options:
 	-a --all			Upload all components.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Upload the bootloader for each component as well (assuming a compatible method is being used).
-	-l --loaderonly			Only upload the bootloader for each component (assuming a compatible method is being used).
+	-f --filesystem			Upload the filesystem for each component as well (assuming the component supports filesystems).
+	-l --loaderonly			Do not upload the application code for each component (but perhaps load other things if they are supported).
 	-n --name <Component Name>	Specify the name of a component to upload.
 	-p --postpack			Pack up the tools used afterwards (takes longer next time).
 	   --noload			Do not actually upload anything; mostly for debugging.
@@ -103,13 +104,14 @@ RETAIN=
 ALL=
 UPLOAD_APPLICATION=1
 UPLOAD_BOOTLOADER=
+UPLOAD_FILESYSTEM=
 POSTPACK=
 NO_UPLOAD=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harlpcbn:"
-LONGOPTS="help,all,retain,bootloader,loaderonly,postpack,clean,noload,name:"
+SHORTOPTS="harlpcbfn:"
+LONGOPTS="help,all,retain,bootloader,filesystem,loaderonly,postpack,clean,noload,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -133,13 +135,16 @@ while true; do
 			RETAIN=1
 			;;
 		-b|--bootloader)
-			# Select 'uploading both applications and bootloaders'.
+			# Select 'uploading bootloaders'.
 			UPLOAD_BOOTLOADER=1
 			;;
+		-f|--filesystem)
+			# Select 'uploading filesystems'.
+			UPLOAD_FILESYSTEM=1
+			;;
 		-l|--loaderonly)
-			# Select 'uploading bootloaders only'.
+			# Select 'not uploading application'.
 			UPLOAD_APPLICATION=
-			UPLOAD_BOOTLOADER=1
 			;;
 		-p|--postpack)
 			# Select 'pack up tools, post upload'.
