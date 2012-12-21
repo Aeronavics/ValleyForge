@@ -72,6 +72,7 @@ static CANModule module;
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 CANMessage makeCommand(uint32_t id, uint8_t target, size_t length);
+bool checkReply(CANMessage& msg);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
@@ -284,6 +285,11 @@ bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
 	}
+	if (!checkReply(writeMemory))
+	{
+		std::cerr << "Reply indicates failure, WritePage" << std::endl;
+		return false;
+	}
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -317,10 +323,14 @@ bool CANModule::writePage(MemoryMap& source, size_t size, size_t address)
 			std::cerr << "Failed to send data packet: " << currentMessage << std::endl;
 			return false;
 		}
-		//usleep(1*1000);
 		if (!iface->receiveMessage(writeMemory, TIMEOUT*1000))
 		{
-			std::cerr << "Failed to receive message acknowledge: " << currentMessage << std::endl;
+			std::cerr << "Failed to receive message acknowledge, WritePage: " << currentMessage << std::endl;
+			return false;
+		}
+		if (!checkReply(writeMemory))
+		{
+			std::cerr << "Acknowledge indicates failure:" << currentMessage << std::endl;
 			return false;
 		}
 		remaining -= packetSize;
@@ -365,6 +375,11 @@ bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
 	}
+	if (!checkReply(readMemory))
+	{
+		std::cerr << "Reply indicates failure, VerifyPage" << std::endl;
+		return false;
+	}
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -397,7 +412,7 @@ bool CANModule::verifyPage(MemoryMap& expected, size_t size, size_t address)
 		readMemory = makeCommand(READ_DATA, target, 1);
 		//usleep(1*1000);
 		if (!iface->sendMessage(readMemory, TIMEOUT*1000))
-		{
+		{bool checkReply(CANMessage& msg);
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;
 			return false;
 		}
@@ -440,6 +455,11 @@ bool CANModule::readPage(MemoryMap& destination, size_t size, size_t address)
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
 	}
+	if (!checkReply(readMemory))
+	{
+		std::cerr << "Reply indicates failure, ReaDPage" << std::endl;
+		return false;
+	}
 	if (!iface->clearFilter())
 	{
 		return false;
@@ -463,7 +483,7 @@ bool CANModule::readPage(MemoryMap& destination, size_t size, size_t address)
 			destination.getAllocatedMap()[address+(i*8)+j] = MemoryMap::ALLOCATED;
 		}
 		readMemory = makeCommand(READ_DATA, target, 1);
-		//usleep(1*1000);
+		//usleep(1*1000);bool checkReply(CANMessage& msg);
 		if (!iface->sendMessage(readMemory, TIMEOUT*1000))
 		{
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;
@@ -481,7 +501,40 @@ bool CANModule::resetDevice(bool runApplication)
 	{
 		return false;
 	}
+	if (!iface->clearFilter())
+	{
+		return false;
+	}
+	if (!iface->setFilter(REQUEST_RESET, CANNetworkInterface::INCLUDE))
+	{
+		std::cerr << "Failed to set filter" << std::endl;
+		return false;
+	}
 	if (!iface->sendMessage(resetMessage, TIMEOUT*1000))
+	{
+		return false;
+	}
+	if (!iface->receiveMessage(resetMessage, TIMEOUT*1000))
+	{
+		std::cerr << "Warning did not receive reset reply." << std::endl;
+	}
+	else
+	{
+		if (resetMessage.getId() != REQUEST_RESET)
+		{
+			std::cerr << "Did not receive reset confirmation instead received something else." << std::endl;
+			return false;
+		}
+		else
+		{
+			if (!checkReply(resetMessage))
+			{
+				std::cerr << "Reset reply indicates failure." << std::endl;
+				return false;
+			}
+		}
+	}
+	if (!iface->clearFilter())
 	{
 		return false;
 	}
@@ -508,4 +561,13 @@ CANMessage makeCommand(uint32_t id, uint8_t target, size_t length)
 	msg.setLength(length);
 	msg.getContent()[0]=target;
 	return msg;
+}
+
+bool checkReply(CANMessage& msg)
+{
+	if (msg.getLength() < 1)
+	{
+		return false;
+	}
+	return msg.getData()[0] != 0;
 }
