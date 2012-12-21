@@ -179,7 +179,7 @@ makearm_omap4_angstrom_filesystem()
 ###											###
 ###########################################################################################
 
-makearm_omap4_angstrom_bootloader()
+makearm_omap4_bootloader()
 {
 	# The U-Boot bootloader should have been already built (magically), the files just need to be copied across.
 
