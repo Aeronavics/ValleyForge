@@ -45,6 +45,13 @@ echo -e "${CYAN}Imported AVR32 make-functions.\n${NO_COLOUR}"
 
 makeavr32()
 {
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Set up the AVR32 compiler.
 	unpack_avr32c
 

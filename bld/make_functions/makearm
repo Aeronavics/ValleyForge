@@ -45,6 +45,13 @@ echo -e "${CYAN}Imported ARM make-functions.\n${NO_COLOUR}"
 
 makearm()
 {
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Set up the ARM compiler.
 	unpack_armc
 
@@ -129,6 +136,54 @@ makearm()
 
 	# All done.
 	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$OUTPUT_NAME.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makearm_omap4_angstrom_filesystem				###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Builds the OMAP4 root filesystem for the current component.	###
+###											###
+###########################################################################################
+
+makearm_omap4_angstrom_filesystem()
+{
+	# The filesystem is already built (magically), the files just need to be copied across.
+
+	# Copy the relevant files across to the output directory.
+	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
+	cp "${TCPATH}/res/arm/omap4/angstrom/images/filesystem.tar.bz2" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.bz2"
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makearm_omap4_angstrom_bootloader				###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Builds the OMAP4 (U-Boot) bootloader for the current component.	###
+###											###
+###########################################################################################
+
+makearm_omap4_angstrom_bootloader()
+{
+	# The U-Boot bootloader is already built (magically), the files just need to be copied across.
+
+	# Copy the relevant files across to the output directory.
+	echo -e "${CYAN}Copying bootloader files for $COMPONENT...\n${NO_COLOUR}"
+	cp "${TCPATH}/res/arm/omap4/angstrom/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_MLO"
+	cp "${TCPATH}/res/arm/omap4/angstrom/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_u-boot.img"
+	cp "${TCPATH}/res/arm/omap4/angstrom/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uImage"
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
 	return 0
 }
 

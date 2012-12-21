@@ -45,6 +45,13 @@ echo -e "${CYAN}Imported AVR make-functions.\n${NO_COLOUR}"
 
 makeavr() 
 {
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Set up the AVR compiler.
 	unpack_avrc
 
@@ -137,15 +144,15 @@ makeavr()
 
 makeavr_bootloader() 
 {
-	# Set up the AVR compiler.
-	unpack_avrc
-
 	# Make sure there aren't any old files in the spot we are about to put new files.
 	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
 	# Copy all the source files into the tmp directory, where the actual making will occur.
 	cp $SOURCEPATH/*.c $SOURCEPATH/*.cpp $SOURCEPATH/*.h $SOURCEPATH/*.hpp $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+
+	# Set up the AVR compiler.
+	unpack_avrc
 
 	# Preprocess the copied header files.
 	shopt -s nullglob
