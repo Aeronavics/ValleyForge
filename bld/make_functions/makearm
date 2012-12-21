@@ -153,9 +153,16 @@ makearm_omap4_angstrom_filesystem()
 {
 	# The filesystem is already built (magically), the files just need to be copied across.
 
+	# Select the Angstrom image.
+	mkdir -p "${TCPATH}/res/arm/omap4/images"
+	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/filesystem.tar.bz2" "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2"
+	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/MLO" "${TCPATH}/res/arm/omap4/images/MLO"
+	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/u-boot.img" "${TCPATH}/res/arm/omap4/images/u-boot.img"
+	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/uImage" "${TCPATH}/res/arm/omap4/images/uImage"
+
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/angstrom/images/filesystem.tar.bz2" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.bz2"
+	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.bz2"
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
@@ -174,13 +181,15 @@ makearm_omap4_angstrom_filesystem()
 
 makearm_omap4_angstrom_bootloader()
 {
-	# The U-Boot bootloader is already built (magically), the files just need to be copied across.
+	# The U-Boot bootloader should have been already built (magically), the files just need to be copied across.
+
+	# TODO - Check if a filesystem has actually been made, since this is necessary.
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying bootloader files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/angstrom/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_MLO"
-	cp "${TCPATH}/res/arm/omap4/angstrom/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_u-boot.img"
-	cp "${TCPATH}/res/arm/omap4/angstrom/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uImage"
+	cp "${TCPATH}/res/arm/omap4/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_MLO"
+	cp "${TCPATH}/res/arm/omap4/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_u-boot.img"
+	cp "${TCPATH}/res/arm/omap4/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uImage"
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"

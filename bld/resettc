@@ -79,6 +79,9 @@ rm -Rf ${TCPATH}/tmp
 # Remove the bin folder.
 rm -Rf ${TCPATH}/bin
 
+# Remove the res/arm/omap4/images folder.
+rm -Rf ${TCPATH}/res/arm/omap4/images
+
 # Remove the src folder only if it empty.
 rmdir ${TCPATH}/src 2> /dev/null
 
