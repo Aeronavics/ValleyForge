@@ -71,8 +71,12 @@ upload_sdcard()
 
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
-		# Check that the expected image is available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+		# Check that the expected archive is available in the toolchain output folder.
+		if [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2"
+		elif [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz" ]; then
+			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz"
+		else
 			# The expected binary file was not present.		
 			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
@@ -275,11 +279,8 @@ upload_sdcard()
 			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO ${SD_MOUNT}/MLO
 			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img ${SD_MOUNT}/u-boot.img
 			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage ${SD_MOUNT}/uImage
-			#cp $TCPATH/bin/MLO ${SD_MOUNT}/MLO
-			#cp $TCPATH/bin/u-boot.bin ${SD_MOUNT}/u-boot.bin
-			#cp $TCPATH/bin/boot.scr ${SD_MOUNT}/boot.scr
-			#cp $TCPATH/bin/uImage ${SD_MOUNT}/uImage
-			#cp $TCPATH/bin/uInited ${SD_MOUNT}/uInitrd
+			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_boot.scr ${SD_MOUNT}/boot.scr 2>/dev/null
+			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_uInitrd ${SD_MOUNT}/uInitrd 2>/dev/null
 
 			# Sync and unmount the partition.
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
@@ -316,15 +317,15 @@ upload_sdcard()
 				# A match mount entry wasn't there, so something went wrong.
 				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
 				return 1
-			fi 
+			fi
 
 			# TODO - Check there is enough available space.
 
 			# Copy the files onto the sd_root partition.
 			echo -e "${WHITE}Extracting packed root filesystem onto the root partition...\n${NO_COLOUR}"
-			sudo cp $TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2 ${SD_MOUNT}/filesystem.tar.bz2
-			sudo tar xf ${SD_MOUNT}/filesystem.tar.bz2 -C ${SD_MOUNT}/
-			sudo rm ${SD_MOUNT}/filesystem.tar.bz2
+			sudo cp $SD_PACKED_FILESYSTEM ${SD_MOUNT}/filesystem.tar
+			sudo tar xf ${SD_MOUNT}/filesystem.tar -C ${SD_MOUNT}/
+			sudo rm ${SD_MOUNT}/filesystem.tar
 
 			# Sync and unmount the partition.
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
@@ -394,6 +395,7 @@ upload_sdcard()
 	SD_DEVICE_FILE=
 	SD_REFORMAT=
 	SD_MOUNT=
+	SD_PACKED_FILESYSTEM=
 
 	# All done.
 	if [ ${OPERATION_FAILED} ]; then

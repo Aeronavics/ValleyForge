@@ -652,7 +652,7 @@ do
 	fi
 
 	# Check if we should also make the corresponding filesystem for this component.
-	if [ $BUILD_FILESYSTEM -a -n "$FSFUNCTION" ]; then
+	if [ $BUILD_FILESYSTEM -a $FSFUNCTION ]; then
 		# We need to make the corresponding filesystem as well.
 
 		# Now, we build the filesystem for the component.

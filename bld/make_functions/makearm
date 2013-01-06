@@ -145,7 +145,7 @@ makearm()
 ###											###
 ### Inputs/Outputs:	None								###
 ###											###
-### Purpose:		Builds the OMAP4 root filesystem for the current component.	###
+### Purpose:		Builds an OMAP4 root filesystem for the Angstrom distribution.	###
 ###											###
 ###########################################################################################
 
@@ -153,12 +153,13 @@ makearm_omap4_angstrom_filesystem()
 {
 	# The filesystem is already built (magically), the files just need to be copied across.
 
-	# Select the Angstrom image.
+	# Select the Angstrom image so that when the toolchain tries to build the bootloader, it uses the right files.
+	rm -Rf "${TCPATH}/res/arm/omap4/images"
 	mkdir -p "${TCPATH}/res/arm/omap4/images"
-	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/filesystem.tar.bz2" "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2"
-	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/MLO" "${TCPATH}/res/arm/omap4/images/MLO"
-	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/u-boot.img" "${TCPATH}/res/arm/omap4/images/u-boot.img"
-	cp -s "${TCPATH}/res/arm/omap4/angstrom/images/uImage" "${TCPATH}/res/arm/omap4/images/uImage"
+	cp -sf "${TCPATH}/res/arm/omap4/angstrom/images/filesystem.tar.bz2" "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2"
+	cp -sf "${TCPATH}/res/arm/omap4/angstrom/images/MLO" "${TCPATH}/res/arm/omap4/images/MLO"
+	cp -sf "${TCPATH}/res/arm/omap4/angstrom/images/u-boot.img" "${TCPATH}/res/arm/omap4/images/u-boot.img"
+	cp -sf "${TCPATH}/res/arm/omap4/angstrom/images/uImage" "${TCPATH}/res/arm/omap4/images/uImage"
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
@@ -171,7 +172,67 @@ makearm_omap4_angstrom_filesystem()
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		makearm_omap4_angstrom_bootloader				###
+### Name:		makearm_omap4_ubuntu_filesystem					###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Builds an OMAP4 root filesystem for the Ubuntu distribution.	###
+###											###
+###########################################################################################
+
+makearm_omap4_ubuntu_filesystem()
+{
+	# Construct a working Ubuntu image.
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT filesystem...\n${NO_COLOUR}"
+	mkdir -p $TCPATH/res/arm/omap4/ubuntu/images
+	cp $TCPATH/res/arm/omap4/ubuntu/Makefile $TCPATH/res/arm/omap4/ubuntu/images/Makefile
+
+	# Update the working makefile with the appropriate values for this component.	
+	sed -i "s^\(IMAGE_PATH *= *\)BUILD_INSERTS_IMAGE_PATH_HERE^\1$TCPATH/res/arm/omap4/ubuntu/images^" $TCPATH/res/arm/omap4/ubuntu/images/Makefile	# NOTE - Using '^' as delimiters.
+
+	# Actually make the file system.
+	make -C $TCPATH/res/arm/omap4/ubuntu/images all
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Make error.  Failed to build component $COMPONENT filesystem.\n${NO_COLOUR}"
+		return 1
+	else
+		# We produced the image ok.
+		echo -e  "\n${CYAN}Obtained up to date filesystem image files.\n${NO_COLOUR}"
+	fi
+
+	# Remove the working makefile again.
+	rm $TCPATH/res/arm/omap4/ubuntu/images/Makefile
+
+	# Select the Ubuntu image so that when the toolchain tries to build the bootloader, it uses the right files.
+	rm -Rf "${TCPATH}/res/arm/omap4/images"
+	mkdir -p "${TCPATH}/res/arm/omap4/images"
+	cp -sf "${TCPATH}/res/arm/omap4/ubuntu/images/filesystem.tar.gz" "${TCPATH}/res/arm/omap4/images/filesystem.tar.gz"
+	cp -sf "${TCPATH}/res/arm/omap4/ubuntu/images/MLO" "${TCPATH}/res/arm/omap4/images/MLO"
+	cp -sf "${TCPATH}/res/arm/omap4/ubuntu/images/u-boot.img" "${TCPATH}/res/arm/omap4/images/u-boot.img"
+	cp -sf "${TCPATH}/res/arm/omap4/ubuntu/images/uImage" "${TCPATH}/res/arm/omap4/images/uImage"
+	cp -sf "${TCPATH}/res/arm/omap4/ubuntu/images/boot.scr" "${TCPATH}/res/arm/omap4/images/boot.scr"
+
+	# Copy the relevant files across to the output directory.
+	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
+	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.gz" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.gz"
+
+	# TODO - We probaby want to make some final changes to the Ubuntu output file to activate a tty etc.
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makearm_omap4_bootloader					###
 ###											###
 ### Inputs/Outputs:	None								###
 ###											###
@@ -190,6 +251,8 @@ makearm_omap4_bootloader()
 	cp "${TCPATH}/res/arm/omap4/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_MLO"
 	cp "${TCPATH}/res/arm/omap4/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_u-boot.img"
 	cp "${TCPATH}/res/arm/omap4/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uImage"
+	cp "${TCPATH}/res/arm/omap4/images/boot.scr" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_boot.scr" 2>/dev/null
+	cp "${TCPATH}/res/arm/omap4/images/uInitrd" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uInitrd" 2>/dev/null
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
