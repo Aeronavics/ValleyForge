@@ -5,4 +5,5 @@ lib/*
 var/config.cfg
 res/arm/omap4/images/*
 res/arm/omap4/angstrom/images/*
+res/arm/omap4/ubuntu/images/*
 */*~
