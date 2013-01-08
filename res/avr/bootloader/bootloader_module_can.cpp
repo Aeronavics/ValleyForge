@@ -84,7 +84,7 @@ void CAN_reset(void);
  *
  *	RETURNS:	Nothing.
  */
-void confirm_reception(void);
+void confirm_reception(bool confirmation_successful);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 

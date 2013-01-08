@@ -45,7 +45,7 @@
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
 // Time in milliseconds between calls of event_periodic() for the bootloader module.
-const uint16_t MODULE_EVENT_PERIOD = 10;
+const uint16_t MODULE_EVENT_PERIOD = 1;
 
 struct firmware_page
 {
