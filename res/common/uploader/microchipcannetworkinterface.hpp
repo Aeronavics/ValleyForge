@@ -97,6 +97,7 @@ protected:
 	bool drain;
 	bool transmitted;
 	bool overflow;
+	bool inited;
 	int index;
 	
 };

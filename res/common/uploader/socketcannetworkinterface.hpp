@@ -89,7 +89,7 @@ protected:
 	
 	int CANSocket;
 	bool quit;
-	
+	bool inited;
 };
 
  

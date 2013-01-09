@@ -71,6 +71,7 @@ CANMessage parse_frame(can_frame frame);
 
 SocketCANNetworkInterface::SocketCANNetworkInterface() :
 	quit(false),
+	inited(false),
 	recvQueueLock(PTHREAD_MUTEX_INITIALIZER)
 {
 }
@@ -78,7 +79,10 @@ SocketCANNetworkInterface::SocketCANNetworkInterface() :
 SocketCANNetworkInterface::~SocketCANNetworkInterface()
 {
 	SET_ATOMIC(quit);
-	int rc = pthread_join(SocketThread, NULL);
+	if (inited)
+	{
+		int rc = pthread_join(SocketThread, NULL);
+	}
 	if (CANSocket)
 	{
 		close(CANSocket);
@@ -186,6 +190,8 @@ bool SocketCANNetworkInterface::init(Params params)
 	//~ std::cout << "Sleeping" << std::endl;
 	//~ usleep(500000);
 	//~ std::cout << "Waking" << std::endl;
+	
+	inited = true;
 	
 	return true;
 }
