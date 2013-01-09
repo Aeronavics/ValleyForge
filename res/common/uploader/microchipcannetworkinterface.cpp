@@ -168,6 +168,7 @@ MicrochipCANNetworkInterface::MicrochipCANNetworkInterface() :
 	drain(false),
 	transmitted(false),
 	overflow(false),
+	inited(false),
 	recvQueueLock(PTHREAD_MUTEX_INITIALIZER)
 {
 	ctxHolder = new libUSBContextHolder;
@@ -176,7 +177,10 @@ MicrochipCANNetworkInterface::MicrochipCANNetworkInterface() :
 MicrochipCANNetworkInterface::~MicrochipCANNetworkInterface()
 {
 	SET_ATOMIC(quit);
-	int rc = pthread_join(USBThread, NULL);
+	if (inited)
+	{
+		int rc = pthread_join(USBThread, NULL);
+	}
 	if (CANDevice)
 	{
 		libusb_close(CANDevice);
@@ -272,9 +276,11 @@ bool MicrochipCANNetworkInterface::init(Params params)
 	usleep(500000);
 	RESET_ATOMIC(drain);
 	
-	std::cout << "Sleeping" << std::endl;
+	//std::cout << "Sleeping" << std::endl;
 	usleep(500000);
-	std::cout << "Waking" << std::endl;
+	//std::cout << "Waking" << std::endl;
+	
+	inited = true;
 	
 	return true;
 }
@@ -288,9 +294,9 @@ bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t t
 	char buf[9];
 	snprintf(buf, 9, "%X", msg.getId());
 	buf[8] = '\0';
-	std::cerr << "ID: " << buf << ", ";
+	//std::cerr << "ID: " << buf << ", ";
 	unparseId(msg.getId(), &(sendMessage.getContent()[1]), false);
-	std::cerr << "Length: " << msg.getLength() << std::endl;
+	//std::cerr << "Length: " << msg.getLength() << std::endl;
 	sendMessage.getContent()[DLC] = msg.getLength();
 	for (size_t i = 0; i < msg.getLength(); i++)
 	{
@@ -476,7 +482,7 @@ void MicrochipCANNetworkInterface::processMessage(USBMessage& m)
 		CANMessage msg = parseReceivedCANMessage(m);
 		if (filter(msg.getId()))
 		{
-			std::cout << "Received" << std::endl;
+			//std::cout << "Received" << std::endl;
 			recvQueue.push_back(msg);
 		}
 		pthread_mutex_unlock( &recvQueueLock);
@@ -489,7 +495,7 @@ void MicrochipCANNetworkInterface::processMessage(USBMessage& m)
 	{
 		if (m.getContent()[3])
 		{
-			std::cout << "Overflow" << std::endl;
+			//std::cout << "Overflow" << std::endl;
 			SET_ATOMIC(overflow);
 		}
 	}

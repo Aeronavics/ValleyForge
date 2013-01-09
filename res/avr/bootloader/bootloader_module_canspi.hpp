@@ -55,9 +55,11 @@ const uint8_t ALERT_UPLOADER_PERIOD = 10;//x10 ms to send each alert_host messag
 
 // Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
 #if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
-	#define BOOTLOADER_START_ADDRESS 	0x1E000 // BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+	#define BOOTLOADER_START_ADDRESS	0x1E000 // TODO - BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+#elif defined (__AVR_ATmega2560__)
+	#define BOOTLOADER_START_ADDRESS	0x3E000
 #else
-	#define BOOTLOADER_START_ADDRESS 0xF000
+	#define BOOTLOADER_START_ADDRESS 	0xF000 // ATMEGA64M1
 #endif
 
 //CAN BIT TIMING
@@ -267,6 +269,8 @@ const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
 #define MESSAGE_LENGTH 8 // CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
 
+
+
 class bootloader_module_canspi: public bootloader_module
 {
 	public:
@@ -296,6 +300,8 @@ class bootloader_module_canspi: public bootloader_module
 		bool ready_to_send_page;
 		bool message_confirmation_success; 
 		bool write_address_stored;
+		
+		volatile uint8_t pin_K0_state;// State of the INT pin from mcp2515
 
 		// Class methods.
 	

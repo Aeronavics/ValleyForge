@@ -163,6 +163,58 @@ unpack_nativec()
 
 ######################################## FUNCTION #########################################
 ###											###
+### NAME:		unpack_avr32c							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the AVR32 compiler (and associated toolchain) is	###
+###			available for use, and if not, sets it up ready to go.		###
+###											###
+###########################################################################################
+
+unpack_uploader()
+{
+	# Check if the uploader has been compiled already.
+	if [ ! -f $TCPATH/res/common/uploader/bin/uploader ]; then
+		# We need to compile the uploader before we continue.		
+		echo -e "${CYAN}Compiling the Uploader tool...\n${NO_COLOUR}"
+		mkdir $TCPATH/tmp/uploader
+		cp $TCPATH/res/common/uploader/*.cpp $TCPATH/tmp/uploader
+		cp $TCPATH/res/common/uploader/*.hpp $TCPATH/tmp/uploader
+		cp $TCPATH/res/common/uploader/*.h $TCPATH/tmp/uploader
+		cp $TCPATH/res/common/uploader/Makefile $TCPATH/tmp/uploader
+		make -C $TCPATH/tmp/uploader all
+		
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+		# Check the return value from make, to determine if an error occurred during compilation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Compilation error.  Failed to build uploader.\n${NO_COLOUR}"
+			return 1
+		fi
+		
+		mkdir $TCPATH/res/common/uploader/bin
+		cp $TCPATH/tmp/uploader/uploader $TCPATH/res/common/uploader/bin
+		
+		rm -rf $TCPATH/tmp/uploader
+		
+	else
+		# The compiler is already set to go.
+		echo -e "${CYAN}Uploader available.\n${NO_COLOUR}"
+    	fi
+
+	if [ ! -f $TCPATH/res/common/uploader/bin/uploader ]; then
+		echo -e "${RED}Uploader binary does not exist after compiling.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
 ### NAME:		pack_allc							###
 ###											###
 ### Inputs/Outputs:	None.								###
@@ -180,6 +232,7 @@ pack_allc()
 	pack_armc
 	pack_arduinoc
 	pack_nativec
+	pack_uploader
 }
 
 ######################################## FUNCTION #########################################
@@ -274,6 +327,31 @@ pack_arduinoc()
 pack_nativec()
 {
 	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_uploader							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the uploader was previously unpacked, and if it	###
+###			was, then packs it back up again.				###
+###											###
+###########################################################################################
+
+pack_uploader()
+{
+	# Check if the uploader has been compiled already.
+	if [ -d $TCPATH/res/common/uploader/bin ]; then
+		# We just delete the binary.		
+		echo -e "${CYAN}Cleaning up uploader...\n${NO_COLOUR}"
+		rm -Rf $TCPATH/res/common/uploader/bin
+    	fi
+		# Else, the uploader is already packed.
 
 	# All done.
 	return	

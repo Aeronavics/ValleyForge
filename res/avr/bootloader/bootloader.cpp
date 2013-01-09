@@ -97,13 +97,15 @@ firmware_page buffer;
 
 // Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
 #if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
-	#define BOOTLOADER_START_ADDRESS 	0x1E000 // BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+	#define BOOTLOADER_START_ADDRESS	0x1E000 // TODO - BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+#elif defined (__AVR_ATmega2560__)
+	#define BOOTLOADER_START_ADDRESS	0x3E000
 #else
-	#define BOOTLOADER_START_ADDRESS 0xF000
+	#define BOOTLOADER_START_ADDRESS 	0xF000 // ATMEGA64M1
 #endif
 
 // Define the function used to read a flash byte. A different function call is required for different MCUs.
-#if defined (__AVR_AT90CAN128__)
+#if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
 	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
 #else
 	#define READ_FLASH_BYTE(address) pgm_read_byte(address)

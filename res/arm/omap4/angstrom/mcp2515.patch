@@ -1,0 +1,82 @@
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index adb5dff..f313b4a 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -31,6 +31,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/if_ether.h>
+ #include <linux/ti_wilink_st.h>
++#include <linux/spi/spi.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/omap4-common.h>
+@@ -61,6 +62,8 @@
+ #define HDMI_GPIO_LS_OE 41 /* Level shifter for HDMI */
+ #define TPS62361_GPIO   7
+ 
++#define GPIO_MCP2515_IRQ   140
++
+ static int
+ panda_kim_suspend(struct platform_device *pdev, pm_message_t msg)
+ {
+@@ -417,6 +420,35 @@ static int __init omap4_panda_i2c_init(void)
+ 	return 0;
+ }
+ 
++/*
++ * SPI Info
++ * 
++ */
++ 
++static const struct spi_board_info panda_spi[] __initconst = {
++ {
++	.modalias = "mcp2515",
++	.bus_num = 1,
++	.chip_select = 0,
++	.max_speed_hz = 4000000,
++	.irq = OMAP_GPIO_IRQ(GPIO_MCP2515_IRQ),
++ },
++};
++
++static void __init omap4_panda_spi_init(void) {
++      /* muxing pins might be only required if
++       * you've connecting 
++       * device to CS other than CS0
++       ***  This worked for me, add:
++         omap_mux_init_signal("mcspi1_cs1", OMAP_PIN_OUTPUT); // sub "mcspi1_cs2 for CS2 etc.
++         to activate CS1 on header pin #10.
++         Make sure your call to panda_spi_devices_init() is after omap_serial_init()
++         in omap4_panda_init function.
++       *** using CS[1-3] will break UART1 ***
++       */
++      spi_register_board_info(panda_spi, ARRAY_SIZE(panda_spi));
++ }
++
+ #ifdef CONFIG_OMAP_MUX
+ static struct omap_board_mux board_mux[] __initdata = {
+ 	/* WLAN IRQ - GPIO 53 */
+@@ -802,6 +834,7 @@ static void __init omap4_panda_init(void)
+ 	register_netdevice_notifier(&omap_panda_netdev_notifier);
+ 
+ 	omap4_panda_i2c_init();
++	
+ 
+         pr_err("Calling omap_enable_smartreflex_on_init from board file\n");    
+         omap_enable_smartreflex_on_init();
+@@ -810,10 +843,16 @@ static void __init omap4_panda_init(void)
+ 	panda_leds_init();
+ 	platform_device_register(&omap_vwlan_device);
+ 	board_serial_init();
++	
+ 	omap4_twl6030_hsmmc_init(mmc);
+ 	omap4_ehci_init();
+ 	usb_musb_init(&musb_board_data);
+ 	omap4_panda_display_init();
++	
++	omap_mux_init_gpio(GPIO_MCP2515_IRQ, OMAP_PIN_INPUT |                      
++                                OMAP_PIN_OFF_WAKEUPENABLE);
++	
++	omap4_panda_spi_init();
+ 
+ 	if (cpu_is_omap446x()) {
+ 		/* Vsel0 = gpio, vsel1 = gnd */
