@@ -136,14 +136,14 @@ echo -e "${GREEN}Please select whether the pin is using standard or inverted log
 	done
 
 # Prompt the user to enter the clock speed the MCU will be running at.
-echo -e -n "${GREEN}Please enter the clock speed, in MHz: ${NO_COLOUR}"
+echo -e -n "${GREEN}Please enter the clock speed, as an integer in MHz: ${NO_COLOUR}"
 # We loop continuously until the user enters a valid choice.
 while :
 do
 	# Read a line of input from the user.
 	read
 	# Check if the user input a valid response (a number).
-	if ! [[ "$REPLY" =~ ^[0-9]+([.][0-9]+)?$ ]] ; then
+	if ! [[ "$REPLY" =~ ^[0-9]+?$ ]] ; then
 		# The user is apparently a moron.
 		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
 	else
