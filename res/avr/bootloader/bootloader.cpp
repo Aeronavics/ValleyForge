@@ -66,7 +66,7 @@ enum input_state {LO,HI};
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
 #define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
-#define BOOT_TIMEOUT		5000	// Timeout in milliseconds.
+#define BOOT_TIMEOUT		10000	// Timeout in milliseconds.
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -238,6 +238,8 @@ int main(void)
 	TCCR0B = 0b00000101;
 #endif
 
+
+	
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (true)
 	{
