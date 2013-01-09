@@ -1,0 +1,402 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_can											###
+###															###
+### Author:		Paul Davey											###
+###															###
+### Date Created:	9-01-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions for uploading code to AVR type targets via CAN bus using the uploader tool.	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported CAN upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_can							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Uploads AVR HEX files to a target connected to the host PC by	###
+###			a compatible CAN network adapter, using the uploader tool.	###
+###											###
+###########################################################################################
+
+upload_can() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+	
+	upload_can_finddevice_socketcan()
+	{
+		# We look to see if there is anything that might be a socketCAN interface.
+		echo -e "${CYAN}Searching for any available SocketCAN interfaces...${NO_COLOUR}"
+		
+		#TODO: Actually look for can interfaces.
+		
+		# Get a list of all the device files which look like they could be ISP500's.
+		CAN_INTERFACES=`ip link show | grep "can[[:digit:]]\+" | sed "s/^.*\(can[[:digit:]]\+\).*$/\1/" `
+
+		# Check to see if we didn't find any suitable devices.
+		if [ -z ${CAN_INTERFACES} ]; then
+			# We didn't find any, so abort.
+			echo -e "${YELLOW}No suitable socketCAN interfaces found.\n${NO_COLOUR}"
+			CAN_TYPE=
+			CAN_IFACE=
+
+		# Check to see if we found exactly one suitable device.
+		elif [ `echo ${CAN_INTERFACES} | wc -l` == 1 ]; then
+			# This might be an AVR ISP500, so we use that.
+			echo -e "${CYAN}Found a socket CAN interface.\n${NO_COLOUR}"
+			CAN_TYPE="socket"
+			CAN_IFACE="${CAN_INTERFACES}"
+
+		# Else, we found multiple possible files.
+		else
+			# Since we found multiple files, we'll use the last one plugged in.
+			CAN_INTERFACES=`dmesg | grep "cdc_acm" | grep -o "ttyACM[0123456789]*" | tail -n 1`
+			echo -e "${CYAN}Found multiple socket CAN interfaces.  Using can0.\n${NO_COLOUR}"
+			CAN_TYPE="socket"
+			CAN_IFACE="can0"
+		fi
+
+		# All done.
+		return			
+	}
+
+	upload_can_finddevice_microchipcan()
+	{
+		# We look to see if there is anything that might be an STK600 available.
+		echo -e "${CYAN}Searching for any available microchip CAN adapters...${NO_COLOUR}"
+
+		# Check to see if there is an STK600 listed.
+		if [[ -z `lsusb | grep -i "ID 04d8:0a30"` ]]; then
+			# We didn't find an STK600 listed, so abort.
+			echo -e "${YELLOW}No suitable microchip CAN device found.\n${NO_COLOUR}"
+			CAN_TYPE=
+			CAN_IFACE=
+		else
+			# There is an STK600 connected, so we use that.
+			echo -e "${CYAN}Found a microchip CAN adapter connected via USB.\n${NO_COLOUR}"
+			CAN_TYPE="microchip"
+			CAN_IFACE=
+		fi
+
+		# All done.
+		return			
+	}
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if we are supposed to be loading the application code.
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}.hex" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find application binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# This method of uplaoding cannot upload bootloaders so give an error.
+		echo -e "${RED}The CAN uploader cannot uploade bootloaders.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the AVR compiler, since we will need its binutils as well as AVRDUDE which we assume is part of the package.
+	unpack_avrc
+	
+	unpack_uploader
+
+	# Set the file to flash to be the application binary.
+	CAN_BINARY="$TCPATH/bin/${COMPONENT_NAME}.hex"
+
+	# Check if the signature setting has been chosen yet.
+	if [ -z ${SIGNATURE} ]; then
+		echo -e "${RED}Signature not defined for this AVR part.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# Check if the page size setting has been chosen yet.
+	if [ -z ${FLASH_PAGE_SIZE} ]; then
+		echo -e "${RED}Flash page size not defined for this AVR part.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# Check if the flash memory size setting has been chosen yet.
+	if [ -z ${APPLICATION_FLASH_SIZE} ]; then
+		echo -e "${RED}Application flash size not defined for this AVR part.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# Check if the component/build configuration set specified the node id.
+	if [[ ! -z ${NODE_ID} ]]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies the target node ID as ${NODE_ID}.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this node ID? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the node id specified in the component/build configuration set.
+			NODE_ID=
+		fi
+	fi
+	
+	# Check if the programmer has been chosen yet.
+	if [ -z ${NODE_ID} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the node ID of the target on the CAN bus: ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			NODE_ID=$REPLY
+			break
+		done
+
+	fi	
+	
+	# Check if the component/build configuration set specified the bitrate.
+	if [[ ! -z ${CAN_BAUD_RATES} ]]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies the CAN bus bitrate as ${CAN_BAUD_RATES}kbps.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this bitrate? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the bitrate specified in the component/build configuration set.
+			CAN_BAUD_RATES=
+		fi
+	fi
+	
+	# Check if the programmer has been chosen yet.
+	if [ -z ${CAN_BAUD_RATES} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the bitrate of the CAN bus in kbps: ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			CAN_BAUD_RATES=$REPLY
+			break
+		done
+
+	fi	
+
+	# Figure out what the AVRDUDE 'programmer device' and 'programmer type' settings should be.
+
+	# Check if the component/build configuration set specified the device file.
+	if [[ ! -z ${CAN_TYPE} ]]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies using ${CAN_TYPE} as the CAN interface type.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this device? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the device specified in the component/build configuration set.
+			CAN_TYPE=
+		fi
+	fi
+
+	# Check to see if we can find a suitable device to use.
+	if [ -z ${CAN_TYPE} ]; then
+		# Try looking for a socket CAN interface.
+		upload_can_finddevice_socketcan
+	fi
+	if [ -z ${CAN_TYPE} ]; then
+		# Try looking for a microchip CAN interface.
+		upload_can_finddevice_microchipcan
+	fi
+	
+	# TODO - Look for other types of programmers.
+	if [ ! -z ${CAN_TYPE} ]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}Found a CAN interface and it's a '${CAN_TYPE}' type interface.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this interface? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the device we found.
+			CAN_TYPE=
+			CAN_IFACE=
+		fi
+	fi
+
+	# Check if the programmer has been chosen yet.
+	if [ -z ${CAN_TYPE} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the type of CAN interface the uploader should use: ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			CAN_TYPE=$REPLY
+			break
+		done
+		
+		if [ ${CAN_TYPE} = "socket" ]; then
+		
+
+			# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+			while :
+			do
+				# We will need to prompt the user for the value to use.
+				echo -e -n "${GREEN}Enter the interface name of the socketCAN interface: ${NO_COLOUR}"
+				read
+				echo -e "" 
+
+				# Check the user actually entered something.
+				if [ -z "$REPLY" ]; then
+					# We'll just prompt again.
+					continue
+
+				# Check if the user actually just wants to exit without uploading anything.
+				elif [ "$REPLY" == "exit" ]; then
+					# Exit the script.
+					return 1
+				fi
+
+				# TODO - Eventually, it might be nice to check if the entered value is legit.
+			
+				# Else we use whatever they entered.
+				CAN_IFACE=$REPLY
+				break
+			done
+		fi
+	fi	
+
+	# TODO - Else, ask the user for any required information such as which node to upload to.
+	
+	CAN_PARAMS="can-type=${CAN_TYPE}:target=${NODE_ID}:bitrate=${CAN_BAUD_RATES}000"
+	
+	if [[ ! -z ${CAN_IFACE} ]]; then
+	
+		CAN_PARAMS="$CAN_PARAMS:iface=${CAN_IFACE}"
+		
+	fi
+
+	# We don't need to unpack any other tools.
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via CAN interface '${CAN_TYPE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via the CAN bootloader.\n${NO_COLOUR}"
+		
+		# Upload the application code to flash.
+		$TCPATH/res/common/uploader/bin/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
+
+		# Check the return value from the write operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Uploading error.  Failed to write binary via CAN Bootloader.\n${NO_COLOUR}"
+			UPLOAD_FAILED=1
+		fi
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+	fi
+	CAN_BINARY=
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+
