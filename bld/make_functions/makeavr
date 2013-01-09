@@ -43,8 +43,10 @@ echo -e "${CYAN}Imported AVR make-functions.\n${NO_COLOUR}"
 ###											###
 ###########################################################################################
 
-makeavr() 
+makeavr()
 {
+	# TODO - At the moment, there doesn't seem to be support for assembler files here.
+
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -57,8 +59,9 @@ makeavr()
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+	cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
+	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
 		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.x
@@ -67,38 +70,31 @@ makeavr()
 		LFLAGS="-T linker_script.x $LFLAGS"
 	fi
 
-	# Get a list of names of source and header files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	
-	# Get a list of all the library source and header files.
-	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
-
-	# Get a list of all the HAL source and header files.
-	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-							
-	# Update the working makefile with the appropriate values for this component.	
-	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $P_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_LIBFILES $P_LIBFILES $S_LIBFILES $C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1$COMPONENT_NAME/" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(CFLAGS *= *.* *\)BUILD_INSERTS_CFLAGS_HERE^\1$CFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	# Work out what the executable file which forms this component is.
+	if [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c ]; then
+		# The main file is a C file.
+		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c
+	elif [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp ]; then
+		# The main file is a C++ file.
+		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp
+	else
+		# There doesn't seem to be an suitable main file for the component.  Abort.
+		echo -e "${RED}No suitable main file found.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+						
+	# Update the working makefile with the appropriate values for this component.
+	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1$COMPONENT_NAME\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
@@ -190,36 +186,44 @@ makeavr_bootloader()
 	done
 	shopt -u nullglob
 
-	# Fetch the HAL library files (need to specify the output location, since we don't want to use the default). NOTE we aren't using any HAL anymore!!
-	#get_hal ${COMPONENT}_bootloader/hal
-
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
-	# Get a list of names of source and header files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')	
+	# Check if there is also a linker script to go with the makefile.
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.x
 
-	# Get a list of all the HAL source and header files.
-	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.h 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+		# A linker script is specified, so set the linker flags to refer to it.
+		LFLAGS="-T linker_script.x $LFLAGS"
+	fi
+
+	# Work out what the executable file which forms this component is.
+	if [ -f  $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.c ]; then
+		# The main file is a C file.
+		MAINFILE=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.c
+	elif [ -f  $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.cpp ]; then
+		# The main file is a C++ file.
+		MAINFILE=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.cpp
+	else
+		# There doesn't seem to be an suitable main file for the component.  Abort.
+		echo -e "${RED}No suitable main file found.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
 								
 	# Update the working makefile with the appropriate values for this component.	
-	sed -i "s^\(MCU *= *\).*^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(OBJCOPY *= *\)BUILD_INSERTS_OBJCOPY_HERE^\1$OBJCOPY^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(OBJDUMP *= *\)BUILD_INSERTS_OBJDUMP_HERE.*^\1$OBJDUMP^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(PRJSRC *= *\)BUILD_INSERTS_SOURCE_FILES_HERE^\1$C_FILES $P_FILES $S_FILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(LIBSRC *= *\)BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE^\1$C_HALFILES $P_HALFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s^\(LIBOBJ *= *\)BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE^\1$O_HALFILES^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -i "s/\(PROJECTNAME *= *\)BUILD_INSERTS_PROJECT_NAME_HERE/\1${COMPONENT_NAME}_bootloader/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}_bootloader\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -i "s/\(BOOTSTART *= *\)BUILD_INSERTS_BOOTLOADER_ADDRESS_HERE/\1$BOOTSTART/" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
     
 	# Actually make the component.

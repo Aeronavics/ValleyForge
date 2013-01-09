@@ -39,6 +39,8 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
+#include "avr_magic.hpp"
+
 // DEFINE CONSTANTS
 
 enum port_offset {P_READ, P_MODE, P_WRITE};

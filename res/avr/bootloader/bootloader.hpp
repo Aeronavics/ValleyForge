@@ -51,7 +51,6 @@
 // Include boolean data types.
 #include <stdbool.h>
 
-
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
