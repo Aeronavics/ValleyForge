@@ -637,6 +637,7 @@ do
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
+	REPLY=$?
 
 	# Check if there wasn't actually anything to build.
 	if [ $NOCODE ]; then
@@ -645,7 +646,7 @@ do
 		NOCODE=
 
 	# Check if the make function worked.  If not, we don't go any further with this component.	
-	elif [ $? != 0 ]; then
+	elif [ $REPLY != 0 ]; then
 		# We just skip the bootloader and anything else, and move on.
 		echo -e "${YELLOW}Application code build failed.  Skipping additional build stages...\n${NO_COLOUR}"
 		continue
@@ -668,6 +669,21 @@ do
 		
 			# Actually run the appropriate make function for this build configuration.
 			$FSFUNCTION
+			REPLY=$?
+
+			# Check if there wasn't actually anything to build.
+			if [ $NOCODE ]; then
+				# There wasn't anything to build, so we just carry on.
+				echo -e "${YELLOW}Skipped filesystem build for component $COMPONENT.\n${NO_COLOUR}"
+				NOCODE=
+
+			# Check if the make function worked.  If not, we don't go any further with this component.	
+			elif [ $REPLY != 0 ]; then
+				# We just skip anything else, and move on.
+				echo -e "${YELLOW}Filesystem build failed.  Skipping additional build stages...\n${NO_COLOUR}"
+				continue
+			fi
+
 		fi
 	fi
 
@@ -718,6 +734,20 @@ do
 
 		# Actually run the appropriate make function for this build configuration.
 		$MAKEFUNCTION
+		REPLY=$?
+
+		# Check if there wasn't actually anything to build.
+		if [ $NOCODE ]; then
+			# There wasn't anything to build, so we just carry on.									
+			echo -e "${YELLOW}Skipped bootloader build for component $COMPONENT.\n${NO_COLOUR}"
+			NOCODE=
+
+		# Check if the make function worked.  If not, we don't go any further with this component.	
+		elif [ $REPLY != 0 ]; then
+			# We just skip anything else, and move on.
+			echo -e "${YELLOW}Bootloader code build failed.\n${NO_COLOUR}"
+			continue
+		fi
 	fi
 done
 
