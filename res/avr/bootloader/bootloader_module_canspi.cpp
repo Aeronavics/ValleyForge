@@ -258,17 +258,12 @@ void bootloader_module_canspi::init(void)
 void bootloader_module_canspi::exit(void)
 {
 	// Must initialize the spi communication before reset instrustion can be sent
-	EICRB |= (0<<ISC41)|(1<<ISC40);
-	EIMSK |= (1<<INT4);
-	DDRE &= ~(1<<DDE4);
 	spi_init();
 	
 	// Reset the mcp2515 to its original state.
 	mcp2515_reset();
 	
 	// Reset spi peripheral to intial startup values 
-	EICRB |= (0<<ISC41)|(0<<ISC40);
-	EIMSK |= (0<<INT4);
 	DDRB = 0x00;// Reset all spi pins to inputs
 	SPCR = 0x00;
 
@@ -350,10 +345,11 @@ void confirm_reception_mcp2515(bool confirmation_successful)
 
 void init_mcp2515(void)
 {
-	//Set up any logic change triggered interupt on pinE4, this will be use for interupt from INT pin of mcp2515.
-	EICRB |= (0<<ISC41)|(1<<ISC40);
-	EIMSK |= (1<<INT4);
-	DDRE &= ~(1<<DDE4);
+	//Set up pin change interupt on pinK0, this will be use for interupt from INT pin of mcp2515.
+	PCMSK2 |= (1<<PCINT16);
+	PCICR |= (1<<PCIE2);
+	DDRK &= ~(1<<DDD0);
+	module.pin_K0_state = (PINK & (1<<PIN0));// Get intial state of pin
 	
 	// Initialize spi communication
 	spi_init();
@@ -909,35 +905,41 @@ void bootloader_module_canspi::alert_uploader(void)
 
 // Interupt service routine for the INT pin from mcp2515
 // Evaluates the CAN message received.
-ISR(INT4_vect)
+ISR(PCINT2_vect)
 {
-	//Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
-	if(!(PINE & (1<<PINE4)))
+	// Check that the pin change was from the pin K0
+	if(module.pin_K0_state != (PINK & (1<<PIN0)))
 	{
-		uint8_t node_id;
-		node_id = mcp2515_read_rx_buffer(0, module.reception_message);
+		// Record new state.
+		module.pin_K0_state = (PINK & (1<<PIN0));
 		
-		// Check node ID, if not the same exit ISR.
-		if(node_id == NODE_ID)
+		//Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
+		if(module.pin_K0_state != 0)
 		{
-			// A confirmation message received.
-			if (module.reception_message.message_type == module.READ_DATA)
+			uint8_t node_id;
+			node_id = mcp2515_read_rx_buffer(0, module.reception_message);
+		
+			// Check node ID, if not the same exit ISR.
+			if(node_id == NODE_ID)
 			{
-				module.reception_message.confirmed_send = true;
+				// A confirmation message received.
+				if (module.reception_message.message_type == module.READ_DATA)
+				{
+					module.reception_message.confirmed_send = true;
+				}
+				// A host command message received.
+				else
+				{
+					// Tell Boot loader that the message was received.
+					module.reception_message.message_received = true;
+					
+					//Default the message confirmation to successful
+					module.message_confirmation_success = true;
+				}
 			}
-			// A host command message received.
-			else
-			{
-				// Tell Boot loader that the message was received.
-				module.reception_message.message_received = true;
-				
-				//Default the message confirmation to successful
-				module.message_confirmation_success = true;
-			}
-			
 		}
-		mcp2515_modify_bits(MCP_CANINTF, 0x01, 0x00);// Reset the reception interupt flag
 	}
+	mcp2515_modify_bits(MCP_CANINTF, 0x01, 0x00);// Reset the reception interupt flag
 }
 	
 // ALL DONE.
