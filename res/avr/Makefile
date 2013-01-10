@@ -23,6 +23,9 @@
 
 # VARIABLES.
 
+# Make Configuration Details.
+SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
+
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
 OUTFILE=${COMPONENT}.out # The output file which generally needs to be created.
