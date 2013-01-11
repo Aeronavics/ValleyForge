@@ -36,11 +36,209 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 
+	// Delay used for reseting the mcp2515 
+#define F_CPU 16000000UL  // 16 MHz crystal oscillator on the mcp2515
+#include <util/delay.h>
+
 // DEFINE CONSTANTS
+
+	// Device infromation
+#define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
+#define DEVICE_SIGNATURE_1 SIGNATURE_0
+#define DEVICE_SIGNATURE_2 SIGNATURE_1
+#define DEVICE_SIGNATURE_3 SIGNATURE_2
+
+	// Bootloader information
+#define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>// Define the address at which the bootloader code starts.
+const uint16_t BOOTLOADER_VERSION = 0x0100; //TODO - how is this updated.
+const uint8_t ALERT_UPLOADER_PERIOD = 10;//x10 ms to send each alert_host message before communication has begun
+const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
+
+	//CAN BIT TIMING
+#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#if (CAN_BAUD_RATE == 1000)
+	//16MHz crystal, 1Mbps baud rate, 75% sampling rate, TQ = 0.125us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 2 BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  0
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+	
+#elif (CAN_BAUD_RATE == 500)
+	//16MHz crystal, 500kbps baud rate, 75% sampling rate, TQ = 0.25us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 4. BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  1
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+	
+#elif (CAN_BAUD_RATE == 250)
+	//16MHz crystal, 250kbps baud rate, 75% sampling rate, TQ = 0.5us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 8. BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  3
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+	
+#elif (CAN_BAUD_RATE == 200)
+	//16MHz crystal, 200kbps baud rate, 75% sampling rate, TQ = 0.625us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 10. BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  4
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+	
+#elif (CAN_BAUD_RATE == 125)
+	//16MHz crystal, 125kbps baud rate, 75% sampling rate, TQ = 1us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 16. BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  7
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+
+#elif (CAN_BAUD_RATE == 100)
+	//16MHz crystal, 100kbps baud rate, 75% sampling rate, TQ = 1.25us
+	//
+	//Synchronization Jump Width = 1TQ. SJW = Synchronization Jump Width - 1
+	#define CAN_SJW 0
+
+	//Prescalar = 20. BRP = (Fosc*TQ)/2 - 1
+	#define  CAN_BRP  9
+
+	//Phase segment_1 = 3. PHSEG1 =  Phase segment_1 - 1
+	#define CAN_PS1 2
+
+	//Propagation delay = 2. PRSEG2 = Propagation delay - 1
+	#define CAN_PRS 1
+
+	//Phase segment_2 = 2. PHSEG2 =  Phase segment_2 - 1
+	#define CAN_PS2 1
+
+#endif
+
+	// Mcp2515 registers
+#define MCP_RXF0SIDH	0x00 
+#define MCP_RXF0SIDL	0x01 
+#define MCP_RXF0EID8	0x02 
+#define MCP_RXF0EID0	0x03 
+#define MCP_RXF1SIDH	0x04 
+#define MCP_RXF1SIDL	0x05 
+#define MCP_RXF1EID8	0x06 
+#define MCP_RXF1EID0	0x07 
+#define MCP_RXF2SIDH	0x08 
+#define MCP_RXF2SIDL	0x09 
+#define MCP_RXF2EID8	0x0A 
+#define MCP_RXF2EID0	0x0B 
+#define MCP_BFPCTRL		0x0C 
+#define MCP_TXRTSCTRL	0x0D 
+#define MCP_CANSTAT		0x0E 
+#define MCP_CANCTRL		0x0F 
+#define MCP_RXF3SIDH	0x10 
+#define MCP_RXF3SIDL	0x11 
+#define MCP_RXF3EID8	0x12 
+#define MCP_RXF3EID0	0x13 
+#define MCP_RXF4SIDH	0x14 
+#define MCP_RXF4SIDL	0x15 
+#define MCP_RXF4EID8	0x16 
+#define MCP_RXF4EID0	0x17 
+#define MCP_RXF5SIDH	0x18 
+#define MCP_RXF5SIDL	0x19 
+#define MCP_RXF5EID8	0x1A 
+#define MCP_RXF5EID0	0x1B 
+#define MCP_TEC			0x1C 
+#define MCP_REC			0x1D 
+#define MCP_RXM0SIDH	0x20 
+#define MCP_RXM0SIDL	0x21 
+#define MCP_RXM0EID8	0x22 
+#define MCP_RXM0EID0	0x23 
+#define MCP_RXM1SIDH	0x24 
+#define MCP_RXM1SIDL	0x25 
+#define MCP_RXM1EID8	0x26 
+#define MCP_RXM1EID0	0x27 
+#define MCP_CNF3		0x28 
+#define MCP_CNF2		0x29 
+#define MCP_CNF1		0x2A 
+#define MCP_CANINTE		0x2B 
+#define MCP_CANINTF		0x2C 
+#define MCP_EFLG		0x2D 
+#define MCP_TXB0CTRL	0x30 
+#define MCP_TXB1CTRL	0x40 
+#define MCP_TXB2CTRL	0x50 
+#define MCP_RXB0CTRL	0x60 
+#define MCP_RXB0SIDH	0x61 
+#define MCP_RXB1CTRL	0x70 
+#define MCP_RXB1SIDH	0x71 
+ 
+	// Mcp2515 instructions
+#define MCP_WRITE		0x02 
+#define MCP_READ		0x03 
+#define MCP_BITMOD		0x05 
+#define MCP_RESET		0xC0 
+#define MCP_LOAD_TX0	0x40 // Load transmit buffer(from the TXBnSIDH)
+#define MCP_RTS_TX0		0x81 // Request to send
+#define MCP_READ_RX0	0x90 // Read receive buffer(from the RXBnSIDH register)
+#define MCP_READ_STATUS	0xA0 
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
+
+	// State flags
+bool communication_started;
+bool ready_to_send_page;
+bool message_confirmation_success; 
+bool write_details_stored;
+volatile uint8_t pin_K0_state; // State of the INT pin from mcp2515, updated by PCINT2_vect
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -54,27 +252,30 @@
 void init_mcp2515(void);
 
 /**
- *	Send a message on the CAN network.
+ *	Sends a message on the CAN network.
  *
  *	NOTE - Message details are defined in the tranmission_message object.
  *
- *	TAKES:		transmission_message		object containing the id,dlc,data to send.
+ *	TAKES:		transmission_message		object containing the message identifier, DLC and data to send.
  *
  *	RETURNS:	Nothing.
  */
 void transmit_CAN_message(bootloader_module_canspi::message_info& tranmission_message);
 
 /**
- *	Send a confirmation message back to host.
+ *	Sends a confirmation message to the uploader.
+ * 
+ *	NOTE - The message contains one byte informing the uploader whether the message received 
+ * 			was valid(1) or invalid(0).
  *
- *	TAKES:		Nothing.
+ *	TAKES:		confirmation_successful		the validity of the previously received message
  *
  *	RETURNS:	Nothing.
  */
 void confirm_reception_mcp2515(bool confirmation_successful);
 
 /**
- *	Reset the mcp2515
+ *	Resets the mcp2515 to default settings.
  *
  *	TAKES:		Nothing.
  *
@@ -182,33 +383,31 @@ uint8_t mcp2515_read_register(uint8_t address);
 void mcp2515_modify_bits(uint8_t address, uint8_t mask, uint8_t data);
 
 /**
- *	Requests mcp2515 to send a tranmission buffer.
+ *	Requests mcp2515 to send the tranmission buffer.
  *
- *	TAKES:		tx_buffer		The number of the transmission buffer (0-2)
+ *	TAKES:		Nothing
  * 
  *	RETURNS:	Nothing
  */
-void mcp2515_request_to_send(uint8_t tx_buffer);
+void mcp2515_request_to_send(void);
 
 /**
  *	Retreves CAN received message information from mcp2515.
  *
- *	TAKES:		rx_buffer		The number of the reception buffer (0-1)
- * 				reception_message		object which the id,dlc,data will be stored.
+ *	TAKES:		reception_message		object which the id,dlc,data will be stored.
  * 
  *	RETURNS:	The node identifier from the received message.
  */
-uint8_t mcp2515_read_rx_buffer(uint8_t rx_buffer, volatile bootloader_module_canspi::message_info& reception_message);
+uint8_t mcp2515_read_rx_buffer(volatile bootloader_module_canspi::message_info& reception_message);
 
 /**
  *	Loads information into tranmission buffer in mcp2515.
  *
- *	TAKES:		tx_buffer		The number of the transmission buffer (0-2)
- * 				transmission_message		object containing the id,dlc,data to send.
+ *	TAKES:		transmission_message		object containing the id,dlc,data to send.
  * 
  *	RETURNS:	Nothing
  */
-void mcp2515_load_tx_buffer(uint8_t tx_buffer, bootloader_module_canspi::message_info& tranmission_message);
+void mcp2515_load_tx_buffer(bootloader_module_canspi::message_info& tranmission_message);
 
 /**
  *	Reads status bits from mcp2515.
@@ -245,7 +444,7 @@ void bootloader_module_canspi::init(void)
 	//Initialize flags
 	communication_started = false;
 	ready_to_send_page = false;
-	write_address_stored = false;
+	write_details_stored = false;
 	reception_message.message_received = false;
 	
 	//Initialize the external CAN controller.
@@ -273,7 +472,8 @@ void bootloader_module_canspi::exit(void)
 
 void bootloader_module_canspi::event_idle()
 {
-	if(!buffer.ready_to_read && ready_to_send_page)// Send the buffer once it has been read to
+	// Send the buffer once the flash page has been copied to it
+	if(!buffer.ready_to_read && ready_to_send_page)
 	{
 		ready_to_send_page = false;
 		send_flash_page(buffer);
@@ -282,7 +482,6 @@ void bootloader_module_canspi::event_idle()
 	// All done.
 	return;
 }
-
 
 void bootloader_module_canspi::event_periodic()
 {
@@ -299,7 +498,7 @@ void bootloader_module_canspi::event_periodic()
 			alert_count++;
 			if(alert_count == ALERT_UPLOADER_PERIOD)
 			{
-				// Send message to host to say that bootloader is awaiting messages.
+				// Send message to host to uploader that bootloader is awaiting messages.
 				alert_uploader();
 				alert_count = 0;
 			}
@@ -326,7 +525,7 @@ void bootloader_module_canspi::event_periodic()
 
 void confirm_reception_mcp2515(bool confirmation_successful)
 {
-	//Reply to the host whether the received message was successful or not
+	//Reply to the uploader whether the received message was successful or not
 	module.transmission_message.dlc = 1;
 	if(confirmation_successful)
 	{
@@ -336,7 +535,10 @@ void confirm_reception_mcp2515(bool confirmation_successful)
 	{
 		module.transmission_message.message[0] = 0;
 	}
+	
+	// Confirmation message will have the same ID as the message it is confirming.
 	module.transmission_message.message_type = module.reception_message.message_type;
+	
 	transmit_CAN_message(module.transmission_message);
 
 	// All done.
@@ -345,11 +547,11 @@ void confirm_reception_mcp2515(bool confirmation_successful)
 
 void init_mcp2515(void)
 {
-	//Set up pin change interupt on pinK0, this will be use for interupt from INT pin of mcp2515.
+	// Set up pin change interupt on pin K0, this will be used for the interupt from INT pin of mcp2515.
 	PCMSK2 |= (1<<PCINT16);
 	PCICR |= (1<<PCIE2);
 	DDRK &= ~(1<<DDD0);
-	module.pin_K0_state = (PINK & (1<<PIN0));// Get intial state of pin
+	pin_K0_state = (PINK & (1<<PIN0));// Get intial state of pin
 	
 	// Initialize spi communication
 	spi_init();
@@ -360,8 +562,8 @@ void init_mcp2515(void)
 
 void transmit_CAN_message(bootloader_module_canspi::message_info& tranmission_message)
 {
-	mcp2515_load_tx_buffer(0, tranmission_message);
-	mcp2515_request_to_send(0);
+	mcp2515_load_tx_buffer(tranmission_message);
+	mcp2515_request_to_send();
 	
 	// Wait until the tranmission is complete
 	uint8_t status_register, control_register;
@@ -373,7 +575,7 @@ void transmit_CAN_message(bootloader_module_canspi::message_info& tranmission_me
 		control_register = mcp2515_read_register(MCP_TXB0CTRL);
 		if(control_register & 0x10)// Transmission error occured
 		{
-			// TODO - set some flag so that whatever is using it is informed an error has occured
+			// Exit transmission if error occurs
 			break;
 		}
 	}
@@ -388,7 +590,7 @@ void mcp2515_reset()
 	deselect_slave();
 	
 	//wait 128 cycles to allow oscillator to stabilize
-	_delay_ms(10);// TODO - implement the delay with a timer
+	_delay_ms(10);// TODO - _delay_us(8);// Equivalent to 128 clock cycles at 16MHz.
 }
 
 /*
@@ -404,11 +606,11 @@ void spi_init(void)
 
 uint8_t spi_readwrite(uint8_t data)   
 {   
-	// set data to send into SPI data register   
+	// Set data to send into SPI data register   
 	SPDR = data;   
 	// Wait for transmission complete    
 	while(!(SPSR & (1<<SPIF))); 
-	// return data read from SPI   
+	// return data from SPI shift register   
 	return SPDR;
 }
 
@@ -435,7 +637,7 @@ void deselect_slave(void)
 
 /*
  * 
- * CAN-MCP2515 via spi
+ * CAN-MCP2515 via SPI
  * 
  */
 void mcp2515_write_register(uint8_t address, uint8_t data)
@@ -473,23 +675,10 @@ void mcp2515_modify_bits(uint8_t address, uint8_t mask, uint8_t data)
 	deselect_slave();
 }
 
-void mcp2515_request_to_send(uint8_t tx_buffer)
+void mcp2515_request_to_send(void)
 {
-	uint8_t instruction = 0;
-	
-	// Select the desired buffer instruction
-	if(tx_buffer == 2)
-	{
-		instruction = MCP_RTS_TX2;
-	}
-	else if(tx_buffer == 1)
-	{
-		instruction = MCP_RTS_TX1;
-	}
-	else if(tx_buffer == 0)
-	{
-		instruction = MCP_RTS_TX0;
-	}
+	// Select transmission buffer 0
+	uint8_t instruction = MCP_RTS_TX0;
 	
 	// Execute instruction
 	select_slave();
@@ -497,20 +686,12 @@ void mcp2515_request_to_send(uint8_t tx_buffer)
 	deselect_slave();
 }
 
-uint8_t mcp2515_read_rx_buffer(uint8_t rx_buffer, volatile bootloader_module_canspi::message_info& reception_message)
+uint8_t mcp2515_read_rx_buffer(volatile bootloader_module_canspi::message_info& reception_message)
 {
-	uint8_t instruction = 0;
 	uint8_t temp_buffer[11];
 	
-	// Select the desired buffer instruction
-	if(rx_buffer == 0)
-	{
-		instruction = MCP_READ_RX0;
-	}
-	else if(rx_buffer == 1)
-	{
-		instruction = MCP_READ_RX1;
-	}
+	// Select the reception buffer 0
+	uint8_t instruction = MCP_READ_RX0;
 	
 	// Execute instruction
 	select_slave();
@@ -532,7 +713,7 @@ uint8_t mcp2515_read_rx_buffer(uint8_t rx_buffer, volatile bootloader_module_can
 	reception_message.dlc = (temp_buffer[2]&(0x0F)) - 1;// Minus 1 as the first byte was taken up by the node ID.
 	if (reception_message.dlc > 7)
 	{
-		reception_message.dlc = 7; // Check required as CAN controller may give greater than 8 dlc value.
+		reception_message.dlc = 7; // This check is required as CAN controller may give greater than 8 dlc value.
 	}
 	for(uint8_t i = 0 ; i < reception_message.dlc ; i++)
 	{
@@ -542,24 +723,12 @@ uint8_t mcp2515_read_rx_buffer(uint8_t rx_buffer, volatile bootloader_module_can
 	return temp_buffer[3];// Return the node id
 }
 
-void mcp2515_load_tx_buffer(uint8_t tx_buffer, bootloader_module_canspi::message_info& tranmission_message)
+void mcp2515_load_tx_buffer(bootloader_module_canspi::message_info& tranmission_message)
 {
-	uint8_t instruction = 0;
 	uint8_t temp_buffer[11];
 	
-	// Select the desired buffer instruction
-	if(tx_buffer == 0)
-	{
-		instruction = MCP_LOAD_TX0;
-	}
-	else if(tx_buffer == 1)
-	{
-		instruction = MCP_LOAD_TX1;
-	}
-	else if(tx_buffer == 2)
-	{
-		instruction = MCP_LOAD_TX2;
-	}
+	// Select the transmission buffer 0
+	uint8_t instruction = MCP_LOAD_TX0;
 
 	// Input information into buffer
 	temp_buffer[0] = tranmission_message.message_type >> 3;
@@ -605,7 +774,7 @@ void mcp2515_init_CAN(void)
 	// Reset mcp2515
 	mcp2515_reset();
 	
-	// Configuration mode set on restart
+	// Configuration mode set
 	mcp2515_modify_bits(MCP_CANCTRL, 0xE0, 0x80);
 	
 	// Wait until the mode is configuration mode
@@ -636,11 +805,11 @@ void mcp2515_init_CAN(void)
 	mcp2515_write_register(MCP_RXM0SIDH, 0xFE);// Allow partial filtering
 	mcp2515_write_register(MCP_RXM0SIDL, 0x00);
 
-	//Set up buffer
+	// Set up buffer
 	mcp2515_write_register(MCP_RXB0CTRL, 0x20);// Accept messages that fit filter critera and are standard CAN format
 	
-	//Set up interupt
-	mcp2515_write_register(MCP_CANINTE, 0x01);// Set interupt for receive buffer 0
+	// Set up interupt
+	mcp2515_write_register(MCP_CANINTE, 0x01);// Set interupt for reception buffer 0
 	
 	// Enable CAN communication
 	mcp2515_write_register(MCP_CANCTRL, 0x00);// Set to normal mode.
@@ -685,13 +854,13 @@ void bootloader_module_canspi::get_info_procedure(void)
 	transmission_message.dlc = 6;
 	transmission_message.message_type = GET_INFO;
 	
-	//Insert Device signaure
+	// Insert Device signaure
 	transmission_message.message[0] = DEVICE_SIGNATURE_0;
 	transmission_message.message[1] = DEVICE_SIGNATURE_1;
 	transmission_message.message[2] = DEVICE_SIGNATURE_2;
 	transmission_message.message[3] = DEVICE_SIGNATURE_3;
 	
-	//Insert bootloader version
+	// Insert bootloader version
 	transmission_message.message[4] = static_cast<uint8_t>(BOOTLOADER_VERSION >> 8);
 	transmission_message.message[5] = static_cast<uint8_t>(BOOTLOADER_VERSION);
 	
@@ -703,26 +872,26 @@ void bootloader_module_canspi::get_info_procedure(void)
 
 void bootloader_module_canspi::write_memory_procedure(firmware_page& current_firmware_page)
 {
-	// Store the 32bit page number.
+	// Store the 32 bit page number.
 	current_firmware_page.page = ((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 				     ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
 				     ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
 				     (static_cast<uint32_t>(reception_message.message[3]));
 
-	// Store the 16bit code_length.
+	// Store the 16 bit code_length.
 	current_firmware_page.code_length = (reception_message.message[4] << 8) | (reception_message.message[5]);
 
-	//Check for errors in message details
-	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)//TODO - import the value from TC
+	// Check for errors in message details
+	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)
 	{
-		//Message failure
+		// Message failure
 		message_confirmation_success = false;
-		write_address_stored = false;
+		write_details_stored = false;
 	}
 	else
 	{
-		//Message success
-		write_address_stored = true;
+		// Message success
+		write_details_stored = true;
 		current_firmware_page.current_byte = 0;
 	}
 
@@ -735,7 +904,7 @@ void bootloader_module_canspi::write_memory_procedure(firmware_page& current_fir
 void bootloader_module_canspi::write_data_procedure(firmware_page& current_firmware_page)
 {
 	// Only wrtie to buffer if a memory address and length have been provided
-	if(write_address_stored)
+	if(write_details_stored)
 	{
 		// Check for possible array overflow.
 		if ((current_firmware_page.current_byte + reception_message.dlc) > current_firmware_page.code_length)
@@ -757,7 +926,7 @@ void bootloader_module_canspi::write_data_procedure(firmware_page& current_firmw
 		{
 			current_firmware_page.ready_to_write = true;
 			current_firmware_page.current_byte = 0;
-			write_address_stored = false;
+			write_details_stored = false;
 		}
 	}
 	else
@@ -774,17 +943,17 @@ void bootloader_module_canspi::write_data_procedure(firmware_page& current_firmw
 
 void bootloader_module_canspi::read_memory_procedure(firmware_page& current_firmware_page)
 {
-	// Store the 16bit page number.
+	// Store the 16 bit page number.
 	current_firmware_page.page = ((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 				     ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
 				     ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
 				     (static_cast<uint32_t>(reception_message.message[3]));
 	
-	// Store the 16bit code_length.
+	// Store the 16 bit code_length.
 	current_firmware_page.code_length = (reception_message.message[4] << 8) | (reception_message.message[5]);
 
 	// Check for errors in message details
-	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)//TODO - import the value from TC
+	if (current_firmware_page.code_length > SPM_PAGESIZE || current_firmware_page.page >= BOOTLOADER_START_ADDRESS)
 	{
 		// Message failure
 		message_confirmation_success = false;
@@ -806,7 +975,9 @@ void bootloader_module_canspi::send_flash_page(firmware_page& current_firmware_p
 {
 	transmission_message.message_type = READ_DATA;
 	current_firmware_page.current_byte = 0; // Start at the start of buffer.
-	reception_message.confirmed_send = false; // Require confirmation after every flash page sent
+	reception_message.confirmed_send = false; 
+	
+	// Send the flash page in 8 byte messages, confirmation message must be received from uploader after each message.
 	while (current_firmware_page.current_byte < current_firmware_page.code_length)
 	{
 		// Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message.
@@ -828,13 +999,14 @@ void bootloader_module_canspi::send_flash_page(firmware_page& current_firmware_p
 		// Send the message.
 		transmit_CAN_message(transmission_message);
 		
-		// Wait for confirmation message to return from host.
+		// Wait for confirmation message to return from uploader or a uploader command message.
 		while(!reception_message.confirmed_send && !reception_message.message_received)	
 		{
 			// Do nothing.
 		}
 		
-		// Allow the host to stop the the reading if it sees a message is lost. Host must send another message to the bootloader.
+		// Exits the sending of the flash page if a uploader command message is received.
+		// Allows the host to stop the reading if it sees a message is lost.
 		if (reception_message.message_received)
 		{
 			// Abort sending the page.
@@ -850,11 +1022,11 @@ void bootloader_module_canspi::send_flash_page(firmware_page& current_firmware_p
 
 void bootloader_module_canspi::filter_message(firmware_page& current_firmware_page)
 {
+	// Determine the corresponding procedure for the received message.
+	
 	if (reception_message.message_type == RESET_REQUEST)
 	{
 		reset_request_procedure();
-
-		// TODO - The above function will never return, because it results in a CPU reset.  Is that what you wanted?
 
 		// We will never reach here.
 	}	
@@ -903,21 +1075,23 @@ void bootloader_module_canspi::alert_uploader(void)
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
-// Interupt service routine for the INT pin from mcp2515
-// Evaluates the CAN message received.
+// Interupt service routine for the interupts from INT pin from mcp2515
+// NOTE - procedure only executed on falling edges of the INT pin.
+// This routine only operates on received messages, it reads the ID, DLC and data from the CAN controller into a message_info object.
+// The ISR also sets a flag to tell Boot loader that a new message has been received, or that a confirmation message has been received.
 ISR(PCINT2_vect)
 {
 	// Check that the pin change was from the pin K0
-	if(module.pin_K0_state != (PINK & (1<<PIN0)))
+	if(pin_K0_state != (PINK & (1<<PIN0)))
 	{
 		// Record new state.
-		module.pin_K0_state = (PINK & (1<<PIN0));
+		pin_K0_state = (PINK & (1<<PIN0));
 		
-		//Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
-		if(module.pin_K0_state != 0)
+		// Only carry out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
+		if(pin_K0_state != 0)
 		{
 			uint8_t node_id;
-			node_id = mcp2515_read_rx_buffer(0, module.reception_message);
+			node_id = mcp2515_read_rx_buffer(module.reception_message);
 		
 			// Check node ID, if not the same exit ISR.
 			if(node_id == NODE_ID)
@@ -934,7 +1108,7 @@ ISR(PCINT2_vect)
 					module.reception_message.message_received = true;
 					
 					//Default the message confirmation to successful
-					module.message_confirmation_success = true;
+					message_confirmation_success = true;
 				}
 			}
 		}

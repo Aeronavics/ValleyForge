@@ -175,7 +175,8 @@ do
 	fi
 done
 
-#if ["$BOOTLOADER" == "$CAN"]; then
+# Only prompt for CAN communication parameters if the component is using either a CAN bootloader or CAN via SPI bootloader
+if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "bootloader_module_can" ]; then
 	# Prompt the user to enter the CAN Baudrate for CAN bootloader communication.
 	echo -e "${GREEN}Which CAN Baudrate would you like to use?(in kbps)${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
@@ -215,7 +216,7 @@ done
 			break
 		fi
 	done
-#fi
+fi
 
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### BOOTLOADER SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
@@ -231,4 +232,5 @@ echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPON
 echo -e "SHUTDOWNSTATE_MEM=${SHUTDOWNSTATE_MEM}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "CAN_BAUD_RATES=${CAN_BAUD_RATES}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "NODE_ID=${NODE_ID}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "BOOTSTART=${BOOTSTART}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 # All done.

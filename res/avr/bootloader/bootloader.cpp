@@ -79,6 +79,17 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
+	// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
+#define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+
+	// Define the function used to read a flash byte. A different function call is required for different MCUs.
+#if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
+	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
+#else
+	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
+#endif
+
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -94,22 +105,6 @@ BOOTLOADER_MODULE module; // This means all the modules must have an object defi
 bootloader_module& mod = module;
 
 firmware_page buffer;
-
-// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
-#if defined (__AVR_AT90CAN128__)	// Can just import the BOOT_START from the avr.cfg.
-	#define BOOTLOADER_START_ADDRESS	0x1E000 // TODO - BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
-#elif defined (__AVR_ATmega2560__)
-	#define BOOTLOADER_START_ADDRESS	0x3E000
-#else
-	#define BOOTLOADER_START_ADDRESS 	0xF000 // ATMEGA64M1
-#endif
-
-// Define the function used to read a flash byte. A different function call is required for different MCUs.
-#if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
-	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
-#else
-	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
-#endif
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -177,7 +172,7 @@ int main(void)
 	MCUCR = (1<<IVSEL);
 	
 	// Disable the watchdog timer before enabling it.  Even the bootloader must satisfy the watchdog.
-	MCUSR &= ~(1 << WDRF);	// TODO - What is this?
+	wdt_reset();
 	wdt_disable();
 	wdt_enable(WDTO_500MS);
 
@@ -191,13 +186,14 @@ int main(void)
 	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE|BLINK_PIN):(BLINK_WRITE & ~BLINK_PIN);
 
 	// Check the state of the 'application run' marker, and the state of the force-bootloader input pin.
-	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC?HI:LO)))
+	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC?LO:HI)))
 	{
 		// The marker seemed clean, and the force-bootloader input is not asserted, so start the application immediately.
 
 		// Run the application.
 		run_application();
 	}
+	
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.	
 
 	// Start up whichever peripherals are required by the modules we're using.
@@ -431,7 +427,7 @@ void run_application(void)
 	OCR0A = 0;
 	
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
-	MCUSR &= ~(1 << WDRF);
+	wdt_reset();
 	wdt_disable();
 	
 	// Jump into the application.
