@@ -14,79 +14,142 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# MAKEFILE FOR ARM TARGETS.
+# GENERIC AVR MAKEFILE WITH DEPENDANCY CALCULATION.
 #
 #	Author:		Edwin Hayes
 #
-#	Created:	7th Dec 2011
+#	Created:	9th Jan 2013
 #
 
 # VARIABLES.
 
-MCPU=BUILD_INSERTS_MCU_CODE_HERE
+# Make Configuration Details.
+SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
+
+# Component & Filename Details.
+COMPONENT=BUILD_INSERTS_COMPONENT_HERE
+OUTFILE=${COMPONENT} # The output file which generally needs to be created.
+MAINFILE=BUILD_INSERTS_MAINFILE_HERE # The executable source file which needs to be built (usually contains main).
+
+# Target Details.
+MCU=BUILD_INSERTS_MCU_CODE_HERE # The name/type of the target controller (as used by the compiler).
+HEXFORMAT=ihex # The hex file format to use.
 
 # Executables.
-CC=BUILD_INSERTS_C_COMPILER_HERE
-PC=BUILD_INSERTS_P_COMPILER_HERE
-AS=BUILD_INSERTS_ASSEMBLER_HERE
-LD=BUILD_INSERTS_LINKER_HERE
+CC=BUILD_INSERTS_C_COMPILER_HERE # The C compiler to use.
+PC=BUILD_INSERTS_P_COMPILER_HERE # The C++ compiler to use.
+AS=BUILD_INSERTS_ASSEMBLER_HERE # The assembler to use.
+LD=${CC} # The linker to use.
+OBJDUMP=BUILD_INSERTS_OBJDUMP_HERE # The object-dump (binary manipulator) to use.
+OBJCOPY=BUILD_INSERTS_OBJCOPY_HERE # The object-copy (binary manipulator) to use.
+SIZE=BUILD_INSERTS_SIZE_HERE # The size utility (binary inspector) to use.
 
 # Flags.
-CFLAGS= -mcpu=${MCPU} -Wall BUILD_INSERTS_CFLAGS_HERE
-PFLAGS= $(CFLAGS) BUILD_INSERTS_PFLAGS_HERE
-AFLAGS= BUILD_INSERTS_AFLAGS_HERE
-LFLAGS= BUILD_INSERTS_LFLAGS_HERE
+OPTLEVEL=s # Optimization level to use: s (for size), 1, 2, 3 (for performance) or 0 (none).
+CFLAGS= -I . -mcpu=${MCU} -Wall BUILD_INSERTS_CFLAGS_HERE # The C compiler flags to apply.
+PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
+AFLAGS=	-mcpu=$(MCU) -x assembler-with-cpp -Wa -gstabs BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
+LFLAGS= -Wl,-Map,$(COMPONENT).map -mcpu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 
-TARGET=BUILD_INSERTS_COMPONENT_HERE
+# PSEUDO-TARGETS
 
-# Source files.
-SRC_C=BUILD_INSERTS_C_FILES_HERE
-SRC_P=BUILD_INSERTS_P_FILES_HERE
-SRC_H=BUILD_INSERTS_H_FILES_HERE
-SRC_S=BUILD_INSERTS_S_FILES_HERE
+# All the pseudo-targets are phony: they don't correspond with real files.
+.PHONY: all main stats
 
-# Library source files.
-LIBSRC_C=BUILD_INSERTS_LIBRARY_C_FILES_HERE
-LIBSRC_P=BUILD_INSERTS_LIBRARY_P_FILES_HERE
-LIBSRC_H=BUILD_INSERTS_LIBRARY_H_FILES_HERE
-LIBSRC_S=BUILD_INSERTS_LIBRARY_S_FILES_HERE
-LIBSRC_O=BUILD_INSERTS_LIBRARY_O_FILES_HERE
+all: main
 
-# Determine required object files.
-OBJ_C=${SRC_C:.c=.o} ${LIBSRC_C:.c=.o}
-OBJ_P=${SRC_P:.cpp=.o} ${LIBSRC_P:.cpp=.o}
-OBJ_S=${SRC_S:.s=.o} ${LIBSRC_S:.s=.o}
+main: ${OUTFILE}
 
-# Pseudo Targets.
+stats: ${MAIN}
+	${OBJDUMP} -h ${OUTFILE}
+	${SIZE} ${OUTFILE}
 
-# 'make all' produces an executable of the target.
-all : ${TARGET}
+# TARGETS.
 
-# Real Targets.
+#	OUTPUT FILES.
 
-# To produce the executable of the target, link together the object files.
-${TARGET} : ${OBJ_C} ${OBJ_P} ${OBJ_S} ${LIBSRC_O}
-	@echo "******** Linking target ${TARGET} from object files. ********"
-	${LD} ${LFLAGS} $^ -o $@
+%: %.o
+	@echo "******** Linking $@ from Object Files. ********"
+	$(LD) $(LFLAGS) -o $@ $(shell find . -name "*.o")
 
-# Compile CPP files into object files.
-%.o : %.cpp
-	@echo "******** Compiling $@ from $^. ********"
-	${PC} ${PFLAGS} -c $^ -o $@
+#	BINARY FILES.
 
-# Compile C files into object files.
+# Hex files from elf.
+.out.hex:
+	$(OBJCOPY) -j .text -j .data -O $(HEXFORMAT) $< $@
+.out.ee.hex:
+	$(OBJCOPY) -j .eeprom --change-section-lma .eeprom=0 -O $(HEXFORMAT) $< $@
+
+#	OBJECT FILES.
+
+# Object from C.
 %.o : %.c
-	@echo "******** Compiling $@ from $^. ********"
-	${CC} ${CFLAGS} -c $^ -o $@
+	@echo "******** Compiling $@. ********"
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Assemble S files into object files.
+# Object from C++.
+%.o : %.cpp
+	@echo "******** Compiling $@. ********"
+	$(PC) $(PFLAGS) -c $< -o $@
+
+# Object from assembly.
 %.o : %.s
-	@echo "******** Assembling $@ from $^. ********"
-	${AS} ${AFLAGS} -c $^ -o $@
+	@echo "******** Assembling $@. ********"
+	$(CC) $(AFLAGS) -c $< -o $@
 
+#	ASSEMBLY FILES.
 
+# ASM from (hand coded) asm
+%.S: %.s
+	$(CC) -S $(AFLAGS) $< > $@
 
+# DEPENDENCY TARGETS.
 
+# Header file dependencies are calculated directly by the compiler, they are easy.  Object file dependencies are more complicated; in this
+# implementation, we assume that if a required header file has a matching source file in the same folder, then that will probably be an object
+# dependency (and hence the source should be compiled).  Then, to produce the final executable, we just link together all the object files that
+# we created.
 
+# Dependency from C.
+%.d: %.c
+	@echo "******** Calculating dependencies for $*. ********"
+	${CC} ${CFLAGS} -MM $^ > $@
+	@while read -a line; do \
+		for word in "$${line[@]}"; do \
+			if [[ $$word == *".h" && $$word != "$*.h" ]]; then \
+				if [ -f "$${word/%.h/.c}" ]; then \
+					sed -i "s^$$word^$$word $${word/%.h/.o}^g" $@; \
+				fi; \
+			fi; \
+		done; \
+	done < $@
+	@cat $@
 
+# Dependency from C++.
+%.dpp: %.cpp
+	@echo "******** Calculating dependencies for $*. ********"
+	${PC} ${PFLAGS} -MM $^ > $@
+	@while read -a line; do \
+		for word in "$${line[@]}"; do \
+			if [[ $$word == *".hpp" && $$word != "$*.hpp" ]]; then \
+				if [ -f "$${word/%.hpp/.cpp}" ]; then \
+					sed -i "s^$$word^$$word $${word/%.hpp/.o}^g" $@; \
+				fi; \
+			fi; \
+		done; \
+	done < $@
+	@cat $@
+
+# IMPORT EXTERNAL DEPENDENCIES.
+
+# Dependencies are calculated for all the source files, even if they might not be needed, because there isn't an option to go back and include
+# additional rules later, so we have to include all the rules we might possibly need right from the start.
+
+# Include dependencies for C files.
+-include ${patsubst %.c, %.d, ${wildcard *.c}}
+-include ${patsubst %.c, %.d, ${wildcard **/*.c}}
+
+# Include dependencies for C++ files.
+-include ${patsubst %.cpp, %.dpp, ${wildcard *.cpp}}
+-include ${patsubst %.cpp, %.dpp, ${wildcard **/*.cpp}}
 
