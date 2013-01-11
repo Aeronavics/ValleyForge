@@ -1,212 +1,155 @@
-#########  AVR Project Makefile Template   #########
-######                                        ######
-######    Copyright (C) 2003-2005,Pat Deegan, ######
-######            Psychogenic Inc             ######
-######          All Rights Reserved           ######
-######                                        ######
-###### You are free to use this code as part  ######
-###### of your own applications provided      ######
-###### you keep this copyright notice intact  ######
-###### and acknowledge its authorship with    ######
-###### the words:                             ######
-######                                        ######
-###### "Contains software by Pat Deegan of    ######
-###### Psychogenic Inc (www.psychogenic.com)" ######
-######                                        ######
-###### If you use it as part of a web site    ######
-###### please include a link to our site,     ######
-###### http://electrons.psychogenic.com  or   ######
-###### http://www.psychogenic.com             ######
-######                                        ######
-####################################################
+#	Copyright (C) 2011  Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-##### This Makefile will make compiling Atmel AVR 
-##### micro controller projects simple with Linux 
-##### or other Unix workstations and the AVR-GCC 
-##### tools.
-#####
-##### It supports C, C++ and Assembly source files.
-#####
-##### Customize the values as indicated below and :
-##### make
-##### make disasm 
-##### make stats 
-##### make hex
-##### make writeflash
-##### make gdbinit
-##### or make clean
-#####
-##### See the http://electrons.psychogenic.com/ 
-##### website for detailed instructions
+#
+# GENERIC AVR MAKEFILE WITH DEPENDANCY CALCULATION.
+#
+#	Author:		Edwin Hayes
+#
+#	Created:	9th Jan 2013
+#
 
-####################################################
-#####                                          #####
-#####              Configuration               #####
-#####                                          #####
-##### Customize the values in this section for #####
-##### your project. MCU, PROJECTNAME and       #####
-##### PRJSRC must be setup for all projects,   #####
-##### the remaining variables are only         #####
-##### relevant to those needing additional     #####
-##### include dirs or libraries and those      #####
-##### who wish to use the avrdude programmer   #####
-#####                                          #####
-##### See http://electrons.psychogenic.com/    #####
-##### for further details.                     #####
-#####                                          #####
-####################################################
+# VARIABLES.
 
-#####         Target Specific Details          #####
+# Make Configuration Details.
+SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
 
-#####     Customize these for your project     #####
+# Component & Filename Details.
+COMPONENT=BUILD_INSERTS_COMPONENT_HERE
+OUTFILE=${COMPONENT}.out # The output file which generally needs to be created.
+MAINFILE=BUILD_INSERTS_MAINFILE_HERE # The executable source file which needs to be built (usually contains main).
 
-# Name of target controller .
-MCU=BUILD_INSERTS_MCU_CODE_HERE
+# Target Details.
+MCU=BUILD_INSERTS_MCU_CODE_HERE # The name/type of the target controller (as used by the compiler).
+HEXFORMAT=ihex # The hex file format to use.
 
-# Name of project.
-PROJECTNAME=BUILD_INSERTS_PROJECT_NAME_HERE
+# Executables.
+CC=BUILD_INSERTS_C_COMPILER_HERE # The C compiler to use.
+PC=BUILD_INSERTS_P_COMPILER_HERE # The C++ compiler to use.
+AS=BUILD_INSERTS_ASSEMBLER_HERE # The assembler to use.
+LD=${CC} # The linker to use.
+OBJDUMP=BUILD_INSERTS_OBJDUMP_HERE # The object-dump (binary manipulator) to use.
+OBJCOPY=BUILD_INSERTS_OBJCOPY_HERE # The object-copy (binary manipulator) to use.
+SIZE=BUILD_INSERTS_SIZE_HERE # The size utility (binary inspector) to use.
 
-# Source files.
-PRJSRC=BUILD_INSERTS_SOURCE_FILES_HERE
+# Flags.
+OPTLEVEL=s # Optimization level to use: s (for size), 1, 2, 3 (for performance) or 0 (none).
+CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall # The C compiler flags to apply.
+PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
+AFLAGS=	-mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
+LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 
-# Library source files.
-LIBSRC=BUILD_INSERTS_LIBRARY_SOURCE_FILES_HERE
+# PSEUDO-TARGETS
 
-# Library object files.
-LIBOBJ=BUILD_INSERTS_LIBRARY_OBJECT_FILES_HERE
+# All the pseudo-targets are phony: they don't correspond with real files.
+.PHONY: all main stats
 
-# Additional includes (e.g. -I/path/to/mydir).
+all: main
 
-# Libraries to link in (e.g. -lmylib).
-LIBS=
+main: ${OUTFILE}
 
-# Optimization level, use s (size opt), 1, 2, 3 or 0 (off).
-OPTLEVEL=s
+stats: ${MAIN}
+	${OBJDUMP} -h ${OUTFILE}
+	${SIZE} ${OUTFILE}
 
-####################################################
-#####                Config Done               #####
-#####                                          #####
-##### You shouldn't need to edit anything      #####
-##### below to use the makefile but may wish   #####
-##### to override a few of the flags           #####
-##### nonetheless                              #####
-#####                                          #####
-####################################################
+# TARGETS.
 
-##### Flags ####
+#	OUTPUT FILES.
 
-# Format for .hex file output
-HEXFORMAT=ihex
+%.out: %.o
+	@echo "******** Linking $@ from Object Files. ********"
+	$(LD) $(LFLAGS) -o $@ $(shell find . -name "*.o")
 
-# NOTE - The assembler listings have been disabled, since this tends to flood the console with unhelpful text.
+#	BINARY FILES.
 
-# Compiler flags.
-CFLAGS= -I. $(INC) -g -mmcu=$(MCU) -O$(OPTLEVEL) BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char \
-	  -fno-exceptions -Wall #-Wa,-ahlms=$(firstword $(filter %.lst, $(<:.c=.lst)))
-PFLAGS= $(CFLAGS)
+# Hex files from elf.
+.out.hex:
+	$(OBJCOPY) -j .text -j .data -O $(HEXFORMAT) $< $@
+.out.ee.hex:
+	$(OBJCOPY) -j .eeprom --change-section-lma .eeprom=0 -O $(HEXFORMAT) $< $@
 
-# Assembler flags.
-AFLAGS= -I. $(INC) -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs #-ahlms=$(firstword $(<:.S=.lst) $(<.s=.lst))
-
-# Linker flags.
-LFLAGS=-Wl,-Map,$(TRG).map -mmcu=$(MCU) -lm $(LIBS) BUILD_INSERTS_LFLAGS_HERE
-
-##### Executables ####
-
-CC=BUILD_INSERTS_C_COMPILER_HERE
-PC=BUILD_INSERTS_P_COMPILER_HERE
-OBJCOPY=BUILD_INSERTS_OBJCOPY_HERE
-OBJDUMP=BUILD_INSERTS_OBJDUMP_HERE
-SIZE=avr-size
-
-##### Automatic Target Names ####
-
-TRG=$(PROJECTNAME).out
-DUMPTRG=$(PROJECTNAME).S
-
-HEXROMTRG=$(PROJECTNAME).hex 
-HEXTRG=$(HEXROMTRG) $(PROJECTNAME).ee.hex
-GDBINITFILE=gdbinit-$(PROJECTNAME)
-
-# Define all object files.
-
-	#  C
-CFILES=$(filter %.c, $(PRJSRC))
-
-	#  C++
-CPPFILES=$(filter %.cpp, $(PRJSRC))
-
-	#  Assembly
-ASMFILES=$(filter %.s, $(PRJSRC))
-
-	#  C Library Files
-CLIBFILES=$(filter %.c, $(LIBSRC))
-
-	#  C++ Library Files
-CPPLIBFILES=$(filter %.cpp, $(LIBSRC))
-
-	#  Assembly Library Files
-ASMLIBFILES=$(filter %.s, $(LIBSRC))
-
-	# List all object files we need to create
-OBJDEPS=$(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(ASMFILES:.s=.o) $(CLIBFILES:.c=.o) $(CPPLIBFILES:.cpp=.o) $(ASMLIBFILES:.s=.o)
-
-	# Define all lst files.
-LST=$(filter %.lst, $(OBJDEPS:.o=.lst))
-
-	# All the possible generated assembly files (.s files)
-GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.S)) 
-
-.SUFFIXES : .c .o .out .s .S .hex .ee.hex .h
-
-.PHONY: clean stats
-
-##### Make pseudo-targets. #####
-
-all: $(TRG)
-
-disasm: $(DUMPTRG) stats
-
-stats: $(TRG)
-	$(OBJDUMP) -h $(TRG)
-	$(SIZE) $(TRG) 
-
-hex: $(HEXTRG)
-
-$(DUMPTRG): $(TRG) 
-	$(OBJDUMP) -S  $< > $@
-
-
-$(TRG): $(OBJDEPS)
-	@echo "******** Linking target ${PROJECTNAME} from object files. ********"
-	$(CC) $(LFLAGS) -o $(TRG) $(OBJDEPS)
-
-#### Generating object files. ####
+#	OBJECT FILES.
 
 # Object from C.
 %.o : %.c
-	@echo "******** Compiling $@ from $^. ********"
+	@echo "******** Compiling $@. ********"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Object from C++.
 %.o : %.cpp
-	@echo "******** Compiling $@ from $^. ********"
+	@echo "******** Compiling $@. ********"
 	$(PC) $(PFLAGS) -c $< -o $@
 
 # Object from assembly.
 %.o : %.s
-	@echo "******** Assembling $@ from $^. ********"
+	@echo "******** Assembling $@. ********"
 	$(CC) $(AFLAGS) -c $< -o $@
 
-#### Generating hex files ####
+#	ASSEMBLY FILES.
 
-# Hex files from elf.
+# ASM from (hand coded) asm
+%.S: %.s
+	$(CC) -S $(AFLAGS) $< > $@
 
-.out.hex:
-	$(OBJCOPY) -j .text -j .data -O $(HEXFORMAT) $< $@
+# DEPENDENCY TARGETS.
 
-.out.ee.hex:
-	$(OBJCOPY) -j .eeprom --change-section-lma .eeprom=0 -O $(HEXFORMAT) $< $@
-	
-#####                    EOF                   #####
+# Header file dependencies are calculated directly by the compiler, they are easy.  Object file dependencies are more complicated; in this
+# implementation, we assume that if a required header file has a matching source file in the same folder, then that will probably be an object
+# dependency (and hence the source should be compiled).  Then, to produce the final executable, we just link together all the object files that
+# we created.
+
+# Dependency from C.
+%.d: %.c
+	@echo "******** Calculating dependencies for $*. ********"
+	${CC} ${CFLAGS} -MM $^ > $@
+	@while read -a line; do \
+		for word in "$${line[@]}"; do \
+			if [[ $$word == *".h" && $$word != "$*.h" ]]; then \
+				if [ -f "$${word/%.h/.c}" ]; then \
+					sed -i "s^$$word^$$word $${word/%.h/.o}^g" $@; \
+				fi; \
+			fi; \
+		done; \
+	done < $@
+	@cat $@
+
+# Dependency from C++.
+%.dpp: %.cpp
+	@echo "******** Calculating dependencies for $*. ********"
+	${PC} ${PFLAGS} -MM $^ > $@
+	@while read -a line; do \
+		for word in "$${line[@]}"; do \
+			if [[ $$word == *".hpp" && $$word != "$*.hpp" ]]; then \
+				if [ -f "$${word/%.hpp/.cpp}" ]; then \
+					sed -i "s^$$word^$$word $${word/%.hpp/.o}^g" $@; \
+				fi; \
+			fi; \
+		done; \
+	done < $@
+	@cat $@
+
+# IMPORT EXTERNAL DEPENDENCIES.
+
+# Dependencies are calculated for all the source files, even if they might not be needed, because there isn't an option to go back and include
+# additional rules later, so we have to include all the rules we might possibly need right from the start.
+
+# Include dependencies for C files.
+-include ${patsubst %.c, %.d, ${wildcard *.c}}
+-include ${patsubst %.c, %.d, ${wildcard **/*.c}}
+
+# Include dependencies for C++ files.
+-include ${patsubst %.cpp, %.dpp, ${wildcard *.cpp}}
+-include ${patsubst %.cpp, %.dpp, ${wildcard **/*.cpp}}
 

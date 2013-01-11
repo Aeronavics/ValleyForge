@@ -191,6 +191,36 @@ else
 		echo -e "${RED}Build configuration incomplete.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
 		exit 1
 	fi
+
+	# The build configuration was loaded successfully.
+	echo -e "${CYAN}Loaded build configuration $BCONF successfully.\n${NO_COLOUR}"
+fi
+
+# Check to see if there is a bootloader selected.
+if [ ! -z "$BOOTLOADER" ]; then
+	# Check to see if we can find a matching bootloader configuration.
+	BLOAD="bload_${TARGET}_${BOOTLOADER}"
+	if [ `declare -f | grep "$BLOAD ()" | wc -l` == 0 ]; then
+		# No matching build configuration was found, so skip this component and move on.
+		echo -e "${RED}No suitable bootloader configuration found.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+		exit 1
+	else
+		# There is a matching build configuration, so load it.
+		$BLOAD
+
+		# Check that all the required variables were set by the build configuration.
+		if [ -z "$BLOAD_NAME" ]; then
+			# At least one of the required variables was not set, so skip this component and move on.
+			echo -e "${RED}Bootloader configuration incomplete.  Could not print information for component $COMPONENT.\n${NO_COLOUR}"
+			exit 1
+		fi
+
+		# The bootloader configuration was loaded successfully.
+		echo -e "${CYAN}Loaded bootloader configuration $BCONF successfully.\n${NO_COLOUR}"
+	fi
+else
+	# There is no bootloader selected, so we don't load anything.
+	echo -e "${CYAN}No bootloader configuration to load.\n${NO_COLOUR}"
 fi
 
 # PRINT COMPONENT INFORMATION.

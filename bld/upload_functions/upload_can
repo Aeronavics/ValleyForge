@@ -52,7 +52,7 @@ upload_can()
 		# We look to see if there is anything that might be a socketCAN interface.
 		echo -e "${CYAN}Searching for any available SocketCAN interfaces...${NO_COLOUR}"
 		
-		#TODO: Actually look for can interfaces.
+		# TODO - Actually look for can interfaces.
 		
 		# Get a list of all the device files which look like they could be ISP500's.
 		CAN_INTERFACES=`ip link show | grep "can[[:digit:]]\+" | sed "s/^.*\(can[[:digit:]]\+\).*$/\1/" `
@@ -87,17 +87,17 @@ upload_can()
 	upload_can_finddevice_microchipcan()
 	{
 		# We look to see if there is anything that might be an STK600 available.
-		echo -e "${CYAN}Searching for any available microchip CAN adapters...${NO_COLOUR}"
+		echo -e "${CYAN}Searching for any available Microchip CAN adapters...${NO_COLOUR}"
 
 		# Check to see if there is an STK600 listed.
 		if [[ -z `lsusb | grep -i "ID 04d8:0a30"` ]]; then
 			# We didn't find an STK600 listed, so abort.
-			echo -e "${YELLOW}No suitable microchip CAN device found.\n${NO_COLOUR}"
+			echo -e "${YELLOW}No suitable Microchip CAN device found.\n${NO_COLOUR}"
 			CAN_TYPE=
 			CAN_IFACE=
 		else
 			# There is an STK600 connected, so we use that.
-			echo -e "${CYAN}Found a microchip CAN adapter connected via USB.\n${NO_COLOUR}"
+			echo -e "${CYAN}Found a Microchip CAN adapter connected via USB.\n${NO_COLOUR}"
 			CAN_TYPE="microchip"
 			CAN_IFACE=
 		fi
@@ -120,14 +120,15 @@ upload_can()
 
 	# Check if we are supposed to be loading the bootloader code.
 	if [ $UPLOAD_BOOTLOADER ]; then
-		# This method of uplaoding cannot upload bootloaders so give an error.
-		echo -e "${RED}The CAN uploader cannot uploade bootloaders.  Aborting...\n${NO_COLOUR}"
+		# This method of uploading cannot upload bootloaders so give an error.
+		echo -e "${RED}The CAN uploader cannot upload bootloaders.  Aborting...\n${NO_COLOUR}"
 		return 1
 	fi
 
 	# Unpack the AVR compiler, since we will need its binutils as well as AVRDUDE which we assume is part of the package.
 	unpack_avrc
 	
+	# Unpack the actual uploader.
 	unpack_uploader
 
 	# Set the file to flash to be the application binary.
@@ -151,7 +152,7 @@ upload_can()
 		return 1
 	fi
 	
-	# Check if the component/build configuration set specified the node id.
+	# Check if the component/build configuration specified a node ID to use.
 	if [[ ! -z ${NODE_ID} ]]; then
 		# The setting was specified.  Check if the user wants to use this.
 		echo -e "${CYAN}The configuration for component $COMPONENT specifies the target node ID as ${NODE_ID}.${NO_COLOUR}"
@@ -166,7 +167,7 @@ upload_can()
 		fi
 	fi
 	
-	# Check if the programmer has been chosen yet.
+	# Check if the node ID has been chosen yet.
 	if [ -z ${NODE_ID} ]; then
 		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
 		while :
@@ -196,7 +197,7 @@ upload_can()
 
 	fi	
 	
-	# Check if the component/build configuration set specified the bitrate.
+	# Check if the component/build configuration specified the bitrate.
 	if [[ ! -z ${CAN_BAUD_RATES} ]]; then
 		# The setting was specified.  Check if the user wants to use this.
 		echo -e "${CYAN}The configuration for component $COMPONENT specifies the CAN bus bitrate as ${CAN_BAUD_RATES}kbps.${NO_COLOUR}"
@@ -241,7 +242,7 @@ upload_can()
 
 	fi	
 
-	# Figure out what the AVRDUDE 'programmer device' and 'programmer type' settings should be.
+	# Figure out what the interface device should be.
 
 	# Check if the component/build configuration set specified the device file.
 	if [[ ! -z ${CAN_TYPE} ]]; then
@@ -268,7 +269,9 @@ upload_can()
 		upload_can_finddevice_microchipcan
 	fi
 	
-	# TODO - Look for other types of programmers.
+	# TODO - Look for other types of interface devices.
+
+	# If a suitable hardware device was detected, see if the user wants to use it.
 	if [ ! -z ${CAN_TYPE} ]; then
 		# The setting was specified.  Check if the user wants to use this.
 		echo -e "${CYAN}Found a CAN interface and it's a '${CAN_TYPE}' type interface.${NO_COLOUR}"
@@ -284,37 +287,37 @@ upload_can()
 		fi
 	fi
 
-	# Check if the programmer has been chosen yet.
+	# Check if the interface device has been chosen yet.
 	if [ -z ${CAN_TYPE} ]; then
-		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
-		while :
+		# Prompt the user.
+		echo -e "${GREEN}Which type of CAN interface device would you like to use for this component?${NO_COLOUR}"
+
+		# Create a menu of choices and have the user select one.
+		CAN_TYPES=( "socket microchip None" )
+		select CAN_TYPE in ${CAN_TYPES}
 		do
-			# We will need to prompt the user for the value to use.
-			echo -e -n "${GREEN}Enter the type of CAN interface the uploader should use: ${NO_COLOUR}"
-			read
-			echo -e "" 
-
-			# Check the user actually entered something.
-			if [ -z "$REPLY" ]; then
-				# We'll just prompt again.
-				continue
-
-			# Check if the user actually just wants to exit without uploading anything.
-			elif [ "$REPLY" == "exit" ]; then
-				# Exit the script.
+			# Check if they chose not to upload the component.
+			if [ "${CAN_TYPE}" == "None" ]; then
+				# We skip this component.
+				echo -e "${CYAN}Aborting upload.\n${NO_COLOUR}"
+				CAN_TYPE=
 				return 1
 			fi
 
-			# TODO - Eventually, it might be nice to check if the entered value is legit.
-		
-			# Else we use whatever they entered.
-			CAN_TYPE=$REPLY
-			break
+			# Check if the selected load function is actually valid.
+			CAN_TYPE=$(echo "${CAN_TYPES}" | grep -w -o "${CAN_TYPE}")
+			if [ -z "${CAN_TYPE}" ]; then
+				# The selected interface type was not in the list of available types, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected the '${CAN_TYPE}' interface type.\n${NO_COLOUR}"
+				break
+			fi
 		done
 		
+		# If using the Socket CAN interface, then we will need some more information.
 		if [ ${CAN_TYPE} = "socket" ]; then
-		
-
 			# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
 			while :
 			do
@@ -343,14 +346,11 @@ upload_can()
 		fi
 	fi	
 
-	# TODO - Else, ask the user for any required information such as which node to upload to.
-	
+
+	# Collate the configuration information in to a string of parameters to pass to the uploader proper.
 	CAN_PARAMS="can-type=${CAN_TYPE}:target=${NODE_ID}:bitrate=${CAN_BAUD_RATES}000"
-	
 	if [[ ! -z ${CAN_IFACE} ]]; then
-	
 		CAN_PARAMS="$CAN_PARAMS:iface=${CAN_IFACE}"
-		
 	fi
 
 	# We don't need to unpack any other tools.

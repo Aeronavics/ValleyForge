@@ -45,6 +45,8 @@ echo -e "${CYAN}Imported ARM make-functions.\n${NO_COLOUR}"
 
 makearm()
 {
+	# TODO - At the moment, there doesn't seem to be support for assembler files here.
+
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -59,7 +61,7 @@ makearm()
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
 	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# If we are using a linker script, then add the appropriate linker flags to use it.
+	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
 		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
@@ -68,46 +70,31 @@ makearm()
 		LFLAGS="-T linker_script.ld $LFLAGS"
 	fi
 
-	# Get a list of names of source and header files.
-	C_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_FILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	
-	# Get a list of all the library source and header files.
-	C_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	O_LIBFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/*/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-
-	# Get a list of all the HAL source and header files.
-	C_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.c 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	P_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.cpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	H_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.h $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.hpp 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	S_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.s 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
-	O_HALFILES=$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/hal/*.o 2>/dev/null | sed ':a;N;$!ba;s/\n/ /g')
+	# Work out what the executable file which forms this component is.
+	if [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c ]; then
+		# The main file is a C file.
+		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c
+	elif [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp ]; then
+		# The main file is a C++ file.
+		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp
+	else
+		# There doesn't seem to be an suitable main file for the component.  Abort.
+		echo -e "${RED}No suitable main file found.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
 								
 	# Update the working makefile with the appropriate values for this component.	
-	sed -i "s^\(MCPU *= *\)BUILD_INSERTS_MCU_CODE_HERE^\1$MCU_CODE^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile	# NOTE - Using '^' as delimiters.
-	sed -i "s^\(CC *= *\)BUILD_INSERTS_C_COMPILER_HERE^\1$C_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(PC *= *\)BUILD_INSERTS_P_COMPILER_HERE^\1$P_COMPILER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(AS *= *\)BUILD_INSERTS_ASSEMBLER_HERE^\1$ASSEMBLER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LD *= *\)BUILD_INSERTS_LINKER_HERE^\1$LINKER^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(CFLAGS *= *.* *\)BUILD_INSERTS_CFLAGS_HERE^\1$CFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(PFLAGS *= *.* *\)BUILD_INSERTS_PFLAGS_HERE^\1$PFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(AFLAGS *= *.* *\)BUILD_INSERTS_AFLAGS_HERE^\1$AFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LFLAGS *= *.* *\)BUILD_INSERTS_LFLAGS_HERE^\1$LFLAGS^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(SRC_C *= *\).*^\1$C_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(SRC_P *= *\).*^\1$P_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(SRC_H *= *\).*^\1$H_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(SRC_S *= *\).*^\1$S_FILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_C *= *\).*^\1$C_LIBFILES $C_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_P *= *\).*^\1$P_LIBFILES $P_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_H *= *\).*^\1$H_LIBFILES $H_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_S *= *\).*^\1$S_LIBFILES $S_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(LIBSRC_O *= *\).*^\1$O_LIBFILES $O_HALFILES^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -i "s^\(TARGET *= *\).*^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1$COMPONENT_NAME\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
