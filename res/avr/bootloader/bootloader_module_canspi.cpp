@@ -465,6 +465,10 @@ void bootloader_module_canspi::exit(void)
 	// Reset spi peripheral to intial startup values 
 	DDRB = 0x00;// Reset all spi pins to inputs
 	SPCR = 0x00;
+	
+	// Reset interrupt pin
+	PCMSK2 &= ~(1<<PCINT16);
+	PCICR &= ~(1<<PCIE2);
 
 	// All done.
 	return;
