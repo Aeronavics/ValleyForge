@@ -121,7 +121,8 @@ int main(int argc, char* argv[])
 		int pageNumber = pageAddress/opts.getPageSize();
 		do
 		{
-			std::cout << "Writing page: " <<  pageNumber << " of : " << maxPage << std::endl;
+			std::cout << "Writing page: " <<  pageNumber << " of : " << maxPage;
+			std::cout.flush();
 			if (!commModule->writePage(memory, opts.getPageSize(), pageAddress))
 			{
 				failed = true;
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
 				failed = false;
 			}
 			retries++;
-		
+			std::cout << "\r                                        " << "\r";
 		}
 		while (failed && retries < MAX_RETRIES);
 		
@@ -144,7 +145,8 @@ int main(int argc, char* argv[])
 		retries = 0;
 		do
 		{
-			std::cout << "Verifying page: " <<  pageNumber << " of : " << maxPage << std::endl;
+			std::cout << "Verifying page: " <<  pageNumber << " of : " << maxPage;
+			std::cout.flush();
 			if (!commModule->verifyPage(memory, opts.getPageSize(), pageAddress))
 			{
 				failed = true;
@@ -154,8 +156,13 @@ int main(int argc, char* argv[])
 				failed = false;
 			}
 			retries++;
+			if (pageAddress != endPage)
+			{
+				std::cout << "\r                                          " << "\r";
+			}
 		}
 		while (failed && retries < MAX_RETRIES);
+		
 		
 		if (failed)
 		{
@@ -163,6 +170,8 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
+	
+	std::cout << std::endl;
 	//~ 
 	
 	
