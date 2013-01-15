@@ -34,19 +34,11 @@
 // INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
 #include <avr/interrupt.h>
-#include <avr/eeprom.h>
 
 // DEFINE CONSTANTS
-	
-	// Device infromation
-#define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
-#define DEVICE_SIGNATURE_1 SIGNATURE_0
-#define DEVICE_SIGNATURE_2 SIGNATURE_1
-#define DEVICE_SIGNATURE_3 SIGNATURE_2
 
 	// Bootloader information
-#define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>// Define the address at which the bootloader code starts.
-const uint16_t BOOTLOADER_VERSION = 0x0100; //TODO - how is this updated.
+#define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 const uint8_t ALERT_UPLOADER_PERIOD = 10;//x10 ms to send each alert_host message before communication has begun
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
@@ -434,14 +426,19 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message_type = GET_INFO;
 	
 	// Insert Device signaure
-	transmission_message.message[0] = DEVICE_SIGNATURE_0;
-	transmission_message.message[1] = DEVICE_SIGNATURE_1;
-	transmission_message.message[2] = DEVICE_SIGNATURE_2;
-	transmission_message.message[3] = DEVICE_SIGNATURE_3;
+	uint8_t device_signature[4];
+	get_device_signature(device_signature);
+	
+	transmission_message.message[0] = device_signature[0];
+	transmission_message.message[1] = device_signature[1];
+	transmission_message.message[2] = device_signature[2];
+	transmission_message.message[3] = device_signature[3];
 	
 	// Insert bootloader version
-	transmission_message.message[4] = static_cast<uint8_t>(BOOTLOADER_VERSION >> 8);
-	transmission_message.message[5] = static_cast<uint8_t>(BOOTLOADER_VERSION);
+	uint16_t bootloader_version = get_bootloader_version();
+	
+	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
+	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
 
