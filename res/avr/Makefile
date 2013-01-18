@@ -29,7 +29,6 @@ SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
 OUTFILE=${COMPONENT}.out # The output file which generally needs to be created.
-MAINFILE=BUILD_INSERTS_MAINFILE_HERE # The executable source file which needs to be built (usually contains main).
 
 # Target Details.
 MCU=BUILD_INSERTS_MCU_CODE_HERE # The name/type of the target controller (as used by the compiler).
@@ -48,7 +47,7 @@ SIZE=BUILD_INSERTS_SIZE_HERE # The size utility (binary inspector) to use.
 OPTLEVEL=s # Optimization level to use: s (for size), 1, 2, 3 (for performance) or 0 (none).
 CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall # The C compiler flags to apply.
 PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
-AFLAGS=	-mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
+AFLAGS=	-mmcu=$(MCU) -Wa BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
 LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 
 # PSEUDO-TARGETS
@@ -68,7 +67,7 @@ stats: ${MAIN}
 
 #	OUTPUT FILES.
 
-%.out: %.o
+%.out:
 	@echo "******** Linking $@ from Object Files. ********"
 	$(LD) $(LFLAGS) -o $@ $(shell find . -name "*.o")
 
@@ -94,14 +93,20 @@ stats: ${MAIN}
 
 # Object from assembly.
 %.o : %.s
-	@echo "******** Assembling $@. ********"
-	$(CC) $(AFLAGS) -c $< -o $@
+	@echo "******** Compiling $@. ********"
+	$(AS) $(AFLAGS) $< -o $@
 
 #	ASSEMBLY FILES.
 
-# ASM from (hand coded) asm
-%.S: %.s
-	$(CC) -S $(AFLAGS) $< > $@
+# ASM from C.
+%.s: %.c
+	@echo "******** Assembling $@. ********"
+	$(CC) $(CFLAGS) -s $< -o $@
+
+# ASM from CPP.
+%.s: %.cpp
+	@echo "******** Assembling $@. ********"
+	$(CC) $(CFLAGS) -s $< -o $@
 
 # DEPENDENCY TARGETS.
 
@@ -111,7 +116,7 @@ stats: ${MAIN}
 # we created.
 
 # Dependency from C.
-%.d: %.c
+%.dc: %.c
 	@echo "******** Calculating dependencies for $*. ********"
 	${CC} ${CFLAGS} -MM $^ > $@
 	@while read -a line; do \
@@ -126,7 +131,7 @@ stats: ${MAIN}
 	@cat $@
 
 # Dependency from C++.
-%.dpp: %.cpp
+%.dcpp: %.cpp
 	@echo "******** Calculating dependencies for $*. ********"
 	${PC} ${PFLAGS} -MM $^ > $@
 	@while read -a line; do \
@@ -140,16 +145,35 @@ stats: ${MAIN}
 	done < $@
 	@cat $@
 
+# The dependencies for the target output file are created by assuming that the target output file requires some object file (at least).  Further,
+# it is assumed in this implementation that whilst the main object file will include the required chain of files for C and C++ sources, there may
+# also be some assembler files required: currently, any assembler files will be listed for linking.
+
+# Dependencies of component.
+${COMPONENT}.d:
+	@echo "******** Calculating component dependencies. ********"
+	@# Work out what the main file is going to be, so we can build the output file.
+	@echo -e "${OUTFILE}: ${COMPONENT}.o\n" >> ${COMPONENT}.d
+	@# Add in any floating assembler files.
+	@echo -e "${COMPONENT}.o: ${patsubst %.s, %.o, ${wildcard *.s}}" >> ${COMPONENT}.d
+
 # IMPORT EXTERNAL DEPENDENCIES.
 
 # Dependencies are calculated for all the source files, even if they might not be needed, because there isn't an option to go back and include
 # additional rules later, so we have to include all the rules we might possibly need right from the start.
 
 # Include dependencies for C files.
--include ${patsubst %.c, %.d, ${wildcard *.c}}
--include ${patsubst %.c, %.d, ${wildcard **/*.c}}
+-include ${patsubst %.c, %.dc, ${wildcard *.c}}
+-include ${patsubst %.c, %.dc, ${wildcard **/*.c}}
 
 # Include dependencies for C++ files.
--include ${patsubst %.cpp, %.dpp, ${wildcard *.cpp}}
--include ${patsubst %.cpp, %.dpp, ${wildcard **/*.cpp}}
+-include ${patsubst %.cpp, %.dcpp, ${wildcard *.cpp}}
+-include ${patsubst %.cpp, %.dcpp, ${wildcard **/*.cpp}}
+
+# Dependencies also need to be calculated for the component as a whole, so that we actually have some rules which create us the desired output
+# file, using the appropriate source files.
+
+# Include dependencies for main.
+-include ${COMPONENT}.d
+
 

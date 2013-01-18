@@ -69,28 +69,15 @@ makeavr()
 		# A linker script is specified, so set the linker flags to refer to it.
 		LFLAGS="-T linker_script.x $LFLAGS"
 	fi
-
-	# Work out what the executable file which forms this component is.
-	if [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c ]; then
-		# The main file is a C file.
-		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.c
-	elif [ -f  $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp ]; then
-		# The main file is a C++ file.
-		MAINFILE=TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT.cpp
-	else
-		# There doesn't seem to be an suitable main file for the component.  Abort.
-		echo -e "${RED}No suitable main file found.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
-		return 1
-	fi
 						
 	# Update the working makefile with the appropriate values for this component.
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1$COMPONENT_NAME\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1bootloader\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -198,28 +185,15 @@ makeavr_bootloader()
 		# A linker script is specified, so set the linker flags to refer to it.
 		LFLAGS="-T linker_script.x $LFLAGS"
 	fi
-
-	# Work out what the executable file which forms this component is.
-	if [ -f  $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.c ]; then
-		# The main file is a C file.
-		MAINFILE=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.c
-	elif [ -f  $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.cpp ]; then
-		# The main file is a C++ file.
-		MAINFILE=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.cpp
-	else
-		# There doesn't seem to be an suitable main file for the component.  Abort.
-		echo -e "${RED}No suitable main file found.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"
-		return 1
-	fi
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}_bootloader\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
-	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
