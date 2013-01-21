@@ -94,14 +94,20 @@ stats: ${MAIN}
 
 # Object from assembly.
 %.o : %.s
-	@echo "******** Assembling $@. ********"
-	$(CC) $(AFLAGS) -c $< -o $@
+	@echo "******** Compiling $@. ********"
+	$(AS) $(AFLAGS) $< -o $@
 
 #	ASSEMBLY FILES.
 
-# ASM from (hand coded) asm
-%.S: %.s
-	$(CC) -S $(AFLAGS) $< > $@
+# ASM from C.
+%.s: %.c
+	@echo "******** Assembling $@. ********"
+	$(CC) $(CFLAGS) -s $< -o $@
+
+# ASM from CPP.
+%.s: %.cpp
+	@echo "******** Assembling $@. ********"
+	$(CC) $(CFLAGS) -s $< -o $@
 
 # DEPENDENCY TARGETS.
 
@@ -111,7 +117,7 @@ stats: ${MAIN}
 # we created.
 
 # Dependency from C.
-%.d: %.c
+%.dc: %.c
 	@echo "******** Calculating dependencies for $*. ********"
 	${CC} ${CFLAGS} -MM $^ > $@
 	@while read -a line; do \
@@ -126,7 +132,7 @@ stats: ${MAIN}
 	@cat $@
 
 # Dependency from C++.
-%.dpp: %.cpp
+%.dcpp: %.cpp
 	@echo "******** Calculating dependencies for $*. ********"
 	${PC} ${PFLAGS} -MM $^ > $@
 	@while read -a line; do \
@@ -140,16 +146,35 @@ stats: ${MAIN}
 	done < $@
 	@cat $@
 
+# The dependencies for the target output file are created by assuming that the target output file requires some object file (at least).  Further,
+# it is assumed in this implementation that whilst the main object file will include the required chain of files for C and C++ sources, there may
+# also be some assembler files required: currently, any assembler files will be listed for linking.
+
+# Dependencies of component.
+${COMPONENT}.d:
+	@echo "******** Calculating component dependencies. ********"
+	@# Work out what the main file is going to be, so we can build the output file.
+	@echo -e "${OUTFILE}: ${COMPONENT}.o\n" >> ${COMPONENT}.d
+	@# Add in any floating assembler files.
+	@echo -e "${COMPONENT}.o: ${patsubst %.s, %.o, ${wildcard *.s}}" >> ${COMPONENT}.d
+
 # IMPORT EXTERNAL DEPENDENCIES.
 
 # Dependencies are calculated for all the source files, even if they might not be needed, because there isn't an option to go back and include
 # additional rules later, so we have to include all the rules we might possibly need right from the start.
 
 # Include dependencies for C files.
--include ${patsubst %.c, %.d, ${wildcard *.c}}
--include ${patsubst %.c, %.d, ${wildcard **/*.c}}
+-include ${patsubst %.c, %.dc, ${wildcard *.c}}
+-include ${patsubst %.c, %.dc, ${wildcard **/*.c}}
 
 # Include dependencies for C++ files.
--include ${patsubst %.cpp, %.dpp, ${wildcard *.cpp}}
--include ${patsubst %.cpp, %.dpp, ${wildcard **/*.cpp}}
+-include ${patsubst %.cpp, %.dcpp, ${wildcard *.cpp}}
+-include ${patsubst %.cpp, %.dcpp, ${wildcard **/*.cpp}}
+
+# Dependencies also need to be calculated for the component as a whole, so that we actually have some rules which create us the desired output
+# file, using the appropriate source files.
+
+# Include dependencies for main.
+-include ${COMPONENT}.d
+
 

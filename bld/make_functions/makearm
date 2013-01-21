@@ -82,6 +82,12 @@ makearm()
 		echo -e "${RED}No suitable main file found.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
 		return 1
 	fi
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
