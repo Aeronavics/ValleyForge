@@ -53,6 +53,20 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+// Struct type to hold all of the variables that can be shared
+typedef struct{
+	void* shut_down_state_mem;
+	uint16_t clean_flag;
+	uint16_t bootloader_version;
+}shared_bootloader_variables;
+
+// Functions pointers
+typedef void (*function_pointer1)(void*);
+typedef void (*function_pointer2)(void*,uint16_t);
+typedef shared_bootloader_variables* (*function_pointer3)(void);
+typedef bool (*function_pointer4)(void*,uint16_t);
+
+
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
@@ -72,7 +86,7 @@ int main(void);
  *
  *	RETURNS: 	Nothing.
  */
-void boot_mark_clean(void);
+void boot_mark_clean(void* mem_address, uint16_t flag);
 
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
@@ -86,7 +100,24 @@ void boot_mark_clean(void);
  *
  *	RETURNS: 	Nothing.
  */
-void boot_mark_dirty(void);
+void boot_mark_dirty(void* mem_address);
+
+
+shared_bootloader_variables* get_bootloader_information(void);
+
+
+// Avoid name mangling
+extern "C" void boot_mark_clean_BL(void* arg1, uint16_t arg2){
+	boot_mark_clean(arg1,arg2);
+}
+ 
+extern "C" void boot_mark_dirty_BL(void* arg1){
+	boot_mark_dirty(arg1);
+}
+
+extern "C" shared_bootloader_variables* get_bootloader_information_BL(void){
+	return get_bootloader_information();
+}
 
 #endif /*__BOOTLOADER_H__*/
 

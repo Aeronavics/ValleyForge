@@ -51,6 +51,8 @@ CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-stru
 PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
 AFLAGS=	-I . -mmcu=$(MCU) -x assembler-with-cpp -Wa -gstabs BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
 LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) -Wl,--section-start=.text=$(BOOTSTART) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
+LFLAGS += -Wl,--section-start=.shared_jumptable=0x1FFDF
+LFLAGS += -Wl,--undefined=_jumptable
 
 # PSEUDO-TARGETS
 
