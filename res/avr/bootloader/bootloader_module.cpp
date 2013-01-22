@@ -23,13 +23,15 @@
  *
  *  DATE CREATED:	22-12-2011
  *
- *	Implements the interface for plug-in modules to the AVR bootloader.
+ *	Implements the interface for plug-in modules to the Modular AVR Bootloader.
  *
  ********************************************************************************************************************************/
 
 // INCLUDE THE MATCHING HEADER FILE.
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
+
+// INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
 // DEFINE CONSTANTS
 

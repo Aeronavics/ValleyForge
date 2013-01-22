@@ -75,13 +75,38 @@ class bootloader_module_isp : public bootloader_module
 		 */
 		virtual void exit();
 
+		/**
+		 *	Performs functionality which must be executed every cycle of the bootloader mainloop.
+		 *
+		 *	NOTE - Flash pages received asynchronously will not be written to flash if this blocks continuously.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		virtual void event_idle();
+
+		/**
+		 *	Performs functionality which must be executed on a periodic basis.  The function will be called with a period defined by the const
+		 *	value MODULE_EVENT_PERIOD.
+		 *
+		 *	NOTE - This function is called from an ISR.  It must not block for extended periods.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		virtual void event_periodic();
+		
 	private:
 };
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
+extern bootloader_module_isp module;
+
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
-#endif /*__BOOTLOADER_MODULE_ISP_H__*/
+#endif // __BOOTLOADER_MODULE_ISP_H__
 
 // ALL DONE.

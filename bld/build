@@ -288,6 +288,110 @@ get_hal()
 	return
 }
 
+# Fetch source code into the temporary work location.
+fetch_source()
+{
+	# Fetch the source files for the component being built.
+	echo -e "${CYAN}Fetching source files...\n${NO_COLOUR}"
+
+	# Count the number of C files in the source folder for this component.
+	C_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
+	echo -e "${WHITE}Found $C_COUNT C source files.\n${NO_COLOUR}"
+
+	# Count the number of CPP files in the source folder for this component.
+	P_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.cpp 2>/dev/null | wc -l`
+	echo -e "${WHITE}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
+
+	# Count the number of S files in the source folder for this component.
+	S_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.s 2>/dev/null | wc -l`
+	echo -e "${WHITE}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
+
+	# If there are no C source files and no assembler source files, then there is nothing to do.
+	if [ $C_COUNT == "0" ] && [ $P_COUNT == "0" ] && [ $S_COUNT == "0" ]; then
+		# There are no source files, so skip this component and move on.
+		echo -e "${YELLOW}No source files present in source folder.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
+	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Copy all the source files into the tmp directory, where the actual making will occur.
+	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.hpp $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+
+	# All done.
+	return 0
+}
+
+# Do generic pre-compile tasks; fetching source and preprocessing.
+generic_precompile()
+{
+	# Fetch all the source code.
+	if ! fetch_source; then
+		# Fetching the source failed, so there is nothing to do.
+		NOCODE=1
+		return 1
+	fi
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h; do
+		# Preprocess this header file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied header files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp; do
+		# Preprocess this header file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied source files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied source files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Preprocess the copied assembler files.
+	shopt -s nullglob
+	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s; do
+		# Preprocess this source file.
+		preprocess_general $FILE
+	done
+	shopt -u nullglob
+
+	# Check to see if the platform is freertos.
+	if [ $PLATFORM == "freertos" ]; then
+	    # Fetch the freertos files.
+	    get_rtos_files
+	fi
+
+	# Fetch any user library files which might be required.
+	get_suitable_libs
+
+	# Fetch the HAL library files.
+	get_hal
+
+	# TODO - If there is anything required to set up the platform, maybe it goes about here?
+
+	# All done.
+	return 0
+}
+
 # Print a usage message.
 usage()
 {
@@ -305,7 +409,8 @@ Options:
 	-h --help			Show this message.
 	-a --all			Build all components.
 	-r --retain			Retain temporary files at completion of script.
-	-l --loader			Build the bootloader for each component as well.
+	-b --bootloader			Build the bootloader for each component as well.
+	-f --filesystem			Build the filesystem for each component as well. (Where appropriate.)
 	-n --name <Component Name>	Specify the name of a component to build.
 	-p --postpack			Pack up the compilers used after the build (takes longer next time).
 	   --nohal			Do not compile using the HAL (mostly for debugging).
@@ -328,14 +433,15 @@ echo -e "${BOLD_CYAN}Parsing command line parameters...\n${NO_COLOUR}"
 NAME=
 RETAIN=
 ALL=
-LOADER=
+BUILD_BOOTLOADER=
+BUILD_FILESYSTEM=
 NOHAL=
 POSTPACK=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harlpcn:"
-LONGOPTS="help,all,retain,loader,postpack,clean,nohal,name:"
+SHORTOPTS="harbfpcn:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,clean,nohal,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -358,9 +464,13 @@ while true; do
 			# Select 'retaining temporary files'.
 			RETAIN=1
 			;;
-		-l|--loader)
+		-b|--bootloader)
 			# Select 'creating bootloaders'.
-			LOADER=1
+			BUILD_BOOTLOADER=1
+			;;
+		-f|--filesystem)
+			# Select 'creating root filesystems'.
+			BUILD_FILESYSTEM=1
 			;;
 		-p|--postpack)
 			# Select 'pack up compilers, post build'.
@@ -522,101 +632,63 @@ do
 		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
 	fi
 
-	# TODO - If there is anything required to set up the platform, maybe it goes about here?
-	
 	# Now, we compile the application code.
-	echo -e "${CYAN}Compiling application code...\n${NO_COLOUR}"
-
-	# Count the number of C files in the source folder for this component.
-	C_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.c 2>/dev/null | wc -l`
-	echo -e "${CYAN}Found $C_COUNT C source files.\n${NO_COLOUR}"
-
-	# Count the number of CPP files in the source folder for this component.
-	P_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.cpp 2>/dev/null | wc -l`
-	echo -e "${CYAN}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
-
-	# Count the number of S files in the source folder for this component.
-	S_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.s 2>/dev/null | wc -l`
-	echo -e "${CYAN}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
-
-	# If there are no C source files and no assembler source files, then there is nothing to do.
-	if [ ! $C_COUNT ] && [ ! $P_COUNT ] && [ ! $S_COUNT ]; then
-		# There are no source files, so skip this component and move on.
-		echo -e "${YELLOW}No source files present in source folder.  Skipping component $COMPONENT\n${NO_COLOUR}"
-		continue
-	fi
-
-	# Make sure there aren't any old files in the spot we are about to put new files.
-	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
-	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.hpp $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
-
-	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h; do
-		# Preprocess this header file.
-		preprocess_general $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp; do
-		# Preprocess this header file.
-		preprocess_general $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c; do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp; do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied assembler files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s; do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
-	shopt -u nullglob
-
-	# Check to see if the platform is freertos.
-	if [ $PLATFORM == "freertos" ]; then
-	    # Fetch the freertos files.
-	    get_rtos_files
-	fi
-
-	# Fetch any user library files which might be required.
-	get_suitable_libs
-
-	# Fetch the HAL library files.
-	get_hal
+	echo -e "${CYAN}Making application code...\n${NO_COLOUR}"
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
+	REPLY=$?
 
-	# Check if the make function worked.  If not, we don't go any further with this component.
-	if [ $? != 0 ]; then
+	# Check if there wasn't actually anything to build.
+	if [ $NOCODE ]; then
+		# There wasn't anything to build, so we just carry on.									
+		echo -e "${YELLOW}Skipped application build for component $COMPONENT.\n${NO_COLOUR}"
+		NOCODE=
+
+	# Check if the make function worked.  If not, we don't go any further with this component.	
+	elif [ $REPLY != 0 ]; then
 		# We just skip the bootloader and anything else, and move on.
 		echo -e "${YELLOW}Application code build failed.  Skipping additional build stages...\n${NO_COLOUR}"
 		continue
 	fi
 
+	# Check if we should also make the corresponding filesystem for this component.
+	if [ $BUILD_FILESYSTEM -a $FSFUNCTION ]; then
+		# We need to make the corresponding filesystem as well.
+
+		# Now, we build the filesystem for the component.
+		echo -e "${CYAN}Building filesystem for component ${COMPONENT}...\n${NO_COLOUR}"
+	
+		# Check that the make function specified by the bootloader configuration actually exists.
+		if [ `declare -f | grep "$FSFUNCTION" | wc -l` == 0 ]; then
+			# The specified make function doesn't exist, so skip this and move on.
+			echo -e "${RED}Build configuration specifies an invalid filesystem make function.  Skipping creating filesystem for component $COMPONENT.\n${NO_COLOUR}"
+		else
+			# Now, we compile the bootloader.
+			echo -e "${CYAN}Making filesystem...\n${NO_COLOUR}"
+		
+			# Actually run the appropriate make function for this build configuration.
+			$FSFUNCTION
+			REPLY=$?
+
+			# Check if there wasn't actually anything to build.
+			if [ $NOCODE ]; then
+				# There wasn't anything to build, so we just carry on.
+				echo -e "${YELLOW}Skipped filesystem build for component $COMPONENT.\n${NO_COLOUR}"
+				NOCODE=
+
+			# Check if the make function worked.  If not, we don't go any further with this component.	
+			elif [ $REPLY != 0 ]; then
+				# We just skip anything else, and move on.
+				echo -e "${YELLOW}Filesystem build failed.  Skipping additional build stages...\n${NO_COLOUR}"
+				continue
+			fi
+
+		fi
+	fi
+
 	# Check if we should also make the corresponding bootloader for this component.
-	if [ $BOOTLOADER ]; then
+	if [ $BUILD_BOOTLOADER -a $BOOTLOADER ]; then
 		# We need to make the corresponding bootloader as well.
 
 		# Now, we build the bootloader code for the component.
@@ -640,7 +712,7 @@ do
 			$BLOADCONF
 
 			# Check that all the required variables were set by the bootloader configuration.
-			if [ -z "$BLOAD_NAME" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ]; then
+			if [ -z "$BLOAD_NAME" ] || [ -z "$MAKEFUNCTION" ]; then
 				# At least one of the required variables was not set, so skip this and move on.
 				echo -e "${RED}Bootloader configuration incomplete.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
 				continue
@@ -658,10 +730,24 @@ do
 		fi
 
 		# Now, we compile the bootloader.
-		echo -e "${CYAN}Compiling bootloader...\n${NO_COLOUR}"
+		echo -e "${CYAN}Making bootloader...\n${NO_COLOUR}"
 
 		# Actually run the appropriate make function for this build configuration.
 		$MAKEFUNCTION
+		REPLY=$?
+
+		# Check if there wasn't actually anything to build.
+		if [ $NOCODE ]; then
+			# There wasn't anything to build, so we just carry on.									
+			echo -e "${YELLOW}Skipped bootloader build for component $COMPONENT.\n${NO_COLOUR}"
+			NOCODE=
+
+		# Check if the make function worked.  If not, we don't go any further with this component.	
+		elif [ $REPLY != 0 ]; then
+			# We just skip anything else, and move on.
+			echo -e "${YELLOW}Bootloader code build failed.\n${NO_COLOUR}"
+			continue
+		fi
 	fi
 done
 
