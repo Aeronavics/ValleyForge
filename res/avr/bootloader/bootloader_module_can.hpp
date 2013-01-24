@@ -29,8 +29,8 @@
  ********************************************************************************************************************************/
 
 // Only include this header file once.
-#ifndef __BOOTLOADER_MODULE_CAN_H__
-#define __BOOTLOADER_MODULE_CAN_H__
+#ifndef __bootloader_module_can_H__
+#define __bootloader_module_can_H__
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
@@ -39,28 +39,25 @@
 // Include the bootloader can module information sharing struct type.
 #include "../../../res/avr/bootloader/application_interface/shared_bootloader_module_constants_can.hpp"
 
-// Include can message ids
-#include "../../../res/common/can_messages.hpp"
-
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-class bootloader_module_can : public bootloader_module
+class bootloader_module_can : public Bootloader_module
 {
 	public:
 		
 			// Struct for CAN message information.
-		struct message_info
+		struct Message_info
 		{
 			bool confirmed_send;
 			bool message_received;
 			uint16_t message_type;
 			uint16_t dlc;
-			uint8_t message[8];// CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
+			uint8_t message[8];// CAN messages can only be 8 bytes long.
 		};
 
 		// Class fields.
-		volatile message_info reception_message; // This will be updated by CANIT ISR.
-		message_info transmission_message;
+		volatile Message_info reception_message; // This will be updated by CANIT ISR.
+		Message_info transmission_message;
 
 		// Class methods.
 	
@@ -153,7 +150,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_memory_procedure(firmware_page& current_firmware_page);
+		void write_memory_procedure(Firmware_page& current_firmware_page);
 
 		/**
 		 *	Procedure when a write_data message is received. Saves message data into a buffer which can then be written to the FLASH.
@@ -162,7 +159,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_data_procedure(firmware_page& current_firmware_page);
+		void write_data_procedure(Firmware_page& current_firmware_page);
 	
 		/**
 		 *	Procedure when a read_memory message is received. Saves the Flash page number and the length of code to read.
@@ -171,7 +168,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void read_memory_procedure(firmware_page& current_firmware_page);
+		void read_memory_procedure(Firmware_page& current_firmware_page);
 
 		/**
 		 *	Sends the copy of the FLASH page in messages.
@@ -180,7 +177,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void send_flash_page(firmware_page& current_firmware_page);
+		void send_flash_page(Firmware_page& current_firmware_page);
 
 		/**
 		 *	Executes the corresnponding procedure for a received message.
@@ -190,7 +187,7 @@ class bootloader_module_can : public bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void filter_message(firmware_page& current_firmware_page);
+		void filter_message(Firmware_page& current_firmware_page);
 
 		/**
 		 *	Sends the uploader a message informing it that the microcontroller is awaiting firmware messages.
@@ -215,8 +212,8 @@ extern bootloader_module_can module;
  *
  *	RETURNS: 	Nothing.
  */
-void get_bootloader_module_information(shared_bootloader_module_constants* bootloader_module_information);
+void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information);
 
-#endif // __BOOTLOADER_MODULE_CAN_H__
+#endif // __bootloader_module_can_H__
 
 // ALL DONE.

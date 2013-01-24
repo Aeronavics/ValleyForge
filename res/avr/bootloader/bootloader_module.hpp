@@ -44,10 +44,10 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-// Time in milliseconds between calls of event_periodic() for the bootloader module.
+	// Time in milliseconds between calls of event_periodic() for the bootloader module.
 const uint16_t MODULE_EVENT_PERIOD = 1;
 
-struct firmware_page
+struct Firmware_page
 {
 		bool ready_to_write;
 		bool ready_to_read;
@@ -57,7 +57,7 @@ struct firmware_page
 		uint16_t code_length;
 };
 
-class bootloader_module
+class Bootloader_module
 {
 	public:		
 		// Functions.
@@ -67,7 +67,7 @@ class bootloader_module
 		 *	
 		 *	NOTE - This needs to be virtual so that the default destructor of any derived classes is always used.
 		 */
-		virtual ~bootloader_module() = 0;
+		virtual ~Bootloader_module() = 0;
 
 		/**
 		 *	Starts up the module; initialize whatever peripherals are required, configures interrupts, etc.
@@ -121,7 +121,7 @@ class bootloader_module
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
-extern firmware_page buffer;
+extern Firmware_page buffer;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 

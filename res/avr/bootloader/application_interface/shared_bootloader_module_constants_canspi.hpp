@@ -10,7 +10,7 @@
  *
  ********************************************************************************************************************************/
  
-struct shared_bootloader_module_constants{
+struct Shared_bootloader_module_constants{
 	uint8_t node_id;
 	uint16_t baud_rate;
 };

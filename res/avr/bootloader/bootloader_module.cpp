@@ -43,7 +43,7 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-bootloader_module::~bootloader_module()
+Bootloader_module::~Bootloader_module()
 {
 	// All done.
 	return;

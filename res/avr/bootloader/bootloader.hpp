@@ -62,8 +62,6 @@
 
 int main(void);
 
-// TODO - Some crazy magic with the toolchain is required here, so that these functions are visible from userland.
-
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should start the application on the next CPU reset.
  *
@@ -77,7 +75,7 @@ int main(void);
  */
 void boot_mark_clean(void);
 
-	// Avoids name mangling for the shared jumptable
+	// NOTE - Avoids using name mangled function name for the shared jumptable
 extern "C" void boot_mark_clean_BL(void){
 	boot_mark_clean();
 }
@@ -96,7 +94,7 @@ extern "C" void boot_mark_clean_BL(void){
  */
 void boot_mark_dirty(void);
 
-	// Avoids name mangling for the shared jumptable
+	// NOTE - Avoids using name mangled function name for the shared jumptable
 extern "C" void boot_mark_dirty_BL(void){
 	boot_mark_dirty();
 }
@@ -108,10 +106,10 @@ extern "C" void boot_mark_dirty_BL(void){
  *
  *	RETURNS: 	Nothing.
  */
-void get_bootloader_information(shared_bootloader_constants* bootloader_information);
+void get_bootloader_information(Shared_bootloader_constants* bootloader_information);
 
-	// Avoids name mangling for the shared jumptable
-extern "C" void get_bootloader_information_BL(shared_bootloader_constants* arg){
+	// NOTE - Avoids name mangling for the shared jumptable
+extern "C" void get_bootloader_information_BL(Shared_bootloader_constants* arg){
 	get_bootloader_information(arg);
 }
 

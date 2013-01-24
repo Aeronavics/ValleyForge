@@ -23,14 +23,14 @@
 #define SHARED_FUNCTION_4 (SHARED_FUNCTION_TABLE_BASE_ADDRESS + 0xC)
 
 	// Shared information structs
-shared_bootloader_constants BL_information_struct;
-shared_bootloader_module_constants BL_module_information_struct;
+Shared_bootloader_constants BL_information_struct;
+Shared_bootloader_module_constants BL_module_information_struct;
 
 	// Functions pointers
 typedef void (*function_pointer1)(void);
 typedef void (*function_pointer2)(void);
-typedef void (*function_pointer3)(shared_bootloader_constants*);
-typedef void (*function_pointer4)(shared_bootloader_module_constants*);
+typedef void (*function_pointer3)(Shared_bootloader_constants*);
+typedef void (*function_pointer4)(Shared_bootloader_module_constants*);
 
 
 /**
@@ -69,7 +69,7 @@ static __inline__ void boot_mark_dirty_app(void)
  *
  *	RETURNS: 	Nothing.
  */
-static __inline__ void get_bootloader_information_app(shared_bootloader_constants* bootloader_information)
+static __inline__ void get_bootloader_information_app(Shared_bootloader_constants* bootloader_information)
 { ((function_pointer3) (SHARED_FUNCTION_3/2))(bootloader_information); }
 
 /**
@@ -79,6 +79,6 @@ static __inline__ void get_bootloader_information_app(shared_bootloader_constant
  *
  *	RETURNS: 	Nothing.
  */
-static __inline__ void get_bootloader_module_information_app(shared_bootloader_module_constants* bootloader_module_information)
+static __inline__ void get_bootloader_module_information_app(Shared_bootloader_module_constants* bootloader_module_information)
 { ((function_pointer4) (SHARED_FUNCTION_4/2))(bootloader_module_information); }
 
