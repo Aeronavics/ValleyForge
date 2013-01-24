@@ -218,6 +218,191 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 	done
 fi
 
+# Prompts for CAN SPI parameters
+if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
+	# Prompt the user to select the port to use for the Slave select(SS) pin from MCP2515.
+	echo -e "${GREEN}Please choose which port the Slave select(SS) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PORTS in $PORT_COUNT
+		do
+			# Check if the selected component is actually valid.
+			PORTS=$(echo $PORT_COUNT | grep -w -o "$PORTS")
+			if [ -z "$PORTS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				SS_PORT="$PORTS"
+				echo -e "${CYAN}Selected port $SS_PORT.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+	# Prompt the user to select the pin to use for the Slave select(SS) pin from MCP2515.				
+	echo -e "${GREEN}Please choose which pin the Slave select(SS) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PINS in 0 1 2 3 4 5 6 7
+		do
+			# Check if the selected component is actually valid.
+			PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+			if [ -z "$PINS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				SS_PIN="$PINS"
+				echo -e "${CYAN}Selected pin $SS_PIN.\n${NO_COLOUR}"
+				break
+			fi
+		done
+		
+	# Prompt the user to select the port to use for the serial clock(SCK) pin from MCP2515.
+	echo -e "${GREEN}Please choose which port the serial clock(SCK) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PORTS in $PORT_COUNT
+		do
+			# Check if the selected component is actually valid.
+			PORTS=$(echo $PORT_COUNT | grep -w -o "$PORTS")
+			if [ -z "$PORTS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				SCK_PORT="$PORTS"
+				echo -e "${CYAN}Selected port $SCK_PORT.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+	# Prompt the user to select the pin to use for the serial clock(SCK) pin from MCP2515.				
+	echo -e "${GREEN}Please choose which pin the serial clock(SCK) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PINS in 0 1 2 3 4 5 6 7
+		do
+			# Check if the selected component is actually valid.
+			PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+			if [ -z "$PINS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				SCK_PIN="$PINS"
+				echo -e "${CYAN}Selected pin $SCK_PIN.\n${NO_COLOUR}"
+				break
+			fi
+		done	
+		
+	# Prompt the user to select the port to use for the master output, slave input(MOSI) pin from MCP2515.
+	echo -e "${GREEN}Please choose which port the master output, slave input(MOSI) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PORTS in $PORT_COUNT
+		do
+			# Check if the selected component is actually valid.
+			PORTS=$(echo $PORT_COUNT | grep -w -o "$PORTS")
+			if [ -z "$PORTS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				MOSI_PORT="$PORTS"
+				echo -e "${CYAN}Selected port $MOSI_PORT.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+	# Prompt the user to select the pin to use for the master output, slave input(MOSI) pin from MCP2515.				
+	echo -e "${GREEN}Please choose which pin the master output, slave input(MOSI) pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PINS in 0 1 2 3 4 5 6 7
+		do
+			# Check if the selected component is actually valid.
+			PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+			if [ -z "$PINS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				MOSI_PIN="$PINS"
+				echo -e "${CYAN}Selected pin $MOSI_PIN.\n${NO_COLOUR}"
+				break
+			fi
+		done
+	
+	# Prompt the user to select the pin change interrupt vector to use for the INT pin from MCP2515.
+	echo -e "${GREEN}Please choose which pin change interrupt vector the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PIN_CHANGE_INTERRUPT_VECTOR in $PIN_CHANGE_INTERRUPT_VECTORS
+	do
+		# Check if the selected component is actually valid.
+		PIN_CHANGE_INTERRUPT_VECTOR=$(echo $PIN_CHANGE_INTERRUPT_VECTORS | grep -w -o "$PIN_CHANGE_INTERRUPT_VECTOR")
+		if [ -z "$PIN_CHANGE_INTERRUPT_VECTOR" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			INT_VECT="$PIN_CHANGE_INTERRUPT_VECTOR"
+			echo -e "${CYAN}Selected $INT_VECT.\n${NO_COLOUR}"
+			let INT_VECT_CONFIG_NUMBER=$REPLY-1 # Used to configure the interrupt in bootloader
+			break
+		fi
+	done
+
+	# Prompt the user to select the pin change interrupt to use for the INT pin from MCP2515.
+	echo -e "${GREEN}Please choose which pin change interrupt the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+	# Create a menu of choices and have the user select one.
+	select PIN_CHANGE_INTERRUPT in $PIN_CHANGE_INTERRUPTS
+	do
+		# Check if the selected component is actually valid.
+		PIN_CHANGE_INTERRUPT=$(echo $PIN_CHANGE_INTERRUPTS | grep -w -o "$PIN_CHANGE_INTERRUPT")
+		if [ -z "$PIN_CHANGE_INTERRUPT" ]; then
+			# The selected component was not in the list of components, so the user is apparently a moron.
+			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		else
+			# A legitimate option was selected, so we can go now.
+			INT_NUM="$PIN_CHANGE_INTERRUPT"
+			echo -e "${CYAN}Selected $INT_NUM.\n${NO_COLOUR}"
+			break
+		fi
+	done
+
+	# Prompt the user to select the port to use for the INT pin from MCP2515.
+	echo -e "${GREEN}Please choose which port the INT pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PIN_CHANGE_INTERRUPT_PORT in $PIN_CHANGE_INTERRUPT_PORTS
+		do
+			# Check if the selected component is actually valid.
+			PIN_CHANGE_INTERRUPT_PORT=$(echo $PIN_CHANGE_INTERRUPT_PORTS | grep -w -o "$PIN_CHANGE_INTERRUPT_PORT")
+			if [ -z "$PIN_CHANGE_INTERRUPT_PORT" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				INT_PORT="$PIN_CHANGE_INTERRUPT_PORT"
+				echo -e "${CYAN}Selected port $INT_PORT.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
+	# Prompt the user to select the pin to use for the INT pin from MCP2515.				
+	echo -e "${GREEN}Please choose which pin the INT pin from MCP2515 is connected to:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PINS in 0 1 2 3 4 5 6 7
+		do
+			# Check if the selected component is actually valid.
+			PINS=$(echo "0 1 2 3 4 5 6 7" | grep -w -o "$PINS")
+			if [ -z "$PINS" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				INT_PIN="$PINS"
+				echo -e "${CYAN}Selected pin $INT_PIN.\n${NO_COLOUR}"
+				break
+			fi
+		done
+fi
+
+
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### BOOTLOADER SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
@@ -232,5 +417,16 @@ echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPON
 echo -e "SHUTDOWNSTATE_MEM=${SHUTDOWNSTATE_MEM}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "CAN_BAUD_RATES=${CAN_BAUD_RATES}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "NODE_ID=${NODE_ID}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "SS_PORT=PORT_${SS_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "SS_PIN=PIN_${SS_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "SCK_PORT=PORT_${SCK_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "SCK_PIN=PIN_${SCK_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "MOSI_PORT=PORT_${MOSI_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "MOSI_PIN=PIN_${MOSI_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "INT_VECTOR=${INT_VECT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "INT_VECTOR_CONFIG_NUMBER=${INT_VECT_CONFIG_NUMBER}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "INT_NUMBER=${INT_NUM}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "INT_PORT=PORT_${INT_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "INT_PIN=PIN_${INT_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "BOOTSTART=${BOOTSTART}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 # All done.

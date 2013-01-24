@@ -79,6 +79,14 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
+#define BOOTLOADER_VERSION  0x0100 //TODO - how is this updated.
+
+	// Device infromation
+#define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
+#define DEVICE_SIGNATURE_1 SIGNATURE_0
+#define DEVICE_SIGNATURE_2 SIGNATURE_1
+#define DEVICE_SIGNATURE_3 SIGNATURE_2
+
 	// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 
@@ -88,7 +96,6 @@ enum input_state {LO,HI};
 #else
 	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
 #endif
-
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -180,7 +187,7 @@ int main(void)
 	BLINK_MODE |= BLINK_PIN;
 	
 	// Set Force BL Pin to input. 
-	FORCE_BL_MODE &= ~BLINK_PIN;
+	FORCE_BL_MODE &= ~FORCE_BL_PIN;
 	
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE|BLINK_PIN):(BLINK_WRITE & ~BLINK_PIN);
@@ -352,6 +359,30 @@ void set_bootloader_timeout(bool enable)
 	// If the timeout is now disabled, then we want to reset the associated counter so we start again from the beginning.
 	timeout_tick = (enable)?timeout_tick:0;
 
+	// All done.
+	return;
+}
+
+uint16_t get_bootloader_version(void)
+{
+	return BOOTLOADER_VERSION;
+}
+
+void get_device_signature(uint8_t* device_signature)
+{
+	device_signature[0] = DEVICE_SIGNATURE_0;
+	device_signature[1] = DEVICE_SIGNATURE_1;
+	device_signature[2] = DEVICE_SIGNATURE_2;
+	device_signature[3] = DEVICE_SIGNATURE_3;
+	
+	// All done.
+	return;
+}
+
+void get_bootloader_information(shared_bootloader_constants* bootloader_information)
+{
+	bootloader_information->bootloader_version = BOOTLOADER_VERSION;
+	
 	// All done.
 	return;
 }

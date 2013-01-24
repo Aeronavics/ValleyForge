@@ -39,6 +39,9 @@
 // Include the general bootloader module header file.
 #include "bootloader_module.hpp"
 
+// Include the bootloader information sharing struct type.
+#include "/home/grw83/ValleyForge/ValleyForge/res/avr/bootloader/application_interface/shared_bootloader_constants.hpp"
+
 // Include the specific bootloader module we want to use.
 #include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.hpp"
 
@@ -74,6 +77,11 @@ int main(void);
  */
 void boot_mark_clean(void);
 
+	// Avoids name mangling for the shared jumptable
+extern "C" void boot_mark_clean_BL(void){
+	boot_mark_clean();
+}
+
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
  *	
@@ -87,6 +95,25 @@ void boot_mark_clean(void);
  *	RETURNS: 	Nothing.
  */
 void boot_mark_dirty(void);
+
+	// Avoids name mangling for the shared jumptable
+extern "C" void boot_mark_dirty_BL(void){
+	boot_mark_dirty();
+}
+
+/**
+ *	Stores bootloader information in struct that is shared with the application.
+ *
+ *	TAKES: 		bootloader_information		struct that bootloader information is stored.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void get_bootloader_information(shared_bootloader_constants* bootloader_information);
+
+	// Avoids name mangling for the shared jumptable
+extern "C" void get_bootloader_information_BL(shared_bootloader_constants* arg){
+	get_bootloader_information(arg);
+}
 
 #endif /*__BOOTLOADER_H__*/
 

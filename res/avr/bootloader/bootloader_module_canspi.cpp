@@ -34,7 +34,6 @@
 // INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
 #include <avr/interrupt.h>
-#include <avr/eeprom.h>
 
 	// Delay used for reseting the mcp2515 
 #define F_CPU 16000000UL  // 16 MHz crystal oscillator on the mcp2515
@@ -42,15 +41,59 @@
 
 // DEFINE CONSTANTS
 
-	// Device infromation
-#define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
-#define DEVICE_SIGNATURE_1 SIGNATURE_0
-#define DEVICE_SIGNATURE_2 SIGNATURE_1
-#define DEVICE_SIGNATURE_3 SIGNATURE_2
+	// MCP2515 interfacing
+#define PIN_CHANGE_INTERUPT_VECTOR				<<<TC_INSERTS_INT_VECTOR_HERE>>>
+#define PIN_CHANGE_INTERRUPT_CONFIG_NUMBER		<<<TC_INSERTS_INT_VECTOR_CONFIG_NUMBER_HERE>>>
+#define PIN_CHANGE_INTERRUPT_NUMBER 			<<<TC_INSERTS_INT_NUMBER_HERE>>>
+
+#define PCMSK_ADDRESS_OFFSET 0x6B	// May need to import from avr.cfg if it changes with any microcontrollers
+#define PIN_CHANGE_INTERRUPT_MASK_REGISTER _SFR_MEM8(PCMSK_ADDRESS_OFFSET + PIN_CHANGE_INTERRUPT_CONFIG_NUMBER)
+
+#define PORT_MULTIPLIER		3
+enum port_offset {P_READ, P_MODE, P_WRITE};
+enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
+enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
+ 
+#define SS_PORT_NUM  			<<<TC_INSERTS_SS_PORT_HERE>>>
+#define SS_PIN_NUM  			<<<TC_INSERTS_SS_PIN_HERE>>>
+#define SCK_PORT_NUM 			<<<TC_INSERTS_SCK_PORT_HERE>>>
+#define SCK_PIN_NUM  			<<<TC_INSERTS_SCK_PIN_HERE>>>
+#define MOSI_PORT_NUM  			<<<TC_INSERTS_MOSI_PORT_HERE>>>
+#define MOSI_PIN_NUM  			<<<TC_INSERTS_MOSI_PIN_HERE>>>
+#define INT_MCP2515_PORT_NUM  	<<<TC_INSERTS_INT_PORT_HERE>>>
+#define INT_MCP2515_PIN_NUM  	<<<TC_INSERTS_INT_PIN_HERE>>>
+
+#define SS_READ		_SFR_IO8((SS_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define SS_WRITE		_SFR_IO8((SS_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define SS_MODE		_SFR_IO8((SS_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define SS_PIN		( 1 << SS_PIN_NUM )
+
+#define SCK_READ		_SFR_IO8((SCK_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define SCK_WRITE		_SFR_IO8((SCK_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define SCK_MODE		_SFR_IO8((SCK_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define SCK_PIN		( 1 << SCK_PIN_NUM )
+
+#define MOSI_READ		_SFR_IO8((MOSI_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define MOSI_WRITE		_SFR_IO8((MOSI_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define MOSI_MODE		_SFR_IO8((MOSI_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define MOSI_PIN		( 1 << MOSI_PIN_NUM )
+
+	// Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8)
+#if (INT_MCP2515_PORT_NUM < PORT_H)
+	#define INT_MCP2515_READ		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+	#define INT_MCP2515_WRITE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+	#define INT_MCP2515_MODE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#else
+	#define PORT_H_ADDRESS_OFFSET 0x100
+	#define INT_MCP2515_READ		_SFR_MEM8(((INT_MCP2515_PORT_NUM - PORT_H) * PORT_MULTIPLIER) + PORT_H_ADDRESS_OFFSET + P_READ)
+	#define INT_MCP2515_WRITE		_SFR_MEM8(((INT_MCP2515_PORT_NUM - PORT_H) * PORT_MULTIPLIER) + PORT_H_ADDRESS_OFFSET + P_WRITE)
+	#define INT_MCP2515_MODE		_SFR_MEM8(((INT_MCP2515_PORT_NUM - PORT_H) * PORT_MULTIPLIER) + PORT_H_ADDRESS_OFFSET + P_MODE)
+#endif
+#define INT_MCP2515_PIN		( 1 << INT_MCP2515_PIN_NUM )
+
 
 	// Bootloader information
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>// Define the address at which the bootloader code starts.
-const uint16_t BOOTLOADER_VERSION = 0x0100; //TODO - how is this updated.
 const uint8_t ALERT_UPLOADER_PERIOD = 10;//x10 ms to send each alert_host message before communication has begun
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
@@ -238,7 +281,7 @@ bool communication_started;
 bool ready_to_send_page;
 bool message_confirmation_success; 
 bool write_details_stored;
-volatile uint8_t pin_K0_state; // State of the INT pin from mcp2515, updated by PCINT2_vect
+volatile uint8_t pin_int_mcp2515_state; // State of the INT pin from mcp2515, updated by PIN_CHANGE_INTERUPT_VECTOR
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -463,8 +506,15 @@ void bootloader_module_canspi::exit(void)
 	mcp2515_reset();
 	
 	// Reset spi peripheral to intial startup values 
-	DDRB = 0x00;// Reset all spi pins to inputs
+		// Reset all spi pins to inputs
+	SS_MODE &= ~SS_PIN;
+	SCK_MODE &= ~SCK_PIN;
+	MOSI_MODE &= ~MOSI_PIN;
 	SPCR = 0x00;
+	
+	// Reset interrupt pin
+	PIN_CHANGE_INTERRUPT_MASK_REGISTER &= ~(1 << PIN_CHANGE_INTERRUPT_NUMBER);
+	PCICR &= ~(1 << PIN_CHANGE_INTERRUPT_CONFIG_NUMBER);
 
 	// All done.
 	return;
@@ -547,12 +597,12 @@ void confirm_reception_mcp2515(bool confirmation_successful)
 
 void init_mcp2515(void)
 {
-	// Set up pin change interupt on pin K0, this will be used for the interupt from INT pin of mcp2515.
-	PCMSK2 |= (1<<PCINT16);
-	PCICR |= (1<<PCIE2);
-	DDRK &= ~(1<<DDD0);
-	pin_K0_state = (PINK & (1<<PIN0));// Get intial state of pin
-	
+	//Set up pin change interupt, this will be used for interupt from INT pin of mcp2515.
+	PIN_CHANGE_INTERRUPT_MASK_REGISTER |= (1 << PIN_CHANGE_INTERRUPT_NUMBER);
+	PCICR |= (1 << PIN_CHANGE_INTERRUPT_CONFIG_NUMBER);
+	INT_MCP2515_MODE &= ~INT_MCP2515_PIN; //Input for INT pin
+	pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);// Get intial state of pin
+	 
 	// Initialize spi communication
 	spi_init();
 	
@@ -600,8 +650,13 @@ void mcp2515_reset()
  */
 void spi_init(void)
 {
-	DDRB = (1<<DDB2)|(1<<DDB1)|(1<<DDB0);// Outputs set for MOSI,SCK,SS.
-	SPCR |= (1<<SPE)|(1<<MSTR);// enable spi as master with sck = fclk/4
+	// Outputs set for MOSI,SCK,SS.
+	SS_MODE |= SS_PIN;
+	MOSI_MODE |= MOSI_PIN;
+	SCK_MODE |= SCK_PIN;
+	
+	// enable spi as master with sck = fclk/4
+	SPCR |= (1<<SPE)|(1<<MSTR);
 }
 
 uint8_t spi_readwrite(uint8_t data)   
@@ -626,12 +681,12 @@ void spi_justwrite(uint8_t data)
 
 void select_slave(void)
 {
-	PORTB &= ~(1<<PB0);// Drive cs low.
+	SS_WRITE &= ~SS_PIN;// Drive cs low. 
 }
 
 void deselect_slave(void)
 {
-	PORTB |= (1<<PB0);// Drive cs high.
+	SS_WRITE |= SS_PIN;// Drive cs high.
 }
 
 
@@ -855,14 +910,19 @@ void bootloader_module_canspi::get_info_procedure(void)
 	transmission_message.message_type = GET_INFO;
 	
 	// Insert Device signaure
-	transmission_message.message[0] = DEVICE_SIGNATURE_0;
-	transmission_message.message[1] = DEVICE_SIGNATURE_1;
-	transmission_message.message[2] = DEVICE_SIGNATURE_2;
-	transmission_message.message[3] = DEVICE_SIGNATURE_3;
+	uint8_t device_signature[4];
+	get_device_signature(device_signature);
+	
+	transmission_message.message[0] = device_signature[0];
+	transmission_message.message[1] = device_signature[1];
+	transmission_message.message[2] = device_signature[2];
+	transmission_message.message[3] = device_signature[3];
 	
 	// Insert bootloader version
-	transmission_message.message[4] = static_cast<uint8_t>(BOOTLOADER_VERSION >> 8);
-	transmission_message.message[5] = static_cast<uint8_t>(BOOTLOADER_VERSION);
+	uint16_t bootloader_version = get_bootloader_version();
+	
+	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
+	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
 
@@ -1079,16 +1139,16 @@ void bootloader_module_canspi::alert_uploader(void)
 // NOTE - procedure only executed on falling edges of the INT pin.
 // This routine only operates on received messages, it reads the ID, DLC and data from the CAN controller into a message_info object.
 // The ISR also sets a flag to tell Boot loader that a new message has been received, or that a confirmation message has been received.
-ISR(PCINT2_vect)
+ISR(PCINT2_vect) //TODO - change to general pins
 {
-	// Check that the pin change was from the pin K0
-	if(pin_K0_state != (PINK & (1<<PIN0)))
+	// Check that the pin change was from the INT pin
+	if(pin_int_mcp2515_state != (INT_MCP2515_READ & INT_MCP2515_PIN))
 	{
 		// Record new state.
-		pin_K0_state = (PINK & (1<<PIN0));
+		pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);
 		
-		// Only carry out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
-		if(pin_K0_state != 0)
+		// Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt
+		if(pin_int_mcp2515_state != 0)
 		{
 			uint8_t node_id;
 			node_id = mcp2515_read_rx_buffer(module.reception_message);

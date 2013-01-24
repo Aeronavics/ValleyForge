@@ -165,6 +165,24 @@ void start_application(void);
  */
 void set_bootloader_timeout(bool enable);
 
+/**
+ *	Returns the bootloader version number.
+ * 
+ *	TAKES:		Nothing.
+ *
+ *	RETURNS:	bootloader version number. First byte is major, second byte is minor.
+ */
+uint16_t get_bootloader_version(void);
+
+/**
+ *	Stores the device signature to an array.
+ * 
+ *	TAKES:		device signature_array. (32 bit number, currently the first byte is undefined)
+ *
+ *	RETURNS:	Nothing.
+ */
+void get_device_signature(uint8_t* device_signature_array);
+
 #endif // __BOOTLOADER_MODULE_H__
 
 // ALL DONE.

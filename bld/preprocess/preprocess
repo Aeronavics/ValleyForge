@@ -314,8 +314,19 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>^$SHUTDOWNSTATE_MEM^g" $1
 	sed -i "s^<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>^$CAN_BAUD_RATES^g" $1
 	sed -i "s^<<<TC_INSERTS_NODE_ID_HERE>>>^$NODE_ID^g" $1
-	sed -i "s^<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>^$BOOTSTART^g" $1
-	
+	sed -i "s^<<<TC_INSERTS_SS_PORT_HERE>>>^$SS_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_SS_PIN_HERE>>>^$SS_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_SCK_PORT_HERE>>>^$SCK_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_SCK_PIN_HERE>>>^$SCK_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_MOSI_PORT_HERE>>>^$MOSI_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_MOSI_PIN_HERE>>>^$MOSI_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_INT_VECTOR_HERE>>>^$INT_VECTOR^g" $1
+	sed -i "s^<<<TC_INSERTS_INT_VECTOR_CONFIG_NUMBER_HERE>>>^$INT_VECTOR_CONFIG_NUMBER^g" $1
+	sed -i "s^<<<TC_INSERTS_INT_NUMBER_HERE>>>^$INT_NUMBER^g" $1
+	sed -i "s^<<<TC_INSERTS_INT_PORT_HERE>>>^$INT_PORT^g" $1
+	sed -i "s^<<<TC_INSERTS_INT_PIN_HERE>>>^$INT_PIN^g" $1
+	sed -i "s^<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>^$BOOTSTART^g" $1	
+
 # 	There are also upper-case versions of some of those same macros.
 
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
