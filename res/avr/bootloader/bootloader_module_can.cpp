@@ -244,6 +244,19 @@ void bootloader_module_can::event_periodic()
 	return;
 }
 
+void get_bootloader_module_information(shared_bootloader_module_constants* bootloader_module_information)
+{
+	bootloader_module_information->node_id = NODE_ID;
+	bootloader_module_information->baud_rate = CAN_BAUD_RATE;
+	
+	// All done.
+	return;
+}
+	// Avoids name mangling for the shared jumptable
+extern "C" void get_bootloader_module_information_BL(shared_bootloader_module_constants* arg){
+	get_bootloader_module_information(arg);
+}
+
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
 void confirm_reception(bool confirmation_successful)
@@ -292,7 +305,7 @@ void CAN_init(void)
 
 	// Id's for reception.
 	uint16_t id;
-	id = BASE_ID;
+	id = BOOTLOADER_BASE_ID;
 
 	// Choose the MObs to set up.
 	//
@@ -678,7 +691,7 @@ ISR(CAN_INT_vect)
 			module.reception_message.message_type = (CANIDT1 << 3) | (CANIDT2 >> 5);
 			
 			// A confirmation message received.
-			if (module.reception_message.message_type == module.READ_DATA)
+			if (module.reception_message.message_type == READ_DATA)
 			{
 				module.reception_message.confirmed_send = true;
 			}				

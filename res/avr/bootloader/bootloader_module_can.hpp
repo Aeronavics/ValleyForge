@@ -36,17 +36,17 @@
 
 #include "bootloader_module.hpp"
 
+// Include the bootloader can module information sharing struct type.
+#include "/home/grw83/ValleyForge/ValleyForge/res/avr/bootloader/application_interface/shared_bootloader_module_constants_can.hpp"
+
+// Include can message ids
+#include "can_message_ids.hpp"
+
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
 class bootloader_module_can : public bootloader_module
 {
 	public:
-
-		// Class types.
-		#define BASE_ID 0x120 // TODO - Yet to be finalised.
-		
-		enum message_id {RESET_REQUEST = BASE_ID, GET_INFO = BASE_ID + 1, WRITE_MEMORY = BASE_ID + 2, WRITE_DATA = BASE_ID + 3, READ_MEMORY = BASE_ID + 4,
-				 READ_DATA = BASE_ID + 5, ALERT_UPLOADER = 0x2FF};
 		
 			// Struct for CAN message information.
 		struct message_info
@@ -207,6 +207,15 @@ class bootloader_module_can : public bootloader_module
 extern bootloader_module_can module;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
+
+/**
+ *	Stores bootloader module information in struct that is shared with the application.
+ *
+ *	TAKES: 		bootloader_module_information		struct that bootloader module information is stored.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void get_bootloader_module_information(shared_bootloader_module_constants* bootloader_module_information);
 
 #endif // __BOOTLOADER_MODULE_CAN_H__
 

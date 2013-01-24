@@ -79,7 +79,7 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
-const uint16_t BOOTLOADER_VERSION = 0x0100; //TODO - how is this updated.
+#define BOOTLOADER_VERSION  0x0100 //TODO - how is this updated.
 
 	// Device infromation
 #define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
@@ -96,9 +96,6 @@ const uint16_t BOOTLOADER_VERSION = 0x0100; //TODO - how is this updated.
 #else
 	#define READ_FLASH_BYTE(address) pgm_read_byte(address)
 #endif
-
-	// Struct defined in the bootloader
-shared_bootloader_variables BL_struct = {SHUTDOWNSTATE_MEM, CLEAN_FLAG, BOOTLOADER_VERSION};
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -289,11 +286,11 @@ int main(void)
 	return 0;
 }
 
-void boot_mark_clean(void* mem_address, uint16_t flag)
+void boot_mark_clean(void)
 {
 	// Set the clean flag in EEPROM.
-	uint16_t data = flag;
-	void* address = static_cast<void*>(mem_address);
+	uint16_t data = CLEAN_FLAG;
+	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
 	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
@@ -302,11 +299,11 @@ void boot_mark_clean(void* mem_address, uint16_t flag)
 	return;
 }
 
-void boot_mark_dirty(void* mem_address)
+void boot_mark_dirty(void)
 {
 	// Clear the clean flag in EEPROM, thus making the memory 'dirty'.
 	uint16_t data = 0;
-	void* address = static_cast<void*>(mem_address);
+	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
 	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
@@ -318,7 +315,7 @@ void boot_mark_dirty(void* mem_address)
 void reboot_to_bootloader(void)
 {
 	// Mark the status flag as 'dirty' so that the bootloader will remain resident next time.
-	boot_mark_dirty(SHUTDOWNSTATE_MEM);
+	boot_mark_dirty();
 
 	// NOTE - We don't bother to tidy anything up, the CPU reset will take care of that.
 
@@ -332,7 +329,7 @@ void reboot_to_bootloader(void)
 void reboot_to_application(void)
 {
 	// Mark the status flag as 'clean' so that the bootloader will start the application directly next time.
-	boot_mark_clean(SHUTDOWNSTATE_MEM,CLEAN_FLAG);
+	boot_mark_clean();
 
 	// NOTE - We don't bother to tidy anything up, the CPU reset will take care of that.
 	
@@ -382,11 +379,12 @@ void get_device_signature(uint8_t* device_signature)
 	return;
 }
 
-shared_bootloader_variables* get_bootloader_information(void)
+void get_bootloader_information(shared_bootloader_constants* bootloader_information)
 {
-	// Gets the address of the struct containing BL info
-	PORTA ^= (1<<PA4);
-	return &BL_struct;
+	bootloader_information->bootloader_version = BOOTLOADER_VERSION;
+	
+	// All done.
+	return;
 }
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
@@ -432,7 +430,7 @@ void run_application(void)
 	cli();
 
 	// Set the application run marker to 'dirty', so that the application must 'clean' it when it shuts down.
-	boot_mark_dirty(SHUTDOWNSTATE_MEM);
+	boot_mark_dirty();
 
 	// TODO - Make sure we're all good to go.
 
@@ -618,7 +616,7 @@ ISR(TIMER0_COMPA_vect)
 		timeout_tick++;
 	
 		// Check if the timeout period has now expired.
-		//~ timeout_expired = (timeout_tick > BOOT_TIMEOUT);
+		timeout_expired = (timeout_tick > BOOT_TIMEOUT);
 	}
 	else
 	{
