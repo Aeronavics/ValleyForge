@@ -305,7 +305,7 @@ void CAN_init(void)
 
 	// Id's for reception.
 	uint16_t id;
-	id = BOOTLOADER_BASE_ID;
+	id = BASE_ID;
 
 	// Choose the MObs to set up.
 	//
@@ -613,7 +613,7 @@ void bootloader_module_can::filter_message(firmware_page& current_firmware_page)
 {
 	// Determine the corresponding procedure for the received message.
 	
-	if (reception_message.message_type == RESET_REQUEST)
+	if (reception_message.message_type == REQUEST_RESET)
 	{
 		reset_request_procedure();
 
@@ -651,7 +651,7 @@ void bootloader_module_can::filter_message(firmware_page& current_firmware_page)
 void bootloader_module_can::alert_uploader(void)
 {
 	transmission_message.dlc = 8;
-	transmission_message.message_type = ALERT_UPLOADER;
+	transmission_message.message_type = HOST_ALERT;
 	for(uint8_t i = 0; i < transmission_message.dlc; i++)
 	{
 		transmission_message.message[i] = 0xFF; // No significance.

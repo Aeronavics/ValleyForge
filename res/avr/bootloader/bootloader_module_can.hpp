@@ -37,10 +37,10 @@
 #include "bootloader_module.hpp"
 
 // Include the bootloader can module information sharing struct type.
-#include "/home/grw83/ValleyForge/ValleyForge/res/avr/bootloader/application_interface/shared_bootloader_module_constants_can.hpp"
+#include "../../../res/avr/bootloader/application_interface/shared_bootloader_module_constants_can.hpp"
 
 // Include can message ids
-#include "can_message_ids.hpp"
+#include "../../../res/common/can_messages.hpp"
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
