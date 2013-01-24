@@ -137,8 +137,8 @@ makeavr_bootloader()
 	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
-	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $SOURCEPATH/*.c $SOURCEPATH/*.cpp $SOURCEPATH/*.h $SOURCEPATH/*.hpp $SOURCEPATH/*.s $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	cp -rf $SOURCEPATH/* $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
 
 	# Set up the AVR compiler.
 	unpack_avrc
@@ -187,6 +187,9 @@ makeavr_bootloader()
 		preprocess_bootloader $FILE
 	done
 	shopt -u nullglob
+
+	# Perform any required code generation.
+	generate_code $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"

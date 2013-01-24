@@ -1,0 +1,157 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_canmsgs											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	24-01-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which generate code which defines CANbus messages.		  	 	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported CANbus message code generation functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_canmsgs							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates a file containing CANbus message ID definitions, to	###
+###			help avoid components using inconsistent ID's. The type of file	###
+###			created is autodetected depending on the nature of the other	###
+###			source files already present.					###
+###											###
+###########################################################################################
+
+gen_canmsgs()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Let the user know what is going on.
+	echo -e "${CYAN}Detecting source type...\n${NO_COLOUR}"
+
+	# Check if the folder contains C++ files.
+	if [ $(ls $1 | grep -e "\\.cpp$" | wc -l) != "0" ]; then
+		# There is at least one C++ source file, so create C++ compatible definitions.
+		gen_canmsgs_cpp $1
+	fi
+
+	# Check if the folder contains C files.
+	if [ $(ls $1 | grep -e "\\.c$" | wc -l) != "0" ]; then
+		# There is at least one C source file, so create C compatible definitions.
+		gen_canmsgs_c $1
+	fi
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_canmsgs_cpp							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates a CPP header file containing CANbus message ID	###
+###			definitions, to help avoid components using inconsistent ID's.	###
+###			This is trivial, because all this involves is copying across	###
+###			the header file to the output directory.			###
+###											###
+###########################################################################################
+
+gen_canmsgs_cpp()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Let the user know what is going on.
+	echo -e "${CYAN}Generating C++ CANbus message ID definitions...\n${NO_COLOUR}"
+
+	# The location of the file containing the message ID definitions.
+	CANMSG_HEADER="${TCPATH}/res/common/can_messages.hpp"
+
+	# Copy across the header file.
+	cp ${CANMSG_HEADER} $1
+	
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_canmsgs_c							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates a C header file containing CANbus message ID		###
+###			definitions, to help avoid components using inconsistent ID's.	###
+###			This is trivial, because all this involves is copying across	###
+###			the header file to the output directory and renaming it.	###
+###											###
+###########################################################################################
+
+gen_canmsgs_c()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Let the user know what is going on.
+	echo -e "${CYAN}Generating C CANbus message ID definitions...\n${NO_COLOUR}"
+
+	# The location of the file containing the message ID definitions.
+	CANMSG_HEADER="${TCPATH}/res/common/can_messages.hpp"
+
+	# Copy across the header file.
+	cp ${CANMSG_HEADER} $1/can_messages.h
+	
+	# Rename the header file.
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
