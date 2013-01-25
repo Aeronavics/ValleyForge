@@ -10,6 +10,6 @@
  *
  ********************************************************************************************************************************/
 
-struct shared_bootloader_constants{
+struct Shared_bootloader_constants{
 	uint16_t bootloader_version;
 };

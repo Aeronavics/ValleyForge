@@ -79,7 +79,7 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
 
-#define BOOTLOADER_VERSION  0x0100 //TODO - how is this updated.
+#define BOOTLOADER_VERSION  0x0100 // TODO - how is this updated.
 
 	// Device infromation
 #define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
@@ -109,9 +109,9 @@ volatile bool timeout_expired = false;
 volatile bool timeout_enable = true;
 
 BOOTLOADER_MODULE module; // This means all the modules must have an object defined in them called - extern <class name> module
-bootloader_module& mod = module;
+Bootloader_module& mod = module;
 
-firmware_page buffer;
+Firmware_page buffer;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -155,7 +155,7 @@ void run_application(void);
  *
  *	RETURNS: 	Nothing.
  */
-void write_flash_page(firmware_page& buffer);
+void write_flash_page(Firmware_page& buffer);
 
 /**
  *	Reads a single page of data from NRWW EEPROM into a buffer.
@@ -168,15 +168,15 @@ void write_flash_page(firmware_page& buffer);
  *	
  *	RETURNS:	Nothing.
  */
-void read_flash_page(firmware_page& buffer);
+void read_flash_page(Firmware_page& buffer);
 
 // IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
 int main(void)
 {
 	// Set interrupts into bootloader-land, rather than the application-land.
-	MCUCR = (1<<IVCE);
-	MCUCR = (1<<IVSEL);
+	MCUCR = (1 << IVCE);
+	MCUCR = (1 << IVSEL);
 	
 	// Disable the watchdog timer before enabling it.  Even the bootloader must satisfy the watchdog.
 	wdt_reset();
@@ -190,10 +190,10 @@ int main(void)
 	FORCE_BL_MODE &= ~FORCE_BL_PIN;
 	
 	// Turn on the blinkenlight solidly.
-	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE|BLINK_PIN):(BLINK_WRITE & ~BLINK_PIN);
+	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE|BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
 
 	// Check the state of the 'application run' marker, and the state of the force-bootloader input pin.
-	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC?LO:HI)))
+	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC ? LO : HI)))
 	{
 		// The marker seemed clean, and the force-bootloader input is not asserted, so start the application immediately.
 
@@ -357,7 +357,7 @@ void set_bootloader_timeout(bool enable)
 	timeout_enable = enable;
 
 	// If the timeout is now disabled, then we want to reset the associated counter so we start again from the beginning.
-	timeout_tick = (enable)?timeout_tick:0;
+	timeout_tick = (enable) ? timeout_tick : 0;
 
 	// All done.
 	return;
@@ -379,7 +379,7 @@ void get_device_signature(uint8_t* device_signature)
 	return;
 }
 
-void get_bootloader_information(shared_bootloader_constants* bootloader_information)
+void get_bootloader_information(Shared_bootloader_constants* bootloader_information)
 {
 	bootloader_information->bootloader_version = BOOTLOADER_VERSION;
 	
@@ -396,7 +396,7 @@ void reboot(void)
 	wdt_enable(WDTO_15MS);
 
 	// Loop continuously until the watchdog strikes.
-	while(true)
+	while (true)
 	{
 		// Do nothing while we wait for the watchdog to strike.
 	}
@@ -440,7 +440,7 @@ void run_application(void)
 	// Stop the timer and interrupt for the blinkenlight.
 	TIMSK1 = 0b00000000;
 	TIMSK0 = 0b00000000;
-	BLINK_WRITE = (LED_LOGIC)?(BLINK_WRITE & ~BLINK_PIN):(BLINK_WRITE | BLINK_PIN);
+	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
 
 	// Put interrupts back into application-land.
 	MCUCR = (1 << IVCE);
@@ -468,7 +468,7 @@ void run_application(void)
 	return;
 }
 
-void write_flash_page(firmware_page& buffer)
+void write_flash_page(Firmware_page& buffer)
 {
 	// Disable interrupts.
 	cli();
@@ -476,7 +476,7 @@ void write_flash_page(firmware_page& buffer)
 	// TODO - Replace this with something non-target specific.
 
 	// Limit the page number to outside the bootloader (RWW) section.
-	if(buffer.page < BOOTLOADER_START_ADDRESS)
+	if (buffer.page < BOOTLOADER_START_ADDRESS)
 	{
 		// Get a pointer to the start of the data we're going to write.
 		uint8_t* data = static_cast<uint8_t*>(buffer.data);	// NOTE - Because we've now disabled interrupts, we can treat data as non-volatile.
@@ -495,11 +495,11 @@ void write_flash_page(firmware_page& buffer)
 			uint16_t w = *data++;
 			w += (*data++) << 8;
 
-			// Fill the temporary page buffer with the created word.
+			// Fill the temporary EEPROM page buffer with the created word.
 			boot_page_fill((buffer.page + i), w);
 		}
 
-		// Write the temporary page buffer to the FLASH.
+		// Write the temporary EEPROM page buffer to the FLASH.
 		boot_page_write(buffer.page);
 		boot_spm_busy_wait();
 
@@ -520,7 +520,7 @@ void write_flash_page(firmware_page& buffer)
 	return;
 }
 
-void read_flash_page(firmware_page& buffer)
+void read_flash_page(Firmware_page& buffer)
 {
 	// Disable interrupts.
 	cli();
@@ -528,13 +528,13 @@ void read_flash_page(firmware_page& buffer)
 	// TODO - Replace this with something non-target specific.
 
 	// Limit the page number to outside the bootloader (RWW) section.
-	if(buffer.page < BOOTLOADER_START_ADDRESS)
+	if (buffer.page < BOOTLOADER_START_ADDRESS)
 	{
 		// Wait until the EEPROM is ready.
 		eeprom_busy_wait();
 
 		// Read flash page out byte by byte, up until the desired length.
-		for(uint16_t i = 0; i < buffer.code_length; i++)
+		for (uint16_t i = 0; i < buffer.code_length; i++)
 		{
 			// Read a single byte from the flash.
 			buffer.data[i] = READ_FLASH_BYTE(buffer.page + i);
@@ -578,7 +578,7 @@ ISR(TIMER1_COMPA_vect)
 		OCR1A = static_cast<uint16_t>(LONG_FLASH);
 		change = true;
 	}
-	BLINK_WRITE = (BLINK_WRITE & BLINK_PIN)?(BLINK_WRITE & ~BLINK_PIN):(BLINK_WRITE | BLINK_PIN);
+	BLINK_WRITE = (BLINK_WRITE & BLINK_PIN) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
 	
 	// All done.
 	return;

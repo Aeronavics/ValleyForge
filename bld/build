@@ -59,6 +59,11 @@ for f in $TCPATH/bld/make_functions/make*; do
 	source "$f"
 done
 
+# Define the functions used to for code generation.
+for f in $TCPATH/bld/code_generation/gen_*; do
+	source "$f"
+done
+
 # Create directories which don't come automatically with the toolchain.
 source $TCPATH/bld/common/create_empty_dirs
 
@@ -306,7 +311,7 @@ fetch_source()
 	S_COUNT=`ls -l $TCPATH/src/$COMPONENT/*.s 2>/dev/null | wc -l`
 	echo -e "${WHITE}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
-	# If there are no C source files and no assembler source files, then there is nothing to do.
+	# If there are no C/C++ source files and no assembler source files, then there is nothing to do.
 	if [ $C_COUNT == "0" ] && [ $P_COUNT == "0" ] && [ $S_COUNT == "0" ]; then
 		# There are no source files, so skip this component and move on.
 		echo -e "${YELLOW}No source files present in source folder.\n${NO_COLOUR}"
@@ -317,8 +322,8 @@ fetch_source()
 	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
 	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# Copy all the source files into the tmp directory, where the actual making will occur.
-	cp $TCPATH/src/$COMPONENT/*.c $TCPATH/src/$COMPONENT/*.cpp $TCPATH/src/$COMPONENT/*.h $TCPATH/src/$COMPONENT/*.hpp $TCPATH/src/$COMPONENT/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# All done.
 	return 0
@@ -386,7 +391,51 @@ generic_precompile()
 	# Fetch the HAL library files.
 	get_hal
 
+	# Perform any required code generation.
+	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
 	# TODO - If there is anything required to set up the platform, maybe it goes about here?
+
+	# All done.
+	return 0
+}
+
+# Do any code generation which is required.
+generate_code()
+{
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if there is actually some code generation to be done.
+	if [ -z "${CODE_GENERATORS}" ]; then
+		# There is nothing to be done here.
+		echo -e "${YELLOW}Not performing any code generation for this build configuration.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Iterate over the list of possible code generation functions.
+	echo -e "${CYAN}Running code generators...\n${NO_COLOUR}"
+	for f in "$CODE_GENERATORS"; do
+		# Check that this code generator function specified by the build configuration actually exists.
+		if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
+			# The specified code generator function doesn't exist, so skip this function and move on.
+			echo -e "${RED}Build configuration specifies an invalid code generation function.  Skipping.\n${NO_COLOUR}"
+			GENERATE_FUNCTION_INVALID=1
+		else
+			# The function is legit, so actually run the function.
+			$f $1
+		fi		
+	done
+	# Check if any of the code generation functions in the list were invalid.
+	if [ ${GENERATE_FUNCTION_INVALID} ]; then
+		# One of the specified code generation functions was invalid, so report the failure.
+		GENERATE_FUNCTION_INVALID=
+		return 1
+	fi
 
 	# All done.
 	return 0
@@ -653,8 +702,10 @@ do
 	fi
 
 	# Check if we should also make the corresponding filesystem for this component.
-	if [ $BUILD_FILESYSTEM -a $FSFUNCTION ]; then
+	if [ "$BUILD_FILESYSTEM" -a "$FSFUNCTION" ]; then
 		# We need to make the corresponding filesystem as well.
+		echo $BUILD_FILESYSTEM
+		echo $FSFUNCTION
 
 		# Now, we build the filesystem for the component.
 		echo -e "${CYAN}Building filesystem for component ${COMPONENT}...\n${NO_COLOUR}"
@@ -688,7 +739,7 @@ do
 	fi
 
 	# Check if we should also make the corresponding bootloader for this component.
-	if [ $BUILD_BOOTLOADER -a $BOOTLOADER ]; then
+	if [ "$BUILD_BOOTLOADER" -a "$BOOTLOADER" ]; then
 		# We need to make the corresponding bootloader as well.
 
 		# Now, we build the bootloader code for the component.
