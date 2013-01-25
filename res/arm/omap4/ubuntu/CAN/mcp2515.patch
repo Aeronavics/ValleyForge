@@ -1,0 +1,110 @@
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index 100d9f0..eaf452e 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -36,6 +36,9 @@
+ #include <linux/platform_data/omap-abe-twl6040.h>
+ #include <linux/ti_wilink_st.h>
+ 
++#include <linux/spi/spi.h>
++#include <linux/can/platform/mcp251x.h>
++
+ #include <mach/hardware.h>
+ #include <asm/hardware/gic.h>
+ #include <asm/mach-types.h>
+@@ -68,6 +71,8 @@
+ #define HDMI_GPIO_HPD  63 /* Hotplug detect */
+ #define TPS62361_GPIO   7
+ 
++#define GPIO_MCP2515_IRQ   140
++
+ static int
+ panda_kim_suspend(struct platform_device *pdev, pm_message_t msg)
+ {
+@@ -462,6 +467,56 @@ static int __init omap4_panda_i2c_init(void)
+ 	return 0;
+ }
+ 
++/*
++ * SPI Info
++ * 
++ */
++ 
++ static struct mcp251x_platform_data panda_mcp2515_pdata = {
++	.oscillator_frequency   = 16*1000*1000,
++	.irq_flags              = IRQF_TRIGGER_FALLING|IRQF_ONESHOT,
++};
++ 
++static struct spi_board_info panda_spi[] __initdata = {
++ {
++	.modalias = "mcp2515",
++	.platform_data  = &panda_mcp2515_pdata,
++	.bus_num = 1,
++	.mode = SPI_MODE_0,
++	.chip_select = 0,
++	.max_speed_hz = 1*1000*1000,
++ },
++};
++
++static void __init omap4_panda_spi_init(void) 
++{
++	/* muxing pins might be only required if
++	 * you've connecting 
++     * device to CS other than CS0
++     ***  This worked for me, add:
++		omap_mux_init_signal("mcspi1_cs1", OMAP_PIN_OUTPUT); // sub "mcspi1_cs2 for CS2 etc.
++        to activate CS1 on header pin #10.
++        Make sure your call to panda_spi_devices_init() is after omap_serial_init()
++        in omap4_panda_init function.
++     *** using CS[1-3] will break UART1 ***
++     */
++	panda_spi[0].irq = OMAP_GPIO_IRQ(GPIO_MCP2515_IRQ);
++	
++	printk(KERN_DEBUG "panda_mcp251x_init: Entry\n");
++	if ((gpio_request(GPIO_MCP2515_IRQ, "MCP251x CAN INT") == 0) &&
++	    (gpio_direction_input(GPIO_MCP2515_IRQ) == 0)) {
++		gpio_export(GPIO_MCP2515_IRQ, 0);
++	} else {
++		printk(KERN_ERR "could not obtain gpio for MCP251x CAN bus interrupt\n");
++		return;
++	}
++	
++	omap_mux_init_gpio(GPIO_MCP2515_IRQ, OMAP_PIN_INPUT |                      
++                                OMAP_PIN_OFF_WAKEUPENABLE);
++       
++    spi_register_board_info(panda_spi, ARRAY_SIZE(panda_spi));
++}
++
+ #ifdef CONFIG_OMAP_MUX
+ static struct omap_board_mux board_mux[] __initdata = {
+ 	/* WLAN IRQ - GPIO 53 */
+@@ -733,6 +788,7 @@ static void __init omap4_panda_init(void)
+ 	omap_rprm_regulator_init(sdp4430_rprm_regulators,
+ 				 ARRAY_SIZE(sdp4430_rprm_regulators));
+ 	enable_board_wakeups();
++	omap4_panda_spi_init();
+ }
+ 
+ static void __init omap4_panda_map_io(void)
+diff --git a/debian.ti-omap4/config/config.common.ubuntu b/debian.ti-omap4/config/config.common.ubuntu
+index e66bc77..209af43 100644
+--- a/debian.ti-omap4/config/config.common.ubuntu
++++ b/debian.ti-omap4/config/config.common.ubuntu
+@@ -465,7 +465,7 @@ CONFIG_CAIF_TTY=m
+ # CONFIG_CAIF_USB is not set
+ CONFIG_CAN=m
+ CONFIG_CAN_BCM=m
+-# CONFIG_CAN_CALC_BITTIMING is not set
++CONFIG_CAN_CALC_BITTIMING=y
+ # CONFIG_CAN_CC770 is not set
+ CONFIG_CAN_C_CAN=m
+ CONFIG_CAN_C_CAN_PLATFORM=m
+@@ -477,7 +477,7 @@ CONFIG_CAN_ESD_USB2=m
+ # CONFIG_CAN_GW is not set
+ CONFIG_CAN_MCP251X=m
+ # CONFIG_CAN_PEAK_PCMCIA is not set
+-# CONFIG_CAN_PEAK_USB is not set
++CONFIG_CAN_PEAK_USB=m
+ CONFIG_CAN_PM_TRACE=y
+ CONFIG_CAN_RAW=m
+ CONFIG_CAN_SJA1000=m

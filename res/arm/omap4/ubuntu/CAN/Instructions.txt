@@ -1,0 +1,108 @@
+Instructions to build the linux kernel for the pandaboard to use with the MCP2515 SPI adapter.
+
+The first step is to ensure you have the correct packages installed to build the kernel.
+
+The following commands.
+
+sudo apt-get build-dep linux-image-$(uname -r)
+sudo apt-get install dpkg-dev kernel-wedge
+
+Will install most of the needed packages, aside from this you also require the cross compiler for arm which can be installed with:
+
+sudo apt-get install gcc-arm-linux-gnueabihf cpp-arm-linux-gnueabihf
+
+After getting the required dependencies its time to get the kernel source, we will be using the TI ubuntu kernel, this can be cloned with the commands.
+
+git clone git://dev.omapzoom.org/pub/scm/integration/kernel-ubuntu.git
+cd kernel-ubuntu
+git checkout -b working origin/ti-ubuntu-3.4-1486
+
+This will get the correct version that was used for the initial work to get this working.
+
+Next we need to apply the patch to add the spi setup for the MCP2515 into the pandaboard setup code.
+In the root directory of the kernel repository run the following command,
+replacing <path to MCP2515.patch> with the actual path to the patch file located in res/arm/omap4/ubuntu/CAN/ in the ValleyForge repository.
+
+patch -p1 < <path to MCP2515.patch>
+
+This will apply the patch.
+
+Now we need to build the kernel packages which can be used to install the new kernel on a working pandaboard ubuntu system.
+
+Run the following commands in a terminal in the root of the kernel repository.
+
+fakeroot debian/rules clean
+export $(dpkg-architecture -aarmhf)
+CROSS_COMPILE=arm-linux-gnueabihf- do_tools=false fakeroot debian/rules binary-arch
+
+This will generate a number of packages in the parent directory, the three you want are the .deb files, they will be named
+
+linux-headers-3.4.0-1486_3.4.0-1486.10_armhf.deb
+linux-headers-3.4.0-1486-omap4_3.4.0-1486.10_armhf.deb
+linux-image-3.4.0-1486-omap4_3.4.0-1486.10_armhf.deb
+
+Copy these three files to a usb stick or similar and mount it on the pandaboard.
+After this on the pandaboard run the following command.
+
+dpkg -i linux-*_armhf.deb
+
+This will install the new kernel and flash it to the boot partition.
+You will need to have set up the ubuntu envornment as described in the instructions for setting up ubuntu on the pandaboard on the ValleyForge wiki.
+
+After doing this and connecting the MCP2515 to the pandaboard you can run 'shutdown -r now' to restart the pandaboard and boot the new kernel.
+To connect the MCP2515 refer to this page for the pin locations on the expansion header and use the following mappings.
+http://www.omappedia.com/wiki/PandaBoard_SPI
+
+MCP2515		Pandaboard
+SI			MCSPI_SIMO (Pin 12)
+SO			MCSPI_SOMI (Pin 18)
+SCK			MCSPI_CLK  (Pin 20)
+INT			MCSPI_CS3  (Pin 4)
+CS			MCSPI_CS0  (Pin 16)
+GND			GND (Pins 27 or 28, the end of the connector nearest the HDMI ports)
+Lo Voltage	1.8V (Pin 1 this is the pin on the edge side of the board on the end of the connector nearest the WiFi module.)
+Hi Voltage	5V (Pin 2 this is the pin on the inner side of the board on the end of the connector nearest the WiFi module. This is directly next to pin 1) 
+
+Where Lo Voltage is the low side supply for the level shifters and Hi Voltage is the high side of the level shifters.
+
+If you run 'ip link show' now you should see in the list a can0 interface if all went well.
+
+Now the uploader can be built and used on the pandaboard.
+
+If it is necessary to debug the can bus the can-utils utilities are useful for dumping messages from the bus and sending messages as well as determining bus load and such.
+These are not packaged for ubuntu as far as I can tell but can be built easily on the pandaboard.
+
+Simply checkout the following repository.
+git://gitorious.org/linux-can/can-utils.git
+
+Unfortunately to build this autotools are required to generate the build system so install them.
+
+apt-get install autoconf automake libtool
+
+Then run the autogen.sh script in the can-utils repo.
+
+./autogen.sh
+
+The it's a simple matter of
+
+./configure
+make
+make install
+
+Here are a few examples of how to use the can interface.
+
+Setup the interface.
+
+ip link set can0 type can bitrate 1000000
+ip link set can0 up
+
+Then we can dump the messages received on the interface
+
+candump can0
+
+or send a message on the interface.
+
+cansend can0 123#1122334455667788
+
+
+
