@@ -53,22 +53,22 @@ enum input_state {LO,HI};
 #define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
 #define FORCE_BL_PORT_NUM	<<<TC_INSERTS_FORCE_BL_PORT_HERE>>>
 #define FORCE_BL_PIN_NUM	<<<TC_INSERTS_FORCE_BL_PIN_HERE>>>
-#define LED_LOGIC		<<<TC_INSERTS_LED_LOGIC_HERE>>>
-#define INPUT_LOGIC		<<<TC_INSERTS_INPUT_LOGIC_HERE>>>
+#define LED_LOGIC			<<<TC_INSERTS_LED_LOGIC_HERE>>>
+#define INPUT_LOGIC			<<<TC_INSERTS_INPUT_LOGIC_HERE>>>
 #define PORT_MULTIPLIER		3
-#define BLINK_READ		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_READ)
-#define BLINK_WRITE		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
-#define BLINK_MODE		_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
+#define BLINK_READ			_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_READ)
+#define BLINK_WRITE			_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
+#define BLINK_MODE			_SFR_IO8((BLINK_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
 #define FORCE_BL_READ		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_READ)
 #define FORCE_BL_WRITE		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
 #define FORCE_BL_MODE		_SFR_IO8((FORCE_BL_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
-#define BLINK_PIN		( 1 << BLINK_PIN_NUM )
+#define BLINK_PIN			( 1 << BLINK_PIN_NUM )
 #define FORCE_BL_PIN		( 1 << FORCE_BL_PIN_NUM )
 
 #define CLK_SPEED		(CLK_SPEED_IN_MHZ * 1000000)
 #define TM_PRSCL		1024
 #define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
-#define BOOT_TIMEOUT		10000	// Timeout in milliseconds.
+#define BOOT_TIMEOUT	10000	// Timeout in milliseconds.
 
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
@@ -81,16 +81,15 @@ enum input_state {LO,HI};
 
 #define BOOTLOADER_VERSION  0x0100 // TODO - how is this updated.
 
-	// Device infromation
 #define DEVICE_SIGNATURE_0 0x00 // In case of using a  microcontroller with a 32-bit device signature.
 #define DEVICE_SIGNATURE_1 SIGNATURE_0
 #define DEVICE_SIGNATURE_2 SIGNATURE_1
 #define DEVICE_SIGNATURE_3 SIGNATURE_2
 
-	// Define the address at which the bootloader code starts (the RWW section).  This is MCU specific.
+	// Define the address at which the bootloader code starts (the RWW section).
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 
-	// Define the function used to read a flash byte. A different function call is required for different MCUs.
+	// Define the function used to read a flash byte.
 #if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
 	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
 #else
@@ -108,7 +107,7 @@ volatile uint8_t blink_tick;
 volatile bool timeout_expired = false;
 volatile bool timeout_enable = true;
 
-BOOTLOADER_MODULE module; // This means all the modules must have an object defined in them called - extern <class name> module
+BOOTLOADER_MODULE module; // This means all the communication modules must have an object defined in them called - extern <class name> module
 Bootloader_module& mod = module;
 
 Firmware_page buffer;
@@ -206,7 +205,7 @@ int main(void)
 	// Start up whichever peripherals are required by the modules we're using.
 	mod.init();
 	
-	// Set up a timer and interrupt to flash the blinkenlight..
+	// Set up a timer and interrupt to flash the blinkenlight.
 	
 	// Normal port operation, not connected to a pin.CTC on.
 	TCCR1A = 0b00000000;
@@ -475,7 +474,7 @@ void write_flash_page(Firmware_page& buffer)
 
 	// TODO - Replace this with something non-target specific.
 
-	// Limit the page number to outside the bootloader (RWW) section.
+	// Limit the page number to the application (NRWW) section.
 	if (buffer.page < BOOTLOADER_START_ADDRESS)
 	{
 		// Get a pointer to the start of the data we're going to write.
@@ -527,7 +526,7 @@ void read_flash_page(Firmware_page& buffer)
 
 	// TODO - Replace this with something non-target specific.
 
-	// Limit the page number to outside the bootloader (RWW) section.
+	// Limit the page number to the application (NRWW) section.
 	if (buffer.page < BOOTLOADER_START_ADDRESS)
 	{
 		// Wait until the EEPROM is ready.
@@ -612,7 +611,7 @@ ISR(TIMER0_COMPA_vect)
 	// Check if the bootloader timeout is actually enabled.
 	if (timeout_enable)
 	{
-		//~ // Advance the tick count.
+		// Advance the tick count.
 		timeout_tick++;
 	
 		// Check if the timeout period has now expired.

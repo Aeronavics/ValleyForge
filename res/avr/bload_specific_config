@@ -205,7 +205,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 		if ! [[ "$REPLY" =~ ^[A-F0-9]+$ ]]; then
 			# The user is apparently a moron.
 			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-		#need a check for a smaller number
+		# Need a check for a smaller number
 		elif [[ $(echo "ibase=16; $REPLY" | bc) -gt $(echo "ibase=16; FF" | bc) ]]; then
 			echo -e "${RED}Number is too large. Please enter a smaller number\n${NO_COLOUR}"
 		
@@ -218,7 +218,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 	done
 fi
 
-# Prompts for CAN SPI parameters
+# Prompts for CAN via SPI bootloader
 if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 	# Prompt the user to select the port to use for the Slave select(SS) pin from MCP2515.
 	echo -e "${GREEN}Please choose which port the Slave select(SS) pin from MCP2515 is connected to:${NO_COLOUR}"

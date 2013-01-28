@@ -68,6 +68,8 @@ int main(void);
  *	This should usually be called only when the application code is shut down cleanly.
  *
  *	Blocks until EEPROM IO operations are completed.
+ * 
+ *  NOTE - This function can be accessed by the application.
  *
  *	TAKES: 		Nothing.
  *
@@ -87,6 +89,8 @@ extern "C" void boot_mark_clean_BL(void){
  *	Alternatively, this function may be called deliberately to force the bootloader to check for new application firmware to download.
  *
  *	Blocks until EEPROM IO operations are completed.
+ * 
+ *  NOTE - This function can be accessed by the application.
  *
  *	TAKES: 		Nothing.
  *
@@ -100,9 +104,11 @@ extern "C" void boot_mark_dirty_BL(void){
 }
 
 /**
- *	Stores bootloader information in struct that is shared with the application.
+ *	Stores bootloader information in struct.
  *
  *	TAKES: 		bootloader_information		struct that bootloader information is stored.
+ * 
+ *  NOTE - This function can be accessed by the application.
  *
  *	RETURNS: 	Nothing.
  */

@@ -29,40 +29,38 @@
  ********************************************************************************************************************************/
 
 // Only include this header file once.
-#ifndef __BOOTLOADER_MODULE_CANSPI_H__
-#define __BOOTLOADER_MODULE_CANSPI_H__
+#ifndef __bootloader_module_canspi_H__
+#define __bootloader_module_canspi_H__
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
 #include "bootloader_module.hpp"
 
+// Include the bootloader can module information sharing struct type.
+#include "application_interface/shared_bootloader_module_constants_can.hpp"
+
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-class bootloader_module_canspi: public bootloader_module
+class bootloader_module_canspi: public Bootloader_module
 {
 	public:
 
 		// Class types.
 		
-		#define BASE_ID 0x120 // TODO - Yet to be finalised.
-		
-		enum message_id {RESET_REQUEST = BASE_ID, GET_INFO = BASE_ID + 1, WRITE_MEMORY = BASE_ID + 2, WRITE_DATA = BASE_ID + 3, 
-						 READ_MEMORY = BASE_ID + 4, READ_DATA = BASE_ID + 5, ALERT_UPLOADER = 0x2FF};
-		
 			// Struct for CAN message information.
-		struct message_info
+		struct Message_info
 		{
 			bool confirmed_send;
 			bool message_received;
 			uint16_t message_type;
 			uint16_t dlc;
-			uint8_t message[8]; // CAN messages can only be 8 bytes long and the first byte of these messages will be the node id.
+			uint8_t message[8]; // CAN messages can only be 8 bytes long.
 		};
 
 		// Class fields.
 
-		volatile message_info reception_message; // This will be updated by ISR(PCINT2_vect)
-		message_info transmission_message;
+		volatile Message_info reception_message; // This will be updated by ISR(PCINT2_vect)
+		Message_info transmission_message;
 
 		// Class methods.
 	
@@ -129,16 +127,16 @@ class bootloader_module_canspi: public bootloader_module
 		// Class methods.
 
 		/**
-		 *	Procedure when a start_reset message is received. Either starts the application or resets the Boot Loader.
+		 *	Procedure when a REQUEST_RESET message is received. Either starts the application or resets the Bootloader.
 		 *
 		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void reset_request_procedure();
+		void request_reset_procedure();
 
 		/**
-		 *	Procedure when a get_info message is received. Sends the host information about the microcontroller.
+		 *	Procedure when a GET_INFO message is received. Sends the host information about the microcontroller.
 		 * 
 		 *	NOTE - Host information is the device signature and the bootloader version 
 		 *
@@ -149,50 +147,49 @@ class bootloader_module_canspi: public bootloader_module
 		void get_info_procedure(void);
 
 		/**
-		 *	Procedure when a write_memory message is received. Saves the Flash page number and the length of code that is to be written to.
+		 *	Procedure when a WRITE_MEMORY message is received. Saves the Flash page number and the length of code that is to be written to.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer for flash writing details to be stored in.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_memory_procedure(firmware_page& current_firmware_page);
+		void write_memory_procedure(Firmware_page& current_firmware_page);
 
 		/**
-		 *	Procedure when a write_data message is received. Saves message data into a buffer which can then be written to the FLASH.
+		 *	Procedure when a WRITE_DATA message is received. Saves message data into a buffer which can then be written to the FLASH.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer to be written to.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_data_procedure(firmware_page& current_firmware_page);
+		void write_data_procedure(Firmware_page& current_firmware_page);
 	
 		/**
-		 *	Procedure when a read_memory message is received. Saves the Flash page number and the length of code to read.
+		 *	Procedure when a READ_MEMORY message is received. Saves the Flash page number and the length of code to read.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer for flash reading details to be stored in.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void read_memory_procedure(firmware_page& current_firmware_page);
+		void read_memory_procedure(Firmware_page& current_firmware_page);
 
 		/**
-		 *	Sends the copy of the FLASH page in messages.
+		 *	Sends the copy of the FLASH page in CAN messages.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer that the flash page has been copied to.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void send_flash_page(firmware_page& current_firmware_page);
+		void send_flash_page(Firmware_page& current_firmware_page);
 
 		/**
-		 *	Executes the corresnponding procedure for a received message.
+		 *	Executes the corresnponding procedure for a uploader command message received.
 		 *
 		 *	TAKES:		buffer			The firmware_page buffer that is used for reading and writing the flash memory.
-		 *			firmware_finished	The flag to set if the host requests to start the application.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void filter_message(firmware_page& current_firmware_page);
+		void filter_message(Firmware_page& current_firmware_page);
 
 		/**
 		 *	Sends the uploader a message informing it that the microcontroller is awaiting firmware messages.
@@ -210,6 +207,18 @@ extern bootloader_module_canspi module;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
-#endif // __BOOTLOADER_MODULE_CANSPI_H__
+/**
+ *	Stores bootloader module information in a struct that is shared with the application.
+ * 
+ *  NOTE - This function can be accessed by the application.
+ *
+ *	TAKES: 		bootloader_module_information		struct that bootloader module information is stored.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information);
+
+
+#endif // __bootloader_module_canspi_H__
 
 // ALL DONE.

@@ -1,0 +1,20 @@
+With larger flash memory the interface using function pointers cannot access the high addresses of the bootloader functions. A trampoline table located in low memory address is required to jump to the existing jumptable in the bootloader. The following shows what changes need to be made for this to work:
+
+
+Makefile for application needs this added to LFLAGS to place the trampolines in the application,
+ the point at which the trampolines are placed is 0x01000 in this case. The trampoline should really just be placed before .progmem, and that address will then be given to bootloader_shared.hpp
+
+LFLAGS+= -Wl,--section-start=.trampoline=0x01000 -Wl,--undefined=_trampoline
+
+in bootloader_shared.hpp:
+TRAMPOLINE_TABLE_BASE_ADDRESS is the location where trampoline table is placed(for this case = 0x01000).
+
+
+The jump addresses in the trampolines.s need to be imported from avr.cfg, where the jump table base address is specified:
+.section .trampoline,"ax",@progbits
+.global _trampoline
+_jumptable1:
+	jmp SHARED_FUNCTIONS_ADDRESS
+	jmp SHARED_FUNCTIONS_ADDRESS + 4
+	jmp SHARED_FUNCTIONS_ADDRESS + 8
+	jmp SHARED_FUNCTIONS_ADDRESS + C

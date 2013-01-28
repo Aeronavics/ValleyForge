@@ -44,8 +44,7 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-	// Time in milliseconds between calls of event_periodic() for the bootloader module.
-const uint16_t MODULE_EVENT_PERIOD = 1;
+const uint16_t MODULE_EVENT_PERIOD = 1; // Time in milliseconds between calls of event_periodic() for the bootloader module.
 
 struct Firmware_page
 {
@@ -170,7 +169,7 @@ void set_bootloader_timeout(bool enable);
  * 
  *	TAKES:		Nothing.
  *
- *	RETURNS:	bootloader version number. First byte is major, second byte is minor.
+ *	RETURNS:	bootloader version number. First byte is the major, second byte is the minor.
  */
 uint16_t get_bootloader_version(void);
 
