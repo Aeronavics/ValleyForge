@@ -182,7 +182,7 @@ unpack_uploader()
 	cp $TCPATH/res/common/uploader/*.hpp $TCPATH/tmp/uploader
 	cp $TCPATH/res/common/uploader/*.h $TCPATH/tmp/uploader
 	cp $TCPATH/res/common/uploader/Makefile $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/can_messages.h $TCPATH/tmp/uploader
+	cp $TCPATH/res/common/can_messages.hpp $TCPATH/tmp/uploader
 	make -C $TCPATH/tmp/uploader all
 	
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.

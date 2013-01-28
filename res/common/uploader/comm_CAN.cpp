@@ -44,22 +44,13 @@
 #include "microchipcannetworkinterface.hpp"
 #include "socketcannetworkinterface.hpp"
 
+#include "can_messages.hpp"
+
 
 // DEFINE PRIVATE MACROS.
 
 #define MAX_RETRIES 5
 #define TIMEOUT 10
-
-#define HOST_ALERT 0x2FF
-
-#define BASE_ID 0x120
-
-#define REQUEST_RESET BASE_ID
-#define GET_INFO (BASE_ID+1)
-#define WRITE_MEMORY (BASE_ID+2)
-#define WRITE_DATA (BASE_ID+3)
-#define READ_MEMORY (BASE_ID+4)
-#define READ_DATA (BASE_ID+5)
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
