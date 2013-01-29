@@ -194,7 +194,7 @@ unpack_uploader()
 		return 1
 	fi
 	
-	mkdir $TCPATH/res/common/uploader/bin
+	mkdir -p $TCPATH/res/common/uploader/bin
 	cp $TCPATH/tmp/uploader/uploader $TCPATH/res/common/uploader/bin
 	
 	rm -rf $TCPATH/tmp/uploader

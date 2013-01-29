@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,17 +31,16 @@
  
 // INCLUDE REQUIRED HEADER FILES.
 
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <unistd.h>
+
 #include "ihex.hpp"
 #include "memory.hpp"
 #include "options.hpp"
 
-#include <iostream>
-#include <fstream>
-#include <string>
-
-#include <cstdio>
-
-#include <unistd.h>
 
 #define MAX_RETRIES 10
 
@@ -51,55 +50,55 @@
 int main(int argc, char* argv[])
 {
 	Options opts;
-	if (!opts.readFromArgs(argc, argv))
+	if (!opts.read_from_args(argc, argv))
 	{
-		opts.printUsage();
+		opts.print_usage();
 		return 1;
 	}
 	
-	std::string filename = opts.getInputFile();
-	size_t memorySize = opts.getMemorySize();
+	std::string filename = opts.get_input_file();
+	size_t memory_size = opts.get_memory_size();
 	
-	MemoryMap memory(memorySize, MemoryMap::FLASH);
+	Memory_map memory(memory_size, Memory_map::FLASH);
 	
-	if (!memory.readFromFile(filename))
+	if (!memory.read_from_file(filename))
 	{
 		std::cerr << "Failed to read input file." << std::endl;
-		opts.printUsage();
+		opts.print_usage();
 		return 1;
 	}
 	
-	CommModule* commModule = opts.getCommsModule();
-	if (commModule == NULL)
+	Comm_module* comm_module = opts.get_comms_module();
+	if (comm_module == NULL)
 	{
 		std::cerr << "Unknown communication module selected" << std::endl;
 		return 1;
 	}
 	
-	if (!commModule->init(opts.getCommsParams()))
+	if (!comm_module->init(opts.get_comms_params()))
 	{
 		std::cerr << "Failed to initialise communication module" << std::endl;
 		return 1;
 	}
 	
-	DeviceInfo info;
+	Device_info info;
 	
-	if (!commModule->getDeviceInfo(info))
+	if (!comm_module->get_device_info(info))
 	{
 		std::cerr << "Failed to retrieve device info" << std::endl;
 		return 1;
 	}
 	
-	std::cout << "Name: " << info.getName() << " Signature: " << info.getSignature() << std::endl;
+	std::cout << "Name: " << info.get_name() << " Signature: " << info.get_signature() << std::endl;
 	//Check signature.
-	if (info.getSignature() != opts.getSignature())
+	if (info.get_signature() != opts.get_signature())
 	{
 		std::cerr << "Signature Mismatch" << std::endl;
 		return 1;
 	}
 	
-	size_t endPage;
-	if (!memory.findLastAllocatedPage(opts.getPageSize(), endPage))
+	size_t end_page;
+	if (!memory.find_last_allocated_page(opts.get_page_size(), end_page))
 	{
 		std::cerr << "Could not find a last allocated page, is the memory map empty?" << std::endl;
 		return 1;
@@ -113,17 +112,17 @@ int main(int argc, char* argv[])
 	
 	int retries = 0;
 	bool failed = false;
-	int maxPage = endPage/opts.getPageSize();
+	int max_page = end_page/opts.get_page_size();
 	
-	for (size_t pageAddress = 0; pageAddress <= endPage; pageAddress += opts.getPageSize())
+	for (size_t page_address = 0; page_address <= end_page; page_address += opts.get_page_size())
 	{
 		retries = 0;
-		int pageNumber = pageAddress/opts.getPageSize();
+		int page_number = page_address/opts.get_page_size();
 		do
 		{
-			std::cout << "Writing page: " <<  pageNumber << " of : " << maxPage;
+			std::cout << "Writing page: " <<  page_number << " of : " << max_page;
 			std::cout.flush();
-			if (!commModule->writePage(memory, opts.getPageSize(), pageAddress))
+			if (!comm_module->write_page(memory, opts.get_page_size(), page_address))
 			{
 				failed = true;
 			}
@@ -138,16 +137,16 @@ int main(int argc, char* argv[])
 		
 		if (failed)
 		{
-			std::cerr << "Failed to write flash page at: " << pageAddress << std::endl;
+			std::cerr << "Failed to write flash page at: " << page_address << std::endl;
 			return 1;
 		}
 		
 		retries = 0;
 		do
 		{
-			std::cout << "Verifying page: " <<  pageNumber << " of : " << maxPage;
+			std::cout << "Verifying page: " <<  page_number << " of : " << max_page;
 			std::cout.flush();
-			if (!commModule->verifyPage(memory, opts.getPageSize(), pageAddress))
+			if (!comm_module->verify_page(memory, opts.get_page_size(), page_address))
 			{
 				failed = true;
 			}
@@ -156,7 +155,7 @@ int main(int argc, char* argv[])
 				failed = false;
 			}
 			retries++;
-			if (pageAddress != endPage)
+			if (page_address != end_page)
 			{
 				std::cout << "\r                                          " << "\r";
 			}
@@ -166,44 +165,15 @@ int main(int argc, char* argv[])
 		
 		if (failed)
 		{
-			std::cerr << "Verify flash page at: " << pageAddress << " Failed" << std::endl;
+			std::cerr << "Verify flash page at: " << page_address << " Failed" << std::endl;
 			return 1;
 		}
 	}
 	
-	std::cout << std::endl;
-	//~ 
+	std::cout << std::endl;	
+
 	
-	
-	//~ if (!commModule->writePage(memory, 256, 256))
-	//~ {
-		//~ std::cerr << "Failed to write second page of flash memory." << std::endl;
-		//~ return 1;
-	//~ }
-	//~ 
-	//~ 
-	//~ 
-	//~ if (!commModule->verifyPage(memory, 256, 256))
-	//~ {
-		//~ std::cerr << "Verify of second page of flash failed." << std::endl;
-		//~ return 1;
-	//~ }
-	
-	//~ if (!commModule->readPage(memory, 256, 0))
-	//~ {
-		//~ std::cerr << "Read of first page of flash failed." << std::endl;
-		//~ return 1;
-	//~ }
-	//~ 
-	//~ char buf[3];
-	//~ for ( size_t i = 0; i < 256; i++ )
-	//~ {
-		//~ snprintf(buf, 3, "%02X", memory.getMemory()[i]);
-		//~ buf[2] = '\0';
-		//~ std::cout << buf << ((i % 16 != 15) ? " " : "\n");
-	//~ }
-	
-	if (!commModule->resetDevice(true))
+	if (!comm_module->reset_device(true))
 	{
 		std::cerr << "Failed to reset device." << std::endl;
 		return 1;
@@ -213,4 +183,6 @@ int main(int argc, char* argv[])
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
+
+//ALL DONE.
  

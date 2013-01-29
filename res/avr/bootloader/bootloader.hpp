@@ -40,6 +40,7 @@
 #include "bootloader_module.hpp"
 
 // Include the bootloader information sharing struct type.
+
 #include "application_interface/application_interface_constants.hpp"
 
 // Include the specific bootloader module we want to use.

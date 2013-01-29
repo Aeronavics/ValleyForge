@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-CANMessage::CANMessage() :
+CAN_message::CAN_message() :
 	id(0),
 	length(0)
 {
@@ -57,7 +57,7 @@ CANMessage::CANMessage() :
 	}
 }
 
-CANMessage::CANMessage( uint32_t id, size_t length, uint8_t* data) :
+CAN_message::CAN_message( uint32_t id, size_t length, uint8_t* data) :
 	id(id),
 	length(length)
 {
@@ -67,86 +67,93 @@ CANMessage::CANMessage( uint32_t id, size_t length, uint8_t* data) :
 	}
 }
 	
-const uint8_t* CANMessage::getData() const
+const uint8_t* CAN_message::get_data() const
 {
 	return &data[0];
 }
 
-size_t CANMessage::getLength() const
+size_t CAN_message::get_length() const
 {
 	return length;
 }
 
-uint32_t CANMessage::getId() const
+uint32_t CAN_message::get_id() const
 {
 	return id;
 }
 
-void CANMessage::setLength(size_t newLength)
+void CAN_message::set_length(size_t new_length)
 {
-	length = newLength;
+	length = new_length;
 }
 
-void CANMessage::setId(uint32_t newId)
+void CAN_message::set_id(uint32_t new_id)
 {
-	id = newId;
+	id = new_id;
 }
 
-uint8_t* CANMessage::getContent()
+uint8_t* CAN_message::get_content()
 {
 	return &data[0];
 }
 
 
 
-CANNetworkInterface::CANNetworkInterface()
+CAN_network_interface::CAN_network_interface()
 {
 
 }
 
-CANNetworkInterface::~CANNetworkInterface()
+CAN_network_interface::~CAN_network_interface()
 {
 
 }
 
-bool CANNetworkInterface::setFilter( uint32_t id, action act)
+bool CAN_network_interface::set_filter( uint32_t id, Action act)
 {
-	inclusionFilter.insert(id);
+	if (act == INCLUDE)
+	{
+		inclusion_filter.insert(id);
+	}
+	else
+	{
+		exclusion_filter.insert(id);
+	}
 	return true;
 }
 
-bool CANNetworkInterface::setFilterMode( mode m)
+bool CAN_network_interface::set_filter_mode( Mode m)
 {
-	filterMode = m;
+	filter_mode = m;
 	return true;
 }
 
-bool CANNetworkInterface::removeFilter( uint32_t id)
+bool CAN_network_interface::remove_filter( uint32_t id)
 {
-	inclusionFilter.erase(id);
-	exclusionFilter.erase(id);
+	inclusion_filter.erase(id);
+	exclusion_filter.erase(id);
 	return true;
 }
 
-bool CANNetworkInterface::clearFilter()
+bool CAN_network_interface::clear_filter()
 {
-	inclusionFilter.clear();
-	exclusionFilter.clear();
+	inclusion_filter.clear();
+	exclusion_filter.clear();
 	return true;
 }
 
-bool CANNetworkInterface::filter(uint32_t id)
+bool CAN_network_interface::filter(uint32_t id)
 {	
-	switch (filterMode)
+	switch (filter_mode)
 	{
 	case INCLUDE_ALL:
 		return true;
 		break;
 	case EXCLUDE_ALL_BUT_FILTER:
-		return inclusionFilter.find(id) != inclusionFilter.end();
+		return inclusion_filter.find(id) != inclusion_filter.end();
 		break;
 	case INCLUDE_ALL_BUT_FILTER:
-		return exclusionFilter.find(id) != exclusionFilter.end();
+		return exclusion_filter.find(id) != exclusion_filter.end();
 		break;
 	default:
 		return false;
@@ -157,3 +164,5 @@ bool CANNetworkInterface::filter(uint32_t id)
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
+
+//ALL DONE.

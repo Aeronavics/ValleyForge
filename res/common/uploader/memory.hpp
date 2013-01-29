@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,13 +44,14 @@
  */
  
 //Only include header once.
-#ifndef MEMORY_H_
-#define MEMORY_H_
+#ifndef __MEMORY_H__
+#define __MEMORY_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include "stdint.h"
 #include <string>
+
+#include <stdint.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -58,17 +59,17 @@
 
 // DEFINE PUBLIC CLASSES.
 
-class MemoryMap
+class Memory_map
 {
 public:
 
-	enum allocatedFlag
+	enum Allocated_flag
 	{
 		UNALLOCATED = 0,
 		ALLOCATED
 	};
 	
-	enum typeFlag
+	enum Type_flag
 	{
 		EEPROM = 0,
 		FLASH,
@@ -76,37 +77,40 @@ public:
 	};
 	
 	// Functions.
-	MemoryMap( size_t size, typeFlag type );
-	virtual ~MemoryMap();
+	Memory_map( size_t size, Type_flag type );
+	virtual ~Memory_map();
 	
-	uint8_t* getMemory();
-	allocatedFlag* getAllocatedMap();
-	typeFlag getType();
-	size_t getSize();
+	uint8_t* get_memory();
+	Allocated_flag* get_allocated_map();
+	Type_flag get_type();
+	size_t get_size();
 	
-	bool findLastAllocatedPage(size_t pageSize, size_t& pageStartAddress);
+	bool find_last_allocated_page(size_t page_size, size_t& page_start_address);
 	
-	virtual bool readFromIHexFile( std::string filename );
+	virtual bool read_from_ihex_file( std::string filename );
 	//Reads from a file, must determine the filetype itself, mostly here for possible extension by subclasses.
 	//The implementation here will just call the hexfile reading function above if the filename ends in .hex.
-	virtual bool readFromFile( std::string filename);
+	virtual bool read_from_file( std::string filename);
 	
 private:
 	// Functions.
 	//Make the object not default constructable or assignable.
-	MemoryMap();
-	MemoryMap( const MemoryMap & other);
-	MemoryMap& operator= ( const MemoryMap& other );
+	Memory_map();
+	Memory_map( const Memory_map & other);
+	Memory_map& operator= ( const Memory_map& other );
 	
 	
 	//Fields.
 	uint8_t* memory;
-	allocatedFlag* allocatedMap;
-	typeFlag type;
+	Allocated_flag* allocated_map;
+	Type_flag type;
 	size_t size;
 
 };
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*MEMORY_H_*/
+#endif /*__MEMORY_H__*/
+
+//ALL DONE.
+
