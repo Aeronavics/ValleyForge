@@ -10,8 +10,12 @@
  * 	This header file must be #included by application.
  *
  ********************************************************************************************************************************/
+
 #include "application_interface_module_constants_can.hpp" // TODO -"<<<TC_INSERTS_H_MODULE_FILE_NAME_HERE>>>"
 #include "application_interface_constants.hpp" 
+
+// Include the dummy header file for the bootloader trampoline.
+#include "bootloader_trampoline.hs"
 
 #if defined (__AVR_ATmega2560__)
 	#define BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS 0x01000// TODO - <<<TC_INSERTS_BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS_HERE>>>

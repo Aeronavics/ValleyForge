@@ -55,6 +55,9 @@
 // Include boolean data types.
 #include <stdbool.h>
 
+// Include the dummy header for the shared jumptable.
+#include "shared_jumptable.hs"
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
