@@ -295,13 +295,9 @@ upload_avrdude()
 
 	# We don't need to unpack any other tools.
 
-	# If we are using the STK600, then we will require root privileges.
-	AVRDUDE_SUDO=
-	if [ ${AVRDUDE_ISPDEVTYPE} == "stk600" ]; then
-		# We will need root privileges.  Warn the user in advance.
-		echo -e "${YELLOW}Programming using the STK600 requires elevated privileges.  You will be prompted for a sudo capable password.${NO_COLOUR}"
-		AVRDUDE_SUDO="sudo"
-	fi
+	# We will need root privileges.  Warn the user in advance.
+	echo -e "${YELLOW}Programming using the STK600 requires elevated privileges.  You will be prompted for a sudo capable password.${NO_COLOUR}"
+	AVRDUDE_SUDO="sudo"
 
 	# Ask the user if they are sure they want to do this.
 	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via ISP device '${AVRDUDE_ISPDEVFILE}'? (Y/N) ${NO_COLOUR}"
