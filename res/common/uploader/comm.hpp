@@ -50,8 +50,9 @@
 // INCLUDE REQUIRED HEADER FILES.
 
 #include <map>
-#include <stdint.h>
 #include <string>
+
+#include <stdint.h>
 
 #include "memory.hpp"
 #include "util.hpp"

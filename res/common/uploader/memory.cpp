@@ -38,7 +38,6 @@
 #include <fstream>
 #include <iostream>
 
-
 #include "ihex.hpp"
 
 // DEFINE PRIVATE MACROS.

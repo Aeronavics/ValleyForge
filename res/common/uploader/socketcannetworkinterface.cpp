@@ -35,13 +35,10 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 #include <errno.h>
-#include <iostream>
 #include <memory.h>
-#include <sstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <vector>
 
 #include <sys/ioctl.h>
 #include <sys/time.h>
@@ -50,6 +47,10 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
+
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 
 // DEFINE PRIVATE MACROS.

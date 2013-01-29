@@ -49,8 +49,9 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include <getopt.h>
 #include <string>
+
+#include <getopt.h>
 
 #include "comm.hpp"
 

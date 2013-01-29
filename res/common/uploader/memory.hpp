@@ -49,8 +49,9 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include <stdint.h>
 #include <string>
+
+#include <stdint.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

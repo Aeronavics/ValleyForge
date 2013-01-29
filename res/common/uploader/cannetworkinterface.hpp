@@ -51,9 +51,9 @@
 
 #include <deque>
 #include <set>
-#include <stdint.h>
 #include <string>
 
+#include <stdint.h>
 
 
 #include "util.hpp"

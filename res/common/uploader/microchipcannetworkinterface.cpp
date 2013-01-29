@@ -34,12 +34,15 @@
 #include "microchipcannetworkinterface.hpp"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
+
 #include <iostream>
+#include <vector>
+
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <vector>
+
 
 
 // DEFINE PRIVATE MACROS.
