@@ -175,7 +175,7 @@ do
 	fi
 done
 
-# Only prompt for CAN communication parameters if the component is using either a CAN bootloader or CAN via SPI bootloader
+# Only prompt for CAN communication parameters if the component is using either a CAN bootloader or CAN via SPI bootloader.
 if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "bootloader_module_can" ]; then
 	# Prompt the user to enter the CAN Baudrate for CAN bootloader communication.
 	echo -e "${GREEN}Which CAN Baudrate would you like to use?(in kbps)${NO_COLOUR}"
@@ -205,7 +205,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 		if ! [[ "$REPLY" =~ ^[A-F0-9]+$ ]]; then
 			# The user is apparently a moron.
 			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-		#need a check for a smaller number
+		# Need a check for a smaller number
 		elif [[ $(echo "ibase=16; $REPLY" | bc) -gt $(echo "ibase=16; FF" | bc) ]]; then
 			echo -e "${RED}Number is too large. Please enter a smaller number\n${NO_COLOUR}"
 		
@@ -218,10 +218,10 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 	done
 fi
 
-# Prompts for CAN SPI parameters
+# Only prompt for CAN via SPI connection parameters if the component is using either a CAN via SPI bootloader.
 if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 	# Prompt the user to select the port to use for the Slave select(SS) pin from MCP2515.
-	echo -e "${GREEN}Please choose which port the Slave select(SS) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which port the Slave Select (SS) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PORTS in $PORT_COUNT
 		do
@@ -239,7 +239,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 
 	# Prompt the user to select the pin to use for the Slave select(SS) pin from MCP2515.				
-	echo -e "${GREEN}Please choose which pin the Slave select(SS) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin the Slave Select (SS) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PINS in 0 1 2 3 4 5 6 7
 		do
@@ -257,7 +257,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 		
 	# Prompt the user to select the port to use for the serial clock(SCK) pin from MCP2515.
-	echo -e "${GREEN}Please choose which port the serial clock(SCK) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which port the Serial Clock (SCK) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PORTS in $PORT_COUNT
 		do
@@ -275,7 +275,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 
 	# Prompt the user to select the pin to use for the serial clock(SCK) pin from MCP2515.				
-	echo -e "${GREEN}Please choose which pin the serial clock(SCK) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin the Serial Clock (SCK) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PINS in 0 1 2 3 4 5 6 7
 		do
@@ -293,7 +293,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done	
 		
 	# Prompt the user to select the port to use for the master output, slave input(MOSI) pin from MCP2515.
-	echo -e "${GREEN}Please choose which port the master output, slave input(MOSI) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which port the Master Output, Slave Input (MOSI) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PORTS in $PORT_COUNT
 		do
@@ -311,7 +311,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 
 	# Prompt the user to select the pin to use for the master output, slave input(MOSI) pin from MCP2515.				
-	echo -e "${GREEN}Please choose which pin the master output, slave input(MOSI) pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin the Master Output, Slave Input (MOSI) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PINS in 0 1 2 3 4 5 6 7
 		do
@@ -329,7 +329,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 	
 	# Prompt the user to select the pin change interrupt vector to use for the INT pin from MCP2515.
-	echo -e "${GREEN}Please choose which pin change interrupt vector the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin change interrupt vector the Interrupt (INT) pin from the MCP2515 will trigger:${NO_COLOUR}"
 	# Create a menu of choices and have the user select one.
 	select PIN_CHANGE_INTERRUPT_VECTOR in $PIN_CHANGE_INTERRUPT_VECTORS
 	do
@@ -348,7 +348,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 	done
 
 	# Prompt the user to select the pin change interrupt to use for the INT pin from MCP2515.
-	echo -e "${GREEN}Please choose which pin change interrupt the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin change interrupt the Interrupt (INT) pin from the MCP2515 will trigger:${NO_COLOUR}"
 	# Create a menu of choices and have the user select one.
 	select PIN_CHANGE_INTERRUPT in $PIN_CHANGE_INTERRUPTS
 	do
@@ -366,7 +366,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 	done
 
 	# Prompt the user to select the port to use for the INT pin from MCP2515.
-	echo -e "${GREEN}Please choose which port the INT pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which port the Interrupt (INT) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PIN_CHANGE_INTERRUPT_PORT in $PIN_CHANGE_INTERRUPT_PORTS
 		do
@@ -384,7 +384,7 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 		done
 
 	# Prompt the user to select the pin to use for the INT pin from MCP2515.				
-	echo -e "${GREEN}Please choose which pin the INT pin from MCP2515 is connected to:${NO_COLOUR}"
+	echo -e "${GREEN}Please choose which pin the Interrupt (INT) pin from the MCP2515 is connected to:${NO_COLOUR}"
 		# Create a menu of choices and have the user select one.
 		select PINS in 0 1 2 3 4 5 6 7
 		do
@@ -401,7 +401,6 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 			fi
 		done
 fi
-
 
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### BOOTLOADER SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg

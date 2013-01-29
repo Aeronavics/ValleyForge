@@ -35,17 +35,17 @@
 
 #include <avr/interrupt.h>
 
-// Include can message ids
-#include "../../../res/common/can_messages.hpp"
+// Include can message ids.
+#include "can_messages.hpp"
 
 // DEFINE CONSTANTS
 
-	// Bootloader information
+	// Bootloader information.
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
-const uint8_t ALERT_UPLOADER_PERIOD = 10;// x10 the event_periodic() period. Period to send each alert_host message before communication has begun
+const uint8_t ALERT_UPLOADER_PERIOD = 10;// x10 the event_periodic() period. Period to send each alert_host message before communication has begun.
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
-	// CAN peripheral infromation
+	// CAN peripheral infromation.
 #if defined (__AVR_AT90CAN128__)
 	#define NUMBER_OF_MOB_PAGES 15
 #else
@@ -114,7 +114,7 @@ const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-	// State flags
+	// State flags.
 bool communication_started;
 bool ready_to_send_page;
 bool message_confirmation_success; 
@@ -155,7 +155,7 @@ void reset_can(void);
  *	Sends a confirmation message to the uploader.
  * 
  *	NOTE - The message contains one byte informing the uploader whether the message received 
- * 			was valid(1) or invalid(0).
+ *			was valid(1) or invalid(0).
  *
  *	TAKES:		confirmation_successful		the validity of the previously received message
  *
@@ -173,7 +173,7 @@ bootloader_module_can::~bootloader_module_can()
 
 void bootloader_module_can::init(void)
 {
-	// Initialize flags
+	// Initialize flags.
 	communication_started = false;
 	ready_to_send_page = false;
 	write_details_stored = false;
@@ -188,7 +188,6 @@ void bootloader_module_can::init(void)
 
 void bootloader_module_can::exit(void)
 {
-	// Reset the CAN controller to its original state.
 	reset_can();
 
 	// All done.
@@ -207,7 +206,6 @@ void bootloader_module_can::event_idle()
 	// All done.
 	return;
 }
-
 
 void bootloader_module_can::event_periodic()
 {
@@ -230,10 +228,8 @@ void bootloader_module_can::event_periodic()
 	}
 	else
 	{
-		// If we are filtering a message then communication with the uploader must have occured
 		communication_started = true;
 		
-		// Filter messages.	
 		filter_message(buffer);
 
 		// Restart the bootloader timeout.
@@ -253,7 +249,7 @@ void get_bootloader_module_information(Shared_bootloader_module_constants* bootl
 	// All done.
 	return;
 }
-	// Avoids name mangling for the shared jumptable
+	// Avoids name mangling for the shared jumptable.
 extern "C" void get_bootloader_module_information_BL(Shared_bootloader_module_constants* arg){
 	get_bootloader_module_information(arg);
 }
@@ -264,7 +260,7 @@ void confirm_reception(bool confirmation_successful)
 {
 	module.transmission_message.dlc = 1;
 	
-	//Reply to the uploader whether the received message was successful or not
+	// Reply to the uploader whether the received message was successful or not.
 	if (confirmation_successful)
 	{
 		module.transmission_message.message[0] = 1;
@@ -290,7 +286,7 @@ void init_can(void)
 	// Reset the CAN controller.
 	CANGCON = (1 << SWRES);
 	
-	// Reset all of the MObs as they have no default value.
+	// Reset all of the MObs as they have no default value upon reset.
 	for (mob_number = 0; mob_number < NUMBER_OF_MOB_PAGES; mob_number++)
 	{
 		// Select CAN page.
@@ -299,7 +295,7 @@ void init_can(void)
 		CANCDMOB = 0x00; // Disables MObs.
 	}
 	
-	// Set up bit-timing and CAN timing.
+	// Set up bit timing.
 	CANBT1 = CAN_BAUD_RATE_CONFIG_1;
 	CANBT2 = CAN_BAUD_RATE_CONFIG_2;
 	CANBT3 = CAN_BAUD_RATE_CONFIG_3;
@@ -313,30 +309,30 @@ void init_can(void)
 	mob_number = 0;
 	CANPAGE = (mob_number << 4);
 	
-	CANIDT1 = id >> 3;; // Set MOb ID
+	CANIDT1 = id >> 3;; // Set MOb ID.
 	CANIDT2 = id << 5;
 	CANIDT3 = 0x00;
 	CANIDT4 = 0x00;
 	
-	CANIDM1 = 0xFE; // Set MOb masking ID
-	CANIDM2 = 0x00; // At the moment are filtering first two hex numbers e.g id=0x123, filter = 0x12z - where z can be any number
+	CANIDM1 = 0xFE; // Set MOb masking ID.
+	CANIDM2 = 0x00; // At the moment are filtering first two hex numbers e.g id=0x123, filter = 0x12z - where z can be any number.
 	CANIDM3 = 0x00;
 	CANIDM4 = 0x00;
 	
-	CANCDMOB = ((1 << CONMOB1) | 8); // Enable the MOb for the mode. In this case for reception of 8 data bytes, 
+	CANCDMOB = ((1 << CONMOB1) | 8); // Enable the MOb for reception of 8 data bytes, 
 	                                 //in standard format(11 bit identifier) with no automatic reply.
 
 	// MOB NUMBER 1 - Transmission MOb.
 	mob_number = 1;
 	CANPAGE = (mob_number << 4);
 	
-	CANIDT1 = 0x00; // Set MOb ID
-	CANIDT2 = 0x00; // Will be set by user.
+	CANIDT1 = 0x00; // Set MOb ID.
+	CANIDT2 = 0x00; // Will be set by bootloader before transmission.
 	CANIDT3 = 0x00;
 	CANIDT4 = 0x00;
 
-	CANIDM1 = 0x00; // Set MOb masking ID
-	CANIDM2 = 0x00; // All to zero for transmit.
+	CANIDM1 = 0x00; // Set MOb masking ID.
+	CANIDM2 = 0x00;
 	CANIDM3 = 0x00;
 	CANIDM4 = 0x00;
 	
@@ -344,7 +340,7 @@ void init_can(void)
 	CANIE1 = 0x00;
 	CANIE2 = (1 << IEMOB0); // Enable interupts on MOb0 (interupt occurs on reception of message).
 
-	// Enable general interupts
+	// Enable general interupts.
 	CANGIE = ((1 << ENIT) | (1 << ENRX)); // Enable receive interupt through CAN_IT.
 
 	// Enable can communication.
@@ -356,7 +352,7 @@ void init_can(void)
 
 void transmit_can_message(bootloader_module_can::Message_info& transmit_message)
 {
-	// Select tranmitting MOB
+	// Select tranmitting MOB.
 	uint8_t mob_number = 1;
 	CANPAGE = (mob_number << 4); // MOb1.
 	
@@ -384,16 +380,16 @@ void transmit_can_message(bootloader_module_can::Message_info& transmit_message)
 	// Enable tranmission with desired message length.
 	CANCDMOB = ((1 << CONMOB0) | (transmit_message.dlc));
 	
-	// Wait until the message has sent or error occured
+	// Wait until the message has sent or an error occured.
 	while (((CANSTMOB & (1 << TXOK)) == 0) && ((CANSTMOB & (1 << AERR)) == 0))
 	{
 		// Do nothing.
 	}	
 
-	// Disable transmit
+	// Disable transmit.
 	CANCDMOB = 0x00;
 	
-	// Clear interupt flags
+	// Clear interupt flags.
 	CANSTMOB = 0x00;
 
 	// All done.
@@ -410,20 +406,18 @@ void reset_can(void)
 
 // IMPLEMENT PRIVATE CLASS FUNCTIONS.
 
-void bootloader_module_can::reset_request_procedure()
+void bootloader_module_can::request_reset_procedure()
 {
-	confirm_reception(message_confirmation_success);// Always successful
+	confirm_reception(message_confirmation_success);// Always successful.
 	
-	if(reception_message.message[0] == 0)
+	if (reception_message.message[0] == 0)
 	{
-		// Reboot the microcontroller back to the bootloader again.
 		reboot_to_bootloader();
 
 		// We will never reach here.
 	}
 	else
 	{
-		// Reboot to the application.
 		reboot_to_application();
 
 		// We will never reach here.
@@ -438,7 +432,7 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.dlc = 6;
 	transmission_message.message_type = GET_INFO;
 	
-	// Insert Device signaure
+	// Insert Device signaure.
 	uint8_t device_signature[4];
 	get_device_signature(device_signature);
 	
@@ -447,7 +441,7 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[2] = device_signature[2];
 	transmission_message.message[3] = device_signature[3];
 	
-	// Insert bootloader version
+	// Insert bootloader version.
 	uint16_t bootloader_version = get_bootloader_version();
 	
 	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
@@ -463,24 +457,24 @@ void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmwa
 {
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-				     ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-				     ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-				     (static_cast<uint32_t>(reception_message.message[3])));
+								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
+								 ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
+								 (static_cast<uint32_t>(reception_message.message[3])));
 
 	// Store the 16 bit code_length.
 	current_firmware_page.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-	                                    (static_cast<uint16_t>(reception_message.message[5])));
+										(static_cast<uint16_t>(reception_message.message[5])));
 
-	// Check for errors in message details
+	// Check for errors in message details.
 	if ((current_firmware_page.code_length > SPM_PAGESIZE) || (current_firmware_page.page >= BOOTLOADER_START_ADDRESS))
 	{
-		// Message failure
+		// Message failure.
 		message_confirmation_success = false;
 		write_details_stored = false;
 	}
 	else
 	{
-		// Message success
+		// Message success.
 		write_details_stored = true;
 		current_firmware_page.current_byte = 0;
 	}
@@ -493,7 +487,7 @@ void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmwa
 
 void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware_page)
 {
-	// Only write to buffer if a memory address and length have been provided
+	// Only write to buffer if a memory address and code length have been provided.
 	if (write_details_stored)
 	{
 		// Check for possible array overflow.
@@ -521,7 +515,7 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 	}
 	else
 	{
-		// Message failure
+		// Message failure.
 		message_confirmation_success = false;
 	}
 
@@ -535,25 +529,25 @@ void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmwar
 {
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-				     ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-				     ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-				     (static_cast<uint32_t>(reception_message.message[3])));
-	
+								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
+								 ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
+								 (static_cast<uint32_t>(reception_message.message[3])));
+
 	// Store the 16 bit code_length.
 	current_firmware_page.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-	                                    (static_cast<uint16_t>(reception_message.message[5])));
+										(static_cast<uint16_t>(reception_message.message[5])));
 
-	// Check for errors in message details
+	// Check for errors in message details.
 	if ((current_firmware_page.code_length > SPM_PAGESIZE) || (current_firmware_page.page >= BOOTLOADER_START_ADDRESS))
 	{
-		// Message failure
+		// Message failure.
 		message_confirmation_success = false;
 	}
 	else
 	{
-		// Message success
+		// Message success.
 		current_firmware_page.ready_to_read = true;
-		ready_to_send_page = true;// Allow sending the flash page once it is read
+		ready_to_send_page = true; // Allow sending the flash page once it is read.
 	}
 	
 	confirm_reception(message_confirmation_success);
@@ -565,7 +559,7 @@ void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmwar
 void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page)
 {
 	transmission_message.message_type = READ_DATA;
-	current_firmware_page.current_byte = 0; // Start at the beginning of buffer.
+	current_firmware_page.current_byte = 0;
 	reception_message.confirmed_send = false;
 	
 	// Send the flash page in 8 byte messages, confirmation message must be received from uploader after each message.
@@ -573,7 +567,7 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 	{
 		// Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message.
 		transmission_message.dlc = (current_firmware_page.code_length - current_firmware_page.current_byte);
-		if (transmission_message.dlc > 8) // Limit to 8 byte messages.
+		if (transmission_message.dlc > 8)
 		{
 			transmission_message.dlc = 8;
 		}
@@ -587,21 +581,21 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 		// Increment the current_byte for next iteration.
 		current_firmware_page.current_byte += transmission_message.dlc;		
 		
-		// Send the message.
 		transmit_can_message(transmission_message);
 		
-		// Wait for confirmation message to return from host or a uploader command message.
-		while(!reception_message.confirmed_send && !reception_message.message_received)	
+		// Wait for confirmation message to return from uploader or a uploader command message.
+		while (!reception_message.confirmed_send && !reception_message.message_received)
 		{
 			// Do nothing.
 		}
 		
-		// Exits the sending of the flash page if a uploader command message is received.
-		// Allows the host to stop the reading if it sees a message is lost.
+		// Exits the sending of the flash page if an uploader command message is received.
+		// Allows the uploader to stop the reading if it sees a message is lost.
 		if (reception_message.message_received)
 		{
 			// Abort sending the flash page.
 			break;
+			
 		}
 
 		reception_message.confirmed_send = false;
@@ -614,34 +608,35 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 {
 	// Determine the corresponding procedure for the received message.
+	switch (reception_message.message_type)
+	{
+		case REQUEST_RESET:
+			request_reset_procedure();
+			break;
+			// We will never reach here.
+
+		case GET_INFO:
+			get_info_procedure();
+			reception_message.message_received = false;
+			break;
+			
+		case WRITE_MEMORY:
+			write_memory_procedure(current_firmware_page);
+			reception_message.message_received = false;
+			break;
+
+		case WRITE_DATA:
+			write_data_procedure(current_firmware_page);
+			reception_message.message_received = false;
+			break;
+
+		case READ_MEMORY:
+			read_memory_procedure(current_firmware_page);
+			reception_message.message_received = false;
+			break;
+			
+	}
 	
-	if (reception_message.message_type == REQUEST_RESET)
-	{
-		reset_request_procedure();
-
-		// We will never reach here.
-	}	
-	else if (reception_message.message_type == GET_INFO)
-	{
-		get_info_procedure();
-		reception_message.message_received = false;
-	}
-	else if (reception_message.message_type == WRITE_MEMORY)
-	{
-		write_memory_procedure(current_firmware_page);
-		reception_message.message_received = false;
-	}
-	else if (reception_message.message_type == WRITE_DATA)
-	{
-		write_data_procedure(current_firmware_page);
-		reception_message.message_received = false;
-	}
-	else if(reception_message.message_type == READ_MEMORY)
-	{
-		read_memory_procedure(current_firmware_page);
-		reception_message.message_received = false;
-	}
-
 	// All done.
 	return;
 }
@@ -652,7 +647,7 @@ void bootloader_module_can::alert_uploader(void)
 	transmission_message.message_type = HOST_ALERT;
 	for(uint8_t i = 0; i < transmission_message.dlc; i++)
 	{
-		transmission_message.message[i] = 0xFF; // TODO - delete
+		transmission_message.message[i] = 0xFF; // No significance.
 	}
 	transmit_can_message(transmission_message);
 
@@ -662,12 +657,10 @@ void bootloader_module_can::alert_uploader(void)
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
-
-
 /**
  * ISR for interupts from CAN controller.
  * This routine only operates on received messages, it reads the ID, DLC and data from the CAN controller into a Message_info object.
- * The ISR also sets a flag to tell Boot loader that a new message has been received, or that a confirmation message has been received.
+ * The ISR also sets a flag to tell Bootloader that a new message has been received, or that a confirmation message has been received.
  */
 #if defined (__AVR_AT90CAN128__)
 ISR(CANIT_vect)
@@ -675,7 +668,7 @@ ISR(CANIT_vect)
 ISR(CAN_INT_vect)
 #endif
 {
-	// Save curent MOb page for current program operations. 
+	// Save curent MOb page for current operations. 
 	uint8_t saved_MOb = CANPAGE;
 
 	// Select the reception MOb0.
@@ -704,7 +697,7 @@ ISR(CAN_INT_vect)
 				module.reception_message.dlc = ((CANCDMOB & 0x0F) - 1); // Minus 1 as the first byte was taken up by the node ID.
 				if (module.reception_message.dlc > 7)
 				{
-					module.reception_message.dlc = 7; // Check required as CAN controller may give greater than 8 dlc value.
+					module.reception_message.dlc = 7; // Check is required as CAN controller may give greater than 8 dlc value.
 				}
 
 				// Store the message.
@@ -714,7 +707,7 @@ ISR(CAN_INT_vect)
 					module.reception_message.message[i] = CANMSG; 
 				}
 			
-				// Tell Boot loader that the message was received.
+				// Tell Bootloader that the message was received.
 				module.reception_message.message_received = true;
 				
 				// Default the message confirmation to successful
@@ -726,7 +719,7 @@ ISR(CAN_INT_vect)
 	// Reset status flags.
 	CANSTMOB = 0x00;
 
-	// Reenable reception for MOb.
+	// Reenable reception for MOb0.
 	CANCDMOB = ((1 << CONMOB1) | (8));
 
 	// Restore previous MOb page.
