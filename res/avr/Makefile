@@ -47,8 +47,9 @@ SIZE=BUILD_INSERTS_SIZE_HERE # The size utility (binary inspector) to use.
 OPTLEVEL=s # Optimization level to use: s (for size), 1, 2, 3 (for performance) or 0 (none).
 CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall # The C compiler flags to apply.
 PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
-AFLAGS=	-mmcu=$(MCU) -Wa BUILD_INSERTS_AFLAGS_HERE # The assember flags to apply.
+AFLAGS=	-mmcu=$(MCU) -Wa BUILD_INSERTS_AFLAGS_HERE# The assember flags to apply.
 LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
+LFLAGS+= -Wl,--section-start=.bootloader_trampoline=0x01000 -Wl,--undefined=_bootloader_trampoline
 
 # PSEUDO-TARGETS
 

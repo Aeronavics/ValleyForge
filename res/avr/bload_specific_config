@@ -328,42 +328,66 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 			fi
 		done
 	
-	# Prompt the user to select the pin change interrupt vector to use for the INT pin from MCP2515.
-	echo -e "${GREEN}Please choose which pin change interrupt vector the INT pin from MCP2515 will trigger:${NO_COLOUR}"
-	# Create a menu of choices and have the user select one.
-	select PIN_CHANGE_INTERRUPT_VECTOR in $PIN_CHANGE_INTERRUPT_VECTORS
-	do
-		# Check if the selected component is actually valid.
-		PIN_CHANGE_INTERRUPT_VECTOR=$(echo $PIN_CHANGE_INTERRUPT_VECTORS | grep -w -o "$PIN_CHANGE_INTERRUPT_VECTOR")
-		if [ -z "$PIN_CHANGE_INTERRUPT_VECTOR" ]; then
-			# The selected component was not in the list of components, so the user is apparently a moron.
-			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-		else
-			# A legitimate option was selected, so we can go now.
-			INT_VECT="$PIN_CHANGE_INTERRUPT_VECTOR"
-			echo -e "${CYAN}Selected $INT_VECT.\n${NO_COLOUR}"
-			let INT_VECT_CONFIG_NUMBER=$REPLY-1 # Used to configure the interrupt in bootloader
-			break
-		fi
-	done
-
-	# Prompt the user to select the pin change interrupt to use for the INT pin from MCP2515.
-	echo -e "${GREEN}Please choose which pin change interrupt the INT pin from MCP2515 will trigger:${NO_COLOUR}"
-	# Create a menu of choices and have the user select one.
-	select PIN_CHANGE_INTERRUPT in $PIN_CHANGE_INTERRUPTS
-	do
-		# Check if the selected component is actually valid.
-		PIN_CHANGE_INTERRUPT=$(echo $PIN_CHANGE_INTERRUPTS | grep -w -o "$PIN_CHANGE_INTERRUPT")
-		if [ -z "$PIN_CHANGE_INTERRUPT" ]; then
-			# The selected component was not in the list of components, so the user is apparently a moron.
-			echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-		else
-			# A legitimate option was selected, so we can go now.
-			INT_NUM="$PIN_CHANGE_INTERRUPT"
-			echo -e "${CYAN}Selected $INT_NUM.\n${NO_COLOUR}"
-			break
-		fi
-	done
+	# Prompts for AT90CAN128 as it has no pin change interupts.
+	if [ "$MCU_CODE" == "at90can128" ]; then
+		# Prompt the user to select the pin interrupt vector to use for the INT pin from MCP2515.
+		echo -e "${GREEN}Please choose which pin interrupt vector the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PIN_INTERRUPT_VECTOR in $PIN_INTERRUPT_VECTORS
+		do
+			# Check if the selected component is actually valid.
+			PIN_INTERRUPT_VECTOR=$(echo $PIN_INTERRUPT_VECTORS | grep -w -o "$PIN_INTERRUPT_VECTOR")
+			if [ -z "$PIN_INTERRUPT_VECTOR" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				INT_VECT="$PIN_INTERRUPT_VECTOR"
+				echo -e "${CYAN}Selected $INT_VECT.\n${NO_COLOUR}"
+				let INT_VECT_CONFIG_NUMBER=$REPLY-1 # Used to configure the interrupt in bootloader
+				break
+			fi
+		done
+	
+	# Prompts for other microcontrollers with pin change interupts.
+	else
+		# Prompt the user to select the pin change interrupt vector to use for the INT pin from MCP2515.
+		echo -e "${GREEN}Please choose which pin change interrupt vector the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PIN_CHANGE_INTERRUPT_VECTOR in $PIN_CHANGE_INTERRUPT_VECTORS
+		do
+			# Check if the selected component is actually valid.
+			PIN_CHANGE_INTERRUPT_VECTOR=$(echo $PIN_CHANGE_INTERRUPT_VECTORS | grep -w -o "$PIN_CHANGE_INTERRUPT_VECTOR")
+			if [ -z "$PIN_CHANGE_INTERRUPT_VECTOR" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				INT_VECT="$PIN_CHANGE_INTERRUPT_VECTOR"
+				echo -e "${CYAN}Selected $INT_VECT.\n${NO_COLOUR}"
+				let INT_VECT_CONFIG_NUMBER=$REPLY-1 # Used to configure the interrupt in bootloader
+				break
+			fi
+		done
+	
+		# Prompt the user to select the pin change interrupt to use for the INT pin from MCP2515.
+		echo -e "${GREEN}Please choose which pin change interrupt the INT pin from MCP2515 will trigger:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select PIN_CHANGE_INTERRUPT in $PIN_CHANGE_INTERRUPTS
+		do
+			# Check if the selected component is actually valid.
+			PIN_CHANGE_INTERRUPT=$(echo $PIN_CHANGE_INTERRUPTS | grep -w -o "$PIN_CHANGE_INTERRUPT")
+			if [ -z "$PIN_CHANGE_INTERRUPT" ]; then
+				# The selected component was not in the list of components, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				INT_NUM="$PIN_CHANGE_INTERRUPT"
+				echo -e "${CYAN}Selected $INT_NUM.\n${NO_COLOUR}"
+				break
+			fi
+		done
+	fi
 
 	# Prompt the user to select the port to use for the INT pin from MCP2515.
 	echo -e "${GREEN}Please choose which port the INT pin from MCP2515 is connected to:${NO_COLOUR}"
