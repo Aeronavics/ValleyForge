@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,11 +35,11 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 #include <iostream>
-#include <stdlib.h>
 #include <memory.h>
-#include <vector>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <vector>
 
 
 // DEFINE PRIVATE MACROS.
@@ -83,10 +83,10 @@
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
-class libUSBContextHolder
+class libUSB_context_holder
 {
 public:
-	libUSBContextHolder()
+	libUSB_context_holder()
 	{
 		if (libusb_init(&context) != 0)
 		{
@@ -94,12 +94,12 @@ public:
 			exit(1);
 		}
 	}
-	~libUSBContextHolder()
+	~libUSB_context_holder()
 	{
 		libusb_exit(context);
 	}
 	
-	libusb_context* getContext()
+	libusb_context* get_context()
 	{
 		return context;
 	}
@@ -107,29 +107,29 @@ private:
 	libusb_context* context;
 };
 
-class USBMessage
+class USB_message
 {
 public:
-	USBMessage() :
+	USB_message() :
 		content(MESSAGE_LENGTH, 0)
 	{
 	}
-	USBMessage(uint8_t* buffer, size_t length) :
+	USB_message(uint8_t* buffer, size_t length) :
 		content(buffer, buffer+length)
 	{		
 	}
 	
-	std::vector<uint8_t>& getContent()
+	std::vector<uint8_t>& get_content()
 	{
 		return content;
 	}
 	
-	void setChecksum(uint8_t checksum)
+	void set_checksum(uint8_t checksum)
 	{
 		content[MESSAGE_CHECKSUM_LOCATION] = checksum;
 	}
 	
-	uint8_t calculateChecksum()
+	uint8_t calculate_checksum()
 	{
 		uint8_t checksum = 0;
 		for (size_t i = 0; i < MESSAGE_CHECKSUM_LOCATION; i++)
@@ -143,52 +143,52 @@ private:
 	std::vector<uint8_t> content;
 };
 
-typedef std::deque<USBMessage> MessageQueue;
+typedef std::deque<USB_message> Message_queue;
 
 // DECLARE IMPORTED GLOBAL VARIABLES.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
-CANMessage parseReceivedCANMessage(USBMessage& m);
-void printBuffer(uint8_t* buffer, size_t length);
-std::string messageName(uint8_t command);
-uint32_t parseId(uint8_t* buffer);
-void unparseId(uint32_t id, uint8_t* buffer, bool extended);
-void printMessage(uint8_t* buffer, size_t length);
-bool sendUSBMessage(USBMessage& msg, libusb_device_handle* device);
+CAN_message parse_received_CAN_message(USB_message& m);
+void print_buffer(uint8_t* buffer, size_t length);
+std::string message_name(uint8_t command);
+uint32_t parse_id(uint8_t* buffer);
+void unparse_id(uint32_t id, uint8_t* buffer, bool extended);
+void print_message(uint8_t* buffer, size_t length);
+bool send_USB_message(USB_message& msg, libusb_device_handle* device);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 
 
-MicrochipCANNetworkInterface::MicrochipCANNetworkInterface() :
-	CANDevice(NULL),
+Microchip_CAN_network_interface::Microchip_CAN_network_interface() :
+	recv_queue_lock(PTHREAD_MUTEX_INITIALIZER),
+	CAN_device(NULL),
 	quit(false),
 	drain(false),
 	transmitted(false),
 	overflow(false),
-	inited(false),
-	recvQueueLock(PTHREAD_MUTEX_INITIALIZER)
+	inited(false)
 {
-	ctxHolder = new libUSBContextHolder;
+	ctx_holder = new libUSB_context_holder;
 }
 
-MicrochipCANNetworkInterface::~MicrochipCANNetworkInterface()
+Microchip_CAN_network_interface::~Microchip_CAN_network_interface()
 {
 	SET_ATOMIC(quit);
 	if (inited)
 	{
-		int rc = pthread_join(USBThread, NULL);
+		pthread_join(USB_thread, NULL);
 	}
-	if (CANDevice)
+	if (CAN_device)
 	{
-		libusb_close(CANDevice);
+		libusb_close(CAN_device);
 	}
-	delete ctxHolder;
+	delete ctx_holder;
 }
 
-bool MicrochipCANNetworkInterface::init(Params params)
+bool Microchip_CAN_network_interface::init(Params params)
 {
 	index = 0;
 	bool haveBitrate = false;
@@ -213,61 +213,61 @@ bool MicrochipCANNetworkInterface::init(Params params)
 			termination = true;
 		}
 	}
-	libusb_context* ctx = ctxHolder->getContext();
-	CANDevice = libusb_open_device_with_vid_pid(ctx, VID, PID);
-	if (CANDevice == NULL)
+	libusb_context* ctx = ctx_holder->get_context();
+	CAN_device = libusb_open_device_with_vid_pid(ctx, VID, PID);
+	if (CAN_device == NULL)
 	{
 		std::cerr << "Device could not be found or an error occurred." << std::endl;
 		return false;
 	}
 	
-	if (libusb_reset_device(CANDevice))
+	if (libusb_reset_device(CAN_device))
 	{
 		std::cerr << "Device re-enumerates on reset." << std::endl;
 		return false;
 	}
 	
-	if (libusb_claim_interface(CANDevice, 0))
+	if (libusb_claim_interface(CAN_device, 0))
 	{
 		std::cerr << "Could not claim interface on device, is something else using it?" << std::endl;
 		return false;
 	}
 	
-	int rc = pthread_create(&USBThread, NULL, USBThreadFunc, (void*) this);
+	int rc = pthread_create(&USB_thread, NULL, USB_thread_func, (void*) this);
 	if (rc != 0)
 	{
 		return false;
 	}
 	
-	USBMessage msg;
+	USB_message msg;
 	
 	//Change bitrate command.
-	msg.getContent()[0] = CHANGE_BIT_RATE;
-	msg.getContent()[1] = (bitrate >> 8) & 0xFF;
-	msg.getContent()[2] = (bitrate) & 0xFF;
-	msg.setChecksum(msg.calculateChecksum());
+	msg.get_content()[0] = CHANGE_BIT_RATE;
+	msg.get_content()[1] = (bitrate >> 8) & 0xFF;
+	msg.get_content()[2] = (bitrate) & 0xFF;
+	msg.set_checksum(msg.calculate_checksum());
 
-	if (!sendUSBMessage(msg, CANDevice))
+	if (!send_USB_message(msg, CAN_device))
 	{
 		std::cerr << "Could not send bitrate change message" << std::endl;
 	}
 	
 	//Change mode command.
-	msg.getContent()[0] = CHANGE_CAN_MODE;
-	msg.getContent()[1] = CAN_MODE_NORMAL;
-	msg.setChecksum(msg.calculateChecksum());
+	msg.get_content()[0] = CHANGE_CAN_MODE;
+	msg.get_content()[1] = CAN_MODE_NORMAL;
+	msg.set_checksum(msg.calculate_checksum());
 
-	if (!sendUSBMessage(msg, CANDevice))
+	if (!send_USB_message(msg, CAN_device))
 	{
 		std::cerr << "Could not send mode change message" << std::endl;
 	}
 	
 		//Change mode command.
-	msg.getContent()[0] = SETUP_TERMINATION_RESISTANCE;
-	msg.getContent()[1] = termination ? 0 : 1;
-	msg.setChecksum(msg.calculateChecksum());
+	msg.get_content()[0] = SETUP_TERMINATION_RESISTANCE;
+	msg.get_content()[1] = termination ? 0 : 1;
+	msg.set_checksum(msg.calculate_checksum());
 
-	if (!sendUSBMessage(msg, CANDevice))
+	if (!send_USB_message(msg, CAN_device))
 	{
 		std::cerr << "Could not send termination change message" << std::endl;
 	}
@@ -285,30 +285,30 @@ bool MicrochipCANNetworkInterface::init(Params params)
 	return true;
 }
 	
-bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t timeout)
+bool Microchip_CAN_network_interface::send_message(const CAN_message& msg, uint32_t timeout)
 {
-	USBMessage sendMessage;
+	USB_message sendMessage;
 	timeval start, now;
 	//Transmit Message command.
-	sendMessage.getContent()[0] = TRANSMIT_MESSAGE_EV;
+	sendMessage.get_content()[0] = TRANSMIT_MESSAGE_EV;
 	char buf[9];
-	snprintf(buf, 9, "%X", msg.getId());
+	snprintf(buf, 9, "%X", msg.get_id());
 	buf[8] = '\0';
 	//std::cerr << "ID: " << buf << ", ";
-	unparseId(msg.getId(), &(sendMessage.getContent()[1]), false);
+	unparse_id(msg.get_id(), &(sendMessage.get_content()[1]), false);
 	//std::cerr << "Length: " << msg.getLength() << std::endl;
-	sendMessage.getContent()[DLC] = msg.getLength();
-	for (size_t i = 0; i < msg.getLength(); i++)
+	sendMessage.get_content()[DLC] = msg.get_length();
+	for (size_t i = 0; i < msg.get_length(); i++)
 	{
-		sendMessage.getContent()[DATA_START+i] = msg.getData()[i];
+		sendMessage.get_content()[DATA_START+i] = msg.get_data()[i];
 	}
-	sendMessage.getContent()[INDEX] = index++;
+	sendMessage.get_content()[INDEX] = index++;
 	if (index > 2)
 	{
 		index = 0;
 	}
-	sendMessage.setChecksum(sendMessage.calculateChecksum());
-	sendUSBMessage(sendMessage, CANDevice);
+	sendMessage.set_checksum(sendMessage.calculate_checksum());
+	send_USB_message(sendMessage, CAN_device);
 	gettimeofday(&start, NULL);
 	while (!__sync_fetch_and_add(&transmitted, 0))
 	{
@@ -325,18 +325,18 @@ bool MicrochipCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t t
 }
 
 
-bool MicrochipCANNetworkInterface::receiveMessage( CANMessage& msg, uint32_t timeout)
+bool Microchip_CAN_network_interface::receive_message( CAN_message& msg, uint32_t timeout)
 {
 	if (__sync_fetch_and_add(&overflow, 0))
 	{
-		drainMessages();
+		drain_messages();
 		RESET_ATOMIC(overflow);
 		return false;
 	}
 		
 	timeval start, now;
 	gettimeofday(&start, NULL);
-	while (recvQueue.empty())
+	while (recv_queue.empty())
 	{
 		gettimeofday(&now, NULL);
 		uint32_t msec = (now.tv_usec - start.tv_usec)/1000;
@@ -346,62 +346,45 @@ bool MicrochipCANNetworkInterface::receiveMessage( CANMessage& msg, uint32_t tim
 			return false;
 		}
 	}
-	pthread_mutex_lock( &recvQueueLock );
-	msg = recvQueue.front();
-	recvQueue.pop_front();
-	pthread_mutex_unlock( &recvQueueLock);
+	pthread_mutex_lock( &recv_queue_lock );
+	msg = recv_queue.front();
+	recv_queue.pop_front();
+	pthread_mutex_unlock( &recv_queue_lock);
 	return true;
 	
 }
 
-bool MicrochipCANNetworkInterface::drainMessages()
+bool Microchip_CAN_network_interface::drain_messages()
 {
-	pthread_mutex_lock( &recvQueueLock );
-	recvQueue.clear();
-	pthread_mutex_unlock( &recvQueueLock );
+	pthread_mutex_lock( &recv_queue_lock );
+	recv_queue.clear();
+	pthread_mutex_unlock( &recv_queue_lock );
 	return true;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-void* MicrochipCANNetworkInterface::USBThreadFunc(void* param)
+void* Microchip_CAN_network_interface::USB_thread_func(void* param)
 {
-	MicrochipCANNetworkInterface* obj = static_cast<MicrochipCANNetworkInterface*> (param);
-	MessageQueue messageQueue;
+	Microchip_CAN_network_interface* obj = static_cast<Microchip_CAN_network_interface*> (param);
+	Message_queue message_queue;
 	while (__sync_fetch_and_add(&obj->quit, 0) == 0)
 	{
-		obj->processUSBEvents(&messageQueue);
+		obj->process_USB_events(&message_queue);
 	}
 	return 0;
 }
 
-void MicrochipCANNetworkInterface::processUSBEvents(void* m)
+void Microchip_CAN_network_interface::process_USB_events(void* m)
 {
 	uint8_t buffer[IN_ENDPOINT_READ_SIZE];
 	size_t length = 0;
 	int transferred;
-	//~ timeval now, then;
-	//~ int period = 5;
-	MessageQueue& messageQueue = *(static_cast<MessageQueue*>(m));
+	Message_queue& message_queue = *(static_cast<Message_queue*>(m));
 	
-	//~ USBMessage sendMessage;
-	//~ 
-	//~ //Transmit Message command.
-	//~ sendMessage.getContent()[0] = TRANSMIT_MESSAGE_EV;
-	//~ unparseId(0x123, &(sendMessage.getContent()[1]), false);
-	//~ sendMessage.getContent()[DLC] = 8;
-	//~ sendMessage.getContent()[DATA_START] = 0xDE;
-	//~ sendMessage.getContent()[DATA_START+1] = 0xAD;
-	//~ sendMessage.getContent()[DATA_START+2] = 0xBE;
-	//~ sendMessage.getContent()[DATA_START+3] = 0xEF;
-	//~ sendMessage.getContent()[DATA_START+4] = 0xDE;
-	//~ sendMessage.getContent()[DATA_START+5] = 0xAD;
-	//~ sendMessage.getContent()[DATA_START+6] = 0xCA;
-	//~ sendMessage.getContent()[DATA_START+7] = 0xFE;
-	//~ sendMessage.getContent()[INDEX] = 1;
-	//~ sendMessage.setChecksum(sendMessage.calculateChecksum());
+	
 	int rc ;
-	if ((rc = libusb_bulk_transfer(CANDevice, IN_ENDPOINT, buffer+length, IN_ENDPOINT_READ_SIZE, &transferred, 500)))
+	if ((rc = libusb_bulk_transfer(CAN_device, IN_ENDPOINT, buffer+length, IN_ENDPOINT_READ_SIZE, &transferred, 500)))
 		{
 			std::cerr << "Could not read from the in endpoint: " << libusb_error_name(rc) << std::endl;
 			perror("Actual Error");
@@ -410,7 +393,7 @@ void MicrochipCANNetworkInterface::processUSBEvents(void* m)
 		}
 		
 		//std::cout << "Transferred: " << transferred << std::endl;
-		if (transferred % MESSAGE_LENGTH == 0 & !__sync_fetch_and_add(&drain,0))
+		if ((transferred % MESSAGE_LENGTH == 0) & !__sync_fetch_and_add(&drain,0))
 		{
 			
 			//std::cout << "Got a whole number of messages." << std::endl;
@@ -443,7 +426,7 @@ void MicrochipCANNetworkInterface::processUSBEvents(void* m)
 				}
 				else
 				{
-					messageQueue.push_back(USBMessage(buffer+curPos, MESSAGE_LENGTH));
+					message_queue.push_back(USB_message(buffer+curPos, MESSAGE_LENGTH));
 				}
 				curPos += MESSAGE_LENGTH;
 			}
@@ -454,46 +437,40 @@ void MicrochipCANNetworkInterface::processUSBEvents(void* m)
 		
 		int processed = 0;
 		
-		while (!messageQueue.empty() && processed < 10)
+		while (!message_queue.empty() && processed < 10)
 		{
 			//std::cout << "Processing: " << processed << std::endl;
-			USBMessage m = messageQueue.front();
-			messageQueue.pop_front();
-			//printBuffer(&(m.getContent()[0]), m.getContent().size());
-			printMessage(&(m.getContent()[0]), m.getContent().size());
-			processMessage(m);
+			USB_message m = message_queue.front();
+			message_queue.pop_front();
+			//printBuffer(&(m.get_content()[0]), m.get_content().size());
+			print_message(&(m.get_content()[0]), m.get_content().size());
+			process_message(m);
 			processed++;
 		}
 		
-		//~ gettimeofday(&now, NULL);
-		//~ if ( (now.tv_sec > (then.tv_sec + period)) )
-		//~ {
-			//~ sendUSBMessage(sendMessage, CANDevice);
-			//~ then = now;
-		//~ }
 		
 }
 
-void MicrochipCANNetworkInterface::processMessage(USBMessage& m)
+void Microchip_CAN_network_interface::process_message(USB_message& m)
 {
-	if (m.getContent()[0] == RECEIVE_MESSAGE)
+	if (m.get_content()[0] == RECEIVE_MESSAGE)
 	{
-		pthread_mutex_lock( &recvQueueLock);
-		CANMessage msg = parseReceivedCANMessage(m);
-		if (filter(msg.getId()))
+		pthread_mutex_lock( &recv_queue_lock);
+		CAN_message msg = parse_received_CAN_message(m);
+		if (filter(msg.get_id()))
 		{
 			//std::cout << "Received" << std::endl;
-			recvQueue.push_back(msg);
+			recv_queue.push_back(msg);
 		}
-		pthread_mutex_unlock( &recvQueueLock);
+		pthread_mutex_unlock( &recv_queue_lock);
 	}
-	if (m.getContent()[0] == TRANSMIT_MESSAGE_RESPONSE)
+	if (m.get_content()[0] == TRANSMIT_MESSAGE_RESPONSE)
 	{
 		SET_ATOMIC(transmitted);
 	}
-	if (m.getContent()[0] == CAN_ALIVE)
+	if (m.get_content()[0] == CAN_ALIVE)
 	{
-		if (m.getContent()[3])
+		if (m.get_content()[3])
 		{
 			//std::cout << "Overflow" << std::endl;
 			SET_ATOMIC(overflow);
@@ -501,19 +478,19 @@ void MicrochipCANNetworkInterface::processMessage(USBMessage& m)
 	}
 }
 
-CANMessage parseReceivedCANMessage(USBMessage& m)
+CAN_message parse_received_CAN_message(USB_message& m)
 {
-	uint32_t id = parseId(&(m.getContent()[1]));
-	size_t length = m.getContent()[5];
+	uint32_t id = parse_id(&(m.get_content()[1]));
+	size_t length = m.get_content()[5];
 	uint8_t data[8];
 	for (size_t i = 0; i < length; i++)
 	{
-		data[i] = m.getContent()[6+i];
+		data[i] = m.get_content()[6+i];
 	}
-	return CANMessage(id, length, &data[0]);
+	return CAN_message(id, length, &data[0]);
 }
 
-void printBuffer(uint8_t* buffer, size_t length)
+void print_buffer(uint8_t* buffer, size_t length)
 {
 	char buf[3];
 	for (size_t i = 0; i < length; i++)
@@ -525,7 +502,7 @@ void printBuffer(uint8_t* buffer, size_t length)
 	std::cout << std::endl;
 }
 
-std::string messageName(uint8_t command)
+std::string message_name(uint8_t command)
 {
 	switch (command)
 	{
@@ -544,9 +521,9 @@ std::string messageName(uint8_t command)
 	}
 }
 
-uint32_t parseId(uint8_t* buffer)
+uint32_t parse_id(uint8_t* buffer)
 {
-	bool isExtendedId = false;
+	bool is_extended_id = false;
 	uint8_t eIdHi = (*buffer);
 	buffer++;
 	uint8_t eIdLo = (*buffer);
@@ -555,7 +532,7 @@ uint32_t parseId(uint8_t* buffer)
 	buffer++;
 	uint8_t sIdLo = (*buffer);
 	
-	isExtendedId = eIdLo & 0x08 == 0x08;
+	is_extended_id = (eIdLo & 0x08) == 0x08;
 	uint32_t id;
 	
 	//This is done regardless.
@@ -563,7 +540,7 @@ uint32_t parseId(uint8_t* buffer)
 	id <<= 3;
 	id |= (sIdLo >> 5) & 0x07;
 	
-	if (isExtendedId)
+	if (is_extended_id)
 	{
 		//If its extended we also put in the bottom 2 bits from the standard ID lo byte and the extended ID bytes as follows.
 		id <<= 2;
@@ -577,7 +554,7 @@ uint32_t parseId(uint8_t* buffer)
 	return id;
 }
 
-void unparseId(uint32_t id, uint8_t* buffer, bool extended)
+void unparse_id(uint32_t id, uint8_t* buffer, bool extended)
 {
 	uint8_t eIdHi = 0;
 	uint8_t eIdLo = 0;
@@ -586,7 +563,7 @@ void unparseId(uint32_t id, uint8_t* buffer, bool extended)
 	
 	if (extended)
 	{
-		
+		//TODO: Currently we do not handle extended IDs, in future these would be expanded to the microchip form here.
 	}
 	else
 	{
@@ -599,7 +576,8 @@ void unparseId(uint32_t id, uint8_t* buffer, bool extended)
 	buffer[3] = sIdLo;
 }
 
-void printMessage(uint8_t* buffer, size_t length)
+//This is a debugging function.
+void print_message(uint8_t* buffer, size_t length)
 {
 	if (length == MESSAGE_LENGTH)
 	{
@@ -648,7 +626,7 @@ void printMessage(uint8_t* buffer, size_t length)
 					buf[2] = '\0';
 					std::cout << buf << ((i < 3) ? " " : ", ");
 				}
-				snprintf(buf, 9, "%X", parseId(buffer+1));
+				snprintf(buf, 9, "%X", parse_id(buffer+1));
 				buf[8] = '\0';
 				std::cout << "ID: " << buf << ", ";
 				std::cout  << "DLC: " << (size_t)buffer[5] << ", ";
@@ -680,19 +658,20 @@ void printMessage(uint8_t* buffer, size_t length)
 	}
 }
 
-bool sendUSBMessage(USBMessage& msg, libusb_device_handle* device)
+bool send_USB_message(USB_message& msg, libusb_device_handle* device)
 {
 	int transferred;
-	if(libusb_bulk_transfer(device, OUT_ENDPOINT, &(msg.getContent()[0]), msg.getContent().size(), &transferred, 500))
+	if(libusb_bulk_transfer(device, OUT_ENDPOINT, &(msg.get_content()[0]), msg.get_content().size(), &transferred, 500))
 	{
 		std::cerr << "Failed to send message to CAN device." << std::endl;
 		return false;
 	}
-	if (transferred != msg.getContent().size())
+	if (transferred != msg.get_content().size())
 	{
-		std::cerr << "Right number of bytes not sent to CAN device sent: " << transferred << " Expected to send: " << msg.getContent().size() << std::endl;
+		std::cerr << "Right number of bytes not sent to CAN device, sent: " << transferred << " Expected to send: " << msg.get_content().size() << std::endl;
 		return false;
 	}
 	return true;
 }
 
+//ALL DONE.

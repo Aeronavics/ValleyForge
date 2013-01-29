@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,18 +34,19 @@
 #include "socketcannetworkinterface.hpp"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
+#include <errno.h>
 #include <iostream>
+#include <memory.h>
 #include <sstream>
 #include <stdlib.h>
-#include <memory.h>
-#include <vector>
 #include <stdio.h>
-#include <sys/time.h>
 #include <unistd.h>
-#include <errno.h>
+#include <vector>
+
+#include <sys/ioctl.h>
+#include <sys/time.h>
 
 #include <net/if.h>
-#include <sys/ioctl.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -63,33 +64,34 @@
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
-CANMessage parse_frame(can_frame frame);
+CAN_message parse_frame(can_frame frame);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 
 
-SocketCANNetworkInterface::SocketCANNetworkInterface() :
+Socket_CAN_network_interface::Socket_CAN_network_interface() :
 	quit(false),
 	inited(false),
-	recvQueueLock(PTHREAD_MUTEX_INITIALIZER)
+	recv_queue_lock(PTHREAD_MUTEX_INITIALIZER)
 {
+	//Nothing to do here.
 }
 
-SocketCANNetworkInterface::~SocketCANNetworkInterface()
+Socket_CAN_network_interface::~Socket_CAN_network_interface()
 {
 	SET_ATOMIC(quit);
 	if (inited)
 	{
-		int rc = pthread_join(SocketThread, NULL);
+		int rc = pthread_join(socket_thread, NULL);
 	}
-	if (CANSocket)
+	if (CAN_socket)
 	{
-		close(CANSocket);
+		close(CAN_socket);
 	}
 }
 
-bool SocketCANNetworkInterface::init(Params params)
+bool Socket_CAN_network_interface::init(Params params)
 {
 	ifreq ifr;
 	sockaddr_can addr;
@@ -145,8 +147,8 @@ bool SocketCANNetworkInterface::init(Params params)
 	
 	
 	//Do socket init here.
-	CANSocket =  socket(PF_CAN, SOCK_RAW, CAN_RAW);
-	if (CANSocket < 0)
+	CAN_socket =  socket(PF_CAN, SOCK_RAW, CAN_RAW);
+	if (CAN_socket < 0)
 	{
 		std::cerr << "Could not create CAN socket." << std::endl;
 		perror("Socket");
@@ -156,7 +158,7 @@ bool SocketCANNetworkInterface::init(Params params)
 	addr.can_family = AF_CAN;
 	
 	strcpy(ifr.ifr_name, canIface.c_str());
-	if (ioctl(CANSocket, SIOCGIFINDEX, &ifr) < 0)
+	if (ioctl(CAN_socket, SIOCGIFINDEX, &ifr) < 0)
 	{
 		perror("Failed to get interface index");
 		return false;
@@ -164,7 +166,7 @@ bool SocketCANNetworkInterface::init(Params params)
 	
 	addr.can_ifindex = ifr.ifr_ifindex;
 	
-	int rc = bind(CANSocket, (sockaddr *)&addr, sizeof(addr));
+	int rc = bind(CAN_socket, (sockaddr *)&addr, sizeof(addr));
 	if (rc < 0)
 	{
 		perror("Failed to bind socket");
@@ -173,56 +175,46 @@ bool SocketCANNetworkInterface::init(Params params)
 	
 	filter.can_id = 0;
 	filter.can_mask = 0;
-	setsockopt(CANSocket, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(struct can_filter));
+	setsockopt(CAN_socket, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(struct can_filter));
 	
-	rc = pthread_create(&SocketThread, NULL, SocketThreadFunc, (void*) this);
+	rc = pthread_create(&socket_thread, NULL, socket_thread_func, (void*) this);
 	if (rc != 0)
 	{
 		return false;
 	}
-	
-	
-	
-	//~ SET_ATOMIC(drain);
-	//~ usleep(500000);
-	//~ RESET_ATOMIC(drain);
-	//~ 
-	//~ std::cout << "Sleeping" << std::endl;
-	//~ usleep(500000);
-	//~ std::cout << "Waking" << std::endl;
 	
 	inited = true;
 	
 	return true;
 }
 	
-bool SocketCANNetworkInterface::sendMessage(const CANMessage& msg, uint32_t timeout)
+bool Socket_CAN_network_interface::send_message(const CAN_message& msg, uint32_t timeout)
 {
 	can_frame frame;
-	frame.can_id = msg.getId();
-	frame.can_dlc = msg.getLength();
-	for (size_t i = 0; i < msg.getLength(); i++)
+	frame.can_id = msg.get_id();
+	frame.can_dlc = msg.get_length();
+	for (size_t i = 0; i < msg.get_length(); i++)
 	{
-		frame.data[i] = msg.getData()[i];
+		frame.data[i] = msg.get_data()[i];
 	}
-	int sent = write(CANSocket, &frame, sizeof(frame));
+	int sent = write(CAN_socket, &frame, sizeof(frame));
 	if (sent != sizeof(frame))
 	{
 		perror("Could not send");
 		return false;
 	}
-	//std::cout << "Sent Message: ID: " << msg.getId() << std::endl;
+	//std::cout << "Sent Message: ID: " << msg.get_id() << std::endl;
 	return true;
 }
 
 
-bool SocketCANNetworkInterface::receiveMessage( CANMessage& msg, uint32_t timeout)
+bool Socket_CAN_network_interface::receive_message( CAN_message& msg, uint32_t timeout)
 {
 
 	timeval start, now;
 	gettimeofday(&start, NULL);
 	//std::cout << "TRying receive" << std::endl;
-	while (recvQueue.empty())
+	while (recv_queue.empty())
 	{
 		gettimeofday(&now, NULL);
 		uint32_t msec = (now.tv_usec - start.tv_usec)/1000;
@@ -234,48 +226,48 @@ bool SocketCANNetworkInterface::receiveMessage( CANMessage& msg, uint32_t timeou
 		}
 	}
 	//std::cout << "Got message" << std::endl;
-	pthread_mutex_lock( &recvQueueLock );
-	msg = recvQueue.front();
-	recvQueue.pop_front();
-	pthread_mutex_unlock( &recvQueueLock);
+	pthread_mutex_lock( &recv_queue_lock );
+	msg = recv_queue.front();
+	recv_queue.pop_front();
+	pthread_mutex_unlock( &recv_queue_lock);
 	return true;
 	
 }
 
-bool SocketCANNetworkInterface::drainMessages()
+bool Socket_CAN_network_interface::drain_messages()
 {
-	pthread_mutex_lock( &recvQueueLock );
-	recvQueue.clear();
-	pthread_mutex_unlock( &recvQueueLock );
+	pthread_mutex_lock( &recv_queue_lock );
+	recv_queue.clear();
+	pthread_mutex_unlock( &recv_queue_lock );
 	return true;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-void* SocketCANNetworkInterface::SocketThreadFunc(void* param)
+void* Socket_CAN_network_interface::socket_thread_func(void* param)
 {
-	SocketCANNetworkInterface* obj = static_cast<SocketCANNetworkInterface*> (param);
+	Socket_CAN_network_interface* obj = static_cast<Socket_CAN_network_interface*> (param);
 	while (!__sync_fetch_and_add(&obj->quit, 0))
 	{
-		obj->processSocketEvents();
+		obj->process_socket_events();
 	}
 	return 0;
 }
 
-void SocketCANNetworkInterface::processSocketEvents()
+void Socket_CAN_network_interface::process_socket_events()
 {
-	//Receive a message and stuff it in the recvQueue.
+	//Receive a message and stuff it in the recv_queue.
 	can_frame frame;
 	timeval timeout;
 	fd_set waitset;
 	int numberReady;
 	FD_ZERO(&waitset);
-	FD_SET(CANSocket, &waitset);
+	FD_SET(CAN_socket, &waitset);
 	
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 250 * 1000;
 	
-	numberReady = select(CANSocket+1, &waitset, NULL, NULL, &timeout);
+	numberReady = select(CAN_socket+1, &waitset, NULL, NULL, &timeout);
 	if (numberReady == 0)
 	{
 		return;
@@ -291,17 +283,17 @@ void SocketCANNetworkInterface::processSocketEvents()
 	}
 	else
 	{
-		int bytes_read = read( CANSocket, &frame, sizeof(frame) );
+		int bytes_read = read( CAN_socket, &frame, sizeof(frame) );
 		if (bytes_read == sizeof(frame))
 		{
-			CANMessage msg = parse_frame(frame);
-			if (filter(msg.getId()))
+			CAN_message msg = parse_frame(frame);
+			if (filter(msg.get_id()))
 			{
-				pthread_mutex_lock( &recvQueueLock );
-				recvQueue.push_back(msg);
-				pthread_mutex_unlock( &recvQueueLock );
+				pthread_mutex_lock( &recv_queue_lock );
+				recv_queue.push_back(msg);
+				pthread_mutex_unlock( &recv_queue_lock );
 			}
-			//std::cout << "Received message: ID: " << msg.getId() << std::endl;
+			//std::cout << "Received message: ID: " << msg.get_id() << std::endl;
 		}
 		else
 		{
@@ -312,16 +304,18 @@ void SocketCANNetworkInterface::processSocketEvents()
 	
 }
 
-CANMessage parse_frame(can_frame frame)
+CAN_message parse_frame(can_frame frame)
 {
-	CANMessage msg;
+	CAN_message msg;
 	uint32_t id = frame.can_id;
 	id &= CAN_EFF_MASK;
-	msg.setId(id);
-	msg.setLength(frame.can_dlc);
+	msg.set_id(id);
+	msg.set_length(frame.can_dlc);
 	for (size_t i = 0; i < frame.can_dlc; i++)
 	{
-		msg.getContent()[i] = frame.data[i];
+		msg.get_content()[i] = frame.data[i];
 	}
 	return msg;
 }
+
+//ALL DONE.

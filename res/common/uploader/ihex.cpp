@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,11 +36,13 @@
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
 
-#include <string>
-#include <sstream>
-#include <stdlib.h>
 #include <cstdio>
 #include <iostream>
+#include <sstream>
+#include <stdlib.h>
+#include <string>
+
+
 
 // DEFINE PRIVATE MACROS.
 
@@ -52,29 +54,29 @@
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
-bool parseRecordType(std::string& temp, IHexRecord::e_type& type);
-std::string typeToString(IHexRecord::e_type type);
+bool parse_record_type(std::string& temp, Ihex_record::Type& type);
+std::string type_to_string(Ihex_record::Type type);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-IHexRecord::IHexRecord() :
+Ihex_record::Ihex_record() :
 	data(0),
 	length(0),
 	type(INVALID),
 	address(0),
 	valid(false)
 {
-	
+	//Nothing to do here.
 }
 
-IHexRecord::IHexRecord( std::string& line) :
+Ihex_record::Ihex_record( std::string& line) :
 	data(0),
 	length(0),
 	type(INVALID),
 	address(0),
 	valid(false)
 {
-	if (parse(line) && validateChecksum())
+	if (parse(line) && validate_checksum())
 	{
 		valid = true;
 	}
@@ -84,7 +86,7 @@ IHexRecord::IHexRecord( std::string& line) :
 	}
 }
 
-IHexRecord::IHexRecord( const IHexRecord & other) :
+Ihex_record::Ihex_record( const Ihex_record & other) :
 	length(other.length),
 	type(other.type),
 	address(other.address),
@@ -100,56 +102,56 @@ IHexRecord::IHexRecord( const IHexRecord & other) :
 	}
 }
 
-IHexRecord::~IHexRecord()
+Ihex_record::~Ihex_record()
 {
 	delete [] data;
 	data = 0;
 }
 	
-bool IHexRecord::isValid()
+bool Ihex_record::is_valid()
 {
 	return valid;
 }
-bool IHexRecord::validateChecksum()
+bool Ihex_record::validate_checksum()
 {
-	uint8_t tempChecksum = (uint8_t)length;
-	tempChecksum += (uint8_t)type;
-	tempChecksum += (uint8_t)(address & 0x0FF);
-	tempChecksum += (uint8_t)((address & 0x0FF00) >> 8);
+	uint8_t temp_checksum = (uint8_t)length;
+	temp_checksum += (uint8_t)type;
+	temp_checksum += (uint8_t)(address & 0x0FF);
+	temp_checksum += (uint8_t)((address & 0x0FF00) >> 8);
 	for (size_t i = 0; i < length; i++)
 	{
-		tempChecksum += data[i];
+		temp_checksum += data[i];
 	}
-	tempChecksum = -tempChecksum;
-	//~ std::cerr << "Checksum Check: " << (long) tempChecksum << std::endl;
-	return tempChecksum == checksum;
+	temp_checksum = -temp_checksum;
+	//~ std::cerr << "Checksum Check: " << (long) temp_checksum << std::endl;
+	return temp_checksum == checksum;
 }
 
-uint8_t* IHexRecord::getData()
+uint8_t* Ihex_record::get_data()
 {
 	return data;
 }
-size_t IHexRecord::getLength()
+size_t Ihex_record::get_length()
 {
 	return length;
 }
 
-uint16_t IHexRecord::getAddress()
+uint16_t Ihex_record::get_address()
 {
 	return address;
 }
 
-IHexRecord::e_type IHexRecord::getType()
+Ihex_record::Type Ihex_record::get_type()
 {
 	return type;
 }
 
-void IHexRecord::describe(std::string& str)
+void Ihex_record::describe(std::string& str)
 {
 	std::ostringstream out;
 	out << "Length: " << length << ", ";
 	out << "Address: " << address << ", ";
-	out << "Type: " << typeToString(type) << ", ";
+	out << "Type: " << type_to_string(type) << ", ";
 	out << "Data: ";
 	char buf[3];
 	for ( size_t i = 0; i < length; i++ )
@@ -161,13 +163,13 @@ void IHexRecord::describe(std::string& str)
 	snprintf(buf, 3, "%02X", checksum);
 	buf[2] = '\0';
 	out << ", Checksum: " << buf;
-	out << ", Valid: " << (isValid() ? "Yes" : "No");
+	out << ", Valid: " << (is_valid() ? "Yes" : "No");
 	str.append(out.str());
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-bool IHexRecord::parse(std::string& line)
+bool Ihex_record::parse(std::string& line)
 {
 	int offset = 0;
 	//Check the line start code;
@@ -184,16 +186,16 @@ bool IHexRecord::parse(std::string& line)
 	//~ std::cerr << "Length field: " << temp << std::endl;
 	
 	//Parse the length into an integer in base 16.
-	unsigned long tempLength = strtoul(temp.c_str(), &end, 16);
+	unsigned long temp_length = strtoul(temp.c_str(), &end, 16);
 	
 	//~ std::cerr << "Length parsed: " << tempLength << std::endl;
 	
-	//The whole length was not parsed.
+	//Check if the whole length was not parsed.
 	if (end != temp.c_str() + 2)
 	{
 		return false;
 	}
-	length = tempLength;
+	length = temp_length;
 	//Check if the line is long enough to contain the data.
 	if (line.length() < length+11)
 	{
@@ -206,16 +208,16 @@ bool IHexRecord::parse(std::string& line)
 	//~ std::cerr << "Address field: " << temp << std::endl;
 	
 	//Parse the address into an integer in base 16.
-	unsigned long tempAddress = strtoul(temp.c_str(), &end, 16);
+	unsigned long temp_address = strtoul(temp.c_str(), &end, 16);
 	
 	//~ std::cerr << "Address parsed: " << tempAddress << std::endl;
 	
-	//Invalid address was parsed or the whole string was not parsed.
-	if (end != temp.c_str() + 4 || tempAddress > 0xFFFF)
+	//Check if an invalid address was parsed or the whole string was not parsed.
+	if (end != temp.c_str() + 4 || temp_address > 0xFFFF)
 	{
 		return false;
 	}
-	address = (uint16_t)tempAddress;
+	address = (uint16_t)temp_address;
 	//Get the record type which is the next two chars.
 	temp = line.substr(offset,2);
 	offset += 2;
@@ -223,7 +225,7 @@ bool IHexRecord::parse(std::string& line)
 	//~ std::cerr << "Type field: " << temp << std::endl;
 	
 	//Parse the record type into a type enum.
-	if (!parseRecordType(temp, type))
+	if (!parse_record_type(temp, type))
 	{
 		type = INVALID;
 		return false;
@@ -242,13 +244,13 @@ bool IHexRecord::parse(std::string& line)
 		std::string temp = line.substr(offset,2);
 		offset += 2;
 		//Parse the data into an integer in base 16.
-		unsigned long tempData = strtoul(temp.c_str(), &end, 16);
+		unsigned long temp_data = strtoul(temp.c_str(), &end, 16);
 		//The whole length was not parsed or was an invalid byte value.
-		if (end != temp.c_str() + 2 || tempData > 0xFF)
+		if (end != temp.c_str() + 2 || temp_data > 0xFF)
 		{
 			return false;
 		}
-		data[i] = (uint8_t)tempData;
+		data[i] = (uint8_t)temp_data;
 	}
 	//Get the checksum from the last two bytes of the string.
 	temp = line.substr(offset, 2);
@@ -257,21 +259,21 @@ bool IHexRecord::parse(std::string& line)
 	//~ std::cerr << "Checksum field: " << temp << std::endl;
 	
 	//Parse the checksum into a signed integer in base 16.
-	unsigned long tempCheck = strtoul(temp.c_str(), &end, 16);
+	unsigned long temp_check = strtoul(temp.c_str(), &end, 16);
 	
-	//~ std::cerr << "Checksum parsed: " << tempCheck << std::endl;
+	//~ std::cerr << "Checksum parsed: " << temp_check << std::endl;
 	
-	//The whole length was not parsed.
-	if (end != temp.c_str() + 2 || tempCheck > 0xFF)
+	//Check if the whole length was not parsed.
+	if (end != temp.c_str() + 2 || temp_check > 0xFF)
 	{
 		return false;
 	}
-	//long tempChecksum = 0x80 - (long)tempCheck;
-	checksum = static_cast<uint8_t>(tempCheck);
+	
+	checksum = static_cast<uint8_t>(temp_check);
 	
 	//~ std::cerr << "Checksum: " << (long)checksum << std::endl;
 	
-	if (!validateChecksum())
+	if (!validate_checksum())
 	{
 		return false;
 	}
@@ -282,66 +284,66 @@ bool IHexRecord::parse(std::string& line)
 	return true;
 }
 
-bool parseRecordType(std::string& temp, IHexRecord::e_type& type)
+bool parse_record_type(std::string& temp, Ihex_record::Type& type)
 {
 	char* end;
 	//Parse the type code into an integer in base 16.
-	unsigned long tempType = strtoul(temp.c_str(), &end, 16);
+	unsigned long temp_type = strtoul(temp.c_str(), &end, 16);
 	//The whole length was not parsed or the returned value was not a byte value.
-	if (end != temp.c_str() + 2 || tempType > 0xFF)
+	if (end != temp.c_str() + 2 || temp_type > 0xFF)
 	{
 		return false;
 	}
-	switch (tempType)
+	switch (temp_type)
 	{
 		case 0:
-			type = IHexRecord::DATA;
+			type = Ihex_record::DATA;
 			break;
 		case 1:
-			type = IHexRecord::END_OF_FILE;
+			type = Ihex_record::END_OF_FILE;
 			break;
 		case 2:
-			type = IHexRecord::EXTENDED_SEG_ADDR;
+			type = Ihex_record::EXTENDED_SEG_ADDR;
 			break;
 		case 3:
-			type = IHexRecord::START_SEG_ADDR;
+			type = Ihex_record::START_SEG_ADDR;
 			break;
 		case 4:
-			type = IHexRecord::EXTENDED_LINEAR_ADDR;
+			type = Ihex_record::EXTENDED_LINEAR_ADDR;
 			break;
 		case 5:
-			type = IHexRecord::START_LINEAR_ADDR;
+			type = Ihex_record::START_LINEAR_ADDR;
 			break;
 		default:
-			type = IHexRecord::INVALID;
+			type = Ihex_record::INVALID;
 			break;
 	}
 	return true;
 }
 
-std::string typeToString(IHexRecord::e_type type)
+std::string type_to_string(Ihex_record::Type type)
 {
 	switch( type )
 	{
-		case IHexRecord::DATA:
+		case Ihex_record::DATA:
 			return "Data";
 			break;
-		case IHexRecord::END_OF_FILE:
+		case Ihex_record::END_OF_FILE:
 			return "End of File";
 			break;
-		case IHexRecord::EXTENDED_SEG_ADDR:
+		case Ihex_record::EXTENDED_SEG_ADDR:
 			return "Extended Segment Address";
 			break;
-		case IHexRecord::START_SEG_ADDR:
+		case Ihex_record::START_SEG_ADDR:
 			return "Start Segment Address";
 			break;
-		case IHexRecord::EXTENDED_LINEAR_ADDR:
+		case Ihex_record::EXTENDED_LINEAR_ADDR:
 			return "Extended Linear Address";
 			break;
-		case IHexRecord::START_LINEAR_ADDR:
+		case Ihex_record::START_LINEAR_ADDR:
 			return "Start Linear Address";
 			break;
-		case IHexRecord::INVALID:
+		case Ihex_record::INVALID:
 			return "Invalid";
 			break;
 		default:
@@ -349,3 +351,5 @@ std::string typeToString(IHexRecord::e_type type)
 			break;
 	}
 }
+
+//ALL DONE.

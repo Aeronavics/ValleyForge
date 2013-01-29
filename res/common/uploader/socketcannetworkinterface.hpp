@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,8 +44,8 @@
  */
  
 //Only include header once.
-#ifndef SOCKETCANNETWORKINTERFACE_H_
-#define SOCKETCANNETWORKINTERFACE_H_
+#ifndef __SOCKETCANNETWORKINTERFACE_H__
+#define __SOCKETCANNETWORKINTERFACE_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
@@ -59,35 +59,35 @@
 
 // DEFINE PUBLIC CLASSES.
 
-class SocketCANNetworkInterface : public CANNetworkInterface
+class Socket_CAN_network_interface : public CAN_network_interface
 {
 public:
 
 
 	// Functions.
-	SocketCANNetworkInterface();
-	virtual ~SocketCANNetworkInterface();
+	Socket_CAN_network_interface();
+	virtual ~Socket_CAN_network_interface();
 	
 	virtual bool init(Params params);
 	
-	virtual bool sendMessage(const CANMessage& msg, uint32_t timeout);
-	virtual bool receiveMessage( CANMessage& msg, uint32_t timeout);
-	virtual bool drainMessages();
+	virtual bool send_message(const CAN_message& msg, uint32_t timeout);
+	virtual bool receive_message( CAN_message& msg, uint32_t timeout);
+	virtual bool drain_messages();
 	
 protected:
 	// Functions.
-	static void* SocketThreadFunc(void*);
-	void processSocketEvents();
+	static void* socket_thread_func(void*);
+	void process_socket_events();
 	
 	//Fields.
-	CANMessageQueue recvQueue;
-	pthread_mutex_t recvQueueLock;
+	CAN_message_queue recv_queue;
+	pthread_mutex_t recv_queue_lock;
 	
 	
 	
-	pthread_t SocketThread;
+	pthread_t socket_thread;
 	
-	int CANSocket;
+	int CAN_socket;
 	bool quit;
 	bool inited;
 };
@@ -95,4 +95,4 @@ protected:
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*SOCKETCANNETWORKINTERFACE_H_*/
+#endif /*__SOCKETCANNETWORKINTERFACE_H__*/

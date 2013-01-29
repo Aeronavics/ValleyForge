@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012 Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,8 +35,9 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
+
 
 #include "ihex.hpp"
 
@@ -53,48 +54,48 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-MemoryMap::MemoryMap(size_t size, MemoryMap::typeFlag type) :
+Memory_map::Memory_map(size_t size, Memory_map::Type_flag type) :
 memory(new uint8_t[size]),
-allocatedMap(new MemoryMap::allocatedFlag[size]),
+allocated_map(new Memory_map::Allocated_flag[size]),
 type(type),
 size(size)
 {
-	
+	//Nothing to do here.
 }
 
-MemoryMap::~MemoryMap()
+Memory_map::~Memory_map()
 {
 	delete [] memory;
-	delete [] allocatedMap;
+	delete [] allocated_map;
 }
 
-uint8_t* MemoryMap::getMemory()
+uint8_t* Memory_map::get_memory()
 {
 	return memory;
 }
 
-MemoryMap::allocatedFlag* MemoryMap::getAllocatedMap()
+Memory_map::Allocated_flag* Memory_map::get_allocated_map()
 {
-	return allocatedMap;
+	return allocated_map;
 }
 
-MemoryMap::typeFlag MemoryMap::getType()
+Memory_map::Type_flag Memory_map::get_type()
 {
 	return type;
 }
 
-size_t MemoryMap::getSize()
+size_t Memory_map::get_size()
 {
 	return size;
 }
 
 
-bool MemoryMap::findLastAllocatedPage(size_t pageSize, size_t& pageStartAddress)
+bool Memory_map::find_last_allocated_page(size_t pageSize, size_t& pageStartAddress)
 {
 	int64_t tempAddress = -1;
 	for (size_t pageAddress = 0; pageAddress < size; pageAddress += pageSize)
 	{
-		if (allocatedMap[pageAddress] == ALLOCATED)
+		if (allocated_map[pageAddress] == ALLOCATED)
 		{
 			tempAddress = pageAddress;
 		}
@@ -108,7 +109,7 @@ bool MemoryMap::findLastAllocatedPage(size_t pageSize, size_t& pageStartAddress)
 }
 
 
-bool MemoryMap::readFromIHexFile( std::string filename )
+bool Memory_map::read_from_ihex_file( std::string filename )
 {
 	std::ifstream file(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	if (!file.good())
@@ -128,21 +129,21 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 		getline(file, line);
 		if (file.good())
 		{
-			IHexRecord record(line);
-			if (record.isValid())
+			Ihex_record record(line);
+			if (record.is_valid())
 			{
-				switch (record.getType())
+				switch (record.get_type())
 				{
-					case IHexRecord::DATA:
-						if (baseaddr + record.getLength() >= size)
+					case Ihex_record::DATA:
+						if (baseaddr + record.get_length() >= size)
 						{
 							line.clear();
 							record.describe(line);
 							std::cerr << "Data outside of available memory (" << lineNumber << ") " << line << std::endl;
 							return false;
 						}
-						nextaddr = baseaddr + record.getAddress();
-						for (size_t i = 0; i < record.getLength(); i++)
+						nextaddr = baseaddr + record.get_address();
+						for (size_t i = 0; i < record.get_length(); i++)
 						{
 							if (nextaddr + i >= size)
 							{
@@ -151,24 +152,24 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 								std::cerr << "Data outside of available memory (" << lineNumber << ") " << line << std::endl;
 								return false;
 							}
-							memory[nextaddr + i] = record.getData()[i];
-							allocatedMap[nextaddr + i] = ALLOCATED;
+							memory[nextaddr + i] = record.get_data()[i];
+							allocated_map[nextaddr + i] = ALLOCATED;
 						}
 						break;
 						
-					case IHexRecord::END_OF_FILE:
+					case Ihex_record::END_OF_FILE:
 						return true;
 						break;
 					
-					case IHexRecord::EXTENDED_SEG_ADDR:
-						if (record.getLength() != 2 || record.getAddress() != 0)
+					case Ihex_record::EXTENDED_SEG_ADDR:
+						if (record.get_length() != 2 || record.get_address() != 0)
 						{
 							line.clear();
 							record.describe(line);
 							std::cerr << "Invalid extended segment address record encountered (" << lineNumber << ") " << line << std::endl;
 							return false;
 						}
-						baseaddr = ((record.getData()[0] << 8) | record.getData()[1] ) << 4;
+						baseaddr = ((record.get_data()[0] << 8) | record.get_data()[1] ) << 4;
 						if ( baseaddr >= size)
 						{
 							std::cerr << "Address specified outside of available memory (" << lineNumber << ") " << baseaddr << std::endl;
@@ -176,15 +177,15 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 						}
 						break;
 					
-					case IHexRecord::EXTENDED_LINEAR_ADDR:
-						if (record.getLength() != 2 || record.getAddress() != 0)
+					case Ihex_record::EXTENDED_LINEAR_ADDR:
+						if (record.get_length() != 2 || record.get_address() != 0)
 						{
 							line.clear();
 							record.describe(line);
 							std::cerr << "Invalid extended linear address record encountered (" << lineNumber << ") " << line << std::endl;
 							return false;
 						}
-						baseaddr = ((record.getData()[0] << 8) | record.getData()[1] ) << 16;
+						baseaddr = ((record.get_data()[0] << 8) | record.get_data()[1] ) << 16;
 						if ( baseaddr >= size)
 						{
 							std::cerr << "Address specified outside of available memory (" << lineNumber << ") " << baseaddr << std::endl;
@@ -192,8 +193,8 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 						}
 						break;
 						
-					case IHexRecord::START_SEG_ADDR:
-					case IHexRecord::START_LINEAR_ADDR:
+					case Ihex_record::START_SEG_ADDR:
+					case Ihex_record::START_LINEAR_ADDR:
 						//We do nothing with these apparently, but they still end up in files. TODO: Find out what they are for and if they matter.
 						break;
 						
@@ -211,7 +212,7 @@ bool MemoryMap::readFromIHexFile( std::string filename )
 	return true;
 }
 
-bool MemoryMap::readFromFile( std::string filename)
+bool Memory_map::read_from_file( std::string filename)
 {
 	size_t length = filename.length();
 	if (length >= 4 )
@@ -219,7 +220,7 @@ bool MemoryMap::readFromFile( std::string filename)
 		std::string extension = filename.substr(length-4, 4);
 		if (extension == ".hex")
 		{
-			return readFromIHexFile(filename);
+			return read_from_ihex_file(filename);
 		}
 	}
 	return false;
@@ -228,3 +229,4 @@ bool MemoryMap::readFromFile( std::string filename)
 // IMPLEMENT PRIVATE FUNCTIONS.
 
 
+//ALL DONE.

@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,12 +45,13 @@
  */
  
 //Only include header once.
-#ifndef COMM_CAN_H_
-#define COMM_CAN_H_
+#ifndef __COMM_CAN_H__
+#define __COMM_CAN_H__
 
 // INCLUDE REQUIRED HEADER FILES.
-#include "comm.hpp"
+
 #include "cannetworkinterface.hpp"
+#include "comm.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -59,24 +60,24 @@
 // DEFINE PUBLIC CLASSES.
 
 
-class CANModule : public CommModule
+class CAN_module : public Comm_module
 {
 public:
 
 	// Functions.
-	CANModule();
-	virtual ~CANModule();
+	CAN_module();
+	virtual ~CAN_module();
 	
 	virtual bool init(Params params);
-	virtual bool connectToDevice();
+	virtual bool connect_to_device();
 	
-	virtual bool getDeviceInfo( DeviceInfo& info);
+	virtual bool get_device_info( Device_info& info);
 	
-	virtual bool writePage(MemoryMap& source, size_t size, size_t address);
-	virtual bool verifyPage(MemoryMap& expected, size_t size, size_t address);
-	virtual bool readPage(MemoryMap& destination, size_t size, size_t address);
+	virtual bool write_page(Memory_map& source, size_t size, size_t address);
+	virtual bool verify_page(Memory_map& expected, size_t size, size_t address);
+	virtual bool read_page(Memory_map& destination, size_t size, size_t address);
 	
-	virtual bool resetDevice(bool runApplication);
+	virtual bool reset_device(bool run_application);
 	
 	
 private:
@@ -85,11 +86,13 @@ private:
 	//Fields.
 	bool connected;
 	uint8_t target;
-	CANNetworkInterface* iface;
+	CAN_network_interface* iface;
 	
 };
 
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*COMM_CAN_H_*/
+#endif /*__COMM_CAN_H__*/
+
+//ALL DONE.

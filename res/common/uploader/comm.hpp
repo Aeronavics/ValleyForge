@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,24 +44,24 @@
  */
  
 //Only include header once.
-#ifndef COMM_H_
-#define COMM_H_
+#ifndef __COMM_H__
+#define __COMM_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
 #include <map>
-#include <string>
 #include <stdint.h>
-
-#include "util.hpp"
+#include <string>
 
 #include "memory.hpp"
+#include "util.hpp"
+
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-class CommModule;
+class Comm_module;
 
-typedef std::map<std::string, CommModule*> CommModuleRegistry;
+typedef std::map<std::string, Comm_module*> Comm_module_registry;
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -70,20 +70,20 @@ typedef std::map<std::string, CommModule*> CommModuleRegistry;
 /**
  *  Class to hold the info gotten about the device, such as signatures, bootloader versions and names.
  */
-class DeviceInfo
+class Device_info
 {
 public:
 	
 	// Functions.
 	
-	std::string getName();
-	void setName(std::string newName);
-	uint32_t getSignature();
-	void setSignature(uint32_t newSignature);
-	uint8_t getVersionMinor();
-	void setVersionMinor(uint8_t newVersion);
-	uint8_t getVersionMajor();
-	void setVersionMajor(uint8_t vewVersion);
+	std::string get_name();
+	void set_name(std::string new_name);
+	uint32_t get_signature();
+	void set_signature(uint32_t new_signature);
+	uint8_t get_version_minor();
+	void set_version_minor(uint8_t new_version);
+	uint8_t get_version_major();
+	void set_version_major(uint8_t vew_version);
 	
 private:
 	
@@ -92,8 +92,8 @@ private:
 	// Fields.
 	std::string name;
 	uint32_t signature;
-	uint8_t versionMinor;
-	uint8_t versionMajor;
+	uint8_t version_minor;
+	uint8_t version_major;
 };
 
 /**
@@ -103,13 +103,13 @@ private:
  * Subclasses of this will implement these methods according to how the specific communication method requires the operations to be performed.
  * 
  */
-class CommModule
+class Comm_module
 {
 public:
 
 	// Functions.
-	CommModule(std::string name);
-	virtual ~CommModule()=0;
+	Comm_module(std::string name);
+	virtual ~Comm_module()=0;
 	
 	/**
 	 *  This function is called to initialise the communication module,
@@ -119,49 +119,52 @@ public:
 	/**
 	 *  This function is used to connect to the bootloader on the device.
 	 */
-	virtual bool connectToDevice()=0;
+	virtual bool connect_to_device()=0;
 	
 	/**
 	 *  This function is called by the uploader to retrieve the device info of the connected device,
 	 *  this information is used by the uploader to determine if the device it is connected to is the device it was told to program.
 	 */
-	virtual bool getDeviceInfo( DeviceInfo& info)=0;
+	virtual bool get_device_info( Device_info& info)=0;
 	
 	/**
 	 *  This function is called by the uploader to write a page to the device,
 	 *  it supplies the memory map to read the page from, the size of the page and the start address of the page.
 	 */
-	virtual bool writePage(MemoryMap& source, size_t size, size_t address)=0;
+	virtual bool write_page(Memory_map& source, size_t size, size_t address)=0;
 	/**
 	 *  This function is called by the uploader to verify that a page has been written correctly,
 	 *  it supplies the memory map containing the expected memory contents, the size of the page and the starting address.
 	 */
-	virtual bool verifyPage(MemoryMap& expected, size_t size, size_t address)=0;
+	virtual bool verify_page(Memory_map& expected, size_t size, size_t address)=0;
 	/**
 	 *  This function is called by the uploader to read a page of memory from the device into a memory map,
 	 *  it supplies the memory map to write into, the size of the page to read and the start address.
 	 */
-	virtual bool readPage(MemoryMap& destination, size_t size, size_t address)=0;
+	virtual bool read_page(Memory_map& destination, size_t size, size_t address)=0;
 	
 	/**
 	 *  The uploader will call this function to reset the target, with a boolean parameter specifying whether it starts the application or returns to the bootloader.
 	 */
-	virtual bool resetDevice(bool runApplication)=0;
+	virtual bool reset_device(bool run_application)=0;
 	
 	/**
 	 *  This method will return the map that holds all of the existing communication modules.
 	 */
-	static CommModuleRegistry& getRegistry();
+	static Comm_module_registry& get_registry();
 	
 	
 private:
 	// Functions.
 	
 	//Fields.
-	static CommModuleRegistry* theRegistry;
+	static Comm_module_registry* the_registry;
 };
 
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*COMM_H_*/
+#endif /*__COMM_H__*/
+
+//ALL DONE.
+

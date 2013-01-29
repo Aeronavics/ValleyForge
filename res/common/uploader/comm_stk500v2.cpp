@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,15 +35,15 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
-#include <iostream>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <iostream>
 #include <memory.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "command.h"
 
@@ -58,74 +58,74 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-static STK500v2Module module;
+static STK500v2_module module;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
-speed_t getSpeed(unsigned long speed);
-bool setCTSDTR(int fd, bool on);
-bool serialDrain(int fd);
-bool serialSend(int fd, uint8_t* buf, size_t buflen);
-bool serialRecv(int fd, uint8_t* buf, size_t buflen, size_t& bytesRead);
+speed_t get_speed(unsigned long speed);
+bool set_cts_dtr(int fd, bool on);
+bool serial_drain(int fd);
+bool serial_send(int fd, uint8_t* buf, size_t buf_len);
+bool serial_recv(int fd, uint8_t* buf, size_t buf_len, size_t& bytes_read);
 
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-STK500v2Module::STK500v2Module() :
-	CommModule("stk500v2")
+STK500v2_module::STK500v2_module() :
+	Comm_module("stk500v2")
 {
-	
+	//Nothing to do here.
 }
 
-STK500v2Module::~STK500v2Module()
+STK500v2_module::~STK500v2_module()
 {
-	closeSerial();
+	close_serial();
 }
 
-bool STK500v2Module::init(Params params)
+bool STK500v2_module::init(Params params)
 {
-	bool haveTTY = false;
-	bool haveSpeed = false;
-	std::string speedStr;
+	bool have_tty = false;
+	bool have_speed = false;
+	std::string speed_str;
 	if (params.find("tty") != params.end())
 	{
-		ttyPath = params["tty"];
-		haveTTY = true;
+		tty_path = params["tty"];
+		have_tty = true;
 	}
 	if (params.find("speed") != params.end())
 	{
-		speedStr = params["speed"];
-		haveSpeed = true;
+		speed_str = params["speed"];
+		have_speed = true;
 	}
 	
-	if (! haveTTY)
+	if (! have_tty)
 	{
 		return false;
 	}
-	if (! haveSpeed)
+	if (! have_speed)
 	{
 		speed = 115200;
 	}
 	else
 	{
-		speed = strtoul(speedStr.c_str(),NULL,10);
+		speed = strtoul(speed_str.c_str(),NULL,10);
 	}
-	stk500SeqNo = 0;
+	stk500_seq_no = 0;
 	connected = false;
-	if (!openSerial())
+	if (!open_serial())
 	{
 		return false;
 	}
-	if (!setupSerial())
+	if (!setup_serial())
 	{
 		return false;
 	}
-	return resetDevice(false);
+	return reset_device(false);
 }
 
-bool STK500v2Module::connectToDevice()
+bool STK500v2_module::connect_to_device()
 {
-	connected = stk500Sync();
+	connected = stk500_sync();
 	
 	if (connected)
 	{
@@ -135,30 +135,30 @@ bool STK500v2Module::connectToDevice()
 	return false;
 }
 
-bool STK500v2Module::getDeviceInfo( DeviceInfo& info)
+bool STK500v2_module::get_device_info( Device_info& info)
 {
 	//Maximum message length for stk500 buffer.
 	uint8_t buffer[275];
-	size_t replyLength;
+	size_t reply_length;
 	
 	buffer[0] = CMD_READ_SIGNATURE_ISP;
 	buffer[4] = 0;
-	replyLength = 275;
-	if (!stk500Cmd(buffer, 5, replyLength) || replyLength < 4)
+	reply_length = 275;
+	if (!stk500_cmd(buffer, 5, reply_length) || reply_length < 4)
 	{
 		return false;
 	}
 	signature0 = buffer[2];
 	buffer[4] = 1;
-	replyLength = 275;
-	if (!stk500Cmd(buffer, 5, replyLength) || replyLength < 4)
+	reply_length = 275;
+	if (!stk500_cmd(buffer, 5, reply_length) || reply_length < 4)
 	{
 		return false;
 	}
 	signature1 = buffer[2];
 	buffer[4] = 2;
-	replyLength = 275;
-	if (!stk500Cmd(buffer, 5, replyLength) || replyLength < 4)
+	reply_length = 275;
+	if (!stk500_cmd(buffer, 5, reply_length) || reply_length < 4)
 	{
 		return false;
 	}
@@ -166,20 +166,20 @@ bool STK500v2Module::getDeviceInfo( DeviceInfo& info)
 	
 	signature = signature0 << 16 | signature1 << 8 | signature2;
 	
-	info.setName(progname);
-	info.setSignature(signature);
+	info.set_name(prog_name);
+	info.set_signature(signature);
 	return true;
 }
 
-bool STK500v2Module::writePage(MemoryMap& source, size_t size, size_t address)
+bool STK500v2_module::write_page(Memory_map& source, size_t size, size_t address)
 {
-	if (!stk500LoadAddress(address >> 1, source.getSize() > 64*1024))
+	if (!stk500_load_address(address >> 1, source.get_size() > 64*1024))
 	{
 		return false;
 	}
 	//Maximum message length buffer.
 	uint8_t buffer[275];
-	size_t replyLength = 275;
+	size_t reply_length = 275;
 	
 	//The bootloader doesn't actually support doing a chip erase 
 	//but this is how it resets its erase address that it uses while programming a page at a time.
@@ -189,36 +189,36 @@ bool STK500v2Module::writePage(MemoryMap& source, size_t size, size_t address)
 	if (address == 0)
 	{
 		buffer[0] = CMD_CHIP_ERASE_ISP;
-		if (!stk500Cmd(buffer, 1, replyLength))
+		if (!stk500_cmd(buffer, 1, reply_length))
 		{
 			return false;
 		}
 	}
-	replyLength = 275;
+	reply_length = 275;
 	buffer[0] = CMD_PROGRAM_FLASH_ISP;
 	buffer[1] = (size >> 8) & 0xFF;
 	buffer[2] = (size) & 0xFF;
 	for (size_t i = 0; i < size; i++)
 	{
-		if (source.getAllocatedMap()[address+i] == MemoryMap::ALLOCATED)
+		if (source.get_allocated_map()[address+i] == Memory_map::ALLOCATED)
 		{
-			buffer[i+10] = source.getMemory()[address+i];
+			buffer[i+10] = source.get_memory()[address+i];
 		}
 		else
 		{
 			buffer[i+10] = 0xFF;
 		}
 	}
-	if (!stk500Cmd(buffer, 10+size, replyLength))
+	if (!stk500_cmd(buffer, 10+size, reply_length))
 	{
 		return false;
 	}
 	return true;
 }
 
-bool STK500v2Module::verifyPage(MemoryMap& expected, size_t size, size_t address)
+bool STK500v2_module::verify_page(Memory_map& expected, size_t size, size_t address)
 {
-	if (!stk500LoadAddress(address >> 1, expected.getSize() > 64*1024))
+	if (!stk500_load_address(address >> 1, expected.get_size() > 64*1024))
 	{
 		return false;
 	}
@@ -229,24 +229,24 @@ bool STK500v2Module::verifyPage(MemoryMap& expected, size_t size, size_t address
 	buffer[1] = (size >> 8) & 0xFF;
 	buffer[2] = (size) & 0xFF;
 	
-	size_t replyLength = 275;
-	if (!stk500Cmd(buffer, 3, replyLength))
+	size_t reply_length = 275;
+	if (!stk500_cmd(buffer, 3, reply_length))
 	{
 		return false;
 	}
-	if (replyLength != size+3)
+	if (reply_length != size+3)
 	{
 		return false;
 	}
 	
 	for (size_t i = 0; i < size; i++)
 	{
-		if (expected.getAllocatedMap()[address+i] == MemoryMap::ALLOCATED &&
-			expected.getMemory()[address+i] != buffer[2+i])
+		if (expected.get_allocated_map()[address+i] == Memory_map::ALLOCATED &&
+			expected.get_memory()[address+i] != buffer[2+i])
 		{
 			std::cerr << "Verify failure at address: " << address+i << 
-				" Expected: " << (int)expected.getMemory()[address+i] << " " << (int)expected.getMemory()[address+i+1] <<
-				" Got: " << (int)buffer[2+i] << " " << (int)buffer[2+i+1] << std::endl;
+			  " Expected: " << (int)expected.get_memory()[address+i] << " " << (int)expected.get_memory()[address+i+1] <<
+			  " Got: " << (int)buffer[2+i] << " " << (int)buffer[2+i+1] << std::endl;
 			return false;
 		}
 	} 
@@ -254,9 +254,9 @@ bool STK500v2Module::verifyPage(MemoryMap& expected, size_t size, size_t address
 	return true;
 }
 
-bool STK500v2Module::readPage(MemoryMap& destination, size_t size, size_t address)
+bool STK500v2_module::read_page(Memory_map& destination, size_t size, size_t address)
 {
-	if (!stk500LoadAddress(address >> 1, destination.getSize() > 64*1024))
+	if (!stk500_load_address(address >> 1, destination.get_size() > 64*1024))
 	{
 		return false;
 	}
@@ -267,167 +267,167 @@ bool STK500v2Module::readPage(MemoryMap& destination, size_t size, size_t addres
 	buffer[1] = (size >> 8) & 0xFF;
 	buffer[2] = (size) & 0xFF;
 	
-	size_t replyLength = 275;
-	if (!stk500Cmd(buffer, 3, replyLength))
+	size_t reply_length = 275;
+	if (!stk500_cmd(buffer, 3, reply_length))
 	{
 		return false;
 	}
-	if (replyLength != size+3)
+	if (reply_length != size+3)
 	{
 		return false;
 	}
 	
 	for (size_t i = 0; i < size; i++)
 	{
-		destination.getMemory()[address+i] = buffer[2+i];
-		destination.getAllocatedMap()[address+i] = MemoryMap::ALLOCATED;
+		destination.get_memory()[address+i] = buffer[2+i];
+		destination.get_allocated_map()[address+i] = Memory_map::ALLOCATED;
 	}
 	
 	return true;
 }
 
-bool STK500v2Module::resetDevice(bool runApplication)
+bool STK500v2_module::reset_device(bool run_application)
 {
 	//Do the reset here by holding the DTR line low for a time then releasing it.
-	setCTSDTR(ttyFd, false);
+	set_cts_dtr(tty_fd, false);
 	usleep( 50 * 1000);
-	setCTSDTR(ttyFd, true);
+	set_cts_dtr(tty_fd, true);
 	usleep( 50 * 1000);
-	if (runApplication)
+	if (run_application)
 	{
 		return true;
 	}
-	return connectToDevice();
+	return connect_to_device();
 }
 
 
-bool STK500v2Module::openSerial()
+bool STK500v2_module::open_serial()
 {
-	ttyFd = open(ttyPath.c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY );
-	if (ttyFd < 0 || !isatty(ttyFd))
+	tty_fd = open(tty_path.c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY );
+	if (tty_fd < 0 || !isatty(tty_fd))
 	{
 		return false;
 	}
 	return true;
 }
 
-bool STK500v2Module::setupSerial()
+bool STK500v2_module::setup_serial()
 {
 	//This is mostly written useing the avrdude setspeed function in its posix serial implementation.
-	if (!isatty(ttyFd))
+	if (!isatty(tty_fd))
 	{
 		return false;
 	}
-	speed_t serialSpeed = getSpeed(speed);
-	termios serialparams;
-	int resultCode;
-	resultCode = tcgetattr(ttyFd, &serialparams);
-	if (resultCode < 0)
+	speed_t serial_speed = get_speed(speed);
+	termios serial_params;
+	int result_code;
+	result_code = tcgetattr(tty_fd, &serial_params);
+	if (result_code < 0)
 	{
 		return false;
 	}
 	
-	if (!savedOriginalTermios)
+	if (!saved_original_termios)
 	{
-		originalTermios = serialparams;
-		savedOriginalTermios = true;
+		original_termios = serial_params;
+		saved_original_termios = true;
 	}
 	
-	serialparams.c_iflag = IGNBRK;
-	serialparams.c_oflag = 0;
-	serialparams.c_lflag = 0;
-	serialparams.c_cflag = (CS8 | CREAD | CLOCAL);
-	serialparams.c_cc[VMIN] = 1;
-	serialparams.c_cc[VTIME] = 0;
+	serial_params.c_iflag = IGNBRK;
+	serial_params.c_oflag = 0;
+	serial_params.c_lflag = 0;
+	serial_params.c_cflag = (CS8 | CREAD | CLOCAL);
+	serial_params.c_cc[VMIN] = 1;
+	serial_params.c_cc[VTIME] = 0;
 	
-	cfsetospeed(&serialparams, serialSpeed);
-	cfsetispeed(&serialparams, serialSpeed);
+	cfsetospeed(&serial_params, serial_speed);
+	cfsetispeed(&serial_params, serial_speed);
 	
-	resultCode = tcsetattr(ttyFd, TCSANOW, &serialparams);
-	if (resultCode < 0)
+	result_code = tcsetattr(tty_fd, TCSANOW, &serial_params);
+	if (result_code < 0)
 	{
 		return false;
 	}
 	
 	//Clear the nonblocking flag since the port is now set for no flow control and local.
-	resultCode = fcntl(ttyFd, F_GETFL, 0);
-	if (resultCode != -1)
+	result_code = fcntl(tty_fd, F_GETFL, 0);
+	if (result_code != -1)
 	{
-		fcntl(ttyFd, F_SETFL, resultCode & ~O_NONBLOCK);
+		fcntl(tty_fd, F_SETFL, result_code & ~O_NONBLOCK);
 	}
 	
 	return true;
 }
 
-bool STK500v2Module::closeSerial()
+bool STK500v2_module::close_serial()
 {
-	if (savedOriginalTermios)
+	if (saved_original_termios)
 	{
-		int resultCode = tcsetattr(ttyFd, TCSANOW | TCSADRAIN, &originalTermios);
-		if (resultCode != 0)
+		int result_code = tcsetattr(tty_fd, TCSANOW | TCSADRAIN, &original_termios);
+		if (result_code != 0)
 		{
 			//Emit error here in future when errors messages are added in.
 		}
-		savedOriginalTermios = false;
+		saved_original_termios = false;
 	}
 	
-	close(ttyFd);
+	close(tty_fd);
 	return true;
 }
 
-bool STK500v2Module::stk500Send(uint8_t* buf, size_t buflen)
+bool STK500v2_module::stk500_send(uint8_t* buf, size_t buf_len)
 {
 	//Buffer for message, max message length is 275.
 	uint8_t buffer[275 + 6];
 	
-	if (buflen > 275)
+	if (buf_len > 275)
 	{
 		return false;
 	}
 	buffer[0] = MESSAGE_START;
-	buffer[1] = stk500SeqNo;
-	buffer[2] = buflen / 256;
-	buffer[3] = buflen % 256;
+	buffer[1] = stk500_seq_no;
+	buffer[2] = buf_len / 256;
+	buffer[3] = buf_len % 256;
 	buffer[4] = TOKEN;
 	//Copy the message into the buffer.
-	memcpy(buffer+5, buf, buflen);
-	buffer[buflen+5] = 0;
-	for (size_t i = 0; i < buflen+5; i++)
+	memcpy(buffer+5, buf, buf_len);
+	buffer[buf_len+5] = 0;
+	for (size_t i = 0; i < buf_len+5; i++)
 	{
-		buffer[buflen+5] ^= buffer[i];
+		buffer[buf_len+5] ^= buffer[i];
 	}
 	
-	return serialSend(ttyFd, buffer, buflen+6);
+	return serial_send(tty_fd, buffer, buf_len+6);
 	
 }
 
-bool STK500v2Module::stk500Recv(uint8_t* buf, size_t buflen, size_t& bytesRead)
+bool STK500v2_module::stk500_recv(uint8_t* buf, size_t buf_len, size_t& bytes_read)
 {
 	enum states{
-		sSTART,
-		sSEQNO,
-		sLEN1,
-		sLEN2,
-		sTOKEN,
-		sDATA,
-		sCKSUM,
-		sDONE
+		START,
+		SEQNO,
+		LEN1,
+		LEN2,
+		TOK,
+		DATA,
+		CKSUM,
+		DONE
 	};
-	states state = sSTART;
+	states state = START;
 	uint8_t c;
 	uint8_t checksum;
 	bool timeout = false;
-	size_t messageLength;
-	size_t currentLength = 0;
+	size_t message_length;
+	size_t current_length = 0;
 	
 	uint32_t now, start;
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	start = tv.tv_sec;
 	
-	while ((state != sDONE) && (!timeout))
+	while ((state != DONE) && (!timeout))
 	{
-		if (!serialRecv(ttyFd, &c, 1, bytesRead))
+		if (!serial_recv(tty_fd, &c, 1, bytes_read))
 		{
 			return false;
 		}
@@ -435,90 +435,90 @@ bool STK500v2Module::stk500Recv(uint8_t* buf, size_t buflen, size_t& bytesRead)
 		
 		switch (state)
 		{
-			case sSTART:
+			case START:
 			
 				if (c == MESSAGE_START)
 				{
 					checksum = MESSAGE_START;
-					state = sSEQNO;
+					state = SEQNO;
 				}
 				
 				break;
-			case sSEQNO:
+			case SEQNO:
 			
-				if (c == stk500SeqNo)
+				if (c == stk500_seq_no)
 				{
-					stk500SeqNo++;
-					state = sLEN1;
+					stk500_seq_no++;
+					state = LEN1;
 				}
 				else
 				{
-					state = sSTART;
+					state = START;
 				}
 				
 				break;
-			case sLEN1:
+			case LEN1:
 			
-				messageLength = ((size_t)c)*256;
-				state = sLEN2;
+				message_length = ((size_t)c)*256;
+				state = LEN2;
 				
 				break;
-			case sLEN2:
+			case LEN2:
 			
-				messageLength += (size_t)c;
-				state = sTOKEN;
+				message_length += (size_t)c;
+				state = TOK;
 				
 				break;
-			case sTOKEN:
+			case TOK:
 			
 				if (c == TOKEN)
 				{
-					state = sDATA;
+					state = DATA;
 				}
 				else
 				{
-					state = sSTART;
+					state = START;
 				}
 				
 				break;
-			case sDATA:
+			case DATA:
 			
-				if (currentLength < buflen)
+				if (current_length < buf_len)
 				{
-					buf[currentLength] = c;
+					buf[current_length] = c;
 				}
 				else
 				{
 					return false;
 				}
 				
-				if (currentLength == 0 && c == ANSWER_CKSUM_ERROR)
+				if (current_length == 0 && c == ANSWER_CKSUM_ERROR)
 				{
 					return false;
 				}
 				
-				currentLength++;
+				current_length++;
 				
-				if (currentLength == messageLength)
+				if (current_length == message_length)
 				{
-					state = sCKSUM;
+					state = CKSUM;
 				}
 				
 				break;	
-			case sCKSUM:
+			case CKSUM:
 				
 				if (checksum == 0)
 				{
-					state = sDONE;
+					state = DONE;
 				}
 				else
 				{
-					state = sSTART;
+					state = START;
 					return false;
 				}
 				
 				break;
-			case sDONE:
+			case DONE:
 			
 				//Nothing to do.
 			
@@ -541,23 +541,23 @@ bool STK500v2Module::stk500Recv(uint8_t* buf, size_t buflen, size_t& bytesRead)
 		}
 	}
 	
-	bytesRead = messageLength;
+	bytes_read = message_length;
 	return true;
 }
 
 /**
  * @param buf The buffer containing the command and which will have the response placed into it.
- * @param cmdlen The length of the command to send.
- * @param bytesRead Expected to contain the maximum number of bytes to read, and will be set to the actual message length.
+ * @param cmd_len The length of the command to send.
+ * @param bytes_read Expected to contain the maximum number of bytes to read, and will be set to the actual message length.
  * 
  */
-bool STK500v2Module::stk500Cmd(uint8_t* buf, size_t cmdlen, size_t& bytesRead)
+bool STK500v2_module::stk500_cmd(uint8_t* buf, size_t cmd_len, size_t& bytes_read)
 {
-	size_t buflength = bytesRead;
+	size_t buf_length = bytes_read;
 	
-	stk500Send(buf, cmdlen);
+	stk500_send(buf, cmd_len);
 	
-	bool status = stk500Recv(buf, buflength, bytesRead);
+	bool status = stk500_recv(buf, buf_length, bytes_read);
 	
 	if (status)
 	{	
@@ -570,9 +570,9 @@ bool STK500v2Module::stk500Cmd(uint8_t* buf, size_t cmdlen, size_t& bytesRead)
 	return false;
 }
 
-bool STK500v2Module::stk500Sync()
+bool STK500v2_module::stk500_sync()
 {
-	if (!serialDrain(ttyFd))
+	if (!serial_drain(tty_fd))
 	{
 		return false;
 	}
@@ -584,14 +584,14 @@ bool STK500v2Module::stk500Sync()
 	while( !done && tries < MAX_RETRIES )
 	{
 		command[0] = CMD_SIGN_ON;
-		stk500Send(command, 1);
+		stk500_send(command, 1);
 		size_t read;
-		if (stk500Recv(response, sizeof(response), read))
+		if (stk500_recv(response, sizeof(response), read))
 		{
 			if (response[0] == CMD_SIGN_ON && response[1] == STATUS_CMD_OK && read > 3)
 			{
 				done = true;
-				progname = std::string((char*)&response[3],(size_t)response[2]);
+				prog_name = std::string((char*)&response[3],(size_t)response[2]);
 				return true;
 			}
 		}
@@ -601,7 +601,7 @@ bool STK500v2Module::stk500Sync()
 	return false;
 }
 
-bool STK500v2Module::stk500LoadAddress(size_t address, bool far)
+bool STK500v2_module::stk500_load_address(size_t address, bool far)
 {
 	//Max message length for stk500.
 	uint8_t buffer[275];
@@ -612,14 +612,14 @@ bool STK500v2Module::stk500LoadAddress(size_t address, bool far)
 	buffer[2] = (address >> 16) & 0xFF;
 	buffer[3] = (address >> 8) & 0xFF;
 	buffer[4] = (address) & 0xFF;
-	size_t replyLength = 275;
-	return stk500Cmd(buffer, 5, replyLength);
+	size_t reply_length = 275;
+	return stk500_cmd(buffer, 5, reply_length);
 }
 
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-speed_t getSpeed(unsigned long speed)
+speed_t get_speed(unsigned long speed)
 {
 	switch (speed)
 	{
@@ -644,7 +644,7 @@ speed_t getSpeed(unsigned long speed)
 	}
 }
 
-bool setCTSDTR(int fd, bool on)
+bool set_cts_dtr(int fd, bool on)
 {
 	int result;
 	unsigned int ctl;
@@ -673,11 +673,11 @@ bool setCTSDTR(int fd, bool on)
 	return true;
 }
 
-bool serialDrain(int fd)
+bool serial_drain(int fd)
 {
 	timeval timeout;
 	fd_set waitset;
-	int numberReady;
+	int number_ready;
 	FD_ZERO(&waitset);
 	FD_SET(fd, &waitset);
 	
@@ -687,25 +687,26 @@ bool serialDrain(int fd)
 	
 	while (!drained)
 	{
-		numberReady = select(fd+1, &waitset, NULL, NULL, &timeout);
-		if (numberReady == 0)
+		number_ready = select(fd+1, &waitset, NULL, NULL, &timeout);
+		if (number_ready == 0)
 		{
 			drained = true;
 		}
-		else if (numberReady == -1)
+		else if (number_ready == -1)
 		{
 			if (errno != EINTR)
 			{
-				//Error message.
+				//Error.
 				return false;
 			}
 		}
 		else
 		{
 			char c;
-			int returnCode = read(fd, &c, 1);
-			if (returnCode < 0)
+			int return_code = read(fd, &c, 1);
+			if (return_code < 0)
 			{
+				//Error.
 				return false;
 			}
 		}
@@ -713,9 +714,9 @@ bool serialDrain(int fd)
 	return true;
 }
 
-bool serialSend(int fd, uint8_t* buf, size_t buflen)
+bool serial_send(int fd, uint8_t* buf, size_t buf_len)
 {
-	size_t length = buflen;
+	size_t length = buf_len;
 	uint8_t* bufPtr = buf;
 	ssize_t result = 0;
 	
@@ -729,7 +730,7 @@ bool serialSend(int fd, uint8_t* buf, size_t buflen)
 		result = write(fd, bufPtr, (length > 1024) ? 1024 : length);
 		if (result < 0)
 		{
-			//Error message.
+			//Error.
 			return false;
 		}
 		bufPtr += result;
@@ -738,46 +739,48 @@ bool serialSend(int fd, uint8_t* buf, size_t buflen)
 	return true;
 }
 
-bool serialRecv(int fd, uint8_t* buf, size_t buflen, size_t& bytesRead)
+bool serial_recv(int fd, uint8_t* buf, size_t buf_len, size_t& bytes_read)
 {
 	timeval timeout;
 	fd_set waitset;
-	int numberReady;
+	int number_ready;
 	FD_ZERO(&waitset);
 	FD_SET(fd, &waitset);
 	
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 1000 * 1000;
-	bool haveRead = false;
+	bool have_read = false;
 	
-	while (!haveRead)
+	while (!have_read)
 	{
-		numberReady = select(fd+1, &waitset, NULL, NULL, &timeout);
-		if (numberReady == 0)
+		number_ready = select(fd+1, &waitset, NULL, NULL, &timeout);
+		if (number_ready == 0)
 		{
 			//Error.
 			std::cerr << "Error" << std::endl;
 			return false;
 		}
-		else if (numberReady == -1)
+		else if (number_ready == -1)
 		{
 			if (errno != EINTR || errno != EAGAIN)
 			{
-				//Error message.
+				//Error.
 				std::cerr << "Error" << std::endl;
 				return false;
 			}
 		}
 		else
 		{
-			int returnCode = read(fd, buf, buflen);
-			if (returnCode < 0)
+			int return_code = read(fd, buf, buf_len);
+			if (return_code < 0)
 			{
 				return false;
 			}
-			bytesRead = returnCode;
-			haveRead = true;
+			bytes_read = return_code;
+			have_read = true;
 		}
 	}
 	return true;
 }
+
+//ALL DONE.

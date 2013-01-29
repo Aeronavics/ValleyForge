@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,13 +44,14 @@
  */
  
 //Only include header once.
-#ifndef OPTIONS_H_
-#define OPTIONS_H_
+#ifndef __OPTIONS_H__
+#define __OPTIONS_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
 #include <getopt.h>
 #include <string>
+
 #include "comm.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
@@ -68,15 +69,15 @@ public:
 	Options();
 	~Options();
 	
-	bool readFromArgs(int argc, char* argv[]);
-	void printUsage();
+	bool read_from_args(int argc, char* argv[]);
+	void print_usage();
 	
-	const char* getInputFile();
-	CommModule* getCommsModule();
-	Params getCommsParams();
-	size_t getMemorySize();
-	size_t getPageSize();
-	uint32_t getSignature();
+	const char* get_input_file();
+	Comm_module* get_comms_module();
+	Params get_comms_params();
+	size_t get_memory_size();
+	size_t get_page_size();
+	uint32_t get_signature();
 
 	
 private:
@@ -85,14 +86,17 @@ private:
 	
 	
 	//Fields.
-	const char* inputFile;
-	const char* commsModule;
-	const char* commsParams;
-	const char* memorySize;
-	const char* pageSize;
+	const char* input_file;
+	const char* comms_module;
+	const char* comms_params;
+	const char* memory_size;
+	const char* page_size;
 	const char* signature;
 };
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*OPTIONS_H_*/
+#endif /*__OPTIONS_H__*/
+
+//ALL DONE.
+

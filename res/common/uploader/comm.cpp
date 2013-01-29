@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,70 +47,71 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-std::string DeviceInfo::getName()
+std::string Device_info::get_name()
 {
 	return name;
 }
 
-void DeviceInfo::setName(std::string newName)
+void Device_info::set_name(std::string new_name)
 {
-	name = newName;
+	name = new_name;
 }
 
-uint32_t DeviceInfo::getSignature()
+uint32_t Device_info::get_signature()
 {
 	return signature;
 }
 
-void DeviceInfo::setSignature(uint32_t newSignature)
+void Device_info::set_signature(uint32_t new_signature)
 {
-	signature = newSignature;
+	signature = new_signature;
 }
 
-uint8_t DeviceInfo::getVersionMinor()
+uint8_t Device_info::get_version_minor()
 {
-	return versionMinor;
+	return version_minor;
 }
 
-void DeviceInfo::setVersionMinor(uint8_t newVersion)
+void Device_info::set_version_minor(uint8_t new_version)
 {
-	versionMinor = newVersion;
+	version_minor = new_version;
 }
 
-uint8_t DeviceInfo::getVersionMajor()
+uint8_t Device_info::get_version_major()
 {
-	return versionMajor;
+	return version_major;
 }
 
-void DeviceInfo::setVersionMajor(uint8_t newVersion)
+void Device_info::set_version_major(uint8_t new_version)
 {
-	versionMajor = newVersion;
+	version_major = new_version;
 }
 
 
-CommModule::CommModule(std::string name)
+Comm_module::Comm_module(std::string name)
 {
-	if (getRegistry().find(name) == getRegistry().end())
+	if (get_registry().find(name) == get_registry().end())
 	{
-		getRegistry().insert(std::pair<std::string,CommModule*>(name, this));
+		get_registry().insert(std::pair<std::string,Comm_module*>(name, this));
 	}
 }
 
-CommModule::~CommModule()
+Comm_module::~Comm_module()
 {
-
+	//Do nothing by default here.
 }
 
-CommModuleRegistry& CommModule::getRegistry()
+Comm_module_registry& Comm_module::get_registry()
 {
-	if (theRegistry == NULL)
+	if (the_registry == NULL)
 	{
-		theRegistry = new CommModuleRegistry;
+		the_registry = new Comm_module_registry;
 	}
-	return *theRegistry;
+	return *the_registry;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-CommModuleRegistry* CommModule::theRegistry = NULL;
+Comm_module_registry* Comm_module::the_registry = NULL;
 
+//ALL DONE.
