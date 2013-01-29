@@ -40,10 +40,11 @@
 #include <iostream>
 #include <memory.h>
 #include <stdlib.h>
+#include <unistd.h>
+
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "command.h"
 

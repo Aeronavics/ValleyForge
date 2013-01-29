@@ -36,10 +36,11 @@
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
 #include <iostream>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <unistd.h>
+
+#include <sys/time.h>
 
 #include "microchipcannetworkinterface.hpp"
 #include "socketcannetworkinterface.hpp"
