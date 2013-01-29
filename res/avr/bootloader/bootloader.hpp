@@ -39,6 +39,9 @@
 // Include the general bootloader module header file.
 #include "bootloader_module.hpp"
 
+// Include the bootloader information sharing struct type.
+#include "application_interface/shared_bootloader_constants.hpp"
+
 // Include the specific bootloader module we want to use.
 #include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.hpp"
 
@@ -53,27 +56,11 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-// Struct type to hold all of the variables that can be shared
-typedef struct{
-	void* shut_down_state_mem;
-	uint16_t clean_flag;
-	uint16_t bootloader_version;
-}shared_bootloader_variables;
-
-// Functions pointers
-typedef void (*function_pointer1)(void*);
-typedef void (*function_pointer2)(void*,uint16_t);
-typedef shared_bootloader_variables* (*function_pointer3)(void);
-typedef bool (*function_pointer4)(void*,uint16_t);
-
-
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
 int main(void);
-
-// TODO - Some crazy magic with the toolchain is required here, so that these functions are visible from userland.
 
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should start the application on the next CPU reset.
@@ -81,12 +68,19 @@ int main(void);
  *	This should usually be called only when the application code is shut down cleanly.
  *
  *	Blocks until EEPROM IO operations are completed.
+ * 
+ *  NOTE - This function can be accessed by the application.
  *
  *	TAKES: 		Nothing.
  *
  *	RETURNS: 	Nothing.
  */
-void boot_mark_clean(void* mem_address, uint16_t flag);
+void boot_mark_clean(void);
+
+	// NOTE - Avoids using name mangled function name for the shared jumptable
+extern "C" void boot_mark_clean_BL(void){
+	boot_mark_clean();
+}
 
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
@@ -95,28 +89,34 @@ void boot_mark_clean(void* mem_address, uint16_t flag);
  *	Alternatively, this function may be called deliberately to force the bootloader to check for new application firmware to download.
  *
  *	Blocks until EEPROM IO operations are completed.
+ * 
+ *  NOTE - This function can be accessed by the application.
  *
  *	TAKES: 		Nothing.
  *
  *	RETURNS: 	Nothing.
  */
-void boot_mark_dirty(void* mem_address);
+void boot_mark_dirty(void);
 
-
-shared_bootloader_variables* get_bootloader_information(void);
-
-
-// Avoid name mangling
-extern "C" void boot_mark_clean_BL(void* arg1, uint16_t arg2){
-	boot_mark_clean(arg1,arg2);
-}
- 
-extern "C" void boot_mark_dirty_BL(void* arg1){
-	boot_mark_dirty(arg1);
+	// NOTE - Avoids using name mangled function name for the shared jumptable
+extern "C" void boot_mark_dirty_BL(void){
+	boot_mark_dirty();
 }
 
-extern "C" shared_bootloader_variables* get_bootloader_information_BL(void){
-	return get_bootloader_information();
+/**
+ *	Stores bootloader information in struct.
+ *
+ *	TAKES: 		bootloader_information		struct that bootloader information is stored.
+ * 
+ *  NOTE - This function can be accessed by the application.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void get_bootloader_information(Shared_bootloader_constants* bootloader_information);
+
+	// NOTE - Avoids name mangling for the shared jumptable
+extern "C" void get_bootloader_information_BL(Shared_bootloader_constants* arg){
+	get_bootloader_information(arg);
 }
 
 #endif /*__BOOTLOADER_H__*/

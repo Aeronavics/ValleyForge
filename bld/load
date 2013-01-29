@@ -307,7 +307,7 @@ do
 			fi
 		done
 		# Check if any of the upload functions in the list were invalid.
-		if [ ${LOAD_FUNCTION_INVALID} ]; then
+		if [ ${UPLOAD_FUNCTION_INVALID} ]; then
 			# One of the specified upload functions was invalid, so skip this component.
 			UPLOAD_FUNCTION_INVALID=
 			continue
