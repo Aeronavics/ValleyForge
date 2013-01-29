@@ -419,7 +419,7 @@ generate_code()
 
 	# Iterate over the list of possible code generation functions.
 	echo -e "${CYAN}Running code generators...\n${NO_COLOUR}"
-	for f in "$CODE_GENERATORS"; do
+	for f in $CODE_GENERATORS; do
 		# Check that this code generator function specified by the build configuration actually exists.
 		if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
 			# The specified code generator function doesn't exist, so skip this function and move on.
