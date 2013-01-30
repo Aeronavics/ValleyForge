@@ -36,6 +36,7 @@ SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
+
 # DEFINE CONSTANTS.
 
 # Define file names.
@@ -77,6 +78,7 @@ Options:
 	-a --all			Upload all components.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Upload the bootloader for each component as well (assuming a compatible method is being used).
+	-u --fuses				Upload fuse settings for the component as well (assuming a compatible method is being used).
 	-f --filesystem			Upload the filesystem for each component as well (assuming the component supports filesystems).
 	-l --loaderonly			Do not upload the application code for each component (but perhaps load other things if they are supported).
 	-n --name <Component Name>	Specify the name of a component to upload.
@@ -110,8 +112,8 @@ NO_UPLOAD=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harlpcbfn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,loaderonly,postpack,clean,noload,name:"
+SHORTOPTS="harlpcbufn:"
+LONGOPTS="help,all,retain,bootloader,fuses,filesystem,loaderonly,postpack,clean,noload,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -137,6 +139,10 @@ while true; do
 		-b|--bootloader)
 			# Select 'uploading bootloaders'.
 			UPLOAD_BOOTLOADER=1
+			;;
+		-u|--fuses)
+			# Select 'uploading fuses'.
+			UPLOAD_FUSES=1
 			;;
 		-f|--filesystem)
 			# Select 'uploading filesystems'.
