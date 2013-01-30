@@ -78,7 +78,7 @@ Options:
 	-a --all			Upload all components.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Upload the bootloader for each component as well (assuming a compatible method is being used).
-	-u --fuses				Upload fuse settings for the component as well (assuming a compatible method is being used).
+	-u --fuses			Upload fuse settings for the component as well (assuming a compatible method is being used).
 	-f --filesystem			Upload the filesystem for each component as well (assuming the component supports filesystems).
 	-l --loaderonly			Do not upload the application code for each component (but perhaps load other things if they are supported).
 	-n --name <Component Name>	Specify the name of a component to upload.
