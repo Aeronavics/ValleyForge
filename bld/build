@@ -339,45 +339,44 @@ generic_precompile()
 		return 1
 	fi
 
+	# Perform any required code generation.
+	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
 	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.h; do
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.h"); do
 		# Preprocess this header file.
 		preprocess_general $FILE
 	done
-	shopt -u nullglob
 
 	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.hpp; do
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.hpp"); do
 		# Preprocess this header file.
 		preprocess_general $FILE
 	done
-	shopt -u nullglob
+
+	# Preprocess the copied header files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.hs"); do
+		# Preprocess this header file.
+		preprocess_general $FILE
+	done
 
 	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.c; do
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.c"); do
 		# Preprocess this source file.
 		preprocess_general $FILE
 	done
-	shopt -u nullglob
 
 	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.cpp; do
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.cpp"); do
 		# Preprocess this source file.
 		preprocess_general $FILE
 	done
-	shopt -u nullglob
 
 	# Preprocess the copied assembler files.
-	shopt -s nullglob
-	for FILE in $TCPATH/$TMP_SRC_DIR/$COMPONENT/*.s; do
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.s"); do
 		# Preprocess this source file.
 		preprocess_general $FILE
 	done
-	shopt -u nullglob
 
 	# Check to see if the platform is freertos.
 	if [ $PLATFORM == "freertos" ]; then
@@ -390,9 +389,6 @@ generic_precompile()
 
 	# Fetch the HAL library files.
 	get_hal
-
-	# Perform any required code generation.
-	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# TODO - If there is anything required to set up the platform, maybe it goes about here?
 
@@ -419,7 +415,7 @@ generate_code()
 
 	# Iterate over the list of possible code generation functions.
 	echo -e "${CYAN}Running code generators...\n${NO_COLOUR}"
-	for f in "$CODE_GENERATORS"; do
+	for f in $CODE_GENERATORS; do
 		# Check that this code generator function specified by the build configuration actually exists.
 		if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
 			# The specified code generator function doesn't exist, so skip this function and move on.

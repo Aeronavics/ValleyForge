@@ -143,53 +143,44 @@ makeavr_bootloader()
 	# Set up the AVR compiler.
 	unpack_avrc
 
-	# Preprocess the copied header files.
-	shopt -s nullglob
-	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.h
-	for FILE in $FILES; do
-		# Preprocess this header file.
-		preprocess_bootloader $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied header files.
-	shopt -s nullglob
-	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.hpp
-	for FILE in $FILES; do
-		# Preprocess this header file.
-		preprocess_bootloader $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.c
-	for FILE in $FILES; do
-		# Preprocess this source file.
-		preprocess_bootloader $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.cpp
-	for FILE in $FILES; do
-		# Preprocess this source file.
-		preprocess_bootloader $FILE
-	done
-	shopt -u nullglob
-	
-	# Preprocess the copied assembler files.
-	shopt -s nullglob
-	FILES=$TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/*.s
-	for FILE in $FILES; do
-		# Preprocess this source file.
-		preprocess_bootloader $FILE
-	done
-	shopt -u nullglob
-
 	# Perform any required code generation.
 	generate_code $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+
+	# Preprocess the copied header files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.h"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+
+	# Preprocess the copied header files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.hpp"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+
+	# Preprocess the copied header files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.hs"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+
+	# Preprocess the copied source files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.c"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+
+	# Preprocess the copied source files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.cpp"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
+	
+	# Preprocess the copied assembler files.
+	for FILE in $(find $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -name "*.s"); do
+		# Preprocess this header file.
+		preprocess_bootloader $FILE
+	done
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT bootloader...\n${NO_COLOUR}"

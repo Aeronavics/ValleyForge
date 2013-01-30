@@ -40,7 +40,8 @@
 #include "bootloader_module.hpp"
 
 // Include the bootloader information sharing struct type.
-#include "application_interface/shared_bootloader_constants.hpp"
+
+#include "application_interface/application_interface_constants.hpp"
 
 // Include the specific bootloader module we want to use.
 #include "<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>.hpp"
@@ -53,6 +54,9 @@
 
 // Include boolean data types.
 #include <stdbool.h>
+
+// Include the dummy header for the shared jumptable.
+#include "shared_jumptable.hs"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
