@@ -106,6 +106,9 @@ upload_avrdude()
 
 	# FUNCTION PROPER STARTS HERE.
 	
+	# DECLARE VARIABLES.
+	
+	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
 
 	# Check if we are supposed to be loading the application code.
 	if [ $UPLOAD_APPLICATION ]; then
@@ -294,13 +297,10 @@ upload_avrdude()
 
 	# We don't need to unpack any other tools.
 
-	# If we are using the STK600, then we will require root privileges.
-	AVRDUDE_SUDO=
-	if [ ${AVRDUDE_ISPDEVTYPE} == "stk600" ]; then
-		# We will need root privileges.  Warn the user in advance.
-		echo -e "${YELLOW}Programming using the STK600 requires elevated privileges.  You will be prompted for a sudo capable password.${NO_COLOUR}"
-		AVRDUDE_SUDO="sudo"
-	fi
+
+	# We will need root privileges.  Warn the user in advance.
+	echo -e "${YELLOW}Programming using ISP requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	AVRDUDE_SUDO="sudo"
 	
 	AVRDUDE_WRITE_FUSES=
 	AVRDUDE_VERIFY_FUSES=
@@ -308,14 +308,33 @@ upload_avrdude()
 	if [ $UPLOAD_FUSES ]; then
 		# Check if we have fuse bytes to program set by the configuration.
 		
-		CURRENT_LFUSE=$(${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U lfuse:r:-:h)
-		CURRENT_HFUSE=$(${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U hfuse:r:-:h)
-		CURRENT_EFUSE=$(${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U efuse:r:-:h)
+		CURRENT_LFUSE=$(${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U lfuse:r:-:h 2>/dev/null)
+		# Check the return value from the read operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			READ_FUSES_FAILED=1
+		fi
+		CURRENT_HFUSE=$(${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U hfuse:r:-:h 2>/dev/null)
+		# Check the return value from the read operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			READ_FUSES_FAILED=1
+		fi
+		CURRENT_EFUSE=$(${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U efuse:r:-:h 2>/dev/null)
+		# Check the return value from the read operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			READ_FUSES_FAILED=1
+		fi
 		
-		echo -e "${CYAN}Current fuse settings: ${NO_COLOUR}"
-		echo -e "${CYAN} lfuse:${NO_COLOUR} $CURRENT_LFUSE"
-		echo -e "${CYAN} hfuse:${NO_COLOUR} $CURRENT_HFUSE"
-		echo -e "${CYAN} efuse:${NO_COLOUR} $CURRENT_EFUSE"
+		if [ ${READ_FUSES_FAILED} ]; then
+			echo -e "${RED}Failed to read fuses from device.\n${NO_COLOUR}"
+		else
+			echo -e "${CYAN}Current fuse settings: ${NO_COLOUR}"
+			echo -e "${CYAN} lfuse:${NO_COLOUR} $CURRENT_LFUSE"
+			echo -e "${CYAN} hfuse:${NO_COLOUR} $CURRENT_HFUSE"
+			echo -e "${CYAN} efuse:${NO_COLOUR} $CURRENT_EFUSE\n"
+		fi
 		
 		# Check if the component/build configuration set specified the lfuse value.
 		if [ ! -z ${AVRDUDE_LFUSE} ]; then
@@ -481,7 +500,7 @@ upload_avrdude()
 		# TODO - Upload the fuse bits, if required.
 
 		# Upload the application code to flash.
-		${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
+		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
 
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
@@ -491,7 +510,7 @@ upload_avrdude()
 	
 		else
 			# Verify the upload was successful.
-			${AVRDUDE_SUDO} avrdude -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:v:"$AVRDUDE_BINARY":i $AVRDUDE_VERIFY_FUSES
+			${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:v:"$AVRDUDE_BINARY":i $AVRDUDE_VERIFY_FUSES
 
 			# Check the return value from the verify operation.
 			if [ $? != 0 ]; then
