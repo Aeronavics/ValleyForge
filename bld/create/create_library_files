@@ -294,16 +294,16 @@ for FILENAME in $FILENAMES; do
 		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
 
 		# Preprocess the two template files.
-		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.c
-		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
+		preprocess_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.c
+		preprocess_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.h
 	elif [ $TYPE == "CPP" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
 		cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.hpp
 
 		# Preprocess the two template files.
-		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
-		preprocess_library_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.hpp
+		preprocess_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.cpp
+		preprocess_template $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$FILENAME.hpp
 	fi
 done
 

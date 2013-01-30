@@ -139,46 +139,6 @@ get_suitable_libs()
 			mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
 			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
 
-			# Preprocess the copied header files.
-			shopt -s nullglob
-			for FILE in $OUTPATH/$LIBRARY/*.h; do
-				# Preprocess this header file.
-				preprocess_library $FILE
-			done
-			shopt -u nullglob
-
-			# Preprocess the copied header files.
-			shopt -s nullglob
-			for FILE in $OUTPATH/$LIBRARY/*.hpp; do
-				# Preprocess this header file.
-				preprocess_library $FILE
-			done
-			shopt -u nullglob
-
-			# Preprocess the copied source files.
-			shopt -s nullglob
-			for FILE in $OUTPATH/$LIBRARY/*.c; do
-				# Preprocess this source file.
-				preprocess_library $FILE
-			done
-			shopt -u nullglob
-
-			# Preprocess the copied source files.
-			shopt -s nullglob
-			for FILE in $OUTPATH/$LIBRARY/*.cpp; do
-				# Preprocess this source file.
-				preprocess_library $FILE
-			done
-			shopt -u nullglob
-
-			# Preprocess the copied assembler files.
-			shopt -s nullglob
-			for FILE in $OUTPATH/$LIBRARY/*.s; do
-				# Preprocess this source file.
-				preprocess_library $FILE
-			done
-			shopt -u nullglob
-
 			# Increment the number of libraries imported.
 			COUNT=`expr $COUNT + 1`
 		fi
@@ -238,8 +198,10 @@ get_hal()
 		# Copy the corresponding files over.
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hpp $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hs $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hpp $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hs $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.cpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
@@ -249,44 +211,40 @@ get_hal()
 	# Preprocess the imported files.
 
 	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $OUTPATH/*.h; do
-		# Preprocess this header file.
+	for FILE in $(find $OUTPATH -name "*.h"); do
+		# Preprocess this source file.
 		preprocess_hal $FILE
 	done
-	shopt -u nullglob
 
 	# Preprocess the copied header files.
-	shopt -s nullglob
-	for FILE in $OUTPATH/*.hpp; do
-		# Preprocess this header file.
-		preprocess_hal $FILE
-	done
-	shopt -u nullglob
-
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $OUTPATH/*.c; do
+	for FILE in $(find $OUTPATH -name "*.hpp"); do
 		# Preprocess this source file.
 		preprocess_hal $FILE
 	done
-	shopt -u nullglob
 
-	# Preprocess the copied source files.
-	shopt -s nullglob
-	for FILE in $OUTPATH/*.cpp; do
+	# Preprocess the copied header files.
+	for FILE in $(find $OUTPATH -name "*.hs"); do
 		# Preprocess this source file.
 		preprocess_hal $FILE
 	done
-	shopt -u nullglob
+
+	# Preprocess the copied source files.
+	for FILE in $(find $OUTPATH -name "*.c"); do
+		# Preprocess this source file.
+		preprocess_hal $FILE
+	done
+
+	# Preprocess the copied source files.
+	for FILE in $(find $OUTPATH -name "*.cpp"); do
+		# Preprocess this source file.
+		preprocess_hal $FILE
+	done
 
 	# Preprocess the copied assembler files.
-	shopt -s nullglob
-	for FILE in $OUTPATH/*.s; do
+	for FILE in $(find $OUTPATH -name "*.s"); do
 		# Preprocess this source file.
 		preprocess_hal $FILE
 	done
-	shopt -u nullglob
 
 	# All done.
 	echo -e "${CYAN}Imported HAL.\n${NO_COLOUR}"
@@ -339,6 +297,9 @@ generic_precompile()
 		return 1
 	fi
 
+	# Fetch any user library files which might be required.
+	get_suitable_libs
+
 	# Perform any required code generation.
 	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
@@ -384,10 +345,7 @@ generic_precompile()
 	    get_rtos_files
 	fi
 
-	# Fetch any user library files which might be required.
-	get_suitable_libs
-
-	# Fetch the HAL library files.
+	# Fetch the HAL library files.  This is done after other preprocessing, since the HAL is preprocessed separately.
 	get_hal
 
 	# TODO - If there is anything required to set up the platform, maybe it goes about here?

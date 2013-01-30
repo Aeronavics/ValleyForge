@@ -54,7 +54,7 @@
 preprocess_template()
 {	
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ${1##*/}...${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing template file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -105,6 +105,8 @@ preprocess_template()
 	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
+	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
+
 	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
 	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
@@ -120,6 +122,7 @@ preprocess_template()
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
 
 	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${COMPONENT^^}^g" $1
+	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
 
 	# Re-reverse the delimiters for any macros with reversed delimiters.
 
@@ -129,6 +132,8 @@ preprocess_template()
 	sed -i 's^>>>TC_INSERTS_C_FILE_NAME_HERE<<<^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^g' $1
 
 	sed -i 's^>>>TC_INSERTS_COMPONENT_NAME_HERE<<<^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^g' $1
+	sed -i 's^>>>TC_INSERTS_LIBRARY_NAME_HERE<<<^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^g' $1
+
 	sed -i 's^>>>TC_INSERTS_SUBSYSTEM_HERE<<<^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^g' $1
 	sed -i 's^>>>TC_INSERTS_AUTHOR_NAME_HERE<<<^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^g' $1
 	sed -i 's^>>>TC_INSERTS_DATE_HERE<<<^<<<TC_INSERTS_DATE_HERE>>>^g' $1
@@ -144,10 +149,10 @@ preprocess_template()
 	sed -i "s^>>>TC_INSERTS_UC_FILE_BASENAME_HERE<<<^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^g" $1
 
 	sed -i "s^>>>TC_INSERTS_UC_COMPONENT_NAME_HERE<<<^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^g" $1
+	sed -i "s^>>>TC_INSERTS_UC_LIBRARY_NAME_HERE<<<^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^g" $1
 
 	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -165,7 +170,7 @@ preprocess_template()
 preprocess_general()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing file ${1##*/}...${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -216,6 +221,8 @@ preprocess_general()
 	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
 
 	sed -i "s^<<<TC_INSERTS_COMPONENT_NAME_HERE>>>^$COMPONENT^g" $1
+	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
+
 	sed -i "s^<<<TC_INSERTS_SUBSYSTEM_HERE>>>^$SUBSYSTEM^g" $1
 	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
 	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
@@ -231,10 +238,10 @@ preprocess_general()
 	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
 
 	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${COMPONENT^^}^g" $1
+	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
 
 	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -254,7 +261,7 @@ preprocess_general()
 preprocess_bootloader()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing bootloader file ${1##*/}...${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing bootloader file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -334,209 +341,7 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_UC_COMPONENT_NAME_HERE>>>^${NAME^^}^g" $1
 
 	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
-}
-
-######################################## FUNCTION #########################################
-###											###
-### NAME:		preprocess_library_template					###
-###											###
-### Inputs/Outputs:	A single input argument: the path to the file to process.	###
-###											###
-### Purpose:		Preprocesses a library source file which have been newly	###
-###			created from a template file.  This preprocessing generally 	###
-###			only affects the commentary at the top of the file, and a few 	###
-###			other bits.  Since this preprocessing will be performed on a 	###
-###			new template file before it is added to the src folder, the 	###
-###			user will never see the unexpanded macros unless they actually	###
-###			edit the templates. If any macros in the template should NOT be	###
-###			expanded, then they should be surrounded by inverted		###
-###			delimiters: >>> <<< In this case, the preprocessor will simply	###
-###			reverse the delimiters, and leave the unexpanded macros in the	###
-###			source file, ready to be expanded at compile time.		###
-###											###
-###########################################################################################
-
-preprocess_library_template()
-{	
-	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ${1##*/}...${NO_COLOUR}"
-
-	# Check that the specified file exists.
-	if [ ! -w $1 ]; then
-		# The specified file is invalid, so bail.
-		echo -e "\n${RED}ERROR - Invalid argument to preprocess_library_template.  File does not exist.\n${NO_COLOUR}"
-		return
-	fi
-
-	# Populate a variable with the users information, from the configuration file.
-	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
-
-	# Populate a string with the current date.
-	local DATE=$(date +"%-d-%-m-%Y")
-
-	# Figure out what the NAME of the file actually is.
-	local NAME=${1##*/}
-	local NAME=${NAME%.*}
-	local EXT=${1##*.}
-
-	# Hence determine what some other fields should become.
-	if [ "$EXT" == "c" ]; then
-		CEXT="c"
-		HEXT="h"
-	elif [ "$EXT" == "cpp" ]; then
-		CEXT="cpp"
-		HEXT="hpp"
-	elif [ "$EXT" == "s" ]; then
-		CEXT="s"
-		HEXT=""
-	elif [ "$EXT" == "h" ]; then
-		CEXT="c"
-		HEXT="h"
-	elif [ "$EXT" == "hpp" ]; then
-		CEXT="cpp"
-		HEXT="hpp"
-	else
-		CEXT=""
-		HEXT=""
-	fi
-
-	# Replace each instance of a macro in the template files with the corresponding information.
-
-	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
-	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
-
-	sed -i "s^<<<TC_INSERTS_BUILD_LIST_HERE>>>^$BUILDS^g" $1
-	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
-	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
-
-	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
-
-	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
-
-	# 	There are also upper-case versions of some of those same macros.
-
-	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
-
-	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
-
-	# Re-reverse the delimiters for any macros with reversed delimiters.
-
-	sed -i 's^>>>TC_INSERTS_FILE_NAME_HERE<<<^<<<TC_INSERTS_FILE_NAME_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_FILE_BASENAME_HERE<<<^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_H_FILE_NAME_HERE<<<^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_C_FILE_NAME_HERE<<<^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^g' $1
-
-	sed -i 's^>>>TC_INSERTS_BUILD_LIST_HERE<<<^<<<TC_INSERTS_BUILD_LIST_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_AUTHOR_NAME_HERE<<<^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^g' $1
-	sed -i 's^>>>TC_INSERTS_DATE_HERE<<<^<<<TC_INSERTS_DATE_HERE>>>^g' $1
-	
-	sed -i 's^>>>TC_INSERTS_LIBRARY_NAME_HERE<<<^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^g' $1
-
-	sed -i 's^>>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^g' $1
-
-	# 	There are also upper-case versions of some of those same macros.
-
-	sed -i "s^>>>TC_INSERTS_UC_FILE_BASENAME_HERE<<<^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^g" $1
-
-	sed -i "s^>>>TC_INSERTS_UC_LIBRARY_NAME_HERE<<<^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^g" $1
-
-	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
-}
-
-######################################## FUNCTION #########################################
-###											###
-### NAME:		preprocess_library						###
-###											###
-### Inputs/Outputs:	A single input argument: the path to the file to process.	###
-###											###
-### Purpose:		Preprocesses a single library source file.			###
-###											###
-###			Requires that a valid build configuration has been loaded.	###
-###											###
-###########################################################################################
-
-preprocess_library()
-{
-	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing file ${1##*/}...${NO_COLOUR}"
-
-	# Check that the specified file exists.
-	if [ ! -w $1 ]; then
-		# The specified file is invalid, so bail.
-		echo -e "\n${RED}ERROR - Invalid argument to preprocess_library.  File does not exist.\n${NO_COLOUR}"
-		return
-	fi
-
-	# Populate a variable with the users information, from the configuration file.
-	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
-
-	# Populate a string with the current date.
-	local DATE=$(date +"%-d-%-m-%Y")
-
-	# Figure out what the NAME of the file actually is.
-	local NAME=${1##*/}
-	local NAME=${NAME%.*}
-	local EXT=${1##*.}
-
-	# Hence determine what some other fields should become.
-	if [ "$EXT" == "c" ]; then
-		CEXT="c"
-		HEXT="h"
-	elif [ "$EXT" == "cpp" ]; then
-		CEXT="cpp"
-		HEXT="hpp"
-	elif [ "$EXT" == "s" ]; then
-		CEXT="s"
-		HEXT=""
-	elif [ "$EXT" == "h" ]; then
-		CEXT="c"
-		HEXT="h"
-	elif [ "$EXT" == "hpp" ]; then
-		CEXT="cpp"
-		HEXT="hpp"
-	else
-		CEXT=""
-		HEXT=""
-	fi
-
-	# Replace each instance of a macro in the template files with the corresponding information.
-
-	sed -i "s^<<<TC_INSERTS_FILE_NAME_HERE>>>^$NAME.$EXT^g" $1
-	sed -i "s^<<<TC_INSERTS_FILE_BASENAME_HERE>>>^$NAME^g" $1		
-	sed -i "s^<<<TC_INSERTS_H_FILE_NAME_HERE>>>^$NAME.$HEXT^g" $1
-	sed -i "s^<<<TC_INSERTS_C_FILE_NAME_HERE>>>^$NAME.$CEXT^g" $1
-
-	sed -i "s^<<<TC_INSERTS_BUILD_LIST_HERE>>>^$BUILDS^g" $1
-	sed -i "s^<<<TC_INSERTS_AUTHOR_NAME_HERE>>>^$AUTHOR^g" $1
-	sed -i "s^<<<TC_INSERTS_DATE_HERE>>>^$DATE^g" $1
-
-	sed -i "s^<<<TC_INSERTS_LIBRARY_NAME_HERE>>>^$LIBRARY^g" $1
-
-	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
-	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
-
-	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
-	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
-
-	# 	There are also upper-case versions of some of those same macros.
-
-	sed -i "s^<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>^${NAME^^}^g" $1
-
-	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
-
-	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -554,7 +359,7 @@ preprocess_library()
 preprocess_hal()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing HAL file ${1##*/}...${NO_COLOUR}"
+	echo -e "${CYAN}Preprocessing HAL file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -611,7 +416,6 @@ preprocess_hal()
 	sed -i "s^<<<TC_INSERTS_UC_LIBRARY_NAME_HERE>>>^${LIBRARY^^}^g" $1
 
 	# All done.
-	echo -e "${CYAN}All done.\n${NO_COLOUR}"	
-	return
+	return 0
 }
 
