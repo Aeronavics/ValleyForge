@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,8 +47,8 @@
  */
  
 //Only include header once.
-#ifndef COMM_STK500V2_H_
-#define COMM_STK500V2_H_
+#ifndef __COMM_STK500V2_H__
+#define __COMM_STK500V2_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 #include "comm.hpp"
@@ -62,56 +62,58 @@
 // DEFINE PUBLIC CLASSES.
 
 
-class STK500v2Module : public CommModule
+class STK500v2_module : public Comm_module
 {
 public:
 
 	// Functions.
-	STK500v2Module();
-	virtual ~STK500v2Module();
+	STK500v2_module();
+	virtual ~STK500v2_module();
 	
 	virtual bool init(Params params);
-	virtual bool connectToDevice();
+	virtual bool connect_to_device();
 	
-	virtual bool getDeviceInfo( DeviceInfo& info);
+	virtual bool get_device_info( Device_info& info);
 	
-	virtual bool writePage(MemoryMap& source, size_t size, size_t address);
-	virtual bool verifyPage(MemoryMap& expected, size_t size, size_t address);
-	virtual bool readPage(MemoryMap& destination, size_t size, size_t address);
+	virtual bool write_page(Memory_map& source, size_t size, size_t address);
+	virtual bool verify_page(Memory_map& expected, size_t size, size_t address);
+	virtual bool read_page(Memory_map& destination, size_t size, size_t address);
 	
-	virtual bool resetDevice(bool runApplication);
+	virtual bool reset_device(bool run_application);
 	
 	
 private:
 	// Functions.
-	bool openSerial();
-	bool setupSerial();
-	bool closeSerial();
-	bool stk500Send(uint8_t* buf, size_t buflen);
-	bool stk500Recv(uint8_t* buf, size_t buflen, size_t& bytesRead);
-	bool stk500Cmd(uint8_t* buf, size_t cmdlen, size_t& bytesRead);
-	bool stk500Sync();
-	bool stk500LoadAddress(size_t address, bool far);
+	bool open_serial();
+	bool setup_serial();
+	bool close_serial();
+	bool stk500_send(uint8_t* buf, size_t buf_len);
+	bool stk500_recv(uint8_t* buf, size_t buf_len, size_t& bytes_read);
+	bool stk500_cmd(uint8_t* buf, size_t cmd_len, size_t& bytes_read);
+	bool stk500_sync();
+	bool stk500_load_address(size_t address, bool far);
 	
 	//Fields.
-	std::string ttyPath;
+	std::string tty_path;
 	unsigned long speed;
-	int ttyFd;
-	termios originalTermios;
-	bool savedOriginalTermios;
+	int tty_fd;
+	termios original_termios;
+	bool saved_original_termios;
 	
 	bool connected;
 	
-	std::string progname;
+	std::string prog_name;
 	uint8_t signature0;
 	uint8_t signature1;
 	uint8_t signature2;
 	uint32_t signature;
 	
-	uint8_t stk500SeqNo;
+	uint8_t stk500_seq_no;
 };
 
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*COMM_STK500V2_H_*/
+#endif /*__COMM_STK500V2_H__*/
+
+//ALL DONE.

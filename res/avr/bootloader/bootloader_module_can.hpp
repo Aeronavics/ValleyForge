@@ -37,7 +37,7 @@
 #include "bootloader_module.hpp"
 
 // Include the bootloader can module information sharing struct type.
-#include "application_interface/shared_bootloader_module_constants_can.hpp"
+#include "application_interface/application_interface_module_constants_can.hpp"
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 

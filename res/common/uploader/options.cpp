@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,8 +36,10 @@
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
 #include <iostream>
-#include <stdlib.h>
+
 #include <stdint.h>
+#include <stdlib.h>
+
 
 // DEFINE PRIVATE MACROS.
 
@@ -64,92 +66,94 @@ static std::string shortopts = "f:c:s:C:p:S:";
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
-size_t parseMemorySize(const char* memorySize);
-Params parseCommsParams(std::string commsParams);
-bool parseKeyVal(std::string section, std::string& key, std::string& value);
-std::string substringFromRange(std::string string, size_t begin, size_t end);
+size_t parse_memory_size(const char* memory_size);
+Params parse_comms_params(std::string comms_params);
+bool parse_key_val(std::string section, std::string& key, std::string& value);
+std::string substring_from_range(std::string string, size_t begin, size_t end);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 Options::Options() :
-	inputFile(NULL),
-	commsModule(NULL),
-	memorySize(NULL)
+	input_file(NULL),
+	comms_module(NULL),
+	memory_size(NULL)
 {
+	//Nothing to do here.
 }
 
 Options::~Options()
 {
+	//Nothing to do here.
 }
 
-bool Options::readFromArgs(int argc, char* argv[])
+bool Options::read_from_args(int argc, char* argv[])
 {
-	bool haveOpts = true;
-	bool haveInFile = false;
-	bool haveCommsModule = false;
-	bool haveCommsParams = false;
-	bool haveMemorySize = false;
-	bool havePageSize = false;
-	bool haveSignature = false;
+	bool have_opts = true;
+	bool have_in_file = false;
+	bool have_comms_module = false;
+	bool have_comms_params = false;
+	bool have_memory_size = false;
+	bool have_page_size = false;
+	bool have_signature = false;
 	int optIndex = -1;
-	while (haveOpts)
+	while (have_opts)
 	{
 		int c = getopt_long(argc, argv, shortopts.c_str(), longopts, &optIndex);
-		haveOpts = c != -1;
+		have_opts = c != -1;
 		
 		switch (c)
 		{
 			case 'f':
-				inputFile = optarg;
-				haveInFile = true;
+				input_file = optarg;
+				have_in_file = true;
 				break;
 			case 'c':
-				commsModule = optarg;
-				haveCommsModule = true;
+				comms_module = optarg;
+				have_comms_module = true;
 				break;
 			case 'C':
-				commsParams = optarg;
-				haveCommsParams = true;
+				comms_params = optarg;
+				have_comms_params = true;
 				break;
 			case 's':
-				memorySize = optarg;
-				haveMemorySize = true;
+				memory_size = optarg;
+				have_memory_size = true;
 				break;
 			case 'p':
-				pageSize = optarg;
-				havePageSize = true;
+				page_size = optarg;
+				have_page_size = true;
 				break;
 			case 'S':
 				signature = optarg;
-				haveSignature = true;
+				have_signature = true;
 				break;
 			default:
 				
 				break;
 		}
 	}
-	if (!(haveInFile && haveMemorySize && havePageSize && haveCommsModule && haveSignature))
+	if (!(have_in_file && have_memory_size && have_page_size && have_comms_module && have_signature))
 	{
 		return false;
 	}
 	return true;
 }
 
-void Options::printUsage()
+void Options::print_usage()
 {
 	std::cerr << "Usage: uploader -f file.hex -s memorySize -c commsModule -C comsparams -p pagesize -S signature" << std::endl;
 	std::cerr << "       comsparams is of the form name=val:name=val... " << std::endl;
 }
 
-const char* Options::getInputFile()
+const char* Options::get_input_file()
 {
-	return inputFile;
+	return input_file;
 }
 
-CommModule* Options::getCommsModule()
+Comm_module* Options::get_comms_module()
 {
-	CommModuleRegistry& registry = CommModule::getRegistry();
-	CommModuleRegistry::iterator it = registry.find(commsModule);
+	Comm_module_registry& registry = Comm_module::get_registry();
+	Comm_module_registry::iterator it = registry.find(comms_module);
 	if (it == registry.end())
 	{
 		return NULL;
@@ -157,47 +161,47 @@ CommModule* Options::getCommsModule()
 	return (*it).second;
 }
 
-Params Options::getCommsParams()
+Params Options::get_comms_params()
 {
-	return parseCommsParams(commsParams);
+	return parse_comms_params(comms_params);
 }
 
-size_t Options::getMemorySize()
+size_t Options::get_memory_size()
 {
-	return parseMemorySize(memorySize);
+	return parse_memory_size(memory_size);
 }
 
-size_t Options::getPageSize()
+size_t Options::get_page_size()
 {
-	return parseMemorySize(pageSize);
+	return parse_memory_size(page_size);
 }
 
-uint32_t Options::getSignature()
+uint32_t Options::get_signature()
 {
-	std::string signatureStr = signature;
+	std::string signature_str = signature;
 	char *end;
-	uint32_t signatureInt = strtoul(signatureStr.c_str(), &end, 0);
-	if ((end - signatureStr.c_str()) != signatureStr.length())
+	uint32_t signature_int = strtoul(signature_str.c_str(), &end, 0);
+	if ((end - signature_str.c_str()) != signature_str.length())
 	{
 		std::cerr << "Signature value not recognised." << std::endl;
 		return 0;
 	}
-	return signatureInt;
+	return signature_int;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-size_t parseMemorySize(const char*memorySize)
+size_t parse_memory_size(const char*memory_size)
 {
-	if (memorySize == NULL)
+	if (memory_size == NULL)
 	{
 		return 0;
 	}
-	std::string memorySizeString = memorySize;
-	size_t length = memorySizeString.length();
+	std::string memory_size_string = memory_size;
+	size_t length = memory_size_string.length();
 	char* end = 0;
-	size_t size = strtol(memorySize, &end, 10);
-	if ((size_t)(end - memorySize) != length)
+	size_t size = strtol(memory_size, &end, 10);
+	if ((size_t)(end - memory_size) != length)
 	{
 		switch (*end)
 		{
@@ -219,7 +223,7 @@ size_t parseMemorySize(const char*memorySize)
 	return size;
 }
 
-Params parseCommsParams(std::string commsParams)
+Params parse_comms_params(std::string comms_params)
 {
 	//Parse the : separated list of key=value pairs into a map containing the key=value pairs.
 	std::string key;
@@ -230,9 +234,9 @@ Params parseCommsParams(std::string commsParams)
 	params.clear();
 	do
 	{
-		end = commsParams.find(':', pos);
-		std::string section = substringFromRange( commsParams, pos, end);
-		if ( parseKeyVal(section, key, value) )
+		end = comms_params.find(':', pos);
+		std::string section = substring_from_range( comms_params, pos, end);
+		if ( parse_key_val(section, key, value) )
 		{
 			//~ std::cerr << "Key: " << key << " Value: " << value << std::endl;
 			params[key] = value;
@@ -244,7 +248,7 @@ Params parseCommsParams(std::string commsParams)
 	return params;
 }
 
-bool parseKeyVal(std::string section, std::string& key, std::string& value)
+bool parse_key_val(std::string section, std::string& key, std::string& value)
 {
 	size_t pos = section.find('=');
 	if ( pos != std::string::npos)
@@ -257,7 +261,7 @@ bool parseKeyVal(std::string section, std::string& key, std::string& value)
 	return false;
 }
 
-std::string substringFromRange(std::string string, size_t begin, size_t end)
+std::string substring_from_range(std::string string, size_t begin, size_t end)
 {
 	std::string::iterator first = string.begin() + begin;
 	std::string::iterator second;
@@ -271,3 +275,6 @@ std::string substringFromRange(std::string string, size_t begin, size_t end)
 	}
 	return std::string(first, second);
 }
+
+//ALL DONE.
+

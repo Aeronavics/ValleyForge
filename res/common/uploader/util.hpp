@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@
  */
  
 //Only include header once.
-#ifndef UTIL_H_
-#define UTIL_H_
+#ifndef __UTIL_H__
+#define __UTIL_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
@@ -61,4 +61,4 @@ typedef std::map<std::string, std::string> Params;
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*UTIL_H_*/
+#endif /*__UTIL_H__*/

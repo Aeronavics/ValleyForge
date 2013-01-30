@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,8 +44,8 @@
  */
  
 //Only include header once.
-#ifndef MICROCHIPCANNETWORKINTERFACE_H_
-#define MICROCHIPCANNETWORKINTERFACE_H_
+#ifndef __MICROCHIPCANNETWORKINTERFACE_H__
+#define __MICROCHIPCANNETWORKINTERFACE_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
@@ -57,42 +57,42 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-class libUSBContextHolder;
-class USBMessage;
+class libUSB_context_holder;
+class USB_message;
 
 // DEFINE PUBLIC CLASSES.
 
-class MicrochipCANNetworkInterface : public CANNetworkInterface
+class Microchip_CAN_network_interface : public CAN_network_interface
 {
 public:
 
 
 	// Functions.
-	MicrochipCANNetworkInterface();
-	virtual ~MicrochipCANNetworkInterface();
+	Microchip_CAN_network_interface();
+	virtual ~Microchip_CAN_network_interface();
 	
 	virtual bool init(Params params);
 	
-	virtual bool sendMessage(const CANMessage& msg, uint32_t timeout);
-	virtual bool receiveMessage( CANMessage& msg, uint32_t timeout);
-	virtual bool drainMessages();
+	virtual bool send_message(const CAN_message& msg, uint32_t timeout);
+	virtual bool receive_message( CAN_message& msg, uint32_t timeout);
+	virtual bool drain_messages();
 	
 protected:
 	// Functions.
-	static void* USBThreadFunc(void*);
-	void processUSBEvents(void* m);
-	void processMessage(USBMessage& m);
+	static void* USB_thread_func(void*);
+	void process_USB_events(void* m);
+	void process_message(USB_message& m);
 	
 	//Fields.
-	CANMessageQueue recvQueue;
-	pthread_mutex_t recvQueueLock;
+	CAN_message_queue recv_queue;
+	pthread_mutex_t recv_queue_lock;
 	
 	
 	
-	pthread_t USBThread;
+	pthread_t USB_thread;
 	
-	libusb_device_handle* CANDevice;
-	libUSBContextHolder* ctxHolder;
+	libusb_device_handle* CAN_device;
+	libUSB_context_holder* ctx_holder;
 	bool quit;
 	bool drain;
 	bool transmitted;
@@ -105,4 +105,7 @@ protected:
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*MICROCHIPCANNETWORKINTERFACE_H_*/
+#endif /*__MICROCHIPCANNETWORKINTERFACE_H__*/
+
+//ALL DONE.
+

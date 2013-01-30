@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2012  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
  * 
  *  @section 		Licence
  * 
- * Copyright (C) 2011  Unison Networks Ltd
+ * Copyright (C) 2012  Unison Networks Ltd
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,13 +45,14 @@
  */
  
 //Only include header once.
-#ifndef IHEX_H_
-#define IHEX_H_
+#ifndef __IHEX_H__
+#define __IHEX_H__
 
 // INCLUDE REQUIRED HEADER FILES.
 
-#include <stdint.h>
 #include <string>
+
+#include <stdint.h>
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
@@ -59,11 +60,11 @@
 
 // DEFINE PUBLIC CLASSES.
 
-class IHexRecord
+class Ihex_record
 {
 public:
 
-	enum e_type
+	enum Type
 	{
 		DATA = 0,
 		END_OF_FILE,
@@ -75,21 +76,21 @@ public:
 	};
 	 
 	// Functions.
-	IHexRecord();
-	IHexRecord( std::string& line);
-	IHexRecord( const IHexRecord & other);
-	~IHexRecord();
+	Ihex_record();
+	Ihex_record( std::string& line);
+	Ihex_record( const Ihex_record & other);
+	~Ihex_record();
 	
 	
-	bool isValid();
-	bool validateChecksum();
+	bool is_valid();
+	bool validate_checksum();
 	
-	uint8_t* getData();
-	size_t getLength();
+	uint8_t* get_data();
+	size_t get_length();
 	
-	uint16_t getAddress();
+	uint16_t get_address();
 	
-	e_type getType();
+	Type get_type();
 	
 	void describe(std::string& str);
 	
@@ -101,7 +102,7 @@ private:
 	//Fields.
 	uint8_t* data;
 	size_t length;
-	e_type type;
+	Type type;
 	uint16_t address;
 	bool valid;
 	uint8_t checksum;
@@ -110,4 +111,7 @@ private:
  
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
  
-#endif /*IHEX_H_*/
+#endif /*__IHEX_H__*/
+
+//ALL DONE.
+

@@ -10,17 +10,28 @@
  * 	This header file must be #included by application.
  *
  ********************************************************************************************************************************/
-#include "shared_bootloader_module_constants_can.hpp" //"<<<TC_INSERTS_H_MODULE_FILE_NAME_HERE>>>"
-#include "shared_bootloader_constants.hpp" 
 
-	// Import type of bootloader
+#include "application_interface_module_constants_can.hpp" // TODO -"<<<TC_INSERTS_H_MODULE_FILE_NAME_HERE>>>"
+#include "application_interface_constants.hpp" 
 
-	// Adresses of function within the jumptable
-#define TRAMPOLINE_TABLE_BASE_ADDRESS 0x01000//TODO - same address as where linker places it.
-#define TRAMPOLINE_FUNCTION_1 TRAMPOLINE_TABLE_BASE_ADDRESS
-#define TRAMPOLINE_FUNCTION_2 (TRAMPOLINE_TABLE_BASE_ADDRESS + 0x4)
-#define TRAMPOLINE_FUNCTION_3 (TRAMPOLINE_TABLE_BASE_ADDRESS + 0x8)
-#define TRAMPOLINE_FUNCTION_4 (TRAMPOLINE_TABLE_BASE_ADDRESS + 0xC)
+// Include the dummy header file for the bootloader trampoline.
+#include "bootloader_trampoline.hs"
+
+#if defined (__AVR_ATmega2560__)
+	#define BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS 0x01000// TODO - <<<TC_INSERTS_BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS_HERE>>>
+	#define SHARED_FUNCTION_1 BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS
+	#define SHARED_FUNCTION_2 (BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS + 0x4)
+	#define SHARED_FUNCTION_3 (BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS + 0x8)
+	#define SHARED_FUNCTION_4 (BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS + 0xC)
+	
+#else
+	#define SHARED_FUNCTION_TABLE_BASE_ADDRESS 0x1FFDE// TODO - <<<TC_INSERTS_SHARED_FUNCTION_TABLE_BASE_ADDRESS_HERE>>>
+	#define SHARED_FUNCTION_1 SHARED_FUNCTION_TABLE_BASE_ADDRESS
+	#define SHARED_FUNCTION_2 (SHARED_FUNCTION_TABLE_BASE_ADDRESS + 0x4)
+	#define SHARED_FUNCTION_3 (SHARED_FUNCTION_TABLE_BASE_ADDRESS + 0x8)
+	#define SHARED_FUNCTION_4 (SHARED_FUNCTION_TABLE_BASE_ADDRESS + 0xC)
+	
+#endif
 
 	// Shared information structs
 Shared_bootloader_constants BL_information_struct;
@@ -44,8 +55,8 @@ typedef void (*function_pointer4)(Shared_bootloader_module_constants*);
  *
  *	RETURNS: 	Nothing.
  */
-static inline void boot_mark_clean_app(void)
-{ ((function_pointer2) (TRAMPOLINE_FUNCTION_1/2))(); }
+static __inline__ void boot_mark_clean_app(void)
+{ ((function_pointer2) (SHARED_FUNCTION_1/2))(); }
 
 /**
  *	Marks the 'application run' indicator in EEPROM to signal that the bootloader should NOT start the application on the next CPU reset.
@@ -59,8 +70,8 @@ static inline void boot_mark_clean_app(void)
  *
  *	RETURNS: 	Nothing.
  */
-static inline void boot_mark_dirty_app(void)
-{ ((function_pointer1) (TRAMPOLINE_FUNCTION_2/2))(); }
+static __inline__ void boot_mark_dirty_app(void)
+{ ((function_pointer1) (SHARED_FUNCTION_2/2))(); }
 
 /**
  *	Stores bootloader information in struct that.
@@ -69,8 +80,8 @@ static inline void boot_mark_dirty_app(void)
  *
  *	RETURNS: 	Nothing.
  */
-static inline void get_bootloader_information_app(Shared_bootloader_constants* bootloader_information)
-{ ((function_pointer3) (TRAMPOLINE_FUNCTION_3/2))(bootloader_information); }
+static __inline__ void get_bootloader_information_app(Shared_bootloader_constants* bootloader_information)
+{ ((function_pointer3) (SHARED_FUNCTION_3/2))(bootloader_information); }
 
 /**
  *	Stores bootloader module information in struct that.
@@ -79,5 +90,6 @@ static inline void get_bootloader_information_app(Shared_bootloader_constants* b
  *
  *	RETURNS: 	Nothing.
  */
-static inline void get_bootloader_module_information_app(Shared_bootloader_module_constants* bootloader_module_information)
-{ ((function_pointer4) (TRAMPOLINE_FUNCTION_4/2))(bootloader_module_information); }
+static __inline__ void get_bootloader_module_information_app(Shared_bootloader_module_constants* bootloader_module_information)
+{ ((function_pointer4) (SHARED_FUNCTION_4/2))(bootloader_module_information); }
+

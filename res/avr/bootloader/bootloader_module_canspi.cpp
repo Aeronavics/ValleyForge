@@ -44,13 +44,32 @@
 
 // DEFINE CONSTANTS
 
-	// MCP2515 interfacing.
-#define PIN_CHANGE_INTERUPT_VECTOR				<<<TC_INSERTS_INT_VECTOR_HERE>>>
-#define PIN_CHANGE_INTERRUPT_CONFIG_NUMBER		<<<TC_INSERTS_INT_VECTOR_CONFIG_NUMBER_HERE>>>
-#define PIN_CHANGE_INTERRUPT_NUMBER 			<<<TC_INSERTS_INT_NUMBER_HERE>>>
+		// MCP2515 interfacing.
+#define PIN_INT_VECTOR				<<<TC_INSERTS_INT_VECTOR_HERE>>>
+#define PIN_INT_CONFIG_NUMBER		<<<TC_INSERTS_INT_VECTOR_CONFIG_NUMBER_HERE>>>
 
-#define PCMSK_ADDRESS_OFFSET 					0x6B
-#define PIN_CHANGE_INTERRUPT_MASK_REGISTER 		_SFR_MEM8(PCMSK_ADDRESS_OFFSET + PIN_CHANGE_INTERRUPT_CONFIG_NUMBER)
+#if defined (__AVR_AT90CAN128__)
+	#define EICR_ADDRESS_OFFSET 						0x69
+	#define EXTERNAL_INTERRUPT_CONTROL_REGISTER 		_SFR_MEM8(EICR_ADDRESS_OFFSET + (PIN_INT_CONFIG_NUMBER / 4))
+	
+	#if (PIN_INT_CONFIG_NUMBER > 3)
+		#define EXTERNAL_INTERRUPT_CONTROL_REGISTER_VALUE	(0x10 << ((PIN_INT_CONFIG_NUMBER - 4) * 2))
+	#else
+		#define EXTERNAL_INTERRUPT_CONTROL_REGISTER_VALUE	(0x10 << (PIN_INT_CONFIG_NUMBER * 2))
+	#endif
+
+#else
+	#define PIN_CHANGE_INTERRUPT_NUMBER 			<<<TC_INSERTS_INT_NUMBER_HERE>>>
+	
+	#if defined (__AVR_ATmega2560__)
+		#define PCMSK_ADDRESS_OFFSET 					0x6B
+	#else
+		#define PCMSK_ADDRESS_OFFSET 					0x6A
+	#endif
+	
+	#define PIN_CHANGE_INTERRUPT_MASK_REGISTER 		_SFR_MEM8(PCMSK_ADDRESS_OFFSET + PIN_INT_CONFIG_NUMBER)
+
+#endif
 
 #define PORT_MULTIPLIER		3
 enum port_offset {P_READ, P_MODE, P_WRITE};
@@ -82,7 +101,7 @@ enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9
 #define MOSI_PIN		( 1 << MOSI_PIN_NUM )
 
 	// Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8).
-#if (INT_MCP2515_PORT_NUM < PORT_H)
+#if (INT_MCP2515_PORT_NUM < 7)// Before PORT_H. 
 	#define INT_MCP2515_READ		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_READ)
 	#define INT_MCP2515_WRITE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
 	#define INT_MCP2515_MODE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
@@ -500,9 +519,17 @@ void bootloader_module_canspi::exit(void)
 	MOSI_MODE &= ~MOSI_PIN;
 	SPCR = 0x00;
 	
-	// Reset interrupt pin.
-	PIN_CHANGE_INTERRUPT_MASK_REGISTER &= ~(1 << PIN_CHANGE_INTERRUPT_NUMBER);
-	PCICR &= ~(1 << PIN_CHANGE_INTERRUPT_CONFIG_NUMBER);
+	#if defined (__AVR_AT90CAN128__)
+		// Reset interrupt pin.
+		EXTERNAL_INTERRUPT_CONTROL_REGISTER &= ~EXTERNAL_INTERRUPT_CONTROL_REGISTER_VALUE;
+		EIMSK &= ~(1 << PIN_INT_CONFIG_NUMBER);
+		
+	#else
+		// Reset interrupt pin.
+		PIN_CHANGE_INTERRUPT_MASK_REGISTER &= ~(1 << PIN_INT_CONFIG_NUMBER);
+		PCICR &= ~(1 << PIN_INT_CONFIG_NUMBER);
+		
+	#endif
 
 	// All done.
 	return;
@@ -595,11 +622,20 @@ void confirm_reception_mcp2515(bool confirmation_successful)
 
 void init_mcp2515(void)
 {
-	// Set up pin change interupt, this will be used for interupt from INT pin of mcp2515.
-	PIN_CHANGE_INTERRUPT_MASK_REGISTER |= (1 << PIN_CHANGE_INTERRUPT_NUMBER);
-	PCICR |= (1 << PIN_CHANGE_INTERRUPT_CONFIG_NUMBER);
+	#if defined (__AVR_AT90CAN128__)
+		// Set up pin interrupt on falling edge for INT pin of mcp2515.
+		EXTERNAL_INTERRUPT_CONTROL_REGISTER |= EXTERNAL_INTERRUPT_CONTROL_REGISTER_VALUE;
+		EIMSK |= (1 << PIN_INT_CONFIG_NUMBER);
+	 
+	#else
+		// Set up pin change interupt, this will be used for interupt from INT pin of mcp2515.
+		PIN_CHANGE_INTERRUPT_MASK_REGISTER |= (1 << PIN_CHANGE_INTERRUPT_NUMBER);
+		PCICR |= (1 << PIN_INT_CONFIG_NUMBER);
+		pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);// Get intial state of pin.
+	 
+	#endif
+	 
 	INT_MCP2515_MODE &= ~INT_MCP2515_PIN; // Input for INT pin.
-	pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);// Get intial state of pin.
 	 
 	// Initialize spi communication.
 	init_spi();
@@ -1165,40 +1201,66 @@ void bootloader_module_canspi::alert_uploader(void)
  * This routine only operates on received messages, it reads the ID, DLC and data from the CAN controller into a Message_info object.
  * The ISR also sets a flag to tell Boot loader that a new message has been received, or that a confirmation message has been received.
  */
-ISR(PIN_CHANGE_INTERUPT_VECTOR)
+ISR(PIN_INT_VECTOR)
 {
-	// Check that the pin change was from the INT pin.
-	if (pin_int_mcp2515_state != (INT_MCP2515_READ & INT_MCP2515_PIN))
-	{
-		// Record new state.
-		pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);
-		
-		// Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt.
-		if (pin_int_mcp2515_state != 0)
+	#if defined (__AVR_AT90CAN128__)
+		uint8_t node_id;
+		node_id = read_rx_buffer_mcp2515(module.reception_message);
+
+		// Check node ID, if not the same exit ISR.
+		if (node_id == NODE_ID)
 		{
-			uint8_t node_id;
-			node_id = read_rx_buffer_mcp2515(module.reception_message);
-		
-			// Check node ID, if not the same exit ISR.
-			if (node_id == NODE_ID)
+			// A confirmation message received.
+			if (module.reception_message.message_type == READ_DATA)
 			{
-				// A confirmation message received.
-				if (module.reception_message.message_type == READ_DATA)
+				module.reception_message.confirmed_send = true;
+			}
+			// A uploader command message received.
+			else
+			{
+				// Tell Bootloader that the message was received.
+				module.reception_message.message_received = true;
+				
+				//Default the message confirmation to successful.
+				message_confirmation_success = true;
+			}
+		}
+	
+	#else
+		// Check that the pin change was from the INT pin.
+		if (pin_int_mcp2515_state != (INT_MCP2515_READ & INT_MCP2515_PIN))
+		{
+			// Record new state.
+			pin_int_mcp2515_state = (INT_MCP2515_READ & INT_MCP2515_PIN);
+			
+			// Only carries out ISR if pin on a falling edge - since the INT pin from mcp2515 drives low on interupt.
+			if (pin_int_mcp2515_state != 0)
+			{
+				uint8_t node_id;
+				node_id = read_rx_buffer_mcp2515(module.reception_message);
+			
+				// Check node ID, if not the same exit ISR.
+				if (node_id == NODE_ID)
 				{
-					module.reception_message.confirmed_send = true;
-				}
-				// A uploader command message received.
-				else
-				{
-					// Tell Bootloader that the message was received.
-					module.reception_message.message_received = true;
-					
-					//Default the message confirmation to successful.
-					message_confirmation_success = true;
+					// A confirmation message received.
+					if (module.reception_message.message_type == READ_DATA)
+					{
+						module.reception_message.confirmed_send = true;
+					}
+					// A uploader command message received.
+					else
+					{
+						// Tell Bootloader that the message was received.
+						module.reception_message.message_received = true;
+						
+						//Default the message confirmation to successful.
+						message_confirmation_success = true;
+					}
 				}
 			}
 		}
-	}
+	#endif	
+	
 	modify_bits_mcp2515(MCP_CANINTF, 0x01, 0x00);// Reset the reception interupt flag.
 }
 	
