@@ -89,6 +89,7 @@ enum input_state {LO,HI};
 	// Define the address at which the bootloader code starts (the RWW section).
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 
+
 	// Define the function used to read a flash byte.
 #if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
 	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)

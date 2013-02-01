@@ -49,7 +49,6 @@ CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-stru
 PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
 AFLAGS=	-mmcu=$(MCU) -Wa BUILD_INSERTS_AFLAGS_HERE# The assember flags to apply.
 LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
-LFLAGS+= -Wl,--section-start=.bootloader_trampoline=0x01000 -Wl,--undefined=_bootloader_trampoline
 
 # FUNCTIONS.
 

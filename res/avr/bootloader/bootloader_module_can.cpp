@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2013  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,7 +140,7 @@ void init_can(void);
  *
  *	RETURNS:	Nothing.
  */
-void transmit_can_message(bootloader_module_can::Message_info& transmit_message);
+void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message);
 
 /**
  *	Resets the CAN peripheral to default settings.
@@ -273,7 +273,7 @@ void confirm_reception(bool confirmation_successful)
 	// Confirmation message will have the same ID as the message it is confirming.
 	module.transmission_message.message_type = module.reception_message.message_type;
 	
-	transmit_can_message(module.transmission_message);
+	transmit_CAN_message(module.transmission_message);
 
 	// All done.
 	return;
@@ -350,7 +350,7 @@ void init_can(void)
 	return;
 }
 
-void transmit_can_message(bootloader_module_can::Message_info& transmit_message)
+void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 {
 	// Select tranmitting MOB.
 	uint8_t mob_number = 1;
@@ -447,7 +447,7 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
-	transmit_can_message(transmission_message);
+	transmit_CAN_message(transmission_message);
 
 	// All done.
 	return;
@@ -581,7 +581,7 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 		// Increment the current_byte for next iteration.
 		current_firmware_page.current_byte += transmission_message.dlc;		
 		
-		transmit_can_message(transmission_message);
+		transmit_CAN_message(transmission_message);
 		
 		// Wait for confirmation message to return from uploader or a uploader command message.
 		while (!reception_message.confirmed_send && !reception_message.message_received)
@@ -649,7 +649,7 @@ void bootloader_module_can::alert_uploader(void)
 	{
 		transmission_message.message[i] = 0xFF; // No significance.
 	}
-	transmit_can_message(transmission_message);
+	transmit_CAN_message(transmission_message);
 
 	// All done.
 	return;

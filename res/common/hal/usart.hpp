@@ -309,7 +309,7 @@ class usart
 		 int8_t disable_interrupt(usart_interrupt_types interrupt);
 		 
 		 /**
-		 * Function indicates whether an error as occured with the USART transfer.
+		 * Function indicates whether an error has occured with the USART transfer.
 		 * This can include Frame Errors, Data OverRun incidents and Parity Erros.
 		 *
 		 * @param Nothing.

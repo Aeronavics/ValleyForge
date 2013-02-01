@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2013  Unison Networks Ltd
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,9 +73,19 @@
 
 #define PORT_MULTIPLIER		3
 enum port_offset {P_READ, P_MODE, P_WRITE};
-enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
+#define PORT_A	0
+#define PORT_B	1
+#define PORT_C	2
+#define PORT_D	3
+#define PORT_E	4
+#define PORT_F	5
+#define PORT_G	6
+#define PORT_H	7
+#define PORT_J	8
+#define PORT_K	9
+#define PORT_L	10
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
- 
+
 #define SS_PORT_NUM  			<<<TC_INSERTS_SS_PORT_HERE>>>
 #define SS_PIN_NUM  			<<<TC_INSERTS_SS_PIN_HERE>>>
 #define SCK_PORT_NUM 			<<<TC_INSERTS_SCK_PORT_HERE>>>
@@ -100,8 +110,9 @@ enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9
 #define MOSI_MODE		_SFR_IO8((MOSI_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
 #define MOSI_PIN		( 1 << MOSI_PIN_NUM )
 
-	// Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8).
-#if (INT_MCP2515_PORT_NUM < 7)// Before PORT_H. 
+
+	// TODO - Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8).
+#if (INT_MCP2515_PORT_NUM < PORT_H)// Before PORT_H. 
 	#define INT_MCP2515_READ		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_READ)
 	#define INT_MCP2515_WRITE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)
 	#define INT_MCP2515_MODE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_MODE)
@@ -590,7 +601,7 @@ void get_bootloader_module_information(Shared_bootloader_module_constants* bootl
 	// All done.
 	return;
 }
-	// Avoids name mangling for the shared jumptable.
+// Avoids name mangling for the shared jumptable.
 extern "C" void get_bootloader_module_information_BL(Shared_bootloader_module_constants* arg){
 	get_bootloader_module_information(arg);
 }

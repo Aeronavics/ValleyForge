@@ -1,4 +1,4 @@
-.section .bootloader_trampoline,"ax",@progbits
+.section .trampolines,"ax",@progbits
 .global _bootloader_trampoline
 _bootloader_trampoline:
 	jmp 0x3F9E0
