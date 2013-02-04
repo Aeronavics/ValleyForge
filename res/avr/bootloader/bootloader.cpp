@@ -290,7 +290,7 @@ void boot_mark_clean(void)
 {
 	// Set the clean flag in EEPROM.
 	uint16_t data = CLEAN_FLAG;
-	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
+	void* address = (void*)(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
 	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
@@ -303,7 +303,7 @@ void boot_mark_dirty(void)
 {
 	// Clear the clean flag in EEPROM, thus making the memory 'dirty'.
 	uint16_t data = 0;
-	void* address = static_cast<void*>(SHUTDOWNSTATE_MEM);
+	void* address = (void*)(SHUTDOWNSTATE_MEM);
 	eeprom_busy_wait();
 	eeprom_write_block(&data, address, 2);
 	eeprom_busy_wait();
@@ -411,7 +411,7 @@ bool is_clean(void)
 	uint16_t data;
 	
 	eeprom_busy_wait();
-	eeprom_read_block(&data, static_cast<void*>(SHUTDOWNSTATE_MEM), 2);
+	eeprom_read_block(&data, (void*)(SHUTDOWNSTATE_MEM), 2);
 	eeprom_busy_wait();
 
 	// Check if the flag was 'clean' or not.

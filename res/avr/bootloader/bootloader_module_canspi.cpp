@@ -111,7 +111,7 @@ enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9
 #define MOSI_PIN		( 1 << MOSI_PIN_NUM )
 
 
-	// TODO - Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8).
+	// Different definitions in the avr library (_SFR_IO8 & _SFR_MEM8).
 #if (INT_MCP2515_PORT_NUM < PORT_H)// Before PORT_H. 
 	#define INT_MCP2515_READ		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_READ)
 	#define INT_MCP2515_WRITE		_SFR_IO8((INT_MCP2515_PORT_NUM * PORT_MULTIPLIER) + P_WRITE)

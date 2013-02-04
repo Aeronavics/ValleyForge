@@ -36,6 +36,7 @@
 	
 	extern "C" int _bootloader_trampoline;
 
+	// Trampoline required for micorcontrollers with program memory > 128K bytes.
 	#define BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS	<<<TC_INSERTS_BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS_HERE>>>
 	#define SHARED_FUNCTION_1 ((int)(&_bootloader_trampoline))
 	#define SHARED_FUNCTION_2 ((int)(&_bootloader_trampoline) + 0x4)
