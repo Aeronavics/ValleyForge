@@ -203,6 +203,8 @@ unpack_uploader()
 		echo -e "${RED}Uploader binary does not exist after compiling.\n${NO_COLOUR}"
 		return 1
 	fi
+	
+	echo -e ""
 
 	# All done.
 	return 0
