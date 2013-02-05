@@ -500,7 +500,7 @@ upload_avrdude()
 		# TODO - Upload the fuse bits, if required.
 
 		# Upload the application code to flash.
-		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
+		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -D -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
 
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
