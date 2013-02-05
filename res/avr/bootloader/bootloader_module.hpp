@@ -44,6 +44,12 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
+/**
+ *	This type is for the state of the bootloader, either idle and awaiting connection, communicating with the host, or in an error state.
+ *  This state is indicated on the bootloaders blinking LED.
+ */
+enum State { IDLE, COMMUNICATING, ERROR };
+
 const uint16_t MODULE_EVENT_PERIOD = 1; // Time in milliseconds between calls of event_periodic() for the bootloader module.
 
 struct Firmware_page
@@ -181,6 +187,16 @@ uint16_t get_bootloader_version(void);
  *	RETURNS:	Nothing.
  */
 void get_device_signature(uint8_t* device_signature_array);
+
+/**
+ *	Changes the bootloader's state, which controls what the blinking indicator LED does.
+ *  This allows modules to inform the user of when they are communicating with the host or when they have encountered an error.
+ *
+ *	TAKES:		A state enum indicating the new state of the bootloader.
+ *
+ *	RETURNS:	Nothing.
+ */
+void set_bootloader_state(State new_state);
 
 #endif // __BOOTLOADER_MODULE_H__
 

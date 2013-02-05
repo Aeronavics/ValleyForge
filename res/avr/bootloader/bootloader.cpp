@@ -70,6 +70,21 @@ enum input_state {LO,HI};
 #define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
 #define BOOT_TIMEOUT	10000	// Timeout in milliseconds.
 
+//Blink times for different states.
+
+//Idle
+#define IDLE_ON	            1600
+#define IDLE_OFF            800
+
+//Communicating
+#define COMMUNICATING_ON    6000
+#define COMMUNICATING_OFF   0
+
+//Error
+#define ERROR_ON            200
+#define ERROR_OFF           6000
+
+
 #define LONG_FLASH		1600
 #define SHORT_FLASH		800
 
@@ -105,9 +120,13 @@ volatile uint16_t timeout_tick = 0;
 
 volatile uint8_t blink_tick;
 
+State state = IDLE;
+
+volatile uint16_t blink_on = IDLE_ON;
+volatile uint16_t blink_off = IDLE_OFF;
+
 volatile bool timeout_expired = false;
 volatile bool timeout_enable = true;
-volatile bool activity = false;
 
 BOOTLOADER_MODULE module; // This means all the communication modules must have an object defined in them called - extern <class name> module
 Bootloader_module& mod = module;
@@ -271,7 +290,6 @@ int main(void)
 		// If the buffer is ready to be written, write it to memory.
 		if (buffer.ready_to_write)
 		{
-			activity = true;
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
 			write_flash_page(buffer);
 		}
@@ -279,7 +297,6 @@ int main(void)
 		// If the buffer is ready to be read from, read it back again.
 		if (buffer.ready_to_read)
 		{
-			activity = true;
 			// Read from flash into the buffer.  This blocks, with interrupts disabled, whilst the operation is in progress.
 			read_flash_page(buffer);
 		}
@@ -373,7 +390,6 @@ uint16_t get_bootloader_version(void)
 
 void get_device_signature(uint8_t* device_signature)
 {
-	activity = true;
 	device_signature[0] = DEVICE_SIGNATURE_0;
 	device_signature[1] = DEVICE_SIGNATURE_1;
 	device_signature[2] = DEVICE_SIGNATURE_2;
@@ -381,6 +397,28 @@ void get_device_signature(uint8_t* device_signature)
 	
 	// All done.
 	return;
+}
+
+void set_bootloader_state(State new_state)
+{
+	state = new_state;
+	switch (state)
+	{
+		case IDLE:
+			blink_on = IDLE_ON;
+			blink_off = IDLE_OFF;
+			break;
+			
+		case COMMUNICATING:
+			blink_on = COMMUNICATING_ON;
+			blink_off = COMMUNICATING_OFF;
+			break;
+		
+		case ERROR:
+			blink_on = ERROR_ON;
+			blink_off = ERROR_OFF;
+			break;
+	}
 }
 
 void get_bootloader_information(Shared_bootloader_constants* bootloader_information)
@@ -569,27 +607,27 @@ ISR(TIMER1_COMPA_vect)
 	// NOTE - This can be edited to whatever is desired. Currently it toggles the bootloader status LED and then changes the time for the next toggle. 
 	// 	  This results in the LED duty cycle being greater than 50%.
 
-	static bool change = true;
+	static bool on = false;
 
 	// Toggle the blinkenlight.
-	if (change)
+	if (on)
 	{
-		OCR1A = static_cast<uint16_t>(SHORT_FLASH);
-		change = false;
+		OCR1A = blink_off;
+		on = false;
 	}
 	else
 	{
-		OCR1A = static_cast<uint16_t>(LONG_FLASH);
-		change = true;
+		OCR1A = blink_on;
+		on = true;
 	}
 	
-	if (activity)
+	if (on)
 	{
-		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE|BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE | BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
 	}
 	else
 	{
-		BLINK_WRITE = (BLINK_WRITE & BLINK_PIN) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
 	}
 	
 	// All done.

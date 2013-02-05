@@ -980,6 +980,8 @@ void bootloader_module_canspi::request_reset_procedure()
 
 void bootloader_module_canspi::get_info_procedure(void)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	transmission_message.dlc = 6;
 	transmission_message.message_type = GET_INFO;
 	
@@ -999,13 +1001,17 @@ void bootloader_module_canspi::get_info_procedure(void)
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
-
+	
+	set_bootloader_state(IDLE);
+	
 	// All done.
 	return;
 }
 
 void bootloader_module_canspi::write_memory_procedure(Firmware_page& current_firmware_page)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -1071,6 +1077,8 @@ void bootloader_module_canspi::write_data_procedure(Firmware_page& current_firmw
 	}
 
 	confirm_reception_mcp2515(message_confirmation_success);
+	
+	set_bootloader_state(IDLE);
 
 	// All done.
 	return;
@@ -1078,6 +1086,8 @@ void bootloader_module_canspi::write_data_procedure(Firmware_page& current_firmw
 
 void bootloader_module_canspi::read_memory_procedure(Firmware_page& current_firmware_page)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -1149,6 +1159,8 @@ void bootloader_module_canspi::send_flash_page(Firmware_page& current_firmware_p
 		}
 		reception_message.confirmed_send = false;
 	}
+	
+	set_bootloader_state(IDLE);
 
 	// All done.
 	return;

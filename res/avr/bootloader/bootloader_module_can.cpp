@@ -345,7 +345,7 @@ void init_can(void)
 
 	// Enable can communication.
 	CANGCON = (1 << ENASTB); // Sets the AVR pins to Tx and Rx.
-
+	
 	// All done.
 	return;
 }
@@ -385,6 +385,7 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 	{
 		// Do nothing.
 	}	
+	
 
 	// Disable transmit.
 	CANCDMOB = 0x00;
@@ -429,6 +430,8 @@ void bootloader_module_can::request_reset_procedure()
 
 void bootloader_module_can::get_info_procedure(void)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	transmission_message.dlc = 6;
 	transmission_message.message_type = GET_INFO;
 	
@@ -448,6 +451,8 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
+	
+	set_bootloader_state(IDLE);
 
 	// All done.
 	return;
@@ -455,6 +460,8 @@ void bootloader_module_can::get_info_procedure(void)
 
 void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmware_page)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -511,6 +518,7 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 			current_firmware_page.ready_to_write = true;
 			current_firmware_page.current_byte = 0;
 			write_details_stored = false;
+			set_bootloader_state(IDLE);
 		}
 	}
 	else
@@ -527,6 +535,8 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 
 void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmware_page)
 {
+	set_bootloader_state(COMMUNICATING);
+	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -600,7 +610,8 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 
 		reception_message.confirmed_send = false;
 	}
-
+	
+	set_bootloader_state(IDLE);
 	// All done.
 	return;
 }
