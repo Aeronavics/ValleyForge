@@ -109,6 +109,12 @@ upload_avrdude()
 	# DECLARE VARIABLES.
 	
 	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
+	
+	#check if we need to upload a bootloader but are not uploading one and warn the user that this will erase any existing bootloader.
+	if [ $BOOTLOADER -a ! $UPLOAD_BOOTLOADER ]; then
+		echo -e "${YELLOW}Warning, not writing the bootloader with this upload method will result in erasing the bootloader in the device and not replacing it.\n${NO_COLOUR}"
+	fi
+		
 
 	# Check if we are supposed to be loading the application code.
 	if [ $UPLOAD_APPLICATION ]; then
@@ -497,10 +503,8 @@ upload_avrdude()
 		# Actually upload the component to the selected target.
 		echo -e "${CYAN}Uploading files for component $COMPONENT via AVR ISP.\n${NO_COLOUR}"
 
-		# TODO - Upload the fuse bits, if required.
-
 		# Upload the application code to flash.
-		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -D -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
+		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
 
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
