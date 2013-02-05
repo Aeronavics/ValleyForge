@@ -107,6 +107,7 @@ volatile uint8_t blink_tick;
 
 volatile bool timeout_expired = false;
 volatile bool timeout_enable = true;
+volatile bool activity = false;
 
 BOOTLOADER_MODULE module; // This means all the communication modules must have an object defined in them called - extern <class name> module
 Bootloader_module& mod = module;
@@ -270,6 +271,7 @@ int main(void)
 		// If the buffer is ready to be written, write it to memory.
 		if (buffer.ready_to_write)
 		{
+			activity = true;
 			// Write the buffer to flash. This blocks, with interrupts disabled, whilst the operation is in progress.
 			write_flash_page(buffer);
 		}
@@ -277,6 +279,7 @@ int main(void)
 		// If the buffer is ready to be read from, read it back again.
 		if (buffer.ready_to_read)
 		{
+			activity = true;
 			// Read from flash into the buffer.  This blocks, with interrupts disabled, whilst the operation is in progress.
 			read_flash_page(buffer);
 		}
@@ -370,6 +373,7 @@ uint16_t get_bootloader_version(void)
 
 void get_device_signature(uint8_t* device_signature)
 {
+	activity = true;
 	device_signature[0] = DEVICE_SIGNATURE_0;
 	device_signature[1] = DEVICE_SIGNATURE_1;
 	device_signature[2] = DEVICE_SIGNATURE_2;
@@ -578,7 +582,15 @@ ISR(TIMER1_COMPA_vect)
 		OCR1A = static_cast<uint16_t>(LONG_FLASH);
 		change = true;
 	}
-	BLINK_WRITE = (BLINK_WRITE & BLINK_PIN) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
+	
+	if (activity)
+	{
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE|BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
+	}
+	else
+	{
+		BLINK_WRITE = (BLINK_WRITE & BLINK_PIN) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
+	}
 	
 	// All done.
 	return;
