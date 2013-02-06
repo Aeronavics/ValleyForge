@@ -373,6 +373,8 @@ upload_can()
 		# Upload the application code to flash.
 		$TCPATH/res/common/uploader/bin/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
 
+		echo -e ""
+
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
 			# Something went wrong.
