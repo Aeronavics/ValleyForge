@@ -381,11 +381,19 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 	CANCDMOB = ((1 << CONMOB0) | (transmit_message.dlc));
 	
 	// Wait until the message has sent or an error occured.
-	while (((CANSTMOB & (1 << TXOK)) == 0) && ((CANSTMOB & (1 << AERR)) == 0))
+	// When the termination is not present on the bus the bootloader seems to get stuck in this loop and reset due to watchdog timeouts or similar.
+	// This does not seem to set any of the error flags in the MOB even though it should.
+	// TODO - determine why the bootloader gets stuck here and ensure that it does not.
+	while (((CANSTMOB & (1 << TXOK)) == 0) && ((CANSTMOB & (1 << AERR)) == 0) && ((CANSTMOB & (1 << BERR)) == 0))
 	{
 		// Do nothing.
-	}	
+	}:
 	
+	//If the loop exited but did not do so due to a TXOK condition we set the error state.
+	if (!(CANSTMOB & (1 << TXOK))
+	{
+		set_bootloader_state(ERROR);
+	}
 
 	// Disable transmit.
 	CANCDMOB = 0x00;

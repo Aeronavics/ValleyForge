@@ -674,6 +674,8 @@ void transmit_CAN_message(bootloader_module_canspi::Message_info& tranmission_me
 		control_register = read_register_mcp2515(MCP_TXB0CTRL);
 		if (control_register & 0x10)// Transmission error occured.
 		{
+			// Set the error state if an erro occurs.
+			set_bootloader_state(ERROR);
 			// Exit transmission if error occurs.
 			break;
 		}
