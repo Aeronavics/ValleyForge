@@ -344,9 +344,11 @@ upload_can()
 				break
 			done
 		fi
-	fi	
-
-
+	fi
+	
+	echo -e "${YELLOW}Programming using CAN requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	
+	
 	# Collate the configuration information in to a string of parameters to pass to the uploader proper.
 	CAN_PARAMS="can-type=${CAN_TYPE}:target=${NODE_ID}:bitrate=${CAN_BAUD_RATES}000"
 	if [[ ! -z ${CAN_IFACE} ]]; then
@@ -371,7 +373,7 @@ upload_can()
 		echo -e "${CYAN}Uploading files for component $COMPONENT via the CAN bootloader.\n${NO_COLOUR}"
 		
 		# Upload the application code to flash.
-		$TCPATH/res/common/uploader/bin/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
+		sudo $TCPATH/res/common/uploader/bin/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
 
 		echo -e ""
 
