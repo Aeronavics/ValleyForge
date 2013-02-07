@@ -208,10 +208,10 @@ class Can
 		 * Function to configure a receive filter.
 		 * 
 		 * @param filter	The filter to configure.
-		 * @param ...		To be determined the parameters to configure the filter with.
+		 * @param data		The platform specific data for initialising the filter.
 		 * @return Nothing.
 		 */
-		void configure_rx_filter(Can_filter filter, ...);
+		void configure_rx_filter(Can_filter filter, Can_filter_data data);
 
 		/**
 		 * Function to retrieve the object associated with a particular receive filter.

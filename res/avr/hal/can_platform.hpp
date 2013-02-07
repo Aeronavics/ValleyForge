@@ -55,18 +55,31 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 
+#include <stdint.h>
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
+// AVRs have only one CAN interface.
 enum Can_number {CAN_0};
 
-enum Can_object { /* ?? */ };
+// The ATMega64M1 has only 6 message objects, this would be #ifdef'd for the at90can128 which has 15.
+enum Can_object { OBJ0, OBJ1, OBJ2, OBJ3, OBJ4, OBJ5 };
 
-enum Can_filter { /* ?? */ };
+// Same thing here, each message object has a filter.
+enum Can_filter { FILTER0, FILTER1, FILTER2, FILTER3, FILTER4, FILTER5 };
 
-struct Can_filter_data;
+// This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
+// with defined bit positions for the extended frame flag and the remote transmit flag.
+struct Can_filter_data
+{
+	uint32_t id;
+	uint32_t mask;
+}
 
+// This needs to be defined to hold the specific status for message objects on this platform, this will likely have a common field for if a message is waiting in it and whether it is a transmit or receive object.
 struct Can_obj_status;
 
+// This needs to be defined to hold the specific status for the AVR CAN controller.
 struct Can_status;
 
 
