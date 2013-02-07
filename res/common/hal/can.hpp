@@ -18,11 +18,11 @@
  *  @addtogroup		hal Hardware Abstraction Library
  * 
  *  @file		can.hpp
- *  A header file for the CAN Module of the HAL. CAN communication.
+ *  A header file for the CAN Module of the HAL.
  * 
  *  @brief 
  *  This is the header file which matches can.cpp.  Implements various functions relating to CAN, transmission
- *  and receiving of data.
+ *  and receiving of messages.
  * 
  *  @author		Paul Davey
  *
@@ -47,8 +47,8 @@
  * 
  *  @section Description
  *
- * A class for the SPI module of the HAL. Implements various functions relating to SPI 
- *  initialisation, transmission and receiving of data.
+ * A class for the CAN module of the HAL. Implements various functions relating to CAN 
+ *  initialisation, transmission and receiving of messages.
  */
 
 // Only include this header file once.
@@ -69,6 +69,8 @@
 // Include the hal library.
 #include "hal/hal.hpp"
 
+#include "can_platform.hpp"
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum Can_rate {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
@@ -87,19 +89,6 @@ struct CAN_message
 	uint8_t dlc;
 	uint8_t data[8];
 };
-
-//These will move to impl specific headers since they may change between platforms.
-enum Can_number {CAN_0};
-
-enum Can_object { /* ?? */ };
-
-enum Can_filter { /* ?? */ };
-
-struct Can_filter_data;
-
-struct Can_obj_status;
-
-struct Can_status;
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
