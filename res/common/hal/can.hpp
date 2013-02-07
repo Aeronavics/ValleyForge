@@ -75,20 +75,7 @@ enum Can_rate {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
 
 enum Can_mode {CAN_NORMAL, CAN_LISTEN};
 
-//Many of these will move to impl specific headers since they may change between platforms.
-enum Can_number {CAN_0};
-
-enum Can_objects { /* ?? */ };
-
-enum Can_filters { /* ?? */ };
-
 enum Can_obj_mode { RECEIVE, TRANSMIT };
-
-struct Can_object;
-
-struct Can_filter;
-
-struct Can_obj_status;
 
 enum Interrupt_name { TX_ERROR, TX_COMPLETE, RX_ERROR, RX_COMPLETE, RX_OVERRUN };
 
@@ -100,6 +87,17 @@ struct CAN_message
 	uint8_t dlc;
 	uint8_t data[8];
 };
+
+//These will move to impl specific headers since they may change between platforms.
+enum Can_number {CAN_0};
+
+enum Can_object { /* ?? */ };
+
+enum Can_filter { /* ?? */ };
+
+struct Can_filter_data;
+
+struct Can_obj_status;
 
 struct Can_status;
 
@@ -147,7 +145,7 @@ class Can
 		 * @param handler		The handler for this interrupt condition.
 		 * @return Nothing.
 		 */
-		void attach_interrupt(Interrupt_name interrupt, Can_objects object, Interrupt_fn handler);
+		void attach_interrupt(Interrupt_name interrupt, Can_object object, Interrupt_fn handler);
 
 		/**
 		 * Removes a handler for a specific object for a particular interrupt event.
@@ -156,7 +154,7 @@ class Can
 		 * @param object		The CAN message object to detach the handler from.
 		 * @return Nothing.
 		 */
-		void detach_interrupt(Interrupt_name interrupt, Can_objects object);
+		void detach_interrupt(Interrupt_name interrupt, Can_object object);
 
 		/**
 		 * Attaches a handler to a particular interrupt event that will be used if a handler has not been given for the object that caused the event.
@@ -187,10 +185,10 @@ class Can
 		/**
 		 * Function to get the status of a particular message object in the CAN controller.
 		 *
-		 * @param  Nothing.
+		 * @param  object	The object to get the status of.
 		 * @return A Can_status struct indicating the current status of the message object.
 		 */
-		Can_obj_status get_status(Can_objects);
+		Can_obj_status get_status(Can_object object);
 		
 		/**
 		 * Function to send a can message using a particular object.
@@ -199,7 +197,7 @@ class Can
 		 * @param  msg	The message to send.
 		 * @return Nothing.
 		 */
-		void transmit(Can_object& obj, Can_message msg);
+		void transmit(Can_object obj, Can_message msg);
 
 		/**
 		 * Function to check if a CAN object is ready for use.
@@ -207,7 +205,7 @@ class Can
 		 * @param  obj	The object to send the message with.
 		 * @return True if the object is ready for use, false if not.
 		 */
-		bool check_ready(Can_object& obj);
+		bool check_ready(Can_object obj);
 		
 		/**
 		 * Function to read a message out of an object, the object must be ready.
@@ -215,7 +213,7 @@ class Can
 		 * @param  obj	The object to read the message from.
 		 * @return The message in the object.
 		 */
-		Can_message read_object(Can_object& obj);
+		Can_message read_object(Can_object obj);
 		
 		/**
 		 * Function to configure a receive filter.
@@ -241,7 +239,7 @@ class Can
 		 * @param obj		The object to associate with this filter.
 		 * @return Nothing.
 		 */
-		void set_obj_for_filter(Can_filters filter, Can_objects obj);
+		void set_obj_for_filter(Can_filters filter, Can_object obj);
 		
 		/**
 		 * Function to configure the mode of a CAN message object.
@@ -250,7 +248,7 @@ class Can
 		 * @param mode	The mode to set the object to.
 		 * @return Nothing.
 		 */
-		void set_obj_mode(Can_objects obj, Can_obj_mode mode);
+		void set_obj_mode(Can_object obj, Can_obj_mode mode);
 
 		/**
 		 * Function to free the CAN instance when it goes out of scope.
@@ -282,9 +280,10 @@ class Can
 		 * indicating whether access has been granted or not.
 		 *
 		 * @param  spi_inst	The spi instance for the bus which the SPI-CAN controller is attached to.
+		 * @param  int_pin	The gpio pin which is attached to the SPI-CAN controllers interrupt output.
 		 * @return A CAN instance.
 		 */
-		static Can grab(spi spi_inst);
+		static Can grab(spi spi_inst, gpio_pin int_pin);
 
 	private:
 		// Functions.
