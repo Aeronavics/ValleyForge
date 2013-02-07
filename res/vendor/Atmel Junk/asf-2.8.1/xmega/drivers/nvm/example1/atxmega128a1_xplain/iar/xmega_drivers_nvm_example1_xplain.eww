@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\xmega_drivers_nvm_example1_xplain.ewp</path>
-	</project>
-</workspace>

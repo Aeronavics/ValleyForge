@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_applications_uc3-l0_avrsbpr1-demo.ewp</path>
-	</project>
-</workspace>

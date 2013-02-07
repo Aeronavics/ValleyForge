@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_drivers_tc_example1_evk1100.ewp</path>
-	</project>
-</workspace>

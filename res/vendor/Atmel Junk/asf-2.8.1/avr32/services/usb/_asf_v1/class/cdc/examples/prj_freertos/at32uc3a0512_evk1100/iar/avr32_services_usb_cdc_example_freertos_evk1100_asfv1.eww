@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_services_usb_cdc_example_freertos_evk1100_asfv1.ewp</path>
-	</project>
-</workspace>

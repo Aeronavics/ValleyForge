@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_components_memory_eeprom_at24cxx_example_uc3c_ek.ewp</path>
-	</project>
-</workspace>

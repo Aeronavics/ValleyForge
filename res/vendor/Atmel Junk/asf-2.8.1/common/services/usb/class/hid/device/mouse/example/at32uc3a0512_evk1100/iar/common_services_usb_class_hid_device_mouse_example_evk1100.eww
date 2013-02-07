@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\common_services_usb_class_hid_device_mouse_example_evk1100.ewp</path>
-	</project>
-</workspace>

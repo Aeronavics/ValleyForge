@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_applications_can-lin-loopbacks-demo_uc3c_ek.ewp</path>
-	</project>
-</workspace>

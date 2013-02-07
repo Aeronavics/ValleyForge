@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_components_touch_qt1081_example_evk1105.ewp</path>
-	</project>
-</workspace>

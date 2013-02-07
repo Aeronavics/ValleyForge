@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\xmega_drivers_ebi_unit_tests_sram_stk600-rc100x.ewp</path>
-	</project>
-</workspace>

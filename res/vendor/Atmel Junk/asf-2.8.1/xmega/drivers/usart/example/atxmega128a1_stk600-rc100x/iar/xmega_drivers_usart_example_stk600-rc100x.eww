@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\xmega_drivers_usart_example_stk600-rc100x.ewp</path>
-	</project>
-</workspace>

@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\xmega_applications_xmega-a1_avrsbin1_visualizer.ewp</path>
-	</project>
-</workspace>

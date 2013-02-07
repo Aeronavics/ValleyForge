@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_drivers_wdt_example_uc3_a3_xplained.ewp</path>
-	</project>
-</workspace>

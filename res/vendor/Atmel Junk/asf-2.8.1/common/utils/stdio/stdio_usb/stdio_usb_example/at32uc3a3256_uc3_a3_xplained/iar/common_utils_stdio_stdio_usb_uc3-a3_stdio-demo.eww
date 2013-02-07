@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\common_utils_stdio_stdio_usb_uc3-a3_stdio-demo.ewp</path>
-	</project>
-</workspace>

@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_services_qtouch_devspecific_uc3_uc3l0_examples_example_at_at32uc3l064_uc3l_ek.ewp</path>
-	</project>
-</workspace>

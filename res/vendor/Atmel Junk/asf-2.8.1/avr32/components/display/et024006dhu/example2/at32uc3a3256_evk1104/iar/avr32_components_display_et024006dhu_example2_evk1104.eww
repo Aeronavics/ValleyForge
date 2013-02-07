@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_components_display_et024006dhu_example2_evk1104.ewp</path>
-	</project>
-</workspace>

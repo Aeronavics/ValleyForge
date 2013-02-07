@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\avr32_services_polarssl_selftest_example_evk1105.ewp</path>
-	</project>
-</workspace>

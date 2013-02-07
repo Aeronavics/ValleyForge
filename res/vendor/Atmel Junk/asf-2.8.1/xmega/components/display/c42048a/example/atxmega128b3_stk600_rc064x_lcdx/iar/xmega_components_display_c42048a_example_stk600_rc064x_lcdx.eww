@@ -1,6 +1,0 @@
-<workspace>
-	<batchBuild></batchBuild>
-	<project>
-		<path>$WS_DIR$\xmega_components_display_c42048a_example_stk600_rc064x_lcdx.ewp</path>
-	</project>
-</workspace>
