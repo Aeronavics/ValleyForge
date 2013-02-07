@@ -568,7 +568,7 @@ fi
 
 # Create the configuration file for the component, overriding any existing configuration file.
 echo -e "${CYAN}Creating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for component $COMPONENT_NAME.\n\nSUBSYSTEM=$SUBSYSTEM\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "# Configuration file for component $COMPONENT_NAME.\n\nSUBSYSTEM='$SUBSYSTEM'\nTARGET=$TARGET\nPLATFORM=$PLATFORM\nBOOTLOADER=$BOOTLOADER\n" > $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 # TODO - We should actually check if this works.
 
