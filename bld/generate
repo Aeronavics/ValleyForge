@@ -1,0 +1,388 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		generate											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	08-02-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script generates code during development; this allows code generation to occur DURING an	###
+###			edit phase (as opposed to during a BUILD phase), which is used to generate such things as code	###
+###			templates which must then be filled in by the user.					 	###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+
+USER_CONFIG_FILE="var/config.cfg"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+# Define the functions used for set up the compilers.
+source $TCPATH/bld/other/setup_compilers
+
+# Define the functions used to for code generation.
+for f in $TCPATH/bld/code_generation/gen_*; do
+	source "$f"
+done
+
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+Usage: $0 [Options] [Component Names]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to generate code for further manual modification.
+
+Parameters:
+
+	[Component Names]		Space separated list of the code generation scripts to run.
+
+Options:
+	-h --help			Show this message.
+	-r --retain			Retain temporary files at completion of script.
+	-c --component <Component Name>	Specify the name of a component for which to generate code.  By default uses the active component.
+	-s --script <Generation Script>	Specify the name of the generation scripts to run.
+	-p --postpack			Pack up the tools used afterwards (takes longer next time).
+
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# Delete everything in the tmp directory.
+rm -rf  $TCPATH/tmp/*
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Indicate where we are up to in the script.
+echo -e "${BOLD_CYAN}Parsing command line parameters...\n${NO_COLOUR}"
+
+# Reset fields to be extracted from the parameters.
+SCRIPTS=
+RETAIN=
+POSTPACK=
+COMPONENT=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hrc:s:p"
+LONGOPTS="help,retain,component:,script:,postpack"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-r|--retain)
+			# Select 'retaining temporary files'.
+			RETAIN=1
+			;;
+		-p|--postpack)
+			# Select 'pack up tools, post upload'.
+			POSTPACK=1
+			;;
+		--clean)
+			# Remind the user that there is no 'clean' option here.
+			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
+			echo -e "To retain files built during uploading, use the 'retain' option.\n${NO_COLOUR}"
+			exit 0		
+			;;
+		-c|--component)
+			# Specify the name of the component to generate code for.
+			shift
+			COMPONENT="$1"
+			;;
+		-s|--script)
+			# Specify the name of the code generation scripts to run.
+			shift
+			SCRIPTS="${SCRIPTS}$1 "	# NOTE - The space is intentional!
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			SCRIPTS="${SCRIPTS}$* " # NOTE - The space in intentional!
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			SCRIPTS="${SCRIPTS}$* " # NOTE - The space is intentional!
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# If there was no component name specified, we'll just try to upload the 'active component' instead.
+if [ -z "$COMPONENT" ]; then
+	# Try to upload the 'active component' instead.
+
+	# Check to make sure the user configuration file is there.
+	if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
+		# The configuration file is missing, so we don't know what to upload.
+		echo -e "${BOLD_RED}FATAL - User configuration file ($USER_CONFIG_FILE) was not found.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# Extract the value of the 'active component' from the user configuration file.
+	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
+
+	# Check if the toolchain has an 'active component' to upload.
+	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+		# Tell the user there is nothing to compile, then exit.
+		echo -e "${RED}No active component is set; nothing to generate code for.\n${NO_COLOUR}"
+		exit 1
+	else
+		# Schedule the 'active component' to be uploaded.
+		COMPONENT=$CURR
+	fi
+fi
+
+# First, check if this component actually exists.
+if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
+	# The component does't have a matching source folder, so skip it and move on.
+	echo -e "${RED}No source folder found for component $COMPONENT; nothing to generate code for.\n${NO_COLOUR}"
+	exit 1
+else
+	# Indicate to the user which component is selected, so there aren't any mistakes.
+	echo -e "${CYAN}Generating code for component ${BOLD_CYAN}${COMPONENT}${CYAN}.\n${NO_COLOUR}"
+fi
+
+# If there was no script specified, then we provide the user a list to choose from.
+if [ "$SCRIPTS" == " " ]; then	# NOTE - The space is intentional!
+	# Make a list of the available scripts.
+	ALL_SCRIPTS=$(declare -f | grep -e "gen_.* \\(\\)$" | cut -f 1 -d " ")
+
+	# Check there were actually some options to choose from.
+	if [ -z "${ALL_SCRIPTS}" ]; then
+		# There were no suitable code generation scripts found, so there isn't anything to be done.
+		echo -e "${YELLOW}No suitable code generation scripts were found.  Nothing to do.\n${NO_COLOUR}"
+		SCRIPTS=
+	else
+		# Check which of the available script options the user wishes to use.
+
+		# Prompt the user.
+		echo -e "${GREEN}Which code generation script would you like to use for component $COMPONENT?${NO_COLOUR}"
+
+		# Create a menu of choices and have the user select one.
+		ALL_SCRIPTS=( "${ALL_SCRIPTS[@]} None" )
+		select SCRIPTS in ${ALL_SCRIPTS}
+		do
+			# Check if they chose not to upload the component.
+			if [ "${SCRIPTS}" == "None" ]; then
+				# We abort the generation.
+				echo -e "${CYAN}Not generating any code.\n${NO_COLOUR}"
+				ALL_SCRIPTS=
+				SCRIPTS=
+				break
+			fi
+
+			# Check if the selected code generation function is actually valid.
+			SCRIPTS=$(echo "${ALL_SCRIPTS}" | grep -w -o "${SCRIPTS}")
+			if [ -z "${SCRIPTS}" ]; then
+				# The selected code generation function was not in the list of scripts, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected the '${SCRIPTS}' code generation script.\n${NO_COLOUR}"
+				break
+			fi
+		done
+	fi
+fi
+
+# LOAD CONFIGURATION INFORMATION FOR THE SELECTED COMPONENT.
+
+# Parse the build configurations file.
+echo -e "${BOLD_CYAN}Loading configuration information...\n${NO_COLOUR}"
+source $TCPATH/bld/common/load_build_configs
+
+# First, we need to read the configuration information for this component.
+echo -e "${CYAN}Loading component build configuration...\n${NO_COLOUR}"
+
+# Since the component might be nested, figure out what the actual name of the component will be.
+COMPONENT_NAME=${COMPONENT##*/}
+
+# Reset any variables which may have been set by the previous component.
+source $TCPATH/bld/common/clear_component_vars
+
+# Check if we can find the config file for this component.
+if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
+	# The configuration file isn't there.  Ask the user if they want to create the file, or skip this component.
+	echo -e "${RED}No configuration file found for component $COMPONENT.\n${NO_COLOUR}"
+	echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Rebuild the configuration file.
+			
+		# Call the 'component_create' script: it will handle rebuilding the configuration file.
+		bash $TCPATH/bld/create/create_component --component $COMPONENT
+
+		# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+	else
+		# Just skip this component and move on.
+		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+fi
+
+# Extract relevant configuration information from the configuration file.
+source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
+
+# Reset any variables which may have been set by a previous component.
+source $TCPATH/bld/common/clear_bconf_vars
+
+# Check to see if we can find a matching build configuration.
+BCONF="bconf_${TARGET}_${PLATFORM}"
+if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
+	# No matching build configuration was found, so skip this component and move on.
+	echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+	continue
+else
+	# There is a matching build configuration, so load it.
+	echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
+	$BCONF
+
+	# Check that all the required variables were set by the build configuration.
+	if [ -z "$BCONF_NAME" ] || [ -z "$UPLOAD_FUNCTIONS" ]; then
+		# At least one of the required variables was not set, so skip this component and move on.
+		echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+	
+	# Iterate over the list of possible upload functions.
+	for f in "$UPLOAD_FUNCTIONS"; do
+		# Check that this upload function specified by the build configuration actually exists.
+		if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
+			# The specified upload function doesn't exist, so skip this component and move on.
+			echo -e "${RED}Build configuration specifies an invalid uploading mechanism.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			UPLOAD_FUNCTION_INVALID=1
+		fi
+	done
+	# Check if any of the upload functions in the list were invalid.
+	if [ ${UPLOAD_FUNCTION_INVALID} ]; then
+		# One of the specified upload functions was invalid, so skip this component.
+		UPLOAD_FUNCTION_INVALID=
+		continue
+	fi
+
+	# The build configuration was loaded successfully.
+	echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+fi
+
+# RUN THE CODE GENERATION SCRIPTS ONE BY ONE.
+
+# NOTE - Since each script is independent of one another, the order they are ran in doesn't matter.
+
+# If there isn't anything to do, this segment just vanishes, so print something so the user understands.
+if [ -z "$SCRIPTS" ]; then
+	# There isn't anything to do.
+	echo -e "${BOLD_YELLOW}Nothing to do.\n${NO_COLOUR}"
+fi
+
+# Iterate through each of the scripts in the queue.
+for SCRIPT in $SCRIPTS
+do
+	# First, check if this code generation script actually exists.
+	if [ `declare -f | grep "$SCRIPT ()" | wc -l` == 0 ]; then
+		# The code generation script doesn't exist, so skip it and move on.
+		echo -e "${RED}Invalid code generation script name.  Skipping script $SCRIPT.\n${NO_COLOUR}"
+		continue
+	fi
+
+	# Indicate we are starting the code generation for this script.
+	echo -e "${BOLD_CYAN}Generating code via script $SCRIPT...\n${NO_COLOUR}"
+	
+	# Actually run the selected upload function.
+	${SCRIPT} ${TCPATH}/src/${COMPONENT}
+
+	# Check if the script function worked.  If not, it doesn't really change anything though.
+	if [ $? != 0 ]; then
+		# Report the script failed and move on.
+		echo -e "${YELLOW}Code generation by script $SCRIPT failed.\n${NO_COLOUR}"
+	fi
+done
+
+# Now wer are done with the actual work, we just have to tidy up.
+echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
+
+# Check if we are supposed to be packing up the tools after we are finished.
+if [ $POSTPACK ]; then
+	# Pack up the compilers.
+	echo -e "${CYAN}Packing tools...\n${NO_COLOUR}"
+	pack_allc
+
+	# TODO - Pack up any unpacked tools used by the code generators.
+else
+	# Don't pack the tools, so that subsequent build attempts are faster.
+	echo -e "${CYAN}Leaving tools unpacked.\n${NO_COLOUR}"
+fi
+
+# Check if we are supposed to be deleting temporary files after we are finished.
+if [ ! $RETAIN ]; then
+	# Delete all the temporary files.
+	echo -e "${CYAN}Removing temporary files...\n${NO_COLOUR}"
+
+	# TODO - Delete any temporary files.
+else
+	# Don't delete any temporary files.
+	echo -e "${CYAN}Retaining temporary files.\n${NO_COLOUR}"
+fi
+
+# Indicate that we're done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+
+# All done.
+exit 0
+
