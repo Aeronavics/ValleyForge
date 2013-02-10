@@ -39,7 +39,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
-#include "avr_magic.hpp"
+#include "avr_magic/avr_magic.hpp"
 
 // DEFINE CONSTANTS
 
