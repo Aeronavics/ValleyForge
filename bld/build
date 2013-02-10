@@ -51,8 +51,11 @@ source $TCPATH/bld/common/def_colours
 # Define the functions used for preprocessing.
 source $TCPATH/bld/preprocess/preprocess
 
-# Define the functions used for set up the compilers.
+# Define the functions used to set up the compilers.
 source $TCPATH/bld/other/setup_compilers
+
+# Define the functions used to set up any vendor sources.
+source $TCPATH/bld/other/setup_vendorsources
 
 # Define the functions used to actually build components.
 for f in $TCPATH/bld/make_functions/make*; do
@@ -764,9 +767,13 @@ if [ $POSTPACK ]; then
 	# Pack up the compilers.
 	echo -e "${CYAN}Packing compilers...\n${NO_COLOUR}"
 	pack_allc
+
+	# Pack up the vendor sources.
+	echo -e "${CYAN}Packing vendor sources...\n${NO_COLOUR}"
+	pack_allv
 else
-	# Don't pack the compilers, so that subsequent build attempts are faster.
-	echo -e "${CYAN}Leaving compilers unpacked.\n${NO_COLOUR}"
+	# Don't pack the compilers and vendor sources, so that subsequent build attempts are faster.
+	echo -e "${CYAN}Leaving compilers and vendor sources unpacked.\n${NO_COLOUR}"
 fi
 
 # Check if we are supposed to be deleting temporary files after we are finished.

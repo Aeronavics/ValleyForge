@@ -1,0 +1,86 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_mavlink											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	10-02-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which generate code which implements the MAVlink communications protocol. 	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported MAVlink code generation functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_mavlink							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates files which implements the MAVlink communications	###
+###			protocol.  The generated files will still require the user to	###
+###			fill in the appropriate behaviour for particular messages,	###
+###			plus implementing the actual TX/RX process.			###
+###											###
+###########################################################################################
+
+gen_mavlink()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the MAVlink source.
+	unpack_mavlink
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the MAVlink source, so we'll have to abort.
+		return 1
+	fi
+
+	# See if there is a message description XML file in var.
+	if [ ! -f ${TCPATH}/var/mavlink.xml ]; then
+		# There is no file, so we'll copy over the default one from the MAVlink source.
+		echo -e "${YELLOW}No custom MAVlink message definitions file found; using default definitions file.\n${NO_COLOUR}"
+		cp ${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/common.xml ${TCPATH}/var/mavlink.xml
+	fi
+
+	# Run the MAVlink code generator.
+	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
+	${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
+	echo -e ""
+
+	# TODO - This.
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.

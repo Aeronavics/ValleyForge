@@ -47,8 +47,11 @@ USER_CONFIG_FILE="var/config.cfg"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
-# Define the functions used for set up the compilers.
+# Define the functions used to set up the compilers.
 source $TCPATH/bld/other/setup_compilers
+
+# Define the functions used to set up any vendor sources.
+source $TCPATH/bld/other/setup_vendorsources
 
 # Define the functions used to for code generation.
 for f in $TCPATH/bld/code_generation/gen_*; do
@@ -363,10 +366,14 @@ if [ $POSTPACK ]; then
 	echo -e "${CYAN}Packing tools...\n${NO_COLOUR}"
 	pack_allc
 
+	# Pack up the vendor sources.
+	echo -e "${CYAN}Packing vendor sources...\n${NO_COLOUR}"
+	pack_allv
+
 	# TODO - Pack up any unpacked tools used by the code generators.
 else
-	# Don't pack the tools, so that subsequent build attempts are faster.
-	echo -e "${CYAN}Leaving tools unpacked.\n${NO_COLOUR}"
+	# Don't pack the tools and vendor sources, so that subsequent build attempts are faster.
+	echo -e "${CYAN}Leaving tools and vendor sources unpacked.\n${NO_COLOUR}"
 fi
 
 # Check if we are supposed to be deleting temporary files after we are finished.

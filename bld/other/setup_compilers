@@ -163,12 +163,12 @@ unpack_nativec()
 
 ######################################## FUNCTION #########################################
 ###											###
-### NAME:		unpack_avr32c							###
+### NAME:		unpack_uploader							###
 ###											###
 ### Inputs/Outputs:	None.								###
 ###											###
-### Purpose:		Checks if the AVR32 compiler (and associated toolchain) is	###
-###			available for use, and if not, sets it up ready to go.		###
+### Purpose:		Checks if the modular code uploading tool is available for use,	###
+###			and if not, sets it up ready to go.				###
 ###											###
 ###########################################################################################
 
