@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###															###
-### Name:		gen_bootappinterface										###
+### Name:		gen_avrmagic											###
 ###															###
 ### Author:		Edwin Hayes											###
 ###															###
@@ -25,28 +25,27 @@
 ###															###
 ### Type:		Bash Script											###
 ###															###
-### Purpose:		Provides functions which generate code which provides functions through which the application	###
-###			code may access bootloader functionality (such as reading bootloader version information). 	###
+### Purpose:		Provides functions and definitions which generate improve C++ support on AVR targets, since the	###
+###			existing implementation of avr-gcc does not completely implement all C++ functionality.		###
 ###															###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
-echo -e "${CYAN}Imported bootloader application interface code generation functions.\n${NO_COLOUR}"
+echo -e "${CYAN}Imported AVR magic code generation functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		gen_bootappinterface_avr					###
+### Name:		gen_avrmagic							###
 ###											###
 ### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
 ###											###
-### Purpose:		Generates files which allow application code to access some	###
-###			convenience functions provided by the modular AVR bootloader.	###
+### Purpose:		Generates files which improve C++ support for AVR targets.	###
 ###			This is trivial, because all this involves is copying across	###
 ###			the required files to the output directory.			###
 ###											###
 ###########################################################################################
 
-gen_bootappinterface_avr()
+gen_avrmagic()
 {
 	# PRIVATE INTERNAL FUNCTIONS.
 
@@ -59,22 +58,13 @@ gen_bootappinterface_avr()
 		return 1
 	fi
 
-	# Check if we are using the bootloader.
-	if [ -z $BOOTLOADER ]; then
-		# The component isn't using a bootloader, so the interface isn't going to work.  Just skip this section.
-		echo -e "${Yellow}No bootloader in use, skipping the bootloader application interface.\n${NO_COLOUR}"
-		return 0
-	fi
-
 	# Let the user know what is going on.
-	echo -e "${CYAN}Generating bootloader application interface libraries...\n${NO_COLOUR}"
+	echo -e "${CYAN}Generating 'AVR magic' library...\n${NO_COLOUR}"
 
-	# The location of the bootloader application interface files.
-	BOOTAPP_FOLDER="${TCPATH}/res/avr/bootloader/application_interface"
-
-	# Copy across the header file.
-	mkdir -p $1/bootloader_interface
-	cp ${BOOTAPP_FOLDER}/* $1/bootloader_interface
+	# Copy across the required files.
+	mkdir -p $1/avr_magic
+	cp ${TCPATH}/res/avr/avr_magic.cpp $1/avr_magic
+	cp ${TCPATH}/res/avr/avr_magic.hpp $1/avr_magic
 
 	# All done.
 	return 0
