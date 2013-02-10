@@ -63,10 +63,10 @@
 enum Can_number {CAN_0};
 
 // The ATMega64M1 has only 6 message objects, this would be #ifdef'd for the at90can128 which has 15.
-enum Can_object { OBJ0, OBJ1, OBJ2, OBJ3, OBJ4, OBJ5 };
+enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5 };
 
 // Same thing here, each message object has a filter.
-enum Can_filter { FILTER0, FILTER1, FILTER2, FILTER3, FILTER4, FILTER5 };
+enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5 };
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
 // with defined bit positions for the extended frame flag and the remote transmit flag.
