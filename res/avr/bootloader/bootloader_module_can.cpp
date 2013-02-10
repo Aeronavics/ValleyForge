@@ -387,7 +387,7 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 	while (((CANSTMOB & (1 << TXOK)) == 0) && ((CANSTMOB & (1 << AERR)) == 0) && ((CANSTMOB & (1 << BERR)) == 0))
 	{
 		// Do nothing.
-	}:
+	}
 	
 	//If the loop exited but did not do so due to a TXOK condition we set the error state.
 	if (!(CANSTMOB & (1 << TXOK))
