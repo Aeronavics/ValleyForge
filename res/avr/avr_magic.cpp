@@ -76,6 +76,12 @@ void __cxa_pure_virtual(void)
 	return;
 }
 
+void atexit(void)
+{
+	// All done.
+	return;
+}
+
 // IMPLEMENT PRIVATE FUNCTIONS.
 
 // ALL DONE.

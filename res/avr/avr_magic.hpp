@@ -55,6 +55,8 @@ extern "C" void __cxa_guard_abort (__guard*);
 
 extern "C" void __cxa_pure_virtual(void); 
 
+extern "C" void atexit(void);
+
 #endif /*__AVR_MAGIC_H__*/
 
 // ALL DONE.
