@@ -32,15 +32,33 @@
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
+/*
+ * This is a private function.
+ *
+ * @param	Nothing.
+ * @return	Nothing.
+ */
+void private_function(void);
+
 // IMPLEMENT PUBLIC FUNCTIONS.
 
 int main(void)
 {
+	// TODO - This.
+
 	// All done.
 	return 0;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
+
+void private_function(void)
+{
+	// TODO - This.
+
+	// All done.
+	return;
+}
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 

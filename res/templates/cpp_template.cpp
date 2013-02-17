@@ -26,14 +26,61 @@
 
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
+enum private_enum_type {ENUM_TYPE_0, ENUM_TYPE_1};
+
+enum Private_class_type
+{
+	public:
+		// Fields.
+
+		bool public_class_field;
+
+		// Methods.
+
+		/**
+		 * This is a public class method.
+		 *
+		 * @param	Nothing.
+		 * @return	Nothing.
+		 */
+		void public_class_method(void);
+
+	private:
+		// Fields.
+
+		bool public_class_field;
+
+		// Methods.
+
+		/**
+		 * This is a private class method.
+		 *
+		 * @param	Nothing.
+		 * @return	Nothing.
+		 */
+		void private_class_method(void);
+
+		Private_class_type(void);	// Poisoned.
+};
+
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-// DEFINE PRIVATE FUNCTION PROTOTYPES.
+// DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
+
+/*
+ * This is a private function.
+ *
+ * @param	Nothing.
+ * @return	Nothing.
+ */
+void private_function(void);
 
 // IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
 int main(void)
 {
+	// TODO - This.
+
 	// All done.
 	return 0;
 }
@@ -41,6 +88,14 @@ int main(void)
 // IMPLEMENT PUBLIC CLASS FUNCTIONS.
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+void private_function(void)
+{
+	// TODO - This.
+
+	// All done.
+	return;
+}
 
 // IMPLEMENT PRIVATE CLASS FUNCTIONS.
 

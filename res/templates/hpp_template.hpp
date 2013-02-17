@@ -34,16 +34,52 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
+enum public_enum_type {ENUM_TYPE_0, ENUM_TYPE_1};
+
+enum Public_class_type
+{
+	public:
+		// Fields.
+
+		bool public_class_field;
+
+		// Methods.
+
+		/**
+		 * This is a public class method.
+		 *
+		 * @param	Nothing.
+		 * @return	Nothing.
+		 */
+		void public_class_method(void);
+
+	private:
+		// Fields.
+
+		bool public_class_field;
+
+		// Methods.
+
+		/**
+		 * This is a private class method.
+		 *
+		 * @param	Nothing.
+		 * @return	Nothing.
+		 */
+		void private_class_method(void);
+
+		Public_class_type(void);	// Poisoned.
+};
+
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
 /**
- *	Description of what the function does...
+ * Description of what the function does...
  *
- *	TAKES: Details of arguments to the function.
- *
- *	RETURNS: Details of return value from the function.
+ * @param	Details of arguments to the function.
+ * @return	Details of return value from the function.
  */
 int main(void);
 
