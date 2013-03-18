@@ -664,8 +664,6 @@ do
 	# Check if we should also make the corresponding filesystem for this component.
 	if [ "$BUILD_FILESYSTEM" -a "$FSFUNCTION" ]; then
 		# We need to make the corresponding filesystem as well.
-		echo $BUILD_FILESYSTEM
-		echo $FSFUNCTION
 
 		# Now, we build the filesystem for the component.
 		echo -e "${CYAN}Building filesystem for component ${COMPONENT}...\n${NO_COLOUR}"
