@@ -46,8 +46,8 @@ bootloader : ${MLO} ${UBOOT} ${UIMAGE} ${BSCRIPT}
 # Download recent copies of all the relevant files from the Ubuntu servers.
 download_files :
 	@echo "******** Fetching latest copy of files from server. ********"
-	wget -N "http://cdimage.ubuntu.com/ubuntu-core/releases/12.04/release/ubuntu-core-12.04.1-core-armhf.tar.gz"
-	cp -sf ${IMAGE_PATH}/ubuntu-core-12.04.1-core-armhf.tar.gz ${IMAGE_PATH}/filesystem.tar.gz
+	wget -N "http://cdimage.ubuntu.com/ubuntu-core/releases/12.04/release/ubuntu-core-12.04.2-core-armhf.tar.gz"
+	cp -sf ${IMAGE_PATH}/ubuntu-core-12.04.2-core-armhf.tar.gz ${IMAGE_PATH}/filesystem.tar.gz
 	wget -N "http://ports.ubuntu.com/ubuntu-ports/dists/precise/main/installer-armhf/current/images/omap4/netboot/MLO"
 	@#cp -sf ${IMAGE_PATH}/MLO ${IMAGE_PATH}/MLO
 	wget -N "http://ports.ubuntu.com/ubuntu-ports/dists/precise/main/installer-armhf/current/images/omap4/netboot/u-boot.bin"

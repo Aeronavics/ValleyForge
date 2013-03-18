@@ -6,7 +6,8 @@ var/config.cfg
 var/mavlink.xml
 res/arm/omap4/images/*
 res/arm/omap4/angstrom/images/*
-res/arm/omap4/ubuntu/images/*
+res/arm/omap4/ubuntu-core/images/*
+res/arm/omap4/ubuntu-prebuilt/images/*
 res/avr32/avr32comp/*
 res/vendor/mavlink/*
 */*~

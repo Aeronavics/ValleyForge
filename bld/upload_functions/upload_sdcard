@@ -71,40 +71,44 @@ upload_sdcard()
 
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
-		# Check that the expected archive is available in the toolchain output folder.
-		if [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+		# Check if an image file is available in the toolchain output folder.
+		if [ -f "$TCPATH/bin/${COMPONENT_NAME}_image.img.gz" ]; then
+			# An image file is available, so we will load that.
+			echo -e "${CYAN}Found image file; will write an image rather than individual component files.\n${NO_COLOUR}"
+			UPLOAD_IMAGE=1
+			UPLOAD_FILESYSTEM=
+			UPLOAD_BOOTLOADER=
+		# Check that a suitable filesystem archive is available in the toolchain output folder.
+		elif [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+			# A B-zipped archive is available, so we will use that.
+			echo -e "${CYAN}Found BZ2 filesystem archive.\n${NO_COLOUR}"
 			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2"
 		elif [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz" ]; then
+			# A G-zipped archive is available, so we will use that.
+			echo -e "${CYAN}Found GZ filesystem archive.\n${NO_COLOUR}"
 			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz"
 		else
-			# The expected binary file was not present.		
+			# No suitable binary file was present.		
 			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
 		fi
 	fi
 
-#	# Check if we are supposed to be loading a complete (flat) image.
-#	if [ $UPLOAD_IMAGE ]; then
-#		# Check that the expected image is available in the toolchain output folder.
-#		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_image.img.gz" ]; then
-#			# The expected binary file was not present.		
-#			echo -e "${RED}Could not find card image for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
-#			return 1
-#		fi
-#	fi
-
 	# TODO - Later these options will be removed, in favor of figuring stuff out based on the component configuration and output files.
 
-	# Ask if the user wants to reformat the card.
-	echo -e -n "${GREEN}Do you wish to reformat the SD card prior to writing to it? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+	#  We only need to reformat the SD card if we aren't using an image which creates its own filesystem.
+	if [ ! $UPLOAD_IMAGE ]; then
+		# Ask if the user wants to reformat the card.
+		echo -e -n "${GREEN}Do you wish to reformat the SD card prior to writing to it? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 		
-	# If they responded YES, then note that down.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		# Set the reformatting flag.
-		SD_REFORMAT=1
-		echo -e "${CYAN}SD card will be reformatted prior to writing.\n${NO_COLOUR}"
+		# If they responded YES, then note that down.
+		if [[ $REPLY =~ ^[Yy]$ ]]; then
+			# Set the reformatting flag.
+			SD_REFORMAT=1
+			echo -e "${CYAN}SD card will be reformatted prior to writing.\n${NO_COLOUR}"
+		fi
 	fi
 
 	# Figure out what the SD card device is.  We ALWAYs ask the user this, since a wrong answer may damage the host PC.
@@ -167,10 +171,13 @@ upload_sdcard()
 			udisks --unmount $F
 		done
 
-#		# First, if we are going to write an image, we do that.
-#		if [ $UPLOAD_IMAGE ]; then
-#			# TODO - Upload the image directly using DD.
-#		fi
+		# First, if we are going to write an image, we do that.
+		if [ $UPLOAD_IMAGE ]; then
+			# Upload the image directly using DD.
+			echo -e "${WHITE}Dumping image to SD card...\n${NO_COLOUR}"
+			zcat ${TCPATH}/bin/${COMPONENT_NAME}_image.img.gz | sudo dd bs=4M of=/dev/${SD_DEVICE_FILE} ; sudo sync
+			echo -e ""
+		fi
 
 		# See if we need to reformat the card.
 		if [ ${SD_REFORMAT} ]; then
