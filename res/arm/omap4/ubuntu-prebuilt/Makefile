@@ -38,8 +38,10 @@ image : ${IMAGEFILE}
 # Download recent copies of all the relevant files from the Ubuntu servers.
 download_files :
 	@echo "******** Fetching latest copy of files from server. ********"
-	wget -N "http://cdimage.ubuntu.com/daily-preinstalled/current/raring-preinstalled-desktop-armhf+nexus7.img.gz"
-	cp -sf "${IMAGE_PATH}/raring-preinstalled-desktop-armhf+nexus7.img.gz" ${IMAGE_PATH}/image.img.gz
+	wget -N	"http://cdimage.ubuntu.com/releases/12.04/release/ubuntu-12.04-preinstalled-desktop-armhf+omap4.img.gz"
+#	wget -N "http://cdimage.ubuntu.com/daily-preinstalled/current/raring-preinstalled-desktop-armhf+nexus7.img.gz"
+#	cp -sf "${IMAGE_PATH}/raring-preinstalled-desktop-armhf+nexus7.img.gz" ${IMAGE_PATH}/image.img.gz
+	cp -sf "${IMAGE_PATH}/ubuntu-12.04-preinstalled-desktop-armhf+omap4.img.gz" ${IMAGE_PATH}/image.img.gz
 
 # REAL TARGETS.
 

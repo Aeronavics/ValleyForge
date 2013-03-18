@@ -59,16 +59,6 @@ upload_sdcard()
 #		fi
 #	fi
 
-	# Check if we are supposed to be loading the bootloader code.
-	if [ $UPLOAD_BOOTLOADER ]; then
-		# Check that the expected files are available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage" ]; then
-			# The expected binary file was not present.
-			echo -e "${RED}Could not find bootloader files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
-			return 1
-		fi
-	fi
-
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
 		# Check if an image file is available in the toolchain output folder.
@@ -90,6 +80,16 @@ upload_sdcard()
 		else
 			# No suitable binary file was present.		
 			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# Check that the expected files are available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage" ]; then
+			# The expected binary file was not present.
+			echo -e "${RED}Could not find bootloader files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
 		fi
 	fi
@@ -175,7 +175,10 @@ upload_sdcard()
 		if [ $UPLOAD_IMAGE ]; then
 			# Upload the image directly using DD.
 			echo -e "${WHITE}Dumping image to SD card...\n${NO_COLOUR}"
-			zcat ${TCPATH}/bin/${COMPONENT_NAME}_image.img.gz | sudo dd bs=4M of=/dev/${SD_DEVICE_FILE} ; sudo sync
+			gunzip -c ${TCPATH}/bin/${COMPONENT_NAME}_image.img.gz > ${TCPATH}/bin/${COMPONENT_NAME}_image.img
+			sudo dd bs=4M if=${TCPATH}/bin/${COMPONENT_NAME}_image.img of=/dev/${SD_DEVICE_FILE}
+			sudo sync
+			rm ${TCPATH}/bin/${COMPONENT_NAME}_image.img
 			echo -e ""
 		fi
 
