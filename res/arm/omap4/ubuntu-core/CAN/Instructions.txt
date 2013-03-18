@@ -21,9 +21,9 @@ This will get the correct version that was used for the initial work to get this
 
 Next we need to apply the patch to add the spi setup for the MCP2515 into the pandaboard setup code.
 In the root directory of the kernel repository run the following command,
-replacing <path to MCP2515.patch> with the actual path to the patch file located in res/arm/omap4/ubuntu/CAN/ in the ValleyForge repository.
+replacing "path to MCP2515.patch" with the actual path to the patch file located in res/arm/omap4/ubuntu/CAN/ in the ValleyForge repository.
 
-patch -p1 < <path to MCP2515.patch>
+patch -p1 < "path to MCP2515.patch"
 
 This will apply the patch.
 

@@ -18,11 +18,11 @@
  *  @addtogroup		hal Hardware Abstraction Library
  * 
  *  @file		can.hpp
- *  A header file for the CAN Module of the HAL. CAN communication.
+ *  A header file for the CAN Module of the HAL.
  * 
  *  @brief 
  *  This is the header file which matches can.cpp.  Implements various functions relating to CAN, transmission
- *  and receiving of data.
+ *  and receiving of messages.
  * 
  *  @author		Paul Davey
  *
@@ -47,8 +47,8 @@
  * 
  *  @section Description
  *
- * A class for the SPI module of the HAL. Implements various functions relating to SPI 
- *  initialisation, transmission and receiving of data.
+ * A class for the CAN module of the HAL. Implements various functions relating to CAN 
+ *  initialisation, transmission and receiving of messages.
  */
 
 // Only include this header file once.
@@ -69,6 +69,46 @@
 // Include the hal library.
 #include "hal/hal.hpp"
 
+#include "can_platform.hpp"
+
+/*
+ * CAN peripheral organisation on different hardware:
+ * 
+ * AVR
+ * 
+ *  The AVR CAN module has a number of message object buffers, each buffer has its own mask and filter.
+ *    - N buffers.
+ *    - N acceptance filters. each of the Mask and Filter variety.
+ *    - buffers and filters have 1-1 correspondance and this cannot be changed.
+ *    - buffers are used for both transmit and receive (in transmit mode the same data as the filter is used for the message ID)
+ * 
+ *    - One interrupt shared by the whole CAN peripheral, there are flags for module wide sitations and ones in the buffer concerned if such an interrupt is triggered.
+ * 
+ * MCP2515
+ * 
+ *  The MCP 2515 has two receive buffers, each buffer has a mask associated with it and a number of filters. It also has three transmit buffers.
+ *    - 2 Recv buffers, 3 Transmit buffers, separate.
+ *    - 2 Masks (1 per buffer), 6 filters (2 on one buffer, 4 on the other buffer) Masks affect all filters on that buffer.
+ * 
+ *    - One interrupt line used by the controller chip, an SPI transfer must be used to query status after the interrupt.
+ * 
+ * STM32
+ * 
+ * The STM32 CAN peripheral has FIFO buffers for transmission and reception, it also has a bank of filters that are somewhat customisable.
+ *   - 1 transmit FIFO with 3 slots.
+ *   - 2 receive FIFOs each with 3 slots.
+ *   - atleast 14 filter banks (28 in the connectivity line, shared between the two CAN controllers)
+ *   - Filters can be configured to be Mask + filter or exact ID filters.
+ *   - Filters are assigned to one of the two receive FIFOs.
+ *   
+ *   - Multiple interrupts, one for each receive FIFO, one for transmission and one for status changes and error conditions.
+ * 
+ * Given the differences in filtering schemes the interface has been chosen to allow different definitions of various structures and enums to account for the different number of filters and behaviour of filters.
+ * Not all of the interface functions will do something on all platforms.
+ * For example the set_obj_for_filter will not work on AVR or MCP platforms since these have static relationships with the buffers on these platforms,
+ *  the get_object_for_filter function will however work on all platforms.
+ */
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum Can_rate {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
@@ -87,19 +127,6 @@ struct CAN_message
 	uint8_t dlc;
 	uint8_t data[8];
 };
-
-//These will move to impl specific headers since they may change between platforms.
-enum Can_number {CAN_0};
-
-enum Can_object { /* ?? */ };
-
-enum Can_filter { /* ?? */ };
-
-struct Can_filter_data;
-
-struct Can_obj_status;
-
-struct Can_status;
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -219,10 +246,10 @@ class Can
 		 * Function to configure a receive filter.
 		 * 
 		 * @param filter	The filter to configure.
-		 * @param ...		To be determined the parameters to configure the filter with.
+		 * @param data		The platform specific data for initialising the filter.
 		 * @return Nothing.
 		 */
-		void configure_rx_filter(Can_filter filter, ...);
+		void configure_rx_filter(Can_filter filter, Can_filter_data data);
 
 		/**
 		 * Function to retrieve the object associated with a particular receive filter.
