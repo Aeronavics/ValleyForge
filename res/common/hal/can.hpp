@@ -47,8 +47,8 @@
  * 
  *  @section Description
  *
- * A class for the CAN module of the HAL. Implements various functions relating to CAN 
- *  initialisation, transmission and receiving of messages.
+ * A class for the CAN module of the HAL. Implements various functions relating to CAN hardware 
+ * initialisation, transmission and receiving of data.
  */
 
 // Only include this header file once.
@@ -64,7 +64,7 @@
 #include <stddef.h>
 
 // Include the semaphore library
-#include "semaphore.hpp"
+#include "hal/semaphore.hpp"
 
 // Include the hal library.
 #include "hal/hal.hpp"
@@ -109,88 +109,386 @@
  *  the get_object_for_filter function will however work on all platforms.
  */
 
+// If we are offering support for the MCP2515, then we need GPIO and SPI functionality.
+#define HAL_CANSPI_ENABLE 0
+#if HAL_CANSPI_ENABLE
+#include "hal/gpio.hpp"
+#include "hal/spi.hpp"
+#endif
+
+// FORWARD DEFINE PROTOTYPES.
+
+class Can_object;
+class Can_filter;
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum Can_rate {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
 
 enum Can_mode {CAN_NORMAL, CAN_LISTEN};
 
-enum Can_obj_mode { RECEIVE, TRANSMIT };
+enum Can_object_mode {CAN_OBJ_RX, CAN_OBJ_TX};
 
-enum Interrupt_name { TX_ERROR, TX_COMPLETE, RX_ERROR, RX_COMPLETE, RX_OVERRUN };
+enum Can_interrupt_name {CAN_TX_ERROR, CAN_TX_COMPLETE, CAN_RX_ERROR, CAN_RX_COMPLETE, CAN_RX_OVERRUN};
 
-typedef void (*Interrupt_fn)(can_object&);
+enum Can_command_response {CAN_ACK, CAN_NAK};
 
-struct CAN_message
+typedef void (*Interrupt_fn)(Can_object&);
+
+struct Can_message
 {
 	uint32_t id;
 	uint8_t dlc;
 	uint8_t data[8];
 };
 
-// FORWARD DEFINE PRIVATE PROTOTYPES.
+// TODO - These may need to move to implementation specific headers since they may change between platforms, and this way is a bit ugly.
 
+// DEFINE DEVICE SPECIFIC PUBLIC TYPES AND ENUMERATIONS.
+
+#ifdef __AVR_AT90CAN128__
+enum Can_channel {CAN_0};
+#endif // __AVR_AT90CAN128__
+#ifdef __AVR_ATmega64M1__
+enum Can_channel {CAN_0};
+#endif // __AVR_ATmega64M1__
+
+struct Can_filter_data;
+
+struct Can_object_status;
+
+struct Can_status;
+
+// FORWARD DEFINE PRIVATE PROTOTYPES.
 
 // DEFINE PUBLIC CLASSES.
 
 /**
- * @class Can
- * 
- * Implements various functions relating to CAN initialisation, transmission
- * and receiving of data.
- * 
- */
+* @class Can_object
+*
+* Implements and abstraction of a hardware 'message object' in a CAN interface controller.  Message objects are essentially FIFO buffers, of size
+* one or greater, into which CAN messages are received, or from which CAN messages are transmitted.  A specific CAN interface may have multiple
+* message objects, some of which may be dedicated for either TX or RX operations (whilst others may be configurable).
+*
+* Because each message object is an abstraction of physical hardware in the corresponding interface, the class cannot be instantiated by the user.
+* A set of instances is provided by the interface to match the available hardware.
+*
+*/
+class Can_object
+{
+	public:
+		// Methods.
+
+		/**
+		* Returns the mode of the object.
+		*
+		* @param	Nothing.
+		* @return	The mode of the object.
+		*/
+		Can_object_mode get_mode(void);
+
+		/**
+		* Returns whether or not the object can change mode.
+		*
+		* @param	Nothing.
+		* @return	Flag indicating whether the object's mode can be modified.
+		*/
+		bool get_multimode(void);
+
+		/**
+		* Sets the mode of the object.  This may not work, depending on whether the CAN hardware offers support for multimode objects.
+		*
+		* @param	mode	The mode to set the object to.
+		* @return	Flag indicating whether the operation was successful.
+		*/
+		bool set_mode(Can_object_mode);
+
+		/**
+		* Returns the current status of the object.
+		*
+		* @param	Nothing.
+		* @return	The current status of the object.
+		*/
+		Can_object_status get_status(void);
+
+		// Fields.
+
+	private:
+		// Methods.
+
+		Can_object(void);
+
+		Can_object(Can_object const&);			// Poisoned.
+
+		Can_object operator =(Can_object const&);	// Poisoned.
+
+		// Fields.
+};
+
+/**
+* @class Can_filter
+*
+* Implements an abstraction of a hardware filter/mask in a CAN interface controller.  Filter/masks are used by a CAN interface to route incoming
+* CAN messages into the appropriate RX 'message object', or to ignore message which are not of interest.  A specific CAN interface may have
+* multiple filter/masks, which may be configured by the user.
+*
+* Because each filter instance is an abstraction of physical hardware in the corresponding interface, the class cannot be instantiated by the user.
+* A set of instances is provided by the interface to match the available hardware.
+*
+*/
+class Can_filter
+{
+	public:
+		// Methods.
+
+		/**
+		* Returns the CAN message object which the filter is currently routing into.
+		*
+		* @param	Nothing.
+		* @return	The message object which the filter is routing into.
+		*/
+		Can_object get_object(void);
+
+		/**
+		* Returns whether or not the filter can change which CAN message object it is routing into.
+		*
+		* @param	Nothing.
+		* @return	Flag indicating whether the filters message object can be modified.
+		*/
+		bool get_object_routable(void);
+
+		/**
+		* Sets the CAN message object which the filter should route into.  This may not work, depending on whether the CAN hardware offers
+		* support for changing filter routing, and whether the specified message object is a suitable routing target for this filter.
+		*
+		* @param	object	The CAN message object which the filter should route into.
+		* @return	Flag indicating whether the operation was successful.
+		*/
+		bool set_object(Can_object);
+
+		/**
+		* Gets the current mask value being used by the hardware filter/mask.
+		*
+		* @param	Nothing.
+		* @return	The current mask value.
+		*/
+		uint32_t get_mask(void);
+
+		/**
+		* Sets the mask value being used by the hardware filter/mask.
+		*
+		* NOTE - Not all the bits of the mask may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
+		*
+		* @param	mask	The new value for the filter mask.
+		* @return	Nothing.
+		*/
+		void set_mask(uint32_t mask);
+
+		/**
+		* Gets the current filter value being used by the hardware filter/mask.
+		*
+		* @param	Nothing.
+		* @return	The current filter value.
+		*/
+		uint32_t get_filter(void);
+
+		/**
+		* Sets the filter value being used by the hardware filter/mask.
+		*
+		* NOTE - Not all the bits of the filter may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
+		*
+		* @param	filter	The new value for the filter.
+		* @return	Nothing.
+		*/
+		void set_filter(uint32_t filter);
+
+		// Fields.
+
+	private:
+		// Methods.
+
+		Can_filter(void);
+
+		Can_filter(Can_filter const&);			// Poisoned.
+
+		Can_filter operator =(Can_filter const&);	// Poisoned.		
+
+		// Fields.
+};
+
+/**
+* @class Can_tree
+*
+* A class which holds abstractions of the hardware filter/masks and message objects provided by a CAN interface.
+*
+* Because each tree represents abstractions of physical hardware in the corresponding interface, the class cannot be instantiated by the user.
+*
+*/
+class Can_tree
+{
+	public:
+		// Methods.
+
+		// Fields.
+
+	private:
+		// Methods.
+
+		Can_tree(void);
+
+		Can_tree(Can_tree const&);		// Poisoned.
+
+		Can_tree operator =(Can_tree const&);	// Poisoned.		
+
+		// Fields.
+};
+
+#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+/**
+* @class Can_tree_native
+*
+* A class which holds abstractions of the hardware filter/masks and message objects provided by the internal CAN hardware of the target.
+*
+*/
+class Can_tree_native : Can_tree
+{
+	public:
+		// Methods.
+
+		// Fields.
+
+		#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+		Can_filter filter_0;
+		Can_filter filter_1;
+		Can_filter filter_2;
+		Can_object object_0;
+		Can_object object_1;
+		Can_object object_2;
+		#endif // __AVR_AT90CAN128__ || __AVR_ATmega64M1__
+
+	private:
+		// Methods.
+
+		Can_tree_native(void);
+
+		Can_tree_native(Can_tree_native const&);		// Poisoned.
+
+		Can_tree_native operator =(Can_tree_native const&);	// Poisoned.		
+
+		// Fields.
+};
+#endif // __AVR_AT90CAN128__ || __AVR_ATmega64M1__
+
+#if HAL_CANSPI_ENABLE
+/**
+* @class Can_tree_spi
+*
+* A class which holds abstractions of the hardware filter/masks and message objects provided by the internal CAN hardware of the target.
+*
+*/
+class Can_tree_native : Can_tree
+{
+	public:
+		// Methods.
+
+		// Fields.
+
+		Can_filter can_0_filter_0;
+		Can_filter can_0_filter_1;
+		Can_object rx_object_0;
+		Can_object rx_object_1;
+		Can_object tx_object_0;
+		Can_object tx_object_1;
+		Can_object tx_object_2;
+
+	private:
+		// Methods.
+
+		Can_tree_native(void);
+
+		Can_tree_native(Can_tree_native const&);		// Poisoned.
+
+		Can_tree_native operator =(Can_tree_native const&);	// Poisoned.		
+
+		// Fields.
+};
+#endif // HAL_CANSPI_ENABLE
+
+/**
+* @class Can
+* 
+* Implements various functions relating to CAN initialisation, transmission
+* and receiving of data.
+* 
+*/
 class Can
 {
 	public:
 		// Functions.
 		
 		/**
-		 * Initialises the SPI interface with the desired Master/Slave parameters and configures the
-		 * relevant GPIO.
-		 * 
-		 * @param  configuration	Configuration for SPI interface (master/slave)
-		 * @return 0 for success, -1 for error.
-		 */
-		int8_t initialise(Can_rate rate, Can_mode mode);
+		* Returns the tree of filters/masks and message objects associated with this CAN interface.
+		*
+		* @param	Nothing.
+		* @returns	A Can_tree representing the filters and objects for this particular interface.
+		*/
+		Can_tree get_tree(void);
+
+		/**
+		* Initialises the CAN interface with the desired configuration and also configures any relevant GPIO.
+		* 
+		* @param  	rate	Bus rate for the CAN interface.
+		* @param	mode	The operating mode for the CAN interface.
+		* @return 	Response to attempting to initialise the device.
+		*/
+		Can_command_response initialise(Can_rate rate, Can_mode mode);
 		
 		/**
-		 * Enables the CAN related interrupts.
-		 */
-		void enable_interrupts();
+		* Enables CAN related interrupts.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
+		void enable_interrupts(void);
 		 
 		/**
-		 * Disables the CAN related interrupts.
-		 */
-		void disable_interrupt();
+		* Disables CAN related interrupts.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
+		void disable_interrupt(void);
 		 
 		/**
-		 * Attaches a handler to a particular interrupt event for a specific object.
-		 *
-		 * @param interrupt		The interrupt condition to attach the handler for.
-		 * @param object		The CAN message object to attach the handler for.
-		 * @param handler		The handler for this interrupt condition.
-		 * @return Nothing.
-		 */
-		void attach_interrupt(Interrupt_name interrupt, Can_object object, Interrupt_fn handler);
+		* Attaches a handler to a particular interrupt event for a specific object.  If an interrupt handler is already attached to the
+		* particular interrupt condition specified, the old handler will be replaced with the new handler.
+		*
+		* @param	interrupt	The interrupt condition to attach the handler for.
+		* @param	object		The CAN message object to attach the handler for.
+		* @param	handler		The handler for this interrupt condition.
+		* @return	Nothing.
+		*/
+		void attach_interrupt(Can_interrupt_name interrupt, Can_object object, Interrupt_fn handler);
 
 		/**
-		 * Removes a handler for a specific object for a particular interrupt event.
-		 *
-		 * @param interrupt		The interrupt condition to attach the handler from.
-		 * @param object		The CAN message object to detach the handler from.
-		 * @return Nothing.
-		 */
-		void detach_interrupt(Interrupt_name interrupt, Can_object object);
+		* Attaches a handler to a particular interrupt event that will be used if a handler has not been specified for the CAN object
+		* that caused the event.  If an interrupt handler is already attached to the particular interrupt condition specified, the old
+		* handler will be replaced with the new handler.
+		*
+		* @param	interrupt	The interrupt condition to attach the handler for.
+		* @param	handler		The handler for this interrupt condition.
+		* @return	Nothing.
+		*/
+		void attach_interrupt(Can_interrupt_name interrupt, Interrupt_fn handler);
 
 		/**
-		 * Attaches a handler to a particular interrupt event that will be used if a handler has not been given for the object that caused the event.
-		 *
-		 * @param interrupt		The interrupt condition to attach the handler for.
-		 * @param handler		The handler for this interrupt condition
-		 * @return Nothing.
-		 */
-		void attach_interrupt(Interrupt_name interrupt, Interrupt_fn handler);
+		* Removes a handler for a specific object for a particular interrupt event.
+		*
+		* @param	interrupt	The interrupt condition to attach the handler from.
+		* @param	object		The CAN message object to detach the handler from.
+		* @return	Nothing.	
+		*/
+		void detach_interrupt(Can_interrupt_name interrupt, Can_object object);
 
 		/**
 		 * Removes the default handler for a particular interrupt event.
@@ -199,131 +497,91 @@ class Can
 		 * @param object		The CAN message object to detach the handler from.
 		 * @return Nothing.
 		 */
-		void detach_interrupt(Interrupt_name);
+		void detach_interrupt(Can_interrupt_name);
 
 		/**
-		 * Function to get the status of the CAN controller.
-		 *
-		 * @param  Nothing.
-		 * @return A Can_status struct indicating the current status of the CAN controller.
-		 */
+		* Function to get the status of the CAN controller.
+		*
+		* @param	Nothing.
+		* @return	Struct indicating the current status of the CAN controller.
+		*/
 		Can_status get_status();
 		
 		/**
-		 * Function to get the status of a particular message object in the CAN controller.
-		 *
-		 * @param  object	The object to get the status of.
-		 * @return A Can_status struct indicating the current status of the message object.
-		 */
-		Can_obj_status get_status(Can_object object);
-		
-		/**
-		 * Function to send a can message using a particular object.
-		 *
-		 * @param  obj	The object to send the message with.
-		 * @param  msg	The message to send.
-		 * @return Nothing.
-		 */
+		* Function to send a CAN message using a particular object.  If this object is not configured as a TX object, this will fail.
+		*
+		* @param	obj	The CAN object to send the message with.
+		* @param	msg	The message to send.
+		* @return	Nothing.
+		*/
 		void transmit(Can_object obj, Can_message msg);
 
 		/**
-		 * Function to check if a CAN object is ready for use.
-		 *
-		 * @param  obj	The object to send the message with.
-		 * @return True if the object is ready for use, false if not.
-		 */
+		* Function to check if a CAN object is ready for use.
+		*
+		* @param	obj	The object to test for readiness.
+		* @return	Flag indicating if the specified CAN object is ready for use.
+		*/
 		bool check_ready(Can_object obj);
 		
 		/**
-		 * Function to read a message out of an object, the object must be ready.
-		 *
-		 * @param  obj	The object to read the message from.
-		 * @return The message in the object.
-		 */
+		* Function to read a message out of an object.  The object must be ready for this to suceed.
+		*
+		* @param  obj	The object to read the message from.
+		* @return The message in the object.
+		*/
 		Can_message read_object(Can_object obj);
-		
-		/**
-		 * Function to configure a receive filter.
-		 * 
-		 * @param filter	The filter to configure.
-		 * @param data		The platform specific data for initialising the filter.
-		 * @return Nothing.
-		 */
-		void configure_rx_filter(Can_filter filter, Can_filter_data data);
 
 		/**
-		 * Function to retrieve the object associated with a particular receive filter.
-		 * 
-		 * @param filter	The filter to retrieve the object for.
-		 * @return The object being retrieved.
-		 */
-		Can_object get_obj_from_filter(Can_filters filter);
-		
-		/**
-		 * Function to set which object is associated with a receive filter.
-		 * 
-		 * @param filter	The filter to set the object for.
-		 * @param obj		The object to associate with this filter.
-		 * @return Nothing.
-		 */
-		void set_obj_for_filter(Can_filters filter, Can_object obj);
-		
-		/**
-		 * Function to configure the mode of a CAN message object.
-		 * 
-		 * @param obj	The object to configure.
-		 * @param mode	The mode to set the object to.
-		 * @return Nothing.
-		 */
-		void set_obj_mode(Can_object obj, Can_obj_mode mode);
-
-		/**
-		 * Function to free the CAN instance when it goes out of scope.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
+		* Function to free the CAN instance when it goes out of scope.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
 		~Can(void);
 
 		/** 
-		 * Allows access to the CAN interface to be relinquished and reused elsewhere.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
+		* Allows access to the CAN interface to be relinquished and reused elsewhere.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
 		void vacate(void);
 
+#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
 		/**
-		 * Allows a process to request access to a CAN instance and manages the semaphore
-		 * indicating whether access has been granted or not.
-		 *
-		 * @param  can_number	The number of a CAN that is desired.
-		 * @return A CAN instance.
-		 */
-		static Can grab(Can_number can_number);
+		* Allows a process to request access to a CAN instance and manages the semaphore
+		* indicating whether access has been granted or not.
+		*
+		* @param	can_channel	The channel identifier of the CAN peripheral that is desired.
+		* @return	A CAN instance.
+		*/
+		static Can grab(Can_channel can_channel);
+#endif // __AVR_AT90CAN128__ || __AVR_ATmega64M1__ 
 		
+#if HAL_CANSPI_ENABLE
 		/**
-		 * Allows a process to request access to a CAN instance and manages the semaphore
-		 * indicating whether access has been granted or not.
-		 *
-		 * @param  spi_inst	The spi instance for the bus which the SPI-CAN controller is attached to.
-		 * @param  int_pin	The gpio pin which is attached to the SPI-CAN controllers interrupt output.
-		 * @return A CAN instance.
-		 */
-		static Can grab(spi spi_inst, gpio_pin int_pin);
+		* Allows a process to request access to a CAN instance and manages the semaphore
+		* indicating whether access has been granted or not.
+		*
+		* @param	spi_inst	The spi instance for the bus which the SPI-CAN controller is attached to.
+		* @param	int_pin		The gpio pin which is attached to the SPI-CAN controllers interrupt output.
+		* @return	A CAN instance.
+		*/
+		static Can grab(spi& spi_inst, gpio_pin& int_pin);
+#endif // HAL_CANSPI_ENABLE
 
 	private:
 		// Functions.
 		
-		Can(void);	// Poisoned.
+		Can(void);
+
+		Can(Can const&);		// Poisoned.
 
 		Can operator =(Can const&);	// Poisoned.
 
 		// Fields.
-
 };
-	  
-
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
