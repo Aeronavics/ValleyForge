@@ -103,7 +103,7 @@ makeavr()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.out $TCPATH/$OUTPUT_DIR/$COMPONENT_NAME.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.out $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
@@ -114,10 +114,10 @@ makeavr()
 
 	# Print out details of the size of the generated hex file.
 	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT_NAME}.hex
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT_NAME.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -228,7 +228,7 @@ makeavr_bootloader()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.out $TCPATH/$OUTPUT_DIR/${COMPONENT}_bootloader.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.out $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
@@ -239,9 +239,9 @@ makeavr_bootloader()
 
 	# Print out details of the size of the generated hex file.
 	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}_bootloader.hex							
+	$SIZE --format=SysV --totals $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex							
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
 	return 0
 }

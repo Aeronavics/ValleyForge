@@ -52,7 +52,7 @@ upload_sdcard()
 #	# Check if we are supposed to be loading the application code.
 #	if [ $UPLOAD_APPLICATION ]; then
 #		# Check that the expected binaries are available in the toolchain output folder.
-#		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}.tar.bz2" ]; then
+#		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.tar.bz2" ]; then
 #			# The expected binary file was not present.		
 #			echo -e "${RED}Could not find application files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 #			return 1
@@ -62,21 +62,21 @@ upload_sdcard()
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
 		# Check if an image file is available in the toolchain output folder.
-		if [ -f "$TCPATH/bin/${COMPONENT_NAME}_image.img.gz" ]; then
+		if [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz" ]; then
 			# An image file is available, so we will load that.
 			echo -e "${CYAN}Found image file; will write an image rather than individual component files.\n${NO_COLOUR}"
 			UPLOAD_IMAGE=1
 			UPLOAD_FILESYSTEM=
 			UPLOAD_BOOTLOADER=
 		# Check that a suitable filesystem archive is available in the toolchain output folder.
-		elif [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
+		elif [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
 			# A B-zipped archive is available, so we will use that.
 			echo -e "${CYAN}Found BZ2 filesystem archive.\n${NO_COLOUR}"
-			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.bz2"
-		elif [ -f "$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz" ]; then
+			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2"
+		elif [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz" ]; then
 			# A G-zipped archive is available, so we will use that.
 			echo -e "${CYAN}Found GZ filesystem archive.\n${NO_COLOUR}"
-			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT_NAME}_filesystem.tar.gz"
+			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz"
 		else
 			# No suitable binary file was present.		
 			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
@@ -87,7 +87,7 @@ upload_sdcard()
 	# Check if we are supposed to be loading the bootloader code.
 	if [ $UPLOAD_BOOTLOADER ]; then
 		# Check that the expected files are available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage" ]; then
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_uImage" ]; then
 			# The expected binary file was not present.
 			echo -e "${RED}Could not find bootloader files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
@@ -175,10 +175,10 @@ upload_sdcard()
 		if [ $UPLOAD_IMAGE ]; then
 			# Upload the image directly using DD.
 			echo -e "${WHITE}Dumping image to SD card...\n${NO_COLOUR}"
-			gunzip -c ${TCPATH}/bin/${COMPONENT_NAME}_image.img.gz > ${TCPATH}/bin/${COMPONENT_NAME}_image.img
-			sudo dd bs=4M if=${TCPATH}/bin/${COMPONENT_NAME}_image.img of=/dev/${SD_DEVICE_FILE}
+			gunzip -c ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz > ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img
+			sudo dd bs=4M if=${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img of=/dev/${SD_DEVICE_FILE}
 			sudo sync
-			rm ${TCPATH}/bin/${COMPONENT_NAME}_image.img
+			rm ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img
 			echo -e ""
 		fi
 
@@ -286,11 +286,11 @@ upload_sdcard()
 			
 			# Copy the files onto the sd_boot partition.
 			echo -e "${WHITE}Copying bootloader files onto the boot partition...\n${NO_COLOUR}"
-			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_MLO ${SD_MOUNT}/MLO
-			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_u-boot.img ${SD_MOUNT}/u-boot.img
-			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_uImage ${SD_MOUNT}/uImage
-			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_boot.scr ${SD_MOUNT}/boot.scr 2>/dev/null
-			cp $TCPATH/bin/${COMPONENT_NAME}_bootloader_uInitrd ${SD_MOUNT}/uInitrd 2>/dev/null
+			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_MLO ${SD_MOUNT}/MLO
+			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_u-boot.img ${SD_MOUNT}/u-boot.img
+			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_uImage ${SD_MOUNT}/uImage
+			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_boot.scr ${SD_MOUNT}/boot.scr 2>/dev/null
+			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_uInitrd ${SD_MOUNT}/uInitrd 2>/dev/null
 
 			# Sync and unmount the partition.
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"

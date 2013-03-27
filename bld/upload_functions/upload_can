@@ -111,7 +111,7 @@ upload_can()
 	# Check if we are supposed to be loading the application code.
 	if [ $UPLOAD_APPLICATION ]; then
 		# Check that the expected binary is available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}.hex" ]; then
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" ]; then
 			# The expected binary file was not present.		
 			echo -e "${RED}Could not find application binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
@@ -121,7 +121,7 @@ upload_can()
 	# Check if we are supposed to be loading the bootloader code.
 	if [ $UPLOAD_BOOTLOADER ]; then
 		# This method of uploading cannot upload bootloaders so give an error.
-		echo -e "${RED}The CAN uploader cannot upload bootloaders.  Aborting...\n${NO_COLOUR}"
+		echo -e "${RED}The CAN uploader cannot be used to upload bootloaders.  Aborting...\n${NO_COLOUR}"
 		return 1
 	fi
 
@@ -132,7 +132,7 @@ upload_can()
 	unpack_uploader
 
 	# Set the file to flash to be the application binary.
-	CAN_BINARY="$TCPATH/bin/${COMPONENT_NAME}.hex"
+	CAN_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex"
 
 	# Check if the signature setting has been chosen yet.
 	if [ -z ${SIGNATURE} ]; then

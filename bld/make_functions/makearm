@@ -116,7 +116,7 @@ makearm()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries into the appropriate format.
-	$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/$OUTPUT_DIR/$OUTPUT_NAME
+	$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/$OUTPUT_DIR/$COMPONENT/$OUTPUT_NAME
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
@@ -128,7 +128,7 @@ makearm()
 	# TODO - Print out the size of the generated file.								
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$OUTPUT_NAME.\n${NO_COLOUR}"
+	echo -e "\n${BOLD_WHITE}Build successful.  Output binary written to $OUTPUT_DIR/$COMPONENT/$OUTPUT_NAME.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -156,10 +156,10 @@ makearm_omap4_angstrom_filesystem()
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.bz2"
+	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.bz2" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2"
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -215,12 +215,12 @@ makearm_omap4_ubuntu_core_filesystem()
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.gz" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_filesystem.tar.gz"
+	cp "${TCPATH}/res/arm/omap4/images/filesystem.tar.gz" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz"
 
 	# TODO - We probaby want to make some final changes to the Ubuntu output file to activate a tty etc.
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -272,12 +272,12 @@ makearm_omap4_ubuntu_prebuilt_filesystem()
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying filesystem files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/images/image.img.gz" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_image.img.gz"
+	cp "${TCPATH}/res/arm/omap4/images/image.img.gz" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img.gz"
 
 	# TODO - We probaby want to make some final changes to the Ubuntu output file to activate a tty etc.
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -306,11 +306,11 @@ makearm_omap4_bootloader()
 
 	# Copy the relevant files across to the output directory.
 	echo -e "${CYAN}Copying bootloader files for $COMPONENT...\n${NO_COLOUR}"
-	cp "${TCPATH}/res/arm/omap4/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_MLO"
-	cp "${TCPATH}/res/arm/omap4/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_u-boot.img"
-	cp "${TCPATH}/res/arm/omap4/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uImage"
-	cp "${TCPATH}/res/arm/omap4/images/boot.scr" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_boot.scr" 2>/dev/null
-	cp "${TCPATH}/res/arm/omap4/images/uInitrd" "$TCPATH/${OUTPUT_DIR}/${COMPONENT_NAME}_bootloader_uInitrd" 2>/dev/null
+	cp "${TCPATH}/res/arm/omap4/images/MLO" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_bootloader_MLO"
+	cp "${TCPATH}/res/arm/omap4/images/u-boot.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_bootloader_u-boot.img"
+	cp "${TCPATH}/res/arm/omap4/images/uImage" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_bootloader_uImage"
+	cp "${TCPATH}/res/arm/omap4/images/boot.scr" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_bootloader_boot.scr" 2>/dev/null
+	cp "${TCPATH}/res/arm/omap4/images/uInitrd" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_bootloader_uInitrd" 2>/dev/null
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR.\n${NO_COLOUR}"

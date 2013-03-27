@@ -110,16 +110,16 @@ upload_avrdude()
 	
 	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
 	
-	#check if we need to upload a bootloader but are not uploading one and warn the user that this will erase any existing bootloader.
+	# Check if we shoudl be uploading a bootloader but aren't.
 	if [ $BOOTLOADER -a ! $UPLOAD_BOOTLOADER ]; then
-		echo -e "${YELLOW}Warning, not writing the bootloader with this upload method will result in erasing the bootloader in the device and not replacing it.\n${NO_COLOUR}"
+		#  Warn the user that this will erase any existing bootloader.
+		echo -e "${YELLOW}Warning, not writing the bootloader with this upload method will result in erasing the bootloader in the device without replacing it.\n${NO_COLOUR}"
 	fi
-		
 
 	# Check if we are supposed to be loading the application code.
 	if [ $UPLOAD_APPLICATION ]; then
 		# Check that the expected binary is available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}.hex" ]; then
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" ]; then
 			# The expected binary file was not present.		
 			echo -e "${RED}Could not find application binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
@@ -129,7 +129,7 @@ upload_avrdude()
 	# Check if we are supposed to be loading the bootloader code.
 	if [ $UPLOAD_BOOTLOADER ]; then
 		# Check that the expected binary is available in the toolchain output folder.
-		if [ ! -f "$TCPATH/bin/${COMPONENT_NAME}_bootloader.hex" ]; then
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" ]; then
 			# The expected binary file was not present.
 			echo -e "${RED}Could not find bootloader binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
@@ -142,18 +142,18 @@ upload_avrdude()
 	# Sort out which file needs to be uploaded.
 	if [ "${UPLOAD_APPLICATION}" -a "${UPLOAD_BOOTLOADER}" ]; then
 		# Create a combined binary temporarily to upload.
-		srec_cat "$TCPATH/bin/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" -I
+		srec_cat "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" -I
 
 		# Set the file to flash to be the combined binary.
-		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT_NAME}_combined.hex"
+		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
 	
 	elif [ ${UPLOAD_BOOTLOADER} ]; then
 		# Set the file to flash to be the bootloader binary.
-		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT_NAME}_bootloader.hex"
+		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex"
 
 	else
 		# Set the file to flash to be the application binary.
-		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT_NAME}.hex"
+		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex"
 	fi
 
 	# Figure out what the AVRDUDE 'part' setting should be.
@@ -474,6 +474,7 @@ upload_avrdude()
 			done
 		fi
 		
+		# Print warnings to the user if they specify a fuse configuration which does not agree with the component bootloader configuration.
 		if [ $BOOTLOADER ]; then
 			if [ $(($AVRDUDE_HFUSE & 0x1 )) -eq 1 ]; then
 				echo -e "${YELLOW}Warning: This component is configured to use a bootloader but the fuse to reset into the bootloader is not set!${NO_COLOUR}"
@@ -537,9 +538,9 @@ upload_avrdude()
 		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
 
 		# Check if we created a combined binary which needs removing.
-		if [ -a "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" ]; then
+		if [ -a "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex" ]; then
 			# Delete the combined binary file that was created.
-			rm "$TCPATH/bin/${COMPONENT_NAME}_combined.hex"
+			rm "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
 		fi
 	fi
 	AVRDUDE_BINARY=
