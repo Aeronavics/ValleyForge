@@ -641,9 +641,6 @@ do
 	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
 	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
-	# Create a folder for the build output to go in.
-	mkdir -p ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}
-
 	# Now, we compile the application code.
 	echo -e "${CYAN}Making application code...\n${NO_COLOUR}"
 

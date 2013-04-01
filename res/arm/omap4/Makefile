@@ -14,7 +14,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# GENERIC AVR MAKEFILE WITH DEPENDANCY CALCULATION.
+# GENERIC ARM MAKEFILE WITH DEPENDANCY CALCULATION.
 #
 #	Author:		Edwin Hayes
 #
@@ -28,7 +28,8 @@ SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
 
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
-OUTFILE=${COMPONENT} # The output file which generally needs to be created.
+EXECUTABLE=BUILD_INSERTS_EXECUTABLE_HERE
+OUTFILE=${EXECUTABLE} # The output file which generally needs to be created.
 
 # Target Details.
 MCU=BUILD_INSERTS_MCU_CODE_HERE # The name/type of the target controller (as used by the compiler).
@@ -169,14 +170,14 @@ stats: ${MAIN}
 	@cat $@
 
 # The dependencies for the target output file are created by assuming that the target output file requires some object file which carries the same
-# name as the component being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
-# include assembler files, which will need header files so they are discovered).
+# name as the executable being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
+# includes assembler files, which will need header files so they are discovered).
 
-# Dependencies of component.
-${COMPONENT}.d:
-	@echo "******** Calculating component dependencies. ********"
+# Dependencies of executable.
+${EXECUTABLE}.d:
+	@echo "******** Calculating executable dependencies. ********"
 	@# Work out what the main file is going to be, so we can build the output file.
-	@echo -e "${OUTFILE}: ${COMPONENT}.o\n" >> ${COMPONENT}.d
+	@echo -e "${OUTFILE}: ${EXECUTABLE}.o\n" >> ${EXECUTABLE}.d
 
 # IMPORT EXTERNAL DEPENDENCIES.
 
@@ -195,9 +196,9 @@ ${COMPONENT}.d:
 -include ${patsubst %.s, %.ds, ${wildcard *.s}}
 -include ${patsubst %.s, %.ds, ${wildcard **/*.s}}
 
-# Dependencies also need to be calculated for the component as a whole, so that we actually have some rules which create us the desired output
+# Dependencies also need to be calculated for the executable as a whole, so that we actually have some rules which create us the desired output
 # file, using the appropriate source files.
 
-# Include dependencies for main.
--include ${COMPONENT}.d
+# Include dependencies for executable main.
+-include ${EXECUTABLE}.d
 

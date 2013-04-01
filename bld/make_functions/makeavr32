@@ -73,6 +73,8 @@ makeavr32()
 	PFLAGS=$(eval echo $PFLAGS)
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
+
+	# NOTE - AVR targets only support a single application executable, so it is named the same as the component.
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -80,8 +82,8 @@ makeavr32()
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1$COMPONENT_NAME\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-	sed -ri "s^(MAINFILE *= *)BUILD_INSERTS_MAINFILE_HERE(\\s.*)?^\1${MAINFILE##*/}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(EXECUTABLE *= *)BUILD_INSERTS_EXECUTABLE_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -101,6 +103,7 @@ makeavr32()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
 	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.elf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# Check the return value from the object copy.
@@ -115,7 +118,7 @@ makeavr32()
 	$SIZE --format=SysV --totals $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex								
 
 	# All done.
-	echo -e "${BOLD_WHITE}Build successful.  Output binary written to ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex.\n${NO_COLOUR}"
+	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
 
