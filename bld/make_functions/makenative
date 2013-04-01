@@ -1,0 +1,136 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		make_native											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	19-03-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which makes components natively (NOT cross-compiled).			###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported native make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makenative							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Copies native makefile into tmp directory, edits it, and uses 	###
+### 			it to compile the files that are already there.		     	###
+###											###
+###########################################################################################
+
+makeavr()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Set up the native compiler.
+	unpack_nativec
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Check if there is also a linker script to go with the makefile.
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.x
+
+		# A linker script is specified, so set the linker flags to refer to it.
+		LFLAGS="-T linker_script.x $LFLAGS"
+	fi
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
+
+	# Native targets might require multiple application executables, which which case we need to iterate over each of them.
+
+	# Check if the component configuration lists executables to build.
+	if [ -z "$EXECUTABLES" ]; then
+		# There is no list of executables, so just look for the default one named after the component.
+		EXECUTABLES=${COMPONENT_NAME}
+	fi
+
+	# Iterate over the list of executables.
+	for EXECUTABLE in $EXECUTABLES; do
+		# TODO - This removal of object files is basically a hack, in lieu of the makefile only linking those object files it needs.
+
+		# Remove any object files which might be from a previous executable, otherwise they will be accidentally linked.
+		find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.o" | rm
+
+		# Update the working makefile with the appropriate values for this executable.	
+		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(EXECUTABLE *= *)BUILD_INSERTS_EXECUTABLE_HERE(\\s.*)?^\1$EXECUTABLE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+
+		# Actually make the executable.
+		echo -e "${CYAN}Making executable $EXECUTABLE ...\n${NO_COLOUR}"
+		make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all
+
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+		# Check the return value from make, to determine if an error occurred during compilation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Compilation error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"
+			return 1
+		fi
+	
+		# The compilation worked, so now just copy across the output binaries into the appropriate format.
+		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
+		$OBJCOPY $TCPATH/$TMP_SRC_DIR/$COMPONENT/$EXECUTABLE $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
+
+		# Check the return value from the object copy.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Object copy error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"			
+			return 1
+		fi
+
+		# TODO - Print out the size of the generated file.	
+	done
+
+	# All done.
+	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
+

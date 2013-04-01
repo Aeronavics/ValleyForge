@@ -150,15 +150,15 @@ unpack_arduino()
 
 unpack_nativec()
 {
-	# TODO - At the moment, this doesn't do anything, since the compiler doesn't exist yet.
+	# TODO - At the moment, we just assume the native build system is good to go.
 
-	# The compiler is totally not ready to go.
-	echo -e "${BOLD_RED}Native compiler not available.\n${NO_COLOUR}"
+	# The compiler is already set to go.
+	echo -e "${CYAN}Native compiler available.\n${NO_COLOUR}"
 
 	# TODO - Test the now the required executables actually exist.
 
 	# All done.
-	return 1
+	return 0
 }
 
 ######################################## FUNCTION #########################################
