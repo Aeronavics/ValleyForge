@@ -36,9 +36,12 @@
 
 #include "bootloader_module.hpp"
 
+// Include the bootloader can module information sharing struct type.
+#include "application_interface/application_interface_module_constants_isp.hpp"
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-class bootloader_module_isp : public bootloader_module
+class bootloader_module_isp : public Bootloader_module
 {
 	public:
 
@@ -106,6 +109,17 @@ class bootloader_module_isp : public bootloader_module
 extern bootloader_module_isp module;
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
+
+/**
+ *	Stores bootloader module information in a struct that is shared with the application.
+ * 
+ *  	NOTE - This function can be accessed by the application.
+ *
+ *	TAKES: 		bootloader_module_information		struct that bootloader module information is stored.
+ *
+ *	RETURNS: 	Nothing.
+ */
+void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information);
 
 #endif // __BOOTLOADER_MODULE_ISP_H__
 

@@ -78,6 +78,19 @@ void bootloader_module_isp::event_periodic(void)
 	return;
 }
 
+void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information)
+{
+	bootloader_module_information->nothing = 0x00;
+	
+	// All done.
+	return;
+}
+// Avoids name mangling for the shared jumptable.
+extern "C" void get_bootloader_module_information_BL(Shared_bootloader_module_constants* arg)
+{
+	get_bootloader_module_information(arg);
+}
+
 // IMPLEMENT PRIVATE FUNCTIONS.
 
 // ALL DONE.
