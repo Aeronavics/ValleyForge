@@ -1,4 +1,4 @@
-#	Copyright (C) 2011  Unison Networks Ltd
+#	Copyright (C) 2013  Unison Networks Ltd
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -14,11 +14,11 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# GENERIC NATIVE MAKEFILE WITH DEPENDANCY CALCULATION.
+# GENERIC MAKEFILE WITH DEPENDANCY CALCULATION.
 #
 #	Author:		Edwin Hayes
 #
-#	Created:	9th Jan 2013
+#	Created:	2nd April 2013
 #
 
 # VARIABLES.
@@ -29,27 +29,20 @@ SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
 EXECUTABLE=BUILD_INSERTS_EXECUTABLE_HERE
-OUTFILE=${EXECUTABLE} # The output file which generally needs to be created.
-
-# Target Details.
-MCU=BUILD_INSERTS_MCU_CODE_HERE # The name/type of the target controller (as used by the compiler).
-HEXFORMAT=ihex # The hex file format to use.
 
 # Executables.
 CC=BUILD_INSERTS_C_COMPILER_HERE # The C compiler to use.
 PC=BUILD_INSERTS_P_COMPILER_HERE # The C++ compiler to use.
 AS=BUILD_INSERTS_ASSEMBLER_HERE # The assembler to use.
-LD=${CC} # The linker to use.
+LD=BUILD_INSERTS_LINKER_HERE # The linker to use.
 OBJDUMP=BUILD_INSERTS_OBJDUMP_HERE # The object-dump (binary manipulator) to use.
 OBJCOPY=BUILD_INSERTS_OBJCOPY_HERE # The object-copy (binary manipulator) to use.
-SIZE=BUILD_INSERTS_SIZE_HERE # The size utility (binary inspector) to use.
 
 # Flags.
-OPTLEVEL=s # Optimization level to use: s (for size), 1, 2, 3 (for performance) or 0 (none).
-CFLAGS= -I . -g -mmcu=${MCU} -O${OPTLEVEL} BUILD_INSERTS_CFLAGS_HERE -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall # The C compiler flags to apply.
-PFLAGS= ${CFLAGS} BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
-AFLAGS=	-mmcu=$(MCU) -Wa BUILD_INSERTS_AFLAGS_HERE# The assember flags to apply.
-LFLAGS= -Wl,-Map,$(COMPONENT).map -mmcu=$(MCU) BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
+CFLAGS=BUILD_INSERTS_CFLAGS_HERE # The C compiler flags to apply.
+PFLAGS=BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
+AFLAGS=BUILD_INSERTS_AFLAGS_HERE # The assembler flags to apply.
+LFLAGS=BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 
 # FUNCTIONS.
 
@@ -86,23 +79,22 @@ define detect_source_dependencies
 	done < $(1)
 endef
 
-# PSEUDO-TARGETS.
+# PSEUDO-TARGETS
 
 # All the pseudo-targets are phony: they don't correspond with real files.
 .PHONY: all main
+
 all: main
 
-main: ${OUTFILE}
+main: $(EXECUTABLE)
 
 # TARGETS.
 
-#	OUTPUT FILES.
+#	EXECUTABLE FILES.
 
-${OUTFILE}:
+%:
 	@echo "******** Linking $@ from Object Files. ********"
 	$(LD) $(LFLAGS) -o $@ $(shell find . -name "*.o")
-
-#	BINARY FILES.
 
 #	OBJECT FILES.
 
@@ -135,7 +127,8 @@ ${OUTFILE}:
 
 # DEPENDENCY TARGETS.
 
-# Header file dependencies are calculated directly by the compiler, they are easy.  Object file dependencies are more complicated; they are calculated by a separate function.
+# Header file dependencies are calculated directly by the compiler, they are easy.  Object file dependencies are more complicated; they are 
+# calculated by a separate function.
 
 # Dependency from C.
 %.dc: %.c
@@ -166,7 +159,8 @@ ${OUTFILE}:
 ${EXECUTABLE}.d:
 	@echo "******** Calculating executable dependencies. ********"
 	@# Work out what the main file is going to be, so we can build the output file.
-	@echo -e "${OUTFILE}: ${EXECUTABLE}.o\n" >> ${EXECUTABLE}.d
+	@echo -e "Assuming executable ${EXECUTABLE} will depend upon ${EXECUTABLE}.o"
+	@echo -e "${EXECUTABLE}: ${EXECUTABLE}.o\n" >> ${EXECUTABLE}.d
 
 # IMPORT EXTERNAL DEPENDENCIES.
 

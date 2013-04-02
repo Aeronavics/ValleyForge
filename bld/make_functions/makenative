@@ -43,7 +43,7 @@ echo -e "${CYAN}Imported native make-functions.\n${NO_COLOUR}"
 ###											###
 ###########################################################################################
 
-makeavr()
+makenative()
 {
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
@@ -93,6 +93,7 @@ makeavr()
 		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile

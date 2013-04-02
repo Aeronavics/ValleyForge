@@ -45,8 +45,6 @@ echo -e "${CYAN}Imported AVR make-functions.\n${NO_COLOUR}"
 
 makeavr()
 {
-	# TODO - At the moment, there doesn't seem to be support for assembler files here.
-
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -79,10 +77,10 @@ makeavr()
 	# NOTE - AVR targets only support a single application executable, so it is named the same as the component.
 						
 	# Update the working makefile with the appropriate values for this component.
-	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -107,7 +105,7 @@ makeavr()
 	
 	# The compilation worked, so now just copy across the output binaries.
 	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.out $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
@@ -205,14 +203,15 @@ makeavr_bootloader()
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 								
-	# Update the working makefile with the appropriate values for this component.	
-	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	# Update the working makefile with the appropriate values for this component.
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1bootloader\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
+	sed -ri "s^(EXECUTABLE *= *)BUILD_INSERTS_EXECUTABLE_HERE(\\s.*)?^\1bootloader\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
@@ -220,7 +219,7 @@ makeavr_bootloader()
     
 	# Actually make the component.
 	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
-	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader -B all			
+	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader all
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 
@@ -232,7 +231,7 @@ makeavr_bootloader()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader.out $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then

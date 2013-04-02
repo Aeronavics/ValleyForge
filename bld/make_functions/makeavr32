@@ -55,6 +55,10 @@ makeavr32()
 	# Set up the AVR32 compiler.
 	unpack_avr32c
 
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
 	# If we are using a linker script, then add the appropriate linker flags to use it.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
@@ -64,22 +68,20 @@ makeavr32()
 		LFLAGS="-T linker_script.ld $LFLAGS"
 	fi
 
-	# Copy the relevant makefile in with the source.
-	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
 	# Update the flags in case they still contain some unevaluated variables.
 	CFLAGS=$(eval echo $CFLAGS)
 	PFLAGS=$(eval echo $PFLAGS)
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 
-	# NOTE - AVR targets only support a single application executable, so it is named the same as the component.
+	# NOTE - AVR32 targets only support a single application executable, so it is named the same as the component.
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+	sed -ri "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -104,7 +106,7 @@ makeavr32()
 	
 	# The compilation worked, so now just copy across the output binaries.
 	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
-	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME.elf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# Check the return value from the object copy.
 	if [ $? != 0 ]; then
