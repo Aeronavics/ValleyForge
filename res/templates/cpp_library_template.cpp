@@ -22,9 +22,9 @@
 
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
-enum private_enum_type {ENUM_TYPE_0, ENUM_TYPE_1};
+enum private_enum_type {PRIVATE_ENUM_TYPE_0, PRIVATE_ENUM_TYPE_1};
 
-enum Private_class_type
+class Private_class_type
 {
 	public:
 		// Fields.
@@ -44,7 +44,7 @@ enum Private_class_type
 	private:
 		// Fields.
 
-		bool public_class_field;
+		bool private_class_field;
 
 		// Methods.
 

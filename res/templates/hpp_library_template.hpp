@@ -27,9 +27,9 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-enum public_enum_type {ENUM_TYPE_0, ENUM_TYPE_1};
+enum public_enum_type {PUBLIC_ENUM_TYPE_0, PUBLIC_ENUM_TYPE_1};
 
-enum Public_class_type
+class Public_class_type
 {
 	public:
 		// Fields.
@@ -49,7 +49,7 @@ enum Public_class_type
 	private:
 		// Fields.
 
-		bool public_class_field;
+		bool private_class_field;
 
 		// Methods.
 
