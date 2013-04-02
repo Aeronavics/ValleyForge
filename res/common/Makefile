@@ -14,7 +14,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# GENERIC MAKEFILE WITH DEPENDANCY CALCULATION.
+# GENERIC MAKEFILE WITH DEPENDENCY CALCULATION.
 #
 #	Author:		Edwin Hayes
 #
@@ -79,6 +79,22 @@ define detect_source_dependencies
 	done < $(1)
 endef
 
+#	This function records all of the object file dependencies for a particular object file (referenced by $2), based on a matching dependency
+#	file (referenced by $1).  This allows for easily establishing which files to link to produce an executable for a particular object file,
+#	without recursing through the dependency tree all over again.
+define record_link_dependencies
+	echo $(2).o > $(2).ld;									\
+	while read -a line; do									\
+		for word in $${line[@]}; do							\
+			if [[ $${word} != *: ]]; then						\
+				if [[ $${word} == *.o ]]; then					\
+					echo " " $${patsubst %.o, %.ld, $${word}} >> $(2).ld;	\
+				fi;								\
+			fi;									\
+		done;										\
+	done < $(1)
+endef
+
 # PSEUDO-TARGETS
 
 # All the pseudo-targets are phony: they don't correspond with real files.
@@ -94,7 +110,7 @@ main: $(EXECUTABLE)
 
 %:
 	@echo "******** Linking $@ from Object Files. ********"
-	$(LD) $(LFLAGS) -o $@ $(shell find . -name "*.o")
+	$(LD) $(LFLAGS) -o $@ $(shell cat $@.ld)
 
 #	OBJECT FILES.
 
@@ -133,23 +149,29 @@ main: $(EXECUTABLE)
 # Dependency from C.
 %.dc: %.c
 	@echo "******** Calculating dependencies for $*. ********"
-	${CC} ${CFLAGS} -MM $^ > $@
+	@${CC} ${CFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
+	@$(call record_link_dependencies,$@, $*)
+	@cat ${patsubst %.dc, %.ld, $@}
 
 # Dependency from C++.
 %.dcpp: %.cpp
 	@echo "******** Calculating dependencies for $*. ********"
-	${PC} ${PFLAGS} -MM $^ > $@
+	@${PC} ${PFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
+	@$(call record_link_dependencies,$@, $*)
+	@cat ${patsubst %.dcpp, %.ld, $@}
 
 # Dependency from assembly.
 %.ds: %.s
 	@echo "******** Calculating dependencies for $*. ********"
-	${PC} ${PFLAGS} -MM $^ > $@
+	@${PC} ${PFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
+	@$(call record_link_dependencies,$@, $*)
+	@cat ${patsubst %.ds, %.ld, $@}
 
 # The dependencies for the target output file are created by assuming that the target output file requires some object file which carries the same
 # name as the executable being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
