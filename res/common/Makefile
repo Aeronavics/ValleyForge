@@ -88,7 +88,7 @@ define record_link_dependencies
 		for word in $${line[@]}; do							\
 			if [[ $${word} != *: ]]; then						\
 				if [[ $${word} == *.o ]]; then					\
-					echo " " $${patsubst %.o, %.ld, $${word}} >> $(2).ld;	\
+					cat $${word/%.o/.ld} >> $(2).ld;			\
 				fi;								\
 			fi;									\
 		done;										\
