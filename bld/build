@@ -265,11 +265,11 @@ fetch_source()
 	echo -e "${WHITE}Found $C_COUNT C source files.\n${NO_COLOUR}"
 
 	# Count the number of CPP files in the source folder for this component.
-	C_COUNT=`find $TCPATH/src/$COMPONENT -name "*.cpp" | wc -l`
+	P_COUNT=`find $TCPATH/src/$COMPONENT -name "*.cpp" | wc -l`
 	echo -e "${WHITE}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
 
 	# Count the number of S files in the source folder for this component.
-	C_COUNT=`find $TCPATH/src/$COMPONENT -name "*.s" | wc -l`
+	S_COUNT=`find $TCPATH/src/$COMPONENT -name "*.s" | wc -l`
 	echo -e "${WHITE}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
 	# If there are no C/C++ source files and no assembler source files, then there is nothing to do.

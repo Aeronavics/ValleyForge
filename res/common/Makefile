@@ -25,6 +25,12 @@
 
 # Make Configuration Details.
 SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
+	# Disable implicit rules, since they will screw dependency detection up.
+.SUFFIXES:
+
+# Shell colours.
+NO_COLOUR=\033[0m
+BOLD_WHITE=\033[1;37m
 
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
@@ -79,20 +85,32 @@ define detect_source_dependencies
 	done < $(1)
 endef
 
-#	This function records all of the object file dependencies for a particular object file (referenced by $2), based on a matching dependency
-#	file (referenced by $1).  This allows for easily establishing which files to link to produce an executable for a particular object file,
-#	without recursing through the dependency tree all over again.
-define record_link_dependencies
-	echo $(2).o > $(2).ld;									\
-	while read -a line; do									\
-		for word in $${line[@]}; do							\
-			if [[ $${word} != *: ]]; then						\
-				if [[ $${word} == *.o ]]; then					\
-					cat $${word/%.o/.ld} >> $(2).ld;			\
-				fi;								\
-			fi;									\
-		done;										\
-	done < $(1)
+#	This function records all of the object file dependencies for a particular object file (referenced by $1).  The function defines a
+#	recursive bash function, which takes the current place in the tree as $1, and the original target as $2.  The inner function recurses
+#	through the tree (depth-first) and copies all the object depenencies into a single output list.  Finally, the list is sorted to remove
+#	any duplicate elements.  This flattens the dependency tree for the target object file.
+define detect_link_dependencies
+	function recurse_detect_link_dependencies()								\
+	{													\
+		find . -name "$${1}.d*" |									\
+		while read -a file; do										\
+			while read -a line; do									\
+				for word in $${line[@]}; do							\
+					if [[ $${word} != *: ]]; then						\
+						if [[ $${word} == *.o ]]; then					\
+							echo "$${word}" >> "$${2}.ld";				\
+							recurse_detect_link_dependencies $${word/%.o/} $${2};	\
+						fi;								\
+					fi;									\
+				done;										\
+			done < $${file};									\
+		done;												\
+	};													\
+	echo "$(1).o" > $(1).ld;										\
+	recurse_detect_link_dependencies $(1) $(1);								\
+	mv $(1).ld $(1).ld.tmp;											\
+	sort -u $(1).ld.tmp > $(1).ld;										\
+	rm $(1).ld.tmp
 endef
 
 # PSEUDO-TARGETS
@@ -108,37 +126,37 @@ main: $(EXECUTABLE)
 
 #	EXECUTABLE FILES.
 
-%:
-	@echo "******** Linking $@ from Object Files. ********"
+%: %.ld
+	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
 	$(LD) $(LFLAGS) -o $@ $(shell cat $@.ld)
 
 #	OBJECT FILES.
 
 # Object from C.
 %.o : %.c
-	@echo "******** Compiling $@. ********"
+	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Object from C++.
 %.o : %.cpp
-	@echo "******** Compiling $@. ********"
+	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(PC) $(PFLAGS) -c $< -o $@
 
 # Object from assembly.
 %.o : %.s
-	@echo "******** Compiling $@. ********"
+	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(AS) $(AFLAGS) $< -o $@
 
 #	ASSEMBLY FILES.
 
 # Assembly from C.
 %.s: %.c
-	@echo "******** Assembling $@. ********"
+	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -s $< -o $@
 
 # Assembly from CPP.
 %.s: %.cpp
-	@echo "******** Assembling $@. ********"
+	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -s $< -o $@
 
 # DEPENDENCY TARGETS.
@@ -148,30 +166,24 @@ main: $(EXECUTABLE)
 
 # Dependency from C.
 %.dc: %.c
-	@echo "******** Calculating dependencies for $*. ********"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${CC} ${CFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
-	@$(call record_link_dependencies,$@, $*)
-	@cat ${patsubst %.dc, %.ld, $@}
 
 # Dependency from C++.
 %.dcpp: %.cpp
-	@echo "******** Calculating dependencies for $*. ********"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
-	@$(call record_link_dependencies,$@, $*)
-	@cat ${patsubst %.dcpp, %.ld, $@}
 
 # Dependency from assembly.
 %.ds: %.s
-	@echo "******** Calculating dependencies for $*. ********"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -MM $^ > $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
-	@$(call record_link_dependencies,$@, $*)
-	@cat ${patsubst %.ds, %.ld, $@}
 
 # The dependencies for the target output file are created by assuming that the target output file requires some object file which carries the same
 # name as the executable being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
@@ -179,10 +191,19 @@ main: $(EXECUTABLE)
 
 # Dependencies of executable.
 ${EXECUTABLE}.d:
-	@echo "******** Calculating executable dependencies. ********"
+	@echo -e "$(BOLD_WHITE)******** Calculating executable dependencies. ********$(NO_COLOUR)"
 	@# Work out what the main file is going to be, so we can build the output file.
 	@echo -e "Assuming executable ${EXECUTABLE} will depend upon ${EXECUTABLE}.o"
 	@echo -e "${EXECUTABLE}: ${EXECUTABLE}.o\n" >> ${EXECUTABLE}.d
+
+# Linking dependencies are calculated by a separate function.  These are not proper make-syntax dependencies, these are simply a list of those
+# object files which need to be included for linking a particular executable.  This allows linking only those object files which are required.
+
+# Linker dependency from source dependencies.
+%.ld: %.o
+	@echo -e "$(BOLD_WHITE)******** Calculating linking dependencies for $*. ********$(NO_COLOUR)"
+	@$(call detect_link_dependencies,$*)
+	@cat $@
 
 # IMPORT EXTERNAL DEPENDENCIES.
 
@@ -205,6 +226,6 @@ ${EXECUTABLE}.d:
 # file, using the appropriate source files.
 
 # Include dependencies for executable main.
--include ${EXECUTABLE}.d
+#-include ${EXECUTABLE}.d
 
 

@@ -84,11 +84,6 @@ makenative()
 
 	# Iterate over the list of executables.
 	for EXECUTABLE in $EXECUTABLES; do
-		# TODO - This removal of object files is basically a hack, in lieu of the makefile only linking those object files it needs.
-
-		# Remove any object files which might be from a previous executable, otherwise they will be accidentally linked.
-		find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.o" | rm
-
 		# Update the working makefile with the appropriate values for this executable.	
 		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
