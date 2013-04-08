@@ -74,7 +74,7 @@ gen_mavlink()
 
 	# Run the MAVlink code generator.
 	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
-	${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
+	python ${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
 	echo -e ""
 
 	# TODO - This.
