@@ -168,6 +168,7 @@ main: $(EXECUTABLE)
 %.dc: %.c
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${CC} ${CFLAGS} -MM $^ > $@
+	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
 
@@ -175,6 +176,7 @@ main: $(EXECUTABLE)
 %.dcpp: %.cpp
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -MM $^ > $@
+	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
 
@@ -182,6 +184,7 @@ main: $(EXECUTABLE)
 %.ds: %.s
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -MM $^ > $@
+	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@
 
