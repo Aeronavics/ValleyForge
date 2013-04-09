@@ -92,7 +92,7 @@ endef
 define detect_link_dependencies
 	function recurse_detect_link_dependencies()								\
 	{													\
-		find . -name "$${1}.d*" |									\
+		find . -wholename "./$${1}.d*" |								\
 		while read -a file; do										\
 			while read -a line; do									\
 				for word in $${line[@]}; do							\
