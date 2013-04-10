@@ -62,6 +62,13 @@ upload_cscript()
 		return 1
 	fi
 
+	# Check if the output folder is present (if it isn't, probably the user has forgot to build the component first).
+	if [ ! -d ${TCPATH}/bin/${COMPONENT} ]; then
+		# There is not output folder for the component, which probably means it hasn't been built.
+		echo -e "${RED}Could not find output directory bin/${COMPONENT}.  Probably the component hasn't been built yet.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Ask the user if they are sure they want to do this.
 	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via shell script '${UPLOAD_CSCRIPT_FILE}'? (Y/N) ${NO_COLOUR}"
 	read -n 1
