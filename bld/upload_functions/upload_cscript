@@ -1,0 +1,91 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_cscript											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	11-04-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Allows for using a custom shell script to upload a component; this is most useful when building	###
+###			in a native context, and you just need to copy the output files into their install location.	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported cscript upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_cscript							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Simply looks for an appropriately named shell script in the src	###
+###			folder of the component being uploaded and executes it.		###
+###											###
+###########################################################################################
+
+upload_cscript() 
+{
+	# Check if there is a custom upload shell script specified.
+	if [ -z ${UPLOAD_CSCRIPT_FILE} ]; then
+		# No custom script is specified, so abort.
+		echo -e "${RED}No upload shell script is specified in the component's configuration.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check that the expected shell script is present.
+	if [ ! -f ${TCPATH}/src/${COMPONENT}/${UPLOAD_CSCRIPT_FILE} ]; then
+		# The specified script is missing, so abort.
+		echo -e "${RED}Could not find upload script file.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via shell script '${UPLOAD_CSCRIPT_FILE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${BOLD_WHITE}Uploading files for component $COMPONENT to via shell script ${UPLOAD_CSCRIPT_FILE}.\n${NO_COLOUR}"		
+
+		# Run the shell script.
+		source ${TCPATH}/src/${COMPONENT}/${UPLOAD_CSCRIPT_FILE}
+
+		# We don't know if that worked, but report that the script completed.
+		echo -e "\n${BOLD_WHITE}Script completed.\n${NO_COLOUR}"
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set"
+	fi
+
+	# All done.
+	return 0
+}
+
