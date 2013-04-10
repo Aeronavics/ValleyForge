@@ -40,7 +40,9 @@ echo -e "${CYAN}Imported cscript upload-functions.\n${NO_COLOUR}"
 ### Inputs/Outputs:	None								###
 ###											###
 ### Purpose:		Simply looks for an appropriately named shell script in the src	###
-###			folder of the component being uploaded and executes it.		###
+###			folder of the component being uploaded and executes it.  The	###
+###			shell script is executed in the binary output folder for the	###
+###			component, which presumably contains the files it needs.	###
 ###											###
 ###########################################################################################
 
@@ -76,7 +78,9 @@ upload_cscript()
 		echo -e "${BOLD_WHITE}Uploading files for component $COMPONENT to via shell script ${UPLOAD_CSCRIPT_FILE}.\n${NO_COLOUR}"		
 
 		# Run the shell script.
-		source ${TCPATH}/src/${COMPONENT}/${UPLOAD_CSCRIPT_FILE}
+		cp ${TCPATH}/src/${COMPONENT}/${UPLOAD_CSCRIPT_FILE} ${TCPATH}/bin/${COMPONENT}/${UPLOAD_CSCRIPT_FILE}
+		(cd ${TCPATH}/bin/${COMPONENT} ; source ./${UPLOAD_CSCRIPT_FILE})
+		rm ${TCPATH}/bin/${COMPONENT}/${UPLOAD_CSCRIPT_FILE}
 
 		# We don't know if that worked, but report that the script completed.
 		echo -e "\n${BOLD_WHITE}Script completed.\n${NO_COLOUR}"
