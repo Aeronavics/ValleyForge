@@ -128,7 +128,7 @@ main: $(EXECUTABLE)
 
 %: %.ld
 	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
-	$(LD) $(LFLAGS) -o $@ $(shell cat $@.ld)
+	$(LD) -o $@ $(shell cat $@.ld) $(LFLAGS)
 
 #	OBJECT FILES.
 
