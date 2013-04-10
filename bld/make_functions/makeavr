@@ -55,10 +55,6 @@ makeavr()
 	# Set up the AVR compiler.
 	unpack_avrc
 
-	# Copy the relevant makefile in with the source.
-	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
 	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
@@ -75,6 +71,10 @@ makeavr()
 	LFLAGS=$(eval echo $LFLAGS)
 
 	# NOTE - AVR targets only support a single application executable, so it is named the same as the component.
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 						
 	# Update the working makefile with the appropriate values for this component.
 	sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -113,13 +113,14 @@ makeavr()
 		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
 	fi
+	echo -e ""
 
 	# Print out details of the size of the generated hex file.
-	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
 	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
 

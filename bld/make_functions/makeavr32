@@ -55,10 +55,6 @@ makeavr32()
 	# Set up the AVR32 compiler.
 	unpack_avr32c
 
-	# Copy the relevant makefile in with the source.
-	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
 	# If we are using a linker script, then add the appropriate linker flags to use it.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
@@ -75,6 +71,10 @@ makeavr32()
 	LFLAGS=$(eval echo $LFLAGS)
 
 	# NOTE - AVR32 targets only support a single application executable, so it is named the same as the component.
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 								
 	# Update the working makefile with the appropriate values for this component.	
 	sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -113,14 +113,15 @@ makeavr32()
 		# Something went wrong.
 		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
 		return 1
-	fi	
+	fi
+	echo -e ""	
 
 	# Print out details of the size of the generated hex file.
-	echo -e "\n${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex								
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}.hex					
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
 

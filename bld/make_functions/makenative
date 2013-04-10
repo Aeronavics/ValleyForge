@@ -55,10 +55,6 @@ makenative()
 	# Set up the native compiler.
 	unpack_nativec
 
-	# Copy the relevant makefile in with the source.
-	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
 	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
@@ -84,6 +80,10 @@ makenative()
 
 	# Iterate over the list of executables.
 	for EXECUTABLE in $EXECUTABLES; do
+		# Copy the relevant makefile in with the source.
+		echo -e "${CYAN}Constructing makefile for executable $EXECUTABLE...\n${NO_COLOUR}"
+		cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
 		# Update the working makefile with the appropriate values for this executable.	
 		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -110,6 +110,7 @@ makenative()
 			echo -e "\n${RED}Compilation error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"
 			return 1
 		fi
+		echo -e ""
 	
 		# The compilation worked, so now just copy across the output binaries into the appropriate format.
 		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
@@ -121,12 +122,13 @@ makenative()
 			echo -e "\n${RED}Object copy error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"			
 			return 1
 		fi
+		echo -e ""
 
 		# TODO - Print out the size of the generated file.	
 	done
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
 

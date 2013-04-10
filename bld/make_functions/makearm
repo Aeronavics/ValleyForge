@@ -77,10 +77,6 @@ makearm_linux()
 	# Set up the ARM compiler.
 	unpack_armc
 
-	# Copy the relevant makefile in with the source.
-	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
-	cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
 	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
@@ -106,6 +102,10 @@ makearm_linux()
 
 	# Iterate over the list of executables.
 	for EXECUTABLE in $EXECUTABLES; do
+		# Copy the relevant makefile in with the source.
+		echo -e "${CYAN}Constructing makefile for executable $EXECUTABLE...\n${NO_COLOUR}"
+		cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
 		# Update the working makefile with the appropriate values for this executable.	
 		sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -133,6 +133,7 @@ makearm_linux()
 			echo -e "\n${RED}Compilation error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"
 			return 1
 		fi
+		echo -e ""
 	
 		# The compilation worked, so now just copy across the output binaries into the appropriate format.
 		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
@@ -144,12 +145,13 @@ makearm_linux()
 			echo -e "\n${RED}Object copy error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"			
 			return 1
 		fi
+		echo -e ""
 
 		# TODO - Print out the size of the generated file.	
 	done
 
 	# All done.
-	echo -e "\n${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
 
