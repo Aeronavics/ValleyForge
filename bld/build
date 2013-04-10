@@ -758,6 +758,23 @@ do
 			continue
 		fi
 	fi
+
+	# Check if there are any other files in the source folder which need to be copied across.
+	if [ -z "${RESOURCE_FILES}" ]; then
+		# There aren't any resources files to copy over.
+		echo -e "${CYAN}No resource files to copy.\n${NO_COLOUR}"
+	else
+		# There are some resources files to copy over to the output directory.
+		echo -e "${CYAN}Copying resource files to output.\n${NO_COLOUR}"
+		
+		# Make sure there is somewhere to put the files.
+		mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
+		
+		# Copy each of the files across.
+		for FILE in ${RESOURCE_FILES}; do
+			cp ${TCPATH}/src/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+		done
+	fi
 done
 
 # Now wer are done with the actual work, we just have to tidy up.
