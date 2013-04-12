@@ -30,6 +30,10 @@
 // Include the STDINT fixed width types.
 #include >>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<
 
+// DEFINE PUBLIC MACROS.
+
+// SELECT NAMESPACES.
+
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
@@ -82,6 +86,8 @@ class Public_class_type
  * @return	Details of return value from the function.
  */
 int main(void);
+
+// IMPLEMENT PUBLIC STATIC INLINE FUNCTIONS.
 
 #endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
