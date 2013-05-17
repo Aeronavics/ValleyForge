@@ -53,7 +53,7 @@ unpack_mavlink()
 	# Check if the MAVlink repository has been downloaded already.
 	if [ ! -d ${VENDOR_MAVLINK_LOCAL} ]; then
 		# We need to clone the repository before we can use it.		
-		echo -e "${CYAN}Downloading the MAVlink vendor source...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tDownloading the MAVlink vendor source...\n${NO_COLOUR}"
 		git clone --depth=1 ${VENDOR_MAVLINK_REMOTE} ${VENDOR_MAVLINK_LOCAL}
 		echo -e ""
 	else
@@ -64,7 +64,7 @@ unpack_mavlink()
 			return 1
 		else
 			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}Updating the MAVlink vendor source...\n${NO_COLOUR}"
+			echo -e "${CYAN}\tUpdating the MAVlink vendor source...\n${NO_COLOUR}"
 			pushd ${VENDOR_MAVLINK_LOCAL} >/dev/null
 			git pull
 			echo -e ""
@@ -111,7 +111,7 @@ pack_mavlink()
 	# Check if the MAVlink repository has been downloaded already.
 	if [ -d ${VENDOR_MAVLINK_LOCAL} ]; then
 		# We just delete the downloaded clone of the repository.		
-		echo -e "${CYAN}Cleaning up MAVlink vendor source...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tCleaning up MAVlink vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_MAVLINK_LOCAL}
     	fi
 		# Else, the source is already packed.

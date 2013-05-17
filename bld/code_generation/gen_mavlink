@@ -47,6 +47,10 @@ echo -e "${CYAN}Imported MAVlink code generation functions.\n${NO_COLOUR}"
 
 gen_mavlink()
 {
+	# DEFINE CONSTANTS.
+
+	GEN_CACHE=${TCPATH}/tmp/gen_cache
+
 	# PRIVATE INTERNAL FUNCTIONS.
 
 	# FUNCTION PROPER STARTS HERE.
@@ -57,6 +61,7 @@ gen_mavlink()
 		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
 		return 1
 	fi
+	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
 
 	# Unpack the MAVlink source.
 	unpack_mavlink
@@ -72,12 +77,25 @@ gen_mavlink()
 		cp ${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/common.xml ${TCPATH}/var/mavlink.xml
 	fi
 
+	# Copy the relevant makefile into the cache.
+	echo -e "${CYAN}\tConstructing makefile for generating MAVlink code...\n${NO_COLOUR}"
+	mkdir -p ${GEN_CACHE}
+	cp -f ${TCPATH}/bld/code_generation/Makefile_mavlink ${GEN_CACHE}
+
+	# Update the working makefile with the appropriate values for this component.
+	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
+	sed -ri "s^(MAVLINK_DEFINITIONS *= *)BUILD_INSERTS_MAVLINK_DEFINITIONS_HERE(\\s.*)?^\1${TCPATH}/var/mavlink.xml\2^" ${GEN_CACHE}/Makefile_mavlink
+	sed -ri "s^(MAVLINK_SANDPIT *= *)BUILD_INSERTS_MAVLINK_SANDPIT_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}\2^" ${GEN_CACHE}/Makefile_mavlink
+
 	# Run the MAVlink code generator.
-	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
-	python ${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
+	echo -e "${CYAN}\tBuilding MAVlink protocol files...\n${NO_COLOUR}"
+#	python ${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
+	make -C ${GEN_CACHE} -f Makefile_mavlink all
 	echo -e ""
 
-	# TODO - This.
+	# Copy the generated code into the source tree.
+	echo -e "${CYAN}\tCopying across generated MAVlink files...\n${NO_COLOUR}"
+	cp -rf ${GEN_CACHE}/mavlink $1/mavlink
 
 	# All done.
 	return 0

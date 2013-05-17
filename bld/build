@@ -306,41 +306,10 @@ generic_precompile()
 	# Perform any required code generation.
 	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# Preprocess the copied header files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.h"); do
-		# Preprocess this header file.
-		preprocess_general $FILE
-	done
+	# Perform any required preprocessing.
+	preprocess_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# Preprocess the copied header files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.hpp"); do
-		# Preprocess this header file.
-		preprocess_general $FILE
-	done
-
-	# Preprocess the copied header files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.hs"); do
-		# Preprocess this header file.
-		preprocess_general $FILE
-	done
-
-	# Preprocess the copied source files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.c"); do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
-
-	# Preprocess the copied source files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.cpp"); do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
-
-	# Preprocess the copied assembler files.
-	for FILE in $(find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.s"); do
-		# Preprocess this source file.
-		preprocess_general $FILE
-	done
+	# TODO - This FreeRTOS bit will probably be deprecated shortly.
 
 	# Check to see if the platform is freertos.
 	if [ $PLATFORM == "freertos" ]; then
@@ -352,6 +321,41 @@ generic_precompile()
 	get_hal
 
 	# TODO - If there is anything required to set up the platform, maybe it goes about here?
+
+	# All done.
+	return 0
+}
+
+# Preprocess any source files which require it.
+preprocess_code()
+{
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for preprocessing.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Preprocessing files...\n${NO_COLOUR}"
+
+	# Construct a string with any required prune statements for files that should not be preprocessed.
+	PREPROCESSOR_MASK_STRING=
+	if [ -n ${PREPROCESSOR_MASK} ]; then
+		echo -e "${YELLOW}\tNot preprocessing masked files in directories: ${PREPROCESSOR_MASK}\n${NO_COLOUR}"
+		for PREPROCESSOR_MASK_WORD in ${PREPROCESSOR_MASK}; do
+			PREPROCESSOR_MASK_STRING+=" -wholename $1/${PREPROCESSOR_MASK_WORD} -prune -o"
+		done
+	fi
+
+	# Preprocess any appropriate files.
+	for FILE in $(find $1 ${PREPROCESSOR_MASK_STRING} -name "*.h" -print \
+							-o -name "*.hpp" -print \
+							-o -name "*.hs" -print \
+							-o -name "*.c" -print \
+							-o -name "*.cpp" -print \
+							-o -name "*.s" -print); do
+		# Preprocess this header file.
+		preprocess_general $FILE
+	done
 
 	# All done.
 	return 0
@@ -427,8 +431,8 @@ EOF
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
-# Delete everything in the tmp directory.
-rm -rf  $TCPATH/tmp/*
+# Delete any temporary source files from last time.
+rm -rf  $TCPATH/TMP_SRC_DIR
 
 # PARSE ANY COMMAND LINE PARAMETERS.
 

@@ -54,7 +54,7 @@
 preprocess_template()
 {	
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing template file ${1##*/}...\n${NO_COLOUR}"
+	echo -e "${CYAN}\tPreprocessing template file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -174,7 +174,7 @@ preprocess_template()
 preprocess_general()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing file ${1##*/}...\n${NO_COLOUR}"
+	echo -e "${CYAN}\tPreprocessing file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -272,7 +272,7 @@ preprocess_general()
 preprocess_bootloader()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing bootloader file ${1##*/}...\n${NO_COLOUR}"
+	echo -e "${CYAN}\tPreprocessing bootloader file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
@@ -375,7 +375,7 @@ preprocess_bootloader()
 preprocess_hal()
 {
 	# Preprocess the files.
-	echo -e "${CYAN}Preprocessing HAL file ${1##*/}...\n${NO_COLOUR}"
+	echo -e "${CYAN}\tPreprocessing HAL file ${1##*/}...\n${NO_COLOUR}"
 
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
