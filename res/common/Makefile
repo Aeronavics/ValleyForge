@@ -172,8 +172,8 @@ main: $(EXECUTABLE)
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [[ `cat $@ | wc -l` > $(DEPENDENCY_LINES_TO_TRUNCATE) ]]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [[ `cat $@ | wc -l` < 1 ]]; then echo "File has no dependencies."; fi
+	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
+	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
 
 # Dependency from C++.
 %.dcpp: %.cpp
@@ -182,8 +182,8 @@ main: $(EXECUTABLE)
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [[ `cat $@ | wc -l` > $(DEPENDENCY_LINES_TO_TRUNCATE) ]]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [[ `cat $@ | wc -l` < 1 ]]; then echo "File has no dependencies."; fi
+	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
+	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
 
 # Dependency from assembly.
 %.ds: %.s
@@ -192,8 +192,8 @@ main: $(EXECUTABLE)
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [[ `cat $@ | wc -l` > $(DEPENDENCY_LINES_TO_TRUNCATE) ]]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [[ `cat $@ | wc -l` < 1 ]]; then echo "File has no dependencies."; fi
+	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
+	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
 
 # The dependencies for the target output file are created by assuming that the target output file requires some object file which carries the same
 # name as the executable being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
