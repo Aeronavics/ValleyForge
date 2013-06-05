@@ -339,7 +339,7 @@ preprocess_code()
 
 	# Construct a string with any required prune statements for files that should not be preprocessed.
 	PREPROCESSOR_MASK_STRING=
-	if [ -n ${PREPROCESSOR_MASK} ]; then
+	if [ -n "${PREPROCESSOR_MASK}" ]; then
 		echo -e "${YELLOW}\tNot preprocessing masked files in directories: ${PREPROCESSOR_MASK}\n${NO_COLOUR}"
 		for PREPROCESSOR_MASK_WORD in ${PREPROCESSOR_MASK}; do
 			PREPROCESSOR_MASK_STRING+=" -wholename $1/${PREPROCESSOR_MASK_WORD} -prune -o"
