@@ -1,0 +1,22 @@
+--- build-common.sh.bak	2013-03-13 07:37:56.000000000 +1300
++++ build-common.sh	2013-06-04 14:53:58.094942639 +1200
+@@ -321,7 +321,6 @@
+ GDB_CONFIG_OPTS=
+ NEWLIB_CONFIG_OPTS=
+ 
+-
+ PKGVERSION="GNU Tools for ARM Embedded Processors"
+ BUGURL=""
+ 
+@@ -329,8 +328,9 @@
+ # on Ubuntu and Mac OS X.
+ uname_string=`uname | sed 'y/LINUXDARWIN/linuxdarwin/'`
+ if [ "x$uname_string" == "xlinux" ] ; then
+-    BUILD=i686-linux-gnu
+-    HOST_NATIVE=i686-linux-gnu
++    BUILD=$(gcc -v 2>&1 | grep '^Target:')
++    BUILD=${BUILD##Target: }
++    HOST_NATIVE=${BUILD}
+     READLINK=readlink
+     JOBS=`grep ^processor /proc/cpuinfo|wc -l`
+     GCC_CONFIG_OPTS_LCPP="--with-host-libstdcxx=-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm"

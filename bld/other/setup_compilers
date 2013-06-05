@@ -31,6 +31,10 @@
 ###															###
 ###########################################################################################################################
 
+# DEFINE VARIABLES.
+
+TMP_COMPILER_DIR="${TCPATH}/tmp/tmp_compiler"
+
 ######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_avrc							###
@@ -101,6 +105,124 @@ unpack_armc()
 
 	# The compiler is already set to go.
 	echo -e "${CYAN}ARM compiler available.\n${NO_COLOUR}"
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_embeddedarmc						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the embedded ARM compiler (and associated toolchain)	###
+###			is available for use, and if not, sets it up ready to go.  This	###
+###			is the compiler used for Cortex devices such as STM32.  	###
+###											###
+###########################################################################################
+
+unpack_embeddedarmc()
+{
+	# Check to see if the embedded arm compiler is already available.
+
+	# Check if there is a cached copy of the compiler.
+	if [ -f "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-gcc" ]; then
+		# TODO - Probably should check that the other files are present.
+
+		# We don't need to do anything, since a compiler is already ready to go.
+		echo -e "${CYAN}Embedded ARM compiler (already) available.\n${NO_COLOUR}"
+	else
+		# The compiler isn't ready, so we need to unpack one.
+
+		# Because building the compiler from source is REALLY slow, we look to see if there is already a suitable compiler installed.
+		if command -v arm-none-eabi-gcc >/dev/null 2>&1; then
+			# Looks like there is already a compiler installed, so we'll just link to it.
+			echo -e "${CYAN}Linking to existing embedded ARM compiler installation...\n${NO_COLOUR}"
+			mkdir -p "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin"
+			ln -s `which arm-none-eabi-gcc` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-gcc"
+			ln -s `which arm-none-eabi-objcopy` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objcopy"
+			ln -s `which arm-none-eabi-objdump` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objdump"
+			ln -s `which arm-none-eabi-size` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-size"
+
+			# TODO - Probably need to link some files other than just GCC.
+
+			# We should be all good to go now.
+			echo -e "${CYAN}Embedded ARM compiler available.\n${NO_COLOUR}"
+		else
+			# We'll need to download and build the compiler ourselves.  This will be slow.
+			echo -e "${CYAN}No existing embedded ARM compiler found.  We'll download the source and build one.  This might take some time.\n${NO_COLOUR}"
+			mkdir -p "${TMP_COMPILER_DIR}/embeddedarm"
+
+			# Download the source.
+			echo -e "${CYAN}Downloading embedded ARM compiler source...\n${NO_COLOUR}"
+			wget -nc -O "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi-src.tar.bz2" "https://launchpad.net/gcc-arm-embedded/4.7/4.7-2013-q1-update/+download/gcc-arm-none-eabi-4_7-2013q1-20130313-src.tar.bz2"
+			echo ""
+			
+			# Unpack the source.
+			echo -e "${CYAN}Unpacking the source...\n${NO_COLOUR}"
+			rm -rf "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi"
+			tar -xjf "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi-src.tar.bz2" -C "${TMP_COMPILER_DIR}/embeddedarm/"
+			mv "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi-4_7-2013q1-20130313" "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi"
+			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/src" >/dev/null
+				# NOTE - We test if this command works at the moment, because if it doesn't, then bad things happen in the next line.
+			if [ ${PWD} == "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/src" ]; then
+				# We are in the newly created directly, which contains futher source files to unpack.				
+				find -name '*.tar.*' | xargs -I% tar -xf %
+				popd >/dev/null
+			else
+				# Somehow we didn't end up in the newly created directory.  All we can do is bail.
+				echo -e "${RED}FATAL ERROR - Something went wrong during the unpacking processs.  Abandon ship!\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# Patch the source so that it actually works properly.
+			echo -e "${CYAN}Applying patches to the source...\n${NO_COLOUR}"
+			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/src/zlib-1.2.5" >/dev/null
+			patch -p1 <../zlib-1.2.5.patch
+			popd >/dev/null
+			cp "${TCPATH}/res/arm/embedded-arm/build-common.sh.patch" "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-common.sh.patch"
+			cp "${TCPATH}/res/arm/embedded-arm/build-prerequisites.sh.patch" "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-prerequisites.sh.patch"
+			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi" >/dev/null
+			patch < "build-common.sh.patch"
+			patch < "build-prerequisites.sh.patch"
+			popd >/dev/null
+			echo ""
+
+			# Build the dependencies for the embedded ARM toolchain.
+			echo -e "${CYAN}Building embedded ARM toolchain dependencies...\n${NO_COLOUR}"
+			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi" >/dev/null
+			${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-prerequisites.sh --skip_mingw32		
+			# Check if building the dependencies worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build embedded ARM compiler dependencies.\n${NO_COLOUR}"
+				popd >/dev/null
+				return 1
+			fi
+			popd >/dev/null
+			echo ""
+
+			# Build the actual embedded ARM toolchain.  This takes quite a long time.
+			echo -e "${CYAN}Building embedded ARM toolchain...\n${NO_COLOUR}"
+			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi" >/dev/null
+			${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-toolchain.sh --skip_mingw32
+			# Check if building the dependencies worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build embedded ARM compiler dependencies.\n${NO_COLOUR}"
+				popd >/dev/null
+				return 1
+			fi
+			popd >/dev/null
+			echo ""
+		
+			# We should be all good to go now.
+			echo -e "${CYAN}Embedded ARM compiler available.\n${NO_COLOUR}"
+		fi
+	fi
 
 	# TODO - Test the now the required executables actually exist.
 
@@ -227,6 +349,7 @@ pack_allc()
 	pack_avrc
 	pack_avr32c
 	pack_armc
+	pack_embeddedarm
 	pack_arduinoc
 	pack_nativec
 	pack_uploader
@@ -288,6 +411,31 @@ pack_avr32c()
 pack_armc()
 {
 	# For now, this doesn't do anything.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_embeddedarmc						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the embedded ARM compiler was previously unpacked,	###
+###			and if it was, then packs it up again.				###
+###											###
+###########################################################################################
+
+pack_embeddedarmc()
+{
+	# Check if the embedded ARM compiler exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/embeddedarm" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up embedded ARM compiler...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/embeddedarm"
+    	fi
+		# Else, the compiler is already packed.
 
 	# All done.
 	return	

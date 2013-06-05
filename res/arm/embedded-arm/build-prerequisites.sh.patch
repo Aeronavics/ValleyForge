@@ -1,0 +1,11 @@
+--- build-prerequisites.sh	2013-06-04 16:56:30.411050986 +1200
++++ build-prerequisites.sh.works	2013-06-04 16:55:57.047050494 +1200
+@@ -163,7 +163,7 @@
+     --prefix=$BUILDDIR_NATIVE/host-libs/usr \
+     --disable-shared \
+     --disable-nls \
+-    --with-host-libstdcxx='-lstdc++'    \
++    --with-host-libstdcxx='-lstdc++ -lm'    \
+     --with-gmp=$BUILDDIR_NATIVE/host-libs/usr \
+     --with-ppl=$BUILDDIR_NATIVE/host-libs/usr
+ 
