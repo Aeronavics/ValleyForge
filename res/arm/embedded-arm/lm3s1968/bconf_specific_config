@@ -29,8 +29,8 @@ echo -e "\n" # NOTE - This is because the read command won't put a newline after
 # If they responded YES, then add the startup code to the list of files to import.  If NO, then move on.
 if [[ $REPLY =~ ^[Yy]$ ]]; then
 	# Add the startup files to the list of files to import.
-	echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968_startup.c:lm3s1968_startup.c'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
-	echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968_startup.h:lm3s1968_startup.h'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+	echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+	echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 fi
 
 # Write any other configuration entries, then a blank line, to the configuration file.
