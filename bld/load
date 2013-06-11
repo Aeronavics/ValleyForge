@@ -47,8 +47,11 @@ OUTPUT_DIR="bin"
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
-# Define the functions used for set up the compilers.
+# Define the functions used to set up the compilers.
 source $TCPATH/bld/other/setup_compilers
+
+# Define the functions used to set up other tools.
+source $TCPATH/bld/other/setup_tools
 
 # Define the functions used to actually upload components.
 for f in $TCPATH/bld/upload_functions/upload*; do
@@ -91,9 +94,6 @@ EOF
 }
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
-
-# Delete everything in the tmp directory.
-rm -rf  $TCPATH/tmp/*
 
 # PARSE ANY COMMAND LINE PARAMETERS.
 

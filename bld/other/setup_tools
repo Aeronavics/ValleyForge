@@ -1,0 +1,173 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		setup_other											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	26-02-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which checks to see if a specific tool is set up and ready to go, and if 	###
+###			not, sets it up.  Also offers functions	to 'un-set' each tool once it is no longer required.	###
+###															###
+###########################################################################################################################
+
+# DEFINE VARIABLES.
+
+TMP_COMPILER_DIR="${TCPATH}/tmp/tmp_compiler"
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_openocd							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if OpenOCD is available for use, and if not, sets it up	###
+###			ready to go.  							###
+###											###
+###########################################################################################
+
+unpack_openocd()
+{
+	# Check to see if OpenOCD is already available.
+
+	# Check if there is a cached copy of the tool.
+	if [ -f "${TMP_COMPILER_DIR}/openocd/openocd_install/bin/openocd" ]; then
+		# We don't need to do anything, since the tool is already ready to go.
+		echo -e "${CYAN}OpenOCD (already) available.\n${NO_COLOUR}"
+	else
+		# The tool isn't ready, so we need to unpack it.
+
+		# Because building the tool from source is fairly slow, we look to see if there is already a suitable version installed.
+		if command -v openocd >/dev/null 2>&1; then
+			# Looks like there is already a version installed, so we'll just link to it.
+			echo -e "${CYAN}Linking to OpenOCD installation...\n${NO_COLOUR}"
+			mkdir -p "${TMP_COMPILER_DIR}/openocd/openocd_install/bin/"
+			ln -s `which openocd` "${TMP_COMPILER_DIR}/openocd/openocd_install/bin/openocd"
+
+			# TODO - Might need to link some files other than just the main binary?
+
+			# We should be all good to go now.
+			echo -e "${CYAN}OpenOCD available.\n${NO_COLOUR}"
+		else
+			# We'll need to download and build the compiler ourselves.  This will be slow.
+			echo -e "${CYAN}No existing OpenOCD install found.  We'll download the source and build it.  This might take some time.\n${NO_COLOUR}"
+			mkdir -p "${TMP_COMPILER_DIR}/openocd"
+
+			# Download the source.
+			echo -e "${CYAN}Downloading OpenOCD source...\n${NO_COLOUR}"
+			wget -nc -O "${TMP_COMPILER_DIR}/openocd/openocd-0.7.0.tar.bz2" "http://downloads.sourceforge.net/project/openocd/openocd/0.7.0/openocd-0.7.0.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fopenocd%2Ffiles%2Fopenocd%2F0.7.0%2F&ts=1370756585&use_mirror=hivelocity"
+			echo ""
+			
+			# Unpack the source.
+			echo -e "${CYAN}Unpacking the source...\n${NO_COLOUR}"
+			rm -rf "${TMP_COMPILER_DIR}/openocd/openocd_src"
+			tar -xjf "${TMP_COMPILER_DIR}/openocd/openocd-0.7.0.tar.bz2" -C "${TMP_COMPILER_DIR}/openocd/"
+			mv "${TMP_COMPILER_DIR}/openocd/openocd-0.7.0" "${TMP_COMPILER_DIR}/openocd/openocd_src"
+
+			# Build the OpenOCD software.  This might take a while.
+			echo -e "${CYAN}Building OpenOCD...\n${NO_COLOUR}"
+			pushd "${TMP_COMPILER_DIR}/openocd/openocd_src" >/dev/null
+				# The build process is the standard configure, make, make install.  First, we configure.
+			${TMP_COMPILER_DIR}/openocd/openocd_src/configure --prefix="${TMP_COMPILER_DIR}/openocd/openocd_install" --enable-ft2232_libftdi
+			# Check if configuring worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build OpenOCD: the 'configure' stage failed.\n${NO_COLOUR}"
+				popd >/dev/null
+				return 1
+			fi
+				# Then, we make.
+			make
+			# Check if making worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build OpenOCD: the 'make' stage failed.\n${NO_COLOUR}"
+				popd >/dev/null
+				return 1
+			fi
+				# And finally, we install.
+			mkdir -p ${TMP_COMPILER_DIR}/openocd/openocd_install
+			make install
+			# Check if installing worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build OpenOCD: the 'install' stage failed.\n${NO_COLOUR}"
+				popd >/dev/null
+				return 1
+			fi
+			popd >/dev/null
+			echo ""
+		
+			# We should be all good to go now.
+			echo -e "${CYAN}OpenOCD available.\n${NO_COLOUR}"
+		fi
+	fi
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_allc							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		For each tool which was previously unpacked, packs those	###
+###			compilers back again.						###
+###											###
+###########################################################################################
+
+pack_allt()
+{
+	# Just pack each of the tools in turn.
+	pack_openocd
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_openocd							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if OpenOCD was previously unpacked, and if it was, then	###
+###			packs it up again.						###
+###											###
+###########################################################################################
+
+pack_openocd()
+{
+	# Check if OpenOCD exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/openocd" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up OpenOCD...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/openocd"
+    	fi
+		# Else, the tool is already packed.
+
+	# All done.
+	return	
+}
+
+

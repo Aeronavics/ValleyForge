@@ -1,0 +1,236 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_openocd											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	06-06-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions for uploading code to targets using OpenOCD.					###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported OpenOCD upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_openocd							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Uploads files to a target connected to the host PC, though the	###
+###			use of OpenOCD and a prepared OpenOCD command script file.	###
+###											###
+###########################################################################################
+
+upload_openocd() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+	
+#	upload_can_finddevice_socketcan()
+#	{
+#		# We look to see if there is anything that might be a socketCAN interface.
+#		echo -e "${CYAN}Searching for any available SocketCAN interfaces...${NO_COLOUR}"
+#		
+#		# TODO - Actually look for can interfaces.
+#		
+#		# Get a list of all the device files which look like they could be ISP500's.
+#		CAN_INTERFACES=`ip link show | grep "can[[:digit:]]\+" | sed "s/^.*\(can[[:digit:]]\+\).*$/\1/" `
+#
+#		# Check to see if we didn't find any suitable devices.
+#		if [ -z ${CAN_INTERFACES} ]; then
+#			# We didn't find any, so abort.
+#			echo -e "${YELLOW}No suitable socketCAN interfaces found.\n${NO_COLOUR}"
+#			CAN_TYPE=
+#			CAN_IFACE=
+#
+#		# Check to see if we found exactly one suitable device.
+#		elif [ `echo ${CAN_INTERFACES} | wc -l` == 1 ]; then
+#			# This might be an AVR ISP500, so we use that.
+#			echo -e "${CYAN}Found a socket CAN interface.\n${NO_COLOUR}"
+#			CAN_TYPE="socket"
+#			CAN_IFACE="${CAN_INTERFACES}"
+#
+#		# Else, we found multiple possible files.
+#		else
+#			# Since we found multiple files, we'll use the last one plugged in.
+#			CAN_INTERFACES=`dmesg | grep "cdc_acm" | grep -o "ttyACM[0123456789]*" | tail -n 1`
+#			echo -e "${CYAN}Found multiple socket CAN interfaces.  Using can0.\n${NO_COLOUR}"
+#			CAN_TYPE="socket"
+#			CAN_IFACE="can0"
+#		fi
+#
+#		# All done.
+#		return			
+#	}
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# TODO - At the moment we assume the output files will be in binary format, which might not be the case.
+
+	# Check if we are supposed to be loading the application code.
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.bin" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find application binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin" ]; then
+			# The expected binary file was not present.
+			echo -e "${RED}Could not find bootloader binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# TODO - Unpack other tools?  There is the question of what to do if we need a compiler's binutils?  Probably assume embedded-arm, since that is what mostly uses OpenOCD?
+	
+	# Unpack OpenOCD.
+	unpack_openocd
+
+	# Sort out which file needs to be uploaded.
+#	if [ "${UPLOAD_APPLICATION}" -a "${UPLOAD_BOOTLOADER}" ]; then
+#		# Create a combined binary temporarily to upload.
+#		srec_cat "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" -I
+#
+#		# Set the file to flash to be the combined binary.
+#		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
+#	
+#	elif [ ${UPLOAD_BOOTLOADER} ]; then
+#		# Set the file to flash to be the bootloader binary.
+#		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex"
+#
+#	else
+		# Set the file to flash to be the application binary.
+		OPENOCD_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.bin"
+#	fi
+
+	# TODO - Really, we might want to give the user some choice over which interface device they use?
+	
+	# Check if the OpenOCD interface file has been specified.
+	if [ -z "${OPENOCD_INTERFACE_FILE}" ]; then
+		# The interface file parameter has not been completed.
+		echo -e "${RED}OpenOCD interface configuration file not specified for this component.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	# Check if the specified interface file exists.
+	if [ ! -f "${TCPATH}/${OPENOCD_INTERFACE_FILE}" ]; then
+		# The specified file is missing.
+		echo -e "${RED}The specified OpenOCD interface configuration file does not exist.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if the OpenOCD target file has been specified.
+	if [ -z "${OPENOCD_TARGET_FILE}" ]; then
+		# The target file parameter has not been completed.
+		echo -e "${RED}OpenOCD target configuration file not specified for this component.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	# Check if the specified target file exists.
+	if [ ! -f "${TCPATH}/${OPENOCD_TARGET_FILE}" ]; then
+		# The specified file is missing.
+		echo -e "${RED}The specified OpenOCD target configuration file does not exist.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if the OpenOCD command file has been specified.
+	if [ -z "${OPENOCD_COMMAND_FILE}" ]; then
+		# The target file parameter has not been completed.
+		echo -e "${RED}OpenOCD command definition file not specified for this component.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	# Check if the specified target file exists.
+	if [ ! -f "${TCPATH}/${OPENOCD_COMMAND_FILE}" ]; then
+		# The specified file is missing.
+		echo -e "${RED}The specified OpenOCD command definition file does not exist.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	echo -e "${YELLOW}Programming using OpenOCD requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	
+	# We don't need to unpack any other tools.
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via OpenOCD with interface file '${OPENOCD_INTERFACE_FILE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via OpenOCD.\n${NO_COLOUR}"
+
+		# TODO - Probably assemble the command file we are passing to OpenOCD, so it doesn't just run as a server forever.
+
+		# Copy the generic command file into a temporary location so we may modify it.
+		cp "${TCPATH}/${OPENOCD_COMMAND_FILE}" "${TCPATH}/tmp/openocd_commands.cfg"
+
+		# Fill in any required fields in the command file.
+		sed -i "s^<<<TC_INSERTS_BIN_FILE_HERE>>>^${OPENOCD_BINARY}^g" "${TCPATH}/tmp/openocd_commands.cfg"
+	
+		# Upload the application code to flash.
+		sudo ${TMP_COMPILER_DIR}/openocd/openocd_install/bin/openocd -f "${TCPATH}/${OPENOCD_INTERFACE_FILE}" -f "${TCPATH}/${OPENOCD_TARGET_FILE}" \
+		     -f "${TCPATH}/tmp/openocd_commands.cfg" -c "init" -c "reset init" -c "program_device ()" -c "shutdown"
+
+		# Check the return value from the write operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Uploading error.  Failed to write binary via OpenOCD.\n${NO_COLOUR}"
+			UPLOAD_FAILED=1
+		else
+			# Else the operation worked.
+			echo ""
+		fi
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+		rm "${TCPATH}/tmp/openocd_commands.cfg"
+
+	fi
+	OPENOCD_BINARY=
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+

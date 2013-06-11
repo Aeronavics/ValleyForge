@@ -286,6 +286,42 @@ fetch_source()
 	# Copy the entire source folder into the tmp directory, where the actual making will occur.
 	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
+	# Check if there are any other source files we need to import.
+	if [ ! -z "${SRC_IMPORT_FILES}" ]; then
+		# There are some other files which need to be imported (probably from in res).
+		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
+
+		# Iterate over the list of source files to import.
+		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
+			# Split the line into source and target.
+			SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
+			SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+
+			# Check if the target exists.
+			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
+				# The file was missing, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  File not found.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Check if the destination was blank.
+			if [ -z "${SRC_IMPORT_DESTINATION}" ]; then
+				# The destination was blank, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  No destination specified.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Copy the target to the destination.
+			cp ${TCPATH}/${SRC_IMPORT_TARGET} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SRC_IMPORT_DESTINATION}
+			echo -e "${CYAN}\tImported source file '${SRC_IMPORT_DESTINATION}'.\n${NO_COLOUR}"
+		done
+		
+		# Clean up.
+		SRC_IMPORT_FILE=
+		SRC_IMPORT_TARGET=
+		SRC_IMPORT_DESTINATION=
+	fi
+
 	# All done.
 	return 0
 }
