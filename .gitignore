@@ -10,4 +10,5 @@ res/arm/omap4/ubuntu-core/images/*
 res/arm/omap4/ubuntu-prebuilt/images/*
 res/avr32/avr32comp/*
 res/vendor/mavlink/*
+res/vendor/freertos/*
 */*~

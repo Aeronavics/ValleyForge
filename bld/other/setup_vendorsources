@@ -33,9 +33,14 @@
 ###															###
 ###########################################################################################################################
 
+TMP_CACHE=${TCPATH}/tmp
+
 # Define the local and remote locations of the vendor sources.
 VENDOR_MAVLINK_LOCAL=${TCPATH}/res/vendor/mavlink
 VENDOR_MAVLINK_REMOTE="https://github.com/mavlink/mavlink.git"
+
+VENDOR_FREERTOS_LOCAL=${TCPATH}/res/vendor/freertos
+VENDOR_FREERTOS_REMOTE="http://sourceforge.net/projects/freertos/files/latest/download?source=files"
 
 ######################################## FUNCTION #########################################
 ###											###
@@ -80,6 +85,47 @@ unpack_mavlink()
 
 ######################################## FUNCTION #########################################
 ###											###
+### NAME:		unpack_freertos							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the FreeRTOS vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_freertos()
+{
+	# Check if the FreeRTOS source has been downloaded already.
+	if [ ! -d ${VENDOR_FREERTOS_LOCAL} ]; then
+		# We need to download and unpack the source before we can use it.
+		echo -e "${CYAN}\tDownloading the FreeRTOS vendor source...\n${NO_COLOUR}"
+		wget -O ${TMP_CACHE}/freertos_vendor.zip ${VENDOR_FREERTOS_REMOTE}
+		unzip ${TMP_CACHE}/freertos_vendor.zip -d ${VENDOR_FREERTOS_LOCAL}
+		if [ $? -ne 0 ]; then
+			# We couldn't unzip the file, so something went wrong, and we abort.
+			return 1
+		fi
+		echo -e ""
+
+		# The newly unpacked directory will have some unhelpful nesting, so we flatten that.
+		mv ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*/* ${VENDOR_FREERTOS_LOCAL}
+		rmdir ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*
+	else
+		# The source has already been downloaded.
+		echo -e "${CYAN}\tFreeRTOS vendor source available...\n${NO_COLOUR}"
+
+		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
 ### NAME:		pack_allv							###
 ###											###
 ### Inputs/Outputs:	None.								###
@@ -93,6 +139,7 @@ pack_allv()
 {
 	# Just pack each of the vendor sources in turn.
 	pack_mavlink
+	pack_freertos
 }
 
 ######################################## FUNCTION #########################################
@@ -119,6 +166,32 @@ pack_mavlink()
 	# All done.
 	return	
 }
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_freertos							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the FreeRTOS vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_freertos()
+{
+	# Check if the FreeRTOS repository has been downloaded already.
+	if [ -d ${VENDOR_FREERTOS_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.		
+		echo -e "${CYAN}\tCleaning up FreeRTOS vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_FREERTOS_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
+
 
 # ALL DONE.
 
