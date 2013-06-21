@@ -18,7 +18,8 @@
 # Reset any build configuration variables which may have been set previously.
 
 BCONF_NAME=
-BCONF_SPECIFIC_CONFIG=
+TARGET_SPECIFIC_CONFIG=
+PLATFORM_SPECIFIC_CONFIG=
 C_COMPILER=
 P_COMPILER=
 ASSEMBLER=

@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#	Copyright (C) 2011  Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Now we perform any platform specific configuration.
+echo -e "${BOLD_CYAN}Platform specific configuration...\n${NO_COLOUR}"
+
+# Create a separate section in the component configuration file for platform specific stuff.
+echo -e "### PLATFORM SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+
+# Ask if the user wants to include software timer functionality (an optional part of FreeRTOS).
+echo -e -n "${GREEN}Do you wish to use FreeRTOS software timer functionality? (Y/N) ${NO_COLOUR}"
+read -n 1
+echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+# If they responded YES, then configure the component to import the software timer file when generating code.  If NO, then configure the component not to.
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+	# Set the flag importing the software timer file.
+	echo -e "FREERTOS_IMPORT_SWTIMER=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+else
+	# Clear the flag importing the software timer file.
+	echo -e "FREERTOS_IMPORT_SWTIMER=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+fi
+
+# Ask if the user wants to include co-routine functionality (an optional part of FreeRTOS).
+echo -e -n "${GREEN}Do you wish to use FreeRTOS co-routine functionality? (Y/N) ${NO_COLOUR}"
+read -n 1
+echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+# If they responded YES, then configure the component to import the co-routine file when generating code.  If NO, then configure the component not to.
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+	# Set the flag importing the co-routine file.
+	echo -e "FREERTOS_IMPORT_COROUTINE=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+else
+	# Clear the flag importing the co-routine file.
+	echo -e "FREERTOS_IMPORT_COROUTINE=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+fi
+
+# TODO - Ask the user which heap implementation they wish to use.
+
+# Write any other configuration entries, then a blank line, to the configuration file.
+echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+
+# Prompt the user that further manual configuration will be required, via the FreeRTOS config header.
+echo -e "${BOLD_YELLOW}Further manual configuration will be required; edit the FreeRTOS configuration header file to meet your application's requirements.\n${NO_COLOUR}"
+
+# All done.
+

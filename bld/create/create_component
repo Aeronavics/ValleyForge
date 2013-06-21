@@ -259,25 +259,40 @@ run_bconf_specific_config()
 		$BCONF
 
 		# Check if a target specific configuration script was detailed in the build configuration.
-		if [ -z $BCONF_SPECIFIC_CONFIG ]; then
+		if [ -z $TARGET_SPECIFIC_CONFIG ]; then
 			# No specific configuration script was specified.
 			echo -e "${YELLOW}No target specific configuration required.\n${NO_COLOUR}"
-			return 0
+		else
+			# The build configuration was loaded successfully.
+			echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
+
+			# Check if the specific configuration script actually exists.
+			if [ ! -r ${TCPATH}/${TARGET_SPECIFIC_CONFIG} ]; then
+				# The script could not be found, so we have to bail.
+				echo -e "${RED}Target configuration script (${TARGET_SPECIFIC_CONFIG}) not found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# Run the target specific build configuration script.
+			source $TCPATH/$TARGET_SPECIFIC_CONFIG
 		fi
-	
-		# The build configuration was loaded successfully.
-		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
-	fi
 
-	# Check if the specific configuration script actually exists.
-	if [ ! -r ${TCPATH}/${BCONF_SPECIFIC_CONFIG} ]; then
-		# The script could not be found, so we have to bail.
-		echo -e "${RED}Target configuration script (${BCONF_SPECIFIC_CONFIG}) not found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
-		return 1
-	fi
+		# Check if a platform specific configuration script was detailed in the build configuration.
+		if [ -z $PLATFORM_SPECIFIC_CONFIG ]; then
+			# No specific configuration script was specified.
+			echo -e "${YELLOW}No platform specific configuration required.\n${NO_COLOUR}"
+		else
+			# Check if the specific configuration script actually exists.
+			if [ ! -r ${TCPATH}/${PLATFORM_SPECIFIC_CONFIG} ]; then
+				# The script could not be found, so we have to bail.
+				echo -e "${RED}Platform configuration script (${PLATFORM_SPECIFIC_CONFIG}) not found.  Cannot perform platform specific configuration.\n${NO_COLOUR}"
+				return 1
+			fi
 
-	# Run the target specific build configuration script.
-	source $TCPATH/$BCONF_SPECIFIC_CONFIG
+			# Run the target specific build configuration script.
+			source $TCPATH/$PLATFORM_SPECIFIC_CONFIG
+		fi
+	fi
 
 	# All done.
 	return 0
