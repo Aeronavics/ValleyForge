@@ -241,6 +241,47 @@ choose_bootloader()
 
 ##################################### MINOR FUNCTIONS ####################################
 
+# Do any code generation which is required at config time.
+generate_code_config_time()
+{
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if there is actually some code generation to be done.
+	if [ -z "${CODE_GENERATORS_CONFIG_TIME}" ]; then
+		# There is nothing to be done here.
+		echo -e "${YELLOW}Not performing any configuration time code generation for this build configuration.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Iterate over the list of possible code generation functions.
+	echo -e "${CYAN}Running code generators...\n${NO_COLOUR}"
+	for f in ${CODE_GENERATORS_CONFIG_TIME}; do
+		# Check that this code generator function specified by the build configuration actually exists.
+		if [ `declare -f | grep "$f" | wc -l` == 0 ]; then
+			# The specified code generator function doesn't exist, so skip this function and move on.
+			echo -e "${RED}Build configuration specifies an invalid configuration time code generation function.  Skipping.\n${NO_COLOUR}"
+			GENERATE_FUNCTION_INVALID=1
+		else
+			# The function is legit, so actually run the function.
+			$f $1
+		fi		
+	done
+	# Check if any of the code generation functions in the list were invalid.
+	if [ ${GENERATE_FUNCTION_INVALID} ]; then
+		# One of the specified code generation functions was invalid, so report the failure.
+		GENERATE_FUNCTION_INVALID=
+		return 1
+	fi
+
+	# All done.
+	return 0
+}
+
 # Run any build configuration specific configuration required.
 run_bconf_specific_config()
 {
@@ -594,6 +635,11 @@ run_bconf_specific_config
 
 # Run any required bootloader specific config.
 run_bload_specific_config
+
+# CONFIGURATION-TIME CODE GENERATION.
+
+# Perform any required configuration time code generation.
+generate_code_config_time $TCPATH/src/$COMPONENT
 
 # POST-NEW-COMPONENT OPTIONS.
 

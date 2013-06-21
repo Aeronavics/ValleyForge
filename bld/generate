@@ -90,9 +90,6 @@ EOF
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
-# Delete everything in the tmp directory.
-rm -rf  $TCPATH/tmp/*
-
 # PARSE ANY COMMAND LINE PARAMETERS.
 
 # Indicate where we are up to in the script.
