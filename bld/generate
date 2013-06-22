@@ -321,6 +321,9 @@ else
 	echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
 fi
 
+# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
+source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+
 # RUN THE CODE GENERATION SCRIPTS ONE BY ONE.
 
 # NOTE - Since each script is independent of one another, the order they are ran in doesn't matter.

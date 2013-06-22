@@ -53,6 +53,14 @@ source $TCPATH/bld/common/def_colours
 # Define the functions used for preprocessing.
 source $TCPATH/bld/preprocess/preprocess
 
+# Define the functions used to set up any vendor sources.
+source $TCPATH/bld/other/setup_vendorsources
+
+# Define the functions used to for code generation.
+for f in $TCPATH/bld/code_generation/gen_*; do
+	source "$f"
+done
+
 # Create directories which don't come automatically with the toolchain.
 source $TCPATH/bld/common/create_empty_dirs
 
@@ -285,9 +293,6 @@ generate_code_config_time()
 # Run any build configuration specific configuration required.
 run_bconf_specific_config()
 {
-	# Reset any variables which may have been set by a previous component.
-	source $TCPATH/bld/common/clear_bconf_vars
-
 	# Check to see if we can find a matching build configuration.
 	BCONF="bconf_${TARGET}_${PLATFORM}"
 	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
@@ -342,9 +347,6 @@ run_bconf_specific_config()
 # Run any bootloader specific configuration required.
 run_bload_specific_config()
 {
-	# Reset any variables which may have been set by a previous component.
-	source $TCPATH/bld/common/clear_bconf_vars
-
 	# Check if a bootloader was specified.
 	if [ -z $BOOTLOADER ]; then
 		# No bootloader was specified, so we can skip this.
@@ -629,6 +631,9 @@ echo -e "# Configuration file for component $COMPONENT_NAME.\n\nSUBSYSTEM='$SUBS
 # TODO - We should actually check if this works.
 
 # TARGET SPECIFIC CONFIGURATION.
+
+# Reset any variables which may have been set by a previous component.
+source $TCPATH/bld/common/clear_bconf_vars
 
 # Run any required target/platform specific config.
 run_bconf_specific_config

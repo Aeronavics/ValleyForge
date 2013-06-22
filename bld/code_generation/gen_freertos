@@ -1,0 +1,165 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_freertos											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	21-06-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which generate code which implements the FreeRTOS platform.		 	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported FreeRTOS code generation functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_freertos							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates files which implements the FreeRTOS platform.  The 	###
+###			generated files will still require the user to make required	###
+###			target specific modifications.					###
+###											###
+###########################################################################################
+
+gen_freertos()
+{
+	# DEFINE CONSTANTS.
+
+	GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Generating FreeRTOS platform code...\n${NO_COLOUR}"
+
+	# Check to see if the required platform configuration settings are present.
+	if [ -z "${FREERTOS_COMMON_SOURCE}" -o -z "${FREERTOS_PORTABLE_SOURCE}" -o -z "${FREERTOS_CONFIG_FILE}" ]; then
+		# Some of the required platform configuration settings are missing, so we must abort.
+		echo -e "${RED}FreeRTOS platform configuration incomplete.  Cannot generate FreeRTOS files.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the FreeRTOS source.
+	unpack_freertos
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the FreeRTOS source, so we'll have to abort.
+		return 1
+	fi
+
+	# First, we copy the original FreeRTOS source files across to where they are needed.
+  	echo -e "${CYAN}\tCopying FreeRTOS source files into place...\n${NO_COLOUR}"
+	mkdir -p $1/freertos
+
+	# Copy the common source files across into the source tree.
+	cp ${FREERTOS_COMMON_SOURCE}/tasks.c $1/freertos/tasks.c
+	cp ${FREERTOS_COMMON_SOURCE}/include/task.h $1/freertos/task.h
+	cp ${FREERTOS_COMMON_SOURCE}/queue.c $1/freertos/queue.c
+	cp ${FREERTOS_COMMON_SOURCE}/include/queue.h $1/freertos/queue.h
+	cp ${FREERTOS_COMMON_SOURCE}/list.c $1/freertos/list.c
+	cp ${FREERTOS_COMMON_SOURCE}/include/list.h $1/freertos/list.h
+	if [ ${FREERTOS_IMPORT_SWTIMER} ]; then
+		cp ${FREERTOS_COMMON_SOURCE}/timers.c $1/freertos/timers.c
+	fi
+	cp ${FREERTOS_COMMON_SOURCE}/include/timers.h $1/freertos/timers.h
+	if [ ${FREERTOS_IMPORT_COROUTINE} ]; then
+		cp ${FREERTOS_COMMON_SOURCE}/croutine.c $1/freertos/croutine.c
+	fi
+	cp ${FREERTOS_COMMON_SOURCE}/include/croutine.h $1/freertos/croutine.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/mpu_wrappers.h $1/freertos/mpu_wrappers.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/portable.h $1/freertos/portable.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/projdefs.h $1/freertos/projdefs.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/semphr.h $1/freertos/semphr.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/StackMacros.h $1/freertos/StackMacros.h
+	cp ${FREERTOS_COMMON_SOURCE}/include/FreeRTOS.h $1/freertos/FreeRTOS.h
+
+	# Copy the portable source files across into the source tree.
+	cp ${FREERTOS_PORTABLE_SOURCE}/* $1/freertos
+
+	# Copy the memory manager (heap) implementation file into the source tree.
+	if [ ! -z "${FREERTOS_MEMMAN_FILE}" ]; then
+		cp ${FREERTOS_MEMMAN_FILE} $1/freertos/heap.c
+	else
+		# Since we aren't suppling one, the user will need to provide their own.  Warn them of this.
+		echo -e  "${YELLOW}No memory (heap) manager has been selected.  You will need to implement 'heap.c' yourself.\n${NO_COLOUR}"
+	fi
+
+	# Copy the default application specific configuration file across into the source tree.
+	cp -n ${FREERTOS_CONFIG_FILE} $1/FreeRTOSConfig.h
+
+	# Produce dummy header files, since FreeRTOS does not comply with the toolchain's dependency detection rules.
+	echo -e "${CYAN}\tProducing dummy header files where required...\n${NO_COLOUR}"
+	./bld/create/create_dummy_header -b -n "$1/freertos/port.c"
+	./bld/create/create_dummy_header -b -n "$1/freertos/tasks.c"
+	if [ -f "$1/freertos/heap.c" ]; then
+		./bld/create/create_dummy_header -b -n "$1/freertos/heap.c"
+	fi
+
+	# Check if we know of a folder containing patches we should apply.
+	if [ -z "${FREERTOS_PATCHES}" ]; then
+		# No patches folder was specified, so presumably we don't need to patch anything.
+		echo -e "${YELLOW}\tNot applying any patches to FreeRTOS files.\n${NO_COLOUR}"
+	elif [ ! -d "${FREERTOS_PATCHES}" ]; then
+		# There is no patches folder, so presumably we don't need to patch anything.
+		echo -e "${YELLOW}\tNot applying any patches to FreeRTOS files.\n${NO_COLOUR}"
+	else
+		# Check if there are actually any patches to apply.
+		if [ -z `ls ${FREERTOS_PATCHES}/*.patch` ]; then
+			# There is nothing in the patches folder, so presumably we don't need to patch anything.
+			echo -e "${YELLOW}\tNot applying any patches to FreeRTOS files.\n${NO_COLOUR}"
+		else
+			# Iterate over each of the patch files.
+			for PATCH_FILE in `ls ${FREERTOS_PATCHES}/*.patch`; do
+				# Check if the corresponding file is available in the source tree.
+				if [ -f "$1/freertos/${PATCH_FILE%.*}" ]; then
+					# Copy the patch in next to the original file.
+					cp ${FREERTOS_PATCHES}/${PATCH_FILE} $1/freertos/${PATCH_FILE}
+
+					# Apply the patch.
+					pushd $1/freertos
+					patch < ${PATCH_FILE}
+					popd
+
+					# Delete the patch file again.
+					rm $1/freertos/${PATCH_FILE}
+				fi
+					# Else the file isn't there, so we just skip patching it.
+			done
+			PATCH_FILE=
+		fi
+	fi
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.

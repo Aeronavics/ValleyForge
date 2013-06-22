@@ -109,8 +109,8 @@ unpack_freertos()
 		echo -e ""
 
 		# The newly unpacked directory will have some unhelpful nesting, so we flatten that.
-		mv ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*/* ${VENDOR_FREERTOS_LOCAL}
-		rmdir ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*
+		mv ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*/FreeRTOS/* ${VENDOR_FREERTOS_LOCAL}
+		rm -rf ${VENDOR_FREERTOS_LOCAL}/FreeRTOSV*
 	else
 		# The source has already been downloaded.
 		echo -e "${CYAN}\tFreeRTOS vendor source available...\n${NO_COLOUR}"

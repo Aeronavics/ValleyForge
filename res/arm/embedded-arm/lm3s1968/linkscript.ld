@@ -43,13 +43,13 @@ SECTIONS
         _etext = .;
     } > FLASH
 
-    .data : AT (ADDR(.text) + SIZEOF(.text))
+    .data :
     {
         _data = .;
         *(vtable)
         *(.data*)
         _edata = .;
-    } > SRAM
+    } > SRAM AT>FLASH
 
     .bss :
     {

@@ -49,7 +49,24 @@ else
 	echo -e "FREERTOS_IMPORT_COROUTINE=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 fi
 
-# TODO - Ask the user which heap implementation they wish to use.
+# Ask the user which heap implementation they wish to use.
+echo -e "${GREEN}Which memory (heap) manager would you like to use? \n${NO_COLOUR}"
+
+# Create a menu of choices and have the user select one.
+select FREERTOS_MEMMAN_FILE in ${FREERTOS_MEMMAN_FILES}
+do
+	# Check if the selected memory manager is actually valid.
+	FREERTOS_MEMMAN_FILE=$(echo "${FREERTOS_MEMMAN_FILES}" | grep -w -o "$FREERTOS_MEMMAN_FILE")
+	if [ -z "$FREERTOS_MEMMAN_FILE" ]; then
+		# The selected memory manager was not in the list of options, so the user is apparently a moron.
+		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+	else
+		# A legitimate option was selected, so we can go now.
+		echo -e "${CYAN}Selected memory manager '$FREERTOS_MEMMAN_FILE'.\n${NO_COLOUR}"
+		echo -e "FREERTOS_MEMMAN_FILE=${FREERTOS_MEMMAN_FILE}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		break
+	fi
+done
 
 # Write any other configuration entries, then a blank line, to the configuration file.
 echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
