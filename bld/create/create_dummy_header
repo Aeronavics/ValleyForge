@@ -1,0 +1,218 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		create_dummy_header										###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	15-11-2011											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		This script is used to create a dummy header file; this assists in compiling files which were	###
+###			not designed for use with the ValleyForge toolchain, and hence do not comply with our rules for	###
+###			dependency detection.	 									###
+###															###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# DEFINE CONSTANTS.
+
+# Define file names.
+TEMPLATE_DUMMY_HEADER="res/templates/dummy.h"
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+# Define the functions used for preprocessing.
+source $TCPATH/bld/preprocess/preprocess
+
+# Create directories which don't come automatically with the toolchain.
+source $TCPATH/bld/common/create_empty_dirs
+
+##################################### MINOR FUNCTIONS ####################################
+
+# Print a usage message.
+usage()
+{
+	# Block-concatenate the message.
+	cat << EOF
+
+Usage: $0 [Options] [File Name]
+
+This script is used, as part of the 'Valley Forge' Embedded Toolchain to create empty source files to develop 
+a library with.
+
+Parameters:
+
+	[File Name]			Specify the name of the files to add to the current project, space separated without extension.
+
+Options:
+	-h --help			Show this message.
+	-b --batch			Operate in 'batch mode', wherein there are no interactive prompts.
+	-n --name <File Name>		Specify the name of the file for which to create a dummy header (if one is required).
+EOF
+	# All done.
+	return
+}
+
+################################ SCRIPT PROPER STARTS HERE ###############################
+
+# PARSE ANY COMMAND LINE PARAMETERS.
+
+# Reset fields to be extracted from the parameters.
+FILENAME=
+BATCHMODE=
+
+# Define variables required for 'getopt' to work.
+PROGNAME=${0##*/} 
+SHORTOPTS="hbn:"
+LONGOPTS="help,batch,name:"
+
+# Use 'getopt' to parse the command line options.
+ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+eval set -- "$ARGS"
+
+# Handle the parsed parameters.
+while true; do
+	# Select the appropriate behaviour for each parameter.
+	case $1 in
+		-h|--help)
+			# Just print the usage message and then exit.
+			usage
+			exit 0
+			;;
+		-b|--batch)
+			# Select batch mode.
+			BATCHMODE=1
+			;;
+		-n|--name)
+			# Specify the name of the files to create.
+			shift
+			FILENAME="$1"
+			;;
+		--)
+			# We're done parsing options.  Anything else must be parameters.
+			shift
+			FILENAME="$FILENAME$*"
+			break
+			;;
+		*)
+			# Anything else must be parameters.
+			shift
+			FILENAME="$FILENAME$*"
+			break
+			;;
+	esac
+
+	# Advance on to the next parameter.
+	shift
+done
+
+# PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
+
+# Check if we have been supplied the name of some file to create a header for and that we're not in batch mode.
+if [ -z "${FILENAME}" ] && [ ! $BATCHMODE ]; then
+	# We haven't been given a file name, so we need the user to enter one.
+
+	# We will need to prompt the user for the name of the component to create.
+	echo -e -n "${GREEN}Enter name of the file to create a header for: ${NO_COLOUR}"
+	read
+	echo -e ""
+
+	# Pretty much anything goes here.
+	FILENAME=$REPLY
+
+	# If the name is empty, then bail.
+	if [ -z "${FILENAME}" ]; then
+		exit 1
+	fi
+
+# Check if we have been supplied the name of some files to create and that we're in batch mode.
+elif [ -z "${FILENAME}" ] && [ $BATCHMODE ]; then
+	# We haven't been given a filename, and we're in batch mode, so can't ask.  So we just have to bail.
+	echo -e "${RED}No filename supplied in batch mode.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# Check if the file specified actually exists.
+if [ ! -f ${FILENAME} ]; then
+	# The file doesn't exist, so bail.
+	echo -e "${RED}File '${FILENAME}' does not exist.\n${NO_COLOUR}"
+	exit 1
+fi
+
+# CREATE THE HEADER FILE.
+
+# Work out what type of file we are dealing with.
+TYPE=${FILENAME##*.}
+
+# Copy the template file across.
+if [ $TYPE == "c" ]; then
+	if [ ! -f "${FILENAME%.*}.h" ]; then
+		cp ${TEMPLATE_DUMMY_HEADER} "${FILENAME%.*}.h"
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${CYAN}Dummy header file '${FILENAME%.*}.h' created.\n${NO_COLOUR}"
+		fi
+	else
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${YELLOW}File '${FILENAME%.*}.h' already exists.  Nothing to do.\n${NO_COLOUR}"
+		fi
+	fi
+elif [ $TYPE == "cpp" ]; then
+	if [ ! -f "${FILENAME%.*}.hpp" ]; then
+		cp ${TEMPLATE_DUMMY_HEADER} "${FILENAME%.*}.hpp"
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${CYAN}Dummy header file '${FILENAME%.*}.hpp' created.\n${NO_COLOUR}"
+		fi
+	else
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${YELLOW}File '${FILENAME%.*}.hpp' already exists.  Nothing to do.\n${NO_COLOUR}"
+		fi
+	fi
+elif [ $TYPE == "s" ]; then
+	if [ ! -f "${FILENAME%.*}.hs" ]; then
+		cp ${TEMPLATE_DUMMY_HEADER} "${FILENAME%.*}.hs"
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${CYAN}Dummy header file '${FILENAME%.*}.hs' created.\n${NO_COLOUR}"
+		fi
+	else
+		if [ ! ${BATCHMODE} ]; then
+			echo -e "${YELLOW}File '${FILENAME%.*}.hs' already exists.  Nothing to do.\n${NO_COLOUR}"
+		fi
+	fi
+else
+	# The file isn't once that we support.
+	echo -e "${RED}The specified file is not a supported type."
+	exit 1
+fi
+
+# All done.
+if [ ! ${BATCHMODE} ]; then
+	echo -e "${CYAN}All done.\n${NO_COLOUR}"
+fi
+exit 0
+
+
