@@ -88,7 +88,7 @@ endef
 
 #	This function records all of the object file dependencies for a particular object file (referenced by $1).  The function defines a
 #	recursive bash function, which takes the current place in the tree as $1, and the original target as $2.  The inner function recurses
-#	through the tree (depth-first) and copies all the object depenencies into a single output list.  Finally, the list is sorted to remove
+#	through the tree (depth-first) and copies all the object dependencies into a single output list.  Finally, the list is sorted to remove
 #	any duplicate elements.  This flattens the dependency tree for the target object file.
 define detect_link_dependencies
 	function recurse_detect_link_dependencies()								\
@@ -99,6 +99,9 @@ define detect_link_dependencies
 				for word in $${line[@]}; do							\
 					if [[ $${word} != *: ]]; then						\
 						if [[ $${word} == *.o ]]; then					\
+							if [ -a "`grep $${word} < $${2}.ld`" ]; then		\
+								continue;					\
+							fi;							\
 							echo "$${word}" >> "$${2}.ld";				\
 							recurse_detect_link_dependencies $${word/%.o/} $${2};	\
 						fi;								\
@@ -114,6 +117,13 @@ define detect_link_dependencies
 	rm $(1).ld.tmp
 endef
 
+#	This function finds all of the library files in the source tree, and adds them to a library dependency file.  Simply adding all the
+#	files which match the appropriate naming scheme is sufficient; if any libraries are unused, then the linker will discard those objects
+#	anyway.  Whilst trivial, we do this as a separate function in case we decide on some more complex behaviour later on.
+define detect_libraries
+	find . -name "lib*.a" > $(1).lld
+endef
+
 # PSEUDO-TARGETS
 
 # All the pseudo-targets are phony: they don't correspond with real files.
@@ -127,9 +137,9 @@ main: $(EXECUTABLE)
 
 #	EXECUTABLE FILES.
 
-%: %.ld
+%: %.ld %.lld
 	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
-	$(LD) -o $@ $(shell cat $@.ld) $(LFLAGS)
+	$(LD) -o $@ $(shell cat $@.ld) $(shell cat $@.lld) $(LFLAGS)
 
 #	OBJECT FILES.
 
@@ -158,7 +168,7 @@ main: $(EXECUTABLE)
 # Assembly from CPP.
 %.s: %.cpp
 	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
-	$(CC) $(CFLAGS) -s $< -o $@
+	$(CC) $(PFLAGS) -s $< -o $@
 
 # DEPENDENCY TARGETS.
 
@@ -213,6 +223,15 @@ ${EXECUTABLE}.d:
 %.ld: %.o
 	@echo -e "$(BOLD_WHITE)******** Calculating linking dependencies for $*. ********$(NO_COLOUR)"
 	@$(call detect_link_dependencies,$*)
+	@cat $@
+
+# Library dependencies are easy enough to calculate; since unused objects are discarded by the linker, we can simply include all the library (archive)
+# files we find, and let the linker sort out which are actually needed.
+
+# Linker library dependency from nothing.
+%.lld: %.o
+	@echo -e "${BOLD_WHITE}******** Searching for library files to include. ********$(NO_COLOUR)"
+	@$(call detect_libraries,$*)
 	@cat $@
 
 # IMPORT EXTERNAL DEPENDENCIES.
