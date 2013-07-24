@@ -133,26 +133,47 @@ gen_freertos()
 		echo -e "${YELLOW}\tNot applying any patches to FreeRTOS files.\n${NO_COLOUR}"
 	else
 		# Check if there are actually any patches to apply.
-		if [ -z `ls ${FREERTOS_PATCHES}/*.patch` ]; then
+		if [ -z "`ls ${FREERTOS_PATCHES}/*.patch`" ]; then
 			# There is nothing in the patches folder, so presumably we don't need to patch anything.
 			echo -e "${YELLOW}\tNot applying any patches to FreeRTOS files.\n${NO_COLOUR}"
 		else
 			# Iterate over each of the patch files.
+			echo -e "${CYAN}\tPatching FreeRTOS files.\n${NO_COLOUR}"
 			for PATCH_FILE in `ls ${FREERTOS_PATCHES}/*.patch`; do
 				# Check if the corresponding file is available in the source tree.
+				PATCH_FILE="${PATCH_FILE##*/}"
 				if [ -f "$1/freertos/${PATCH_FILE%.*}" ]; then
 					# Copy the patch in next to the original file.
 					cp ${FREERTOS_PATCHES}/${PATCH_FILE} $1/freertos/${PATCH_FILE}
 
 					# Apply the patch.
-					pushd $1/freertos
-					patch < ${PATCH_FILE}
-					popd
+					echo -e "${CYAN}\t\tPatching from '${PATCH_FILE}'.\n${NO_COLOUR}"
+					pushd $1/freertos >/dev/null
+					patch --no-backup-if-mismatch -Nf -r - < ${PATCH_FILE}
+					popd >/dev/null
+					echo ""
 
 					# Delete the patch file again.
 					rm $1/freertos/${PATCH_FILE}
-				fi
+
+				# Patches for FreeRTOSConfig.h have to be handled separately, since it isn't in the same folder.
+				elif [ -f "$1/${PATCH_FILE%.*}" ]; then
+					# Copy the patch in next to the original file.
+					cp ${FREERTOS_PATCHES}/${PATCH_FILE} $1/${PATCH_FILE}
+
+					# Apply the patch.
+					echo -e "${CYAN}\t\tPatching from '${PATCH_FILE}'.\n${NO_COLOUR}"
+					pushd $1 >/dev/null
+					patch --no-backup-if-mismatch -Nf -r - < ${PATCH_FILE}
+					popd >/dev/null
+					echo ""
+
+					# Delete the patch file again.
+					rm $1/${PATCH_FILE}
+				else			
 					# Else the file isn't there, so we just skip patching it.
+					echo -e "${YELLOW}\t\tNo file to patch from '${PATCH_FILE}'.\n${NO_COLOUR}"
+				fi
 			done
 			PATCH_FILE=
 		fi
