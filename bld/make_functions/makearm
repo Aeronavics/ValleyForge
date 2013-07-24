@@ -136,7 +136,9 @@ makearm_linux()
 		echo -e ""
 	
 		# The compilation worked, so now just copy across the output binaries into the appropriate format.
-		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
+		if [[ ${EXECUTABLE} = *\/* ]]; then
+			mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
+		fi
 		$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$EXECUTABLE $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
 
 		# Check the return value from the object copy.
