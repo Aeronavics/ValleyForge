@@ -16,6 +16,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Prompt the user to select the appropriate configuration for the bootloader.
+echo -e "${CYAN}Bootloader specific configuration...\n${NO_COLOUR}"
 
 # Prompt the user to select the port to use for the blinkenlight.
 echo -e "${GREEN}Please choose which port your bootloader status LED is on:${NO_COLOUR}"
@@ -134,25 +135,6 @@ echo -e "${GREEN}Please select whether the pin is using standard or inverted log
 			break
 		fi
 	done
-
-# Prompt the user to enter the clock speed the MCU will be running at.
-echo -e -n "${GREEN}Please enter the clock speed, as an integer in MHz: ${NO_COLOUR}"
-# We loop continuously until the user enters a valid choice.
-while :
-do
-	# Read a line of input from the user.
-	read
-	# Check if the user input a valid response (a number).
-	if ! [[ "$REPLY" =~ ^[0-9]+?$ ]] ; then
-		# The user is apparently a moron.
-		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-	else
-		# A legitimate value was entered, so we can go now.
-		CLK_SPEED_IN_MHZ=$REPLY
-		echo -e "${CYAN}Selected clock speed of ${CLK_SPEED_IN_MHZ}MHz.\n${NO_COLOUR}"
-		break
-	fi
-done
 
 # Prompt the user to enter the EEPROM memory address that will be used for the shutdown state.
 echo -e -n "${GREEN}Please enter the shutdown state memory address in the form \"03F1\". Number must be between 0x0000 and 0x$MAX_EEPROM_ADDRESS. ${NO_COLOUR}"
@@ -436,7 +418,6 @@ echo -e "LED_LOGIC=${LED_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "FORCE_BL_PORT=PORT_${FORCE_BL_PORT}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "FORCE_BL_PIN=PIN_${FORCE_BL_PIN}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "INPUT_LOGIC=${INPUT_LOGIC}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
-echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "SHUTDOWNSTATE_MEM=${SHUTDOWNSTATE_MEM}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "CAN_BAUD_RATES=${CAN_BAUD_RATES}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "NODE_ID=${NODE_ID}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg

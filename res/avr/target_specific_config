@@ -15,15 +15,33 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# For the moment, we just print out a message to the user.
-echo -e "${YELLOW}No target specific configuration required...\n${NO_COLOUR}"
+# Prompt the user to select the appropriate configuration for the target.
+echo -e "${CYAN}Target specific configuration...\n${NO_COLOUR}"
 
 # Create a separate section in the component configuration file for target specific stuff.
 echo -e "### TARGET SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
+# Prompt the user to enter the clock speed the MCU will be running at.
+echo -e -n "${GREEN}Please enter the clock speed, as an integer in MHz: ${NO_COLOUR}"
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a line of input from the user.
+	read
+	# Check if the user input a valid response (a number).
+	if ! [[ "$REPLY" =~ ^[0-9]+?$ ]] ; then
+		# The user is apparently a moron.
+		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+	else
+		# A legitimate value was entered, so we can go now.
+		CLK_SPEED_IN_MHZ=$REPLY
+		echo -e "${CYAN}Selected clock speed of ${CLK_SPEED_IN_MHZ}MHz.\n${NO_COLOUR}"
+		break
+	fi
+done
+
 # Write configuration settings to the configuration file.
-echo -e "LOLLIPOP='Sunshine!'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
-echo -e "RAINBOW='Bright!'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 # All done.
