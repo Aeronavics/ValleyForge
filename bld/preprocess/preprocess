@@ -179,7 +179,7 @@ preprocess_general()
 	# Check that the specified file exists.
 	if [ ! -w $1 ]; then
 		# The specified file is invalid, so bail.
-		echo -e "\n${RED}ERROR - Invalid argument to preprocess_general.  File does not exist.\n${NO_COLOUR}"
+		echo -e "${RED}ERROR - Invalid argument to preprocess_general.  File '$1' does not exist.\n${NO_COLOUR}"
 		return
 	fi
 
