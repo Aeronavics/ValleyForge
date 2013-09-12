@@ -376,7 +376,7 @@ preprocess_code()
 	# Construct a string with any required prune statements for files that should not be preprocessed.
 	PREPROCESSOR_MASK_STRING=
 	if [ -n "${PREPROCESSOR_MASK}" ]; then
-		echo -e "${YELLOW}\tNot preprocessing masked files in directories: ${PREPROCESSOR_MASK}\n${NO_COLOUR}"
+		echo -e "${YELLOW}\tNot preprocessing some files according to mask: ${PREPROCESSOR_MASK}\n${NO_COLOUR}"
 		for PREPROCESSOR_MASK_WORD in ${PREPROCESSOR_MASK}; do
 			PREPROCESSOR_MASK_STRING+=" -wholename $1/${PREPROCESSOR_MASK_WORD} -prune -o"
 		done
@@ -661,7 +661,7 @@ do
 		$BCONF
 
 		# Check that all the required variables were set by the build configuration.
-		if [ -z "$BCONF_NAME" ] || [ -z "$MAKEFUNCTION" ] || [ -z "$MAKEFILE" ]; then
+		if [ -z "$BCONF_NAME" ] || [ -z "$MAKEFUNCTION" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
 			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 			continue
