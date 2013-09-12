@@ -244,17 +244,73 @@ unpack_embeddedarmc()
 ###											###
 ###########################################################################################
 
-unpack_arduino()
+unpack_arduinoc()
 {
-	# TODO - At the moment, this doesn't do anything, since the compiler doesn't exist yet.
+	# Check to see if the Arduino compiler is already available.
 
-	# The compiler is totally not ready to go.
-	echo -e "${BOLD_RED}Arduino compiler not available.\n${NO_COLOUR}"
+	# Check if there is a cached copy of the compiler.
+	if [ -f "${TMP_COMPILER_DIR}/arduino/arduino-dist/arduino" ]; then
+		# TODO - Probably should check that the other files are present.
 
-	# TODO - Test the now the required executables actually exist.
+		# We don't need to do anything, since a compiler is already ready to go.
+		echo -e "${CYAN}Arduino compiler (already) available.\n${NO_COLOUR}"
+
+	else
+		# The compiler isn't ready, so we need to unpack one.
+
+		# We'll need to download the compiler ourselves.  Rather than building it, we'll cheat and get a binary version.
+		echo -e "${CYAN}No existing Arduino compiler found.  We'll download a suitable version.\n${NO_COLOUR}"
+		rm -rf "${TMP_COMPILER_DIR}/arduino"
+		mkdir -p "${TMP_COMPILER_DIR}/arduino"
+
+		# NOTE - Because we're downloading a release version, we are just guessing that the host computer is x86_64 Linux.
+
+		# TODO - Fix this.
+
+		# Download the release.
+		echo -e "${CYAN}Downloading Arduino IDE release...\n${NO_COLOUR}"
+		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "http://downloads.arduino.cc/arduino-1.5.4-linux64.tgz"
+		echo ""
+			
+		# Unpack the release.
+		echo -e "${CYAN}Unpacking the release...\n${NO_COLOUR}"
+		tar -xzf "${TMP_COMPILER_DIR}/arduino/arduino.tgz" -C "${TMP_COMPILER_DIR}/arduino/"
+		mv "${TMP_COMPILER_DIR}/arduino/arduino-1.5.4" "${TMP_COMPILER_DIR}/arduino/arduino-dist"
+			
+		# We should be all good to go now.
+		echo -e "${CYAN}Arduino compiler available.\n${NO_COLOUR}"
+	fi
+
+	# We also need to have a copy of the Arduino makefile, which is available via Git.
+	ARDUINO_MAKEFILE_VENDOR_REMOTE="https://github.com/sudar/Arduino-Makefile.git"
+	ARDUINO_MAKEFILE_VENDOR_LOCAL="${TMP_COMPILER_DIR}/arduino/arduino-mk"
+
+	# Check if the Arduino makefile repository has been downloaded already.
+	if [ ! -d "${TMP_COMPILER_DIR}/arduino/arduino-mk" ]; then
+		# We need to clone the repository before we can use it.		
+		echo -e "${CYAN}\tDownloading the Arduino makefile source...\n${NO_COLOUR}"
+		git clone --depth=1 ${ARDUINO_MAKEFILE_VENDOR_REMOTE} ${ARDUINO_MAKEFILE_VENDOR_LOCAL}
+		echo -e ""
+	else
+		# Check if the directory is not actually a git repository, which would indicate something bad.
+		if [ ! -d "${ARDUINO_MAKEFILE_VENDOR_LOCAL}/.git" ]; then
+			# The directory isn't a git repository, so something is very wrong.
+			echo -e "${RED}The directory ${ARDUINO_MAKEFILE_VENDOR_LOCAL} is not a git repository.  Cannot unpack Arduino makefile source.\n${NO_COLOUR}"
+			return 1
+		else
+			# The repository already exists, so just need to make sure it is up to date.
+			echo -e "${CYAN}\tUpdating the Arduino makefile source...\n${NO_COLOUR}"
+			pushd ${ARDUINO_MAKEFILE_VENDOR_LOCAL} >/dev/null
+			git pull
+			echo -e ""
+			popd >/dev/null
+		fi
+  	fi
+
+	# TODO - Test that now the required files actually exist.
 
 	# All done.
-	return 1
+	return 0
 }
 
 ######################################## FUNCTION #########################################
@@ -447,13 +503,20 @@ pack_embeddedarmc()
 ###											###
 ### Inputs/Outputs:	None.								###
 ###											###
-### Purpose:		Doesn't do anything, for now.					###
+### Purpose:		Checks if the Arduino compiler was previously unpacked,	and if	###
+###			it was, then packs it up again.					###
 ###											###
 ###########################################################################################
 
 pack_arduinoc()
 {
-	# For now, this doesn't do anything.
+	# Check if the Arduino compiler exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/arduino" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up Arduino compiler...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/arduino"
+    	fi
+		# Else, the compiler is already packed.
 
 	# All done.
 	return	

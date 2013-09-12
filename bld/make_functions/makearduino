@@ -1,0 +1,230 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		make_arduino											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	19-03-2012											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions which makes Arduino type components.						###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Arduino make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		makearduino							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Prepares Arduino source files in the tmp directory, then copies	###
+###			the Arduino makefile into tmp directory, edits it, and uses it	###
+###			to compile the files.				     		###
+###											###
+###########################################################################################
+
+makearduino()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Set up the Arduino compiler.
+	unpack_arduinoc
+
+	# NOTE - Arduino targets only support a single application executable, so it is named the same as the component.
+
+	# NOTE - However, we also allow the user to name a specific sketch file, in case they are forced to compile non-compliant code.
+
+	# Check if a specific sketch to build was specified for the component.
+	if [ -z "${ARDUINO_SKETCH}" ]; then
+		# No sketch was specified, so assume it's named after the component.
+		ARDUINO_SKETCH="${COMPONENT_NAME}.ino"
+	fi
+
+	# We need to handle non-compliant nesting (since Arduino projects don't play nicely with ValleyForge) where the parent file isn't in the root.
+	ARDUINO_BUILD_DIR=$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH}
+	ARDUINO_BUILD_DIR=${ARDUINO_BUILD_DIR%/*}
+
+	# NOTE - These next few bits are commented in or out to achieve different PDE merging behaviour.  I haven't decided which is best yet.
+
+#	# Since Arduino-mk doesn't handle multiple PDE/INO files, we need to concatenate them all into one.
+#	echo -e "${CYAN}Concatenating PDE/INO files...${NO_COLOUR}"
+#	for FILE in `find "$ARDUINO_BUILD_DIR" -not -name "${ARDUINO_SKETCH##*/}" -name "*.pde" -o -name "*.ino" | sort -k1`; do
+#		echo -e "${CYAN}\tConcatenating '${FILE##*/}'...${NO_COLOUR}"
+#		cat $FILE >> "$ARDUINO_BUILD_DIR/${ARDUINO_SKETCH##*/}"
+#		rm $FILE
+#	done
+#	echo ""
+
+	# TODO - We're using the AWK scripts from the Ardupilot project.  This needs to be rewritten, since this code is GPL'd.
+	AWK_SPLITTER=`cat <<"EOF"
+BEGIN {				
+  scanning = 1;
+  printing = (mode ~ "header") ? 1 : 0;
+}			
+{ toggles = 1 }
+(FNR == 1) && printing {
+  printf "#line %d \"%s\"\n", FNR, FILENAME;
+}	
+/^[[:space:]]*\/\*/,/\*\// {
+  toggles = 0;
+}
+/^[[:space:]]*$/ || /^[[:space:]]*\/\/.*/ || /^\#.*$/ {
+  toggles = 0;
+}
+scanning && toggles {
+  scanning = 0;
+  printing = !printing;
+  if (printing) {
+    printf "#line %d \"%s\"\n", FNR, FILENAME;
+  }		
+}
+printing
+EOF
+`
+
+	AWK_PROTOTYPER=`cat <<"EOF"
+BEGIN {
+RS="{";
+type       = "((\\\\n)|(^))[[:space:]]*[[:alnum:]_]+[[:space:]]+";
+qualifiers = "([[:alnum:]_\\\\*&]+[[:space:]]*)*";
+name       = "[[:alnum:]_]+[[:space:]]*";
+args       = "\\\\([[:space:][:alnum:]_,&\\\\*\\\\[\\\\]]*\\\\)";
+bodycuddle = "[[:space:]]*$";
+pattern    = type qualifiers name args bodycuddle;
+}
+match($0, pattern) {
+proto = substr($0, RSTART, RLENGTH);
+gsub("\n", " ", proto);
+printf "%s;\n", proto;
+}
+EOF
+`
+
+#	# Since Arduino-mk can't produce function prototypes, we need to manage this ourselves.
+#	echo -e "${CYAN}Converting PDE/INO files into CPP files...${NO_COLOUR}"
+#	for FILE in `find "$ARDUINO_BUILD_DIR" -name "*.pde" -o -name "*.ino" | sort -k1`; do
+#		# Check to make sure there isn't already a CPP file.  If there is, something is likely wrong, and we'll fail at compiletime.
+#		if [ -f "${FILE%.*}" ]; then
+#			# There is already a CPP of the matching name, so we can't convert.  Warn the user there will probably be a problem.
+#			echo -e "${YELLOW}\tUnable to convert '${FILE##*/}', a matching CPP file exists already.${NO_COLOUR}"
+#			continue
+#		fi
+#
+#		# Else convert the PDE/INO to a CPP by adding function prototypes.
+#		echo -e "${CYAN}\tConverting '${FILE##*/}'...${NO_COLOUR}"
+#		awk -v mode=header "${AWK_SPLITTER}" ${FILE} > "${FILE%.*}.cpp"
+#		echo "#line 1 \"autogenerated\"" >> "${FILE%.*}.cpp"
+#		awk "${AWK_PROTOTYPER}" ${FILE} >> "${FILE%.*}.cpp"
+#		awk -v mode=body "${AWK_SPLITTER}" ${FILE} >> "${FILE%.*}.cpp"
+#
+#		# Then we delete the original PDE/INO file.
+#		rm ${FILE}
+#	done
+#	echo ""
+
+	# NOTE - LC_ALL needs to be exported to 'C' to get case-sensitive sorting, which is important since stupidly the Ardupilot code depends upon it.
+
+	# Convert the PDE/INO's to a CPP by adding function prototypes.
+	echo -e "${CYAN}Converting PDE/INO files into a CPP file...\n${NO_COLOUR}"
+	export LC_ALL=C
+	ARDUINO_PDE_FILES=`find "$ARDUINO_BUILD_DIR" -not -name "${ARDUINO_SKETCH##*/}" -name "*.pde" -o -name "*.ino" | sort`
+	ARDUINO_CPP_FILE="${ARDUINO_BUILD_DIR}/${ARDUINO_SKETCH##*/}"
+	ARDUINO_CPP_FILE="${ARDUINO_CPP_FILE%.*}.cpp"
+	awk -v mode=header "${AWK_SPLITTER}" "${ARDUINO_BUILD_DIR}/${ARDUINO_SKETCH##*/}" ${ARDUINO_PDE_FILES} > ${ARDUINO_CPP_FILE}
+	echo "#line 1 \"autogenerated\"" >> ${ARDUINO_CPP_FILE}
+	awk "${AWK_PROTOTYPER}" "${ARDUINO_BUILD_DIR}/${ARDUINO_SKETCH##*/}" ${ARDUINO_PDE_FILES} >> ${ARDUINO_CPP_FILE}
+	awk -v mode=body "${AWK_SPLITTER}" "${ARDUINO_BUILD_DIR}/${ARDUINO_SKETCH##*/}" ${ARDUINO_PDE_FILES} >> ${ARDUINO_CPP_FILE}
+
+	# Then remove the PDE/INO files.
+	rm ${ARDUINO_PDE_FILES} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH}
+
+	# Since Arduino-mk can't detect them, make a list of all the libraries we expect to use.
+
+	# NOTE - Currently, we assume that means everything in the 'libraries' folder.
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" ]; then
+		ARDUINO_LIBRARIES=`ls -c "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" | tr "\n" " "`
+	fi
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
+
+	# Copy the relevant makefile in with the source.
+	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
+	cp -f $MAKEFILE ${ARDUINO_BUILD_DIR}
+						
+	# Update the working makefile with the appropriate values for this component.
+	sed -ri "s^(ARDMK_DIR *= *)BUILD_INSERTS_ARDMK_DIR_HERE(\\s.*)?^\1${TCPATH}/tmp/tmp_compiler/arduino/arduino-mk\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDMK_PATH *= *)BUILD_INSERTS_ARDMK_PATH_HERE(\\s.*)?^\1${TCPATH}/tmp/tmp_compiler/arduino/arduino-mk/bin\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDUINO_DIR *= *)BUILD_INSERTS_ARDUINO_DIR_HERE(\\s.*)?^\1${TCPATH}/tmp/tmp_compiler/arduino/arduino-dist\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(BOARD_TAG *= *)BUILD_INSERTS_BOARD_TAG_HERE(\\s.*)?^\1${ARDUINO_BOARD_TAG}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDUINO_LIBS *= *)BUILD_INSERTS_SKETCH_LIBRARIES_HERE(\\s.*)?^\1${ARDUINO_LIBRARIES}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(USER_LIB_PATH *= *)BUILD_INSERTS_OTHER_LIBRARIES_HERE(\\s.*)?^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ALTERNATE_CORE *= *)BUILD_INSERTS_ALTERNATE_CORE_HERE(\\s.*)?^\1${ARDUINO_ALTCORE}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDUINO_VAR_PATH *= *)BUILD_INSERTS_ARDUINO_VAR_PATH_HERE(\\s.*)?^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_VARI_DIR}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDUINO_CORE_PATH *= *)BUILD_INSERTS_ARDUINO_CORE_PATH_HERE(\\s.*)?^\1$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_CORE_DIR}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(CPPFLAGS *= *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1${CFLAGS}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(LDFLAGS *= *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1${LFLAGS}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(ARDUINO_SKETCHBOOK *= *)BUILD_INSERTS_TMPSRC_DIRECTORY_HERE(\\s.*)?^\1${ARDUINO_BUILD_DIR}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+	sed -ri "s^(OBJDIR *= *)BUILD_INSERTS_TMPSRC_DIRECTORY_HERE(\\s.*)?^\1${ARDUINO_BUILD_DIR}\2^" ${ARDUINO_BUILD_DIR}/Makefile
+  
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	make -C ${ARDUINO_BUILD_DIR}		
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+	
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	$OBJCOPY -O ihex "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH%.*}.hex" $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi
+	echo -e ""
+
+	# Print out details of the size of the generated hex file.
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
+
