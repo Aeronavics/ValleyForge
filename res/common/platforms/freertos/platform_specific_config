@@ -16,42 +16,89 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Now we perform any platform specific configuration.
-echo -e "${BOLD_CYAN}Platform specific configuration...\n${NO_COLOUR}"
+echo -e "${BOLD_CYAN}FreeRTOS specific configuration...\n${NO_COLOUR}"
 
 # Create a separate section in the component configuration file for platform specific stuff.
-echo -e "### PLATFORM SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+echo -e "### PLATFORM (FreeRTOS) SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
-# Ask if the user wants to include software timer functionality (an optional part of FreeRTOS).
-echo -e -n "${GREEN}Do you wish to use FreeRTOS software timer functionality? (Y/N) ${NO_COLOUR}"
-read -n 1
-echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
-# If they responded YES, then configure the component to import the software timer file when generating code.  If NO, then configure the component not to.
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-	# Set the flag importing the software timer file.
-	echo -e "FREERTOS_IMPORT_SWTIMER=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+# 1. Ask if the user wants to include software timer functionality (an optional part of FreeRTOS).
+
+# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+if [ ${NEW} ]; then
+	echo -e -n "${GREEN}Do you wish to use FreeRTOS software timer functionality: (Y/N)${NO_COLOUR}"
 else
-	# Clear the flag importing the software timer file.
-	echo -e "FREERTOS_IMPORT_SWTIMER=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+	DEFAULT=$([ "${FREERTOS_IMPORT_SWTIMER}" == "1" ] && echo "Y" || echo "N")
+	echo -e -n "${GREEN}Do you wish to use FreeRTOS software timer functionality: (Y/N) (Currently: ${NO_COLOUR}${DEFAULT}${GREEN})${NO_COLOUR}"
 fi
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a single character of user input.
+	read -s -n 1 -p " "
 
-# Ask if the user wants to include co-routine functionality (an optional part of FreeRTOS).
-echo -e -n "${GREEN}Do you wish to use FreeRTOS co-routine functionality? (Y/N) ${NO_COLOUR}"
-read -n 1
-echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
-# If they responded YES, then configure the component to import the co-routine file when generating code.  If NO, then configure the component not to.
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-	# Set the flag importing the co-routine file.
-	echo -e "FREERTOS_IMPORT_COROUTINE=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+	# If they responded YES, then configure the component to import the software timer file when generating code.  If NO, then configure the component not to.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Set the flag importing the software timer file.
+		echo -e "${REPLY}\n${CYAN}Importing software timer files.\n${NO_COLOUR}"
+		echo -e "FREERTOS_IMPORT_SWTIMER=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		break
+	elif [[ $REPLY =~ ^[Nn]$ ]]; then
+		# Clear the flag importing the software timer file.
+		echo -e "${REPLY}\n${CYAN}Not importing software timer files.\n${NO_COLOUR}"
+		echo -e "FREERTOS_IMPORT_SWTIMER=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		break
+	elif [[ $REPLY == $'\n' ]]; then
+		# The user is apparently a moron.
+		echo -e -n "${RED}Blank is not a choice.${NO_COLOUR}"
+	else
+		# The user is apparently a moron.
+		echo -e -n "${REPLY}\n${RED}Invalid choice.  Try again.${NO_COLOUR}"
+	fi
+done
+
+# 2. Ask if the user wants to include co-routine functionality (an optional part of FreeRTOS).
+
+# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+if [ ${NEW} ]; then
+	echo -e -n "${GREEN}Do you wish to use FreeRTOS co-routine functionality: (Y/N)${NO_COLOUR}"
 else
-	# Clear the flag importing the co-routine file.
-	echo -e "FREERTOS_IMPORT_COROUTINE=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+	DEFAULT=$([ "${FREERTOS_IMPORT_COROUTINE}" == "1" ] && echo "Y" || echo "N")
+	echo -e -n "${GREEN}Do you wish to use FreeRTOS co-routine functionality: (Y/N) (Currently: ${NO_COLOUR}${DEFAULT}${GREEN})${NO_COLOUR}"
 fi
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a single character of user input.
+	read -s -n 1 -p " "
 
-# Ask the user which heap implementation they wish to use.
-echo -e "${GREEN}Which memory (heap) manager would you like to use? \n${NO_COLOUR}"
+	# If they responded YES, then configure the component to import the co-routine file when generating code.  If NO, then configure the component not to.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Set the flag importing the co-routine file.
+		echo -e "${REPLY}\n${CYAN}Importing co-routine files.\n${NO_COLOUR}"
+		echo -e "FREERTOS_IMPORT_COROUTINE=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		break
+	elif [[ $REPLY =~ ^[Nn]$ ]]; then
+		# Clear the flag importing the co-routine file.
+		echo -e "${REPLY}\n${CYAN}Not importing co-routine files.\n${NO_COLOUR}"
+		echo -e "FREERTOS_IMPORT_COROUTINE=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		break
+	elif [[ $REPLY == $'\n' ]]; then
+		# The user is apparently a moron.
+		echo -e -n "${RED}Blank is not a choice.${NO_COLOUR}"
+	else
+		# The user is apparently a moron.
+		echo -e -n "${REPLY}\n${RED}Invalid choice.  Try again.${NO_COLOUR}"
+	fi
+done
 
+# 3. Ask the user which heap implementation they wish to use.
+
+# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+if [ ${NEW} ]; then
+	echo -e "${GREEN}Which memory (heap) manager would you like to use:${NO_COLOUR}"
+else
+	echo -e "${GREEN}Which memory (heap) manager would you like to use: (Currently: ${NO_COLOUR}${FREERTOS_MEMMAN_FILE##*/}${GREEN}})${NO_COLOUR}"
+fi
 # Create a menu of choices and have the user select one.
 select FREERTOS_MEMMAN_FILE in ${FREERTOS_MEMMAN_FILES}
 do
@@ -59,7 +106,7 @@ do
 	FREERTOS_MEMMAN_FILE=$(echo "${FREERTOS_MEMMAN_FILES}" | grep -w -o "$FREERTOS_MEMMAN_FILE")
 	if [ -z "$FREERTOS_MEMMAN_FILE" ]; then
 		# The selected memory manager was not in the list of options, so the user is apparently a moron.
-		echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+		echo -e -n "${RED}Invalid choice.  Try again. ${NO_COLOUR}"
 	else
 		# A legitimate option was selected, so we can go now.
 		echo -e "${CYAN}Selected memory manager '$FREERTOS_MEMMAN_FILE'.\n${NO_COLOUR}"
