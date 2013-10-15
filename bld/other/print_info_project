@@ -66,14 +66,14 @@ print_component_summary()
 	# Check if no component is currently selected.
 	if [ -z $COMPONENT ]; then
 		# No component was specified, so bail.
-		echo -e "${RED}No component selected.  Nothing to do.\n${NO_COLOUR}"
+		echo -e "${RED}No component selected.  Nothing to do.${NO_COLOUR}"
 		return 1
 	fi
 
 	# Then, check if the component actually exists.
 	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 		# The component does't have a matching source folder, so bail.
-		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.${NO_COLOUR}"
 		return 1
 	fi
 
@@ -88,7 +88,7 @@ print_component_summary()
 	# Check if we can find the config file for this component.
 	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 		# Just skip this component and move on.
-		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.${NO_COLOUR}"
 		return 1
 	fi
 
@@ -102,7 +102,7 @@ print_component_summary()
 	BCONF="bconf_${TARGET}_${PLATFORM}"
 	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
 		# No matching build configuration was found, so skip this component and move on.
-		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.${NO_COLOUR}"
 		return 1
 	else
 		# There is a matching build configuration, so load it.
@@ -111,7 +111,7 @@ print_component_summary()
 		# Check that all the required variables were set by the build configuration.
 		if [ -z "$BCONF_NAME" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
-			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.${NO_COLOUR}"
 			return 1
 		fi
 	fi
@@ -138,14 +138,14 @@ print_library_summary()
 	# Check if no library is currently selected.
 	if [ -z $LIBRARY ]; then
 		# No library was specified, so bail.
-		echo -e "${RED}No library selected.  Nothing to do.\n${NO_COLOUR}"
+		echo -e "${RED}No library selected.  Nothing to do.${NO_COLOUR}"
 		return 1
 	fi
 
 	# Then, check if the library actually exists.
 	if [ ! -d "$TCPATH/${LIB_SOURCE_PATH}/$COMPONENT" ]; then
 		# The library does't have a matching folder, so bail.
-		echo -e "${RED}No library folder found.  Skipping library $LIBRARY.\n${NO_COLOUR}"
+		echo -e "${RED}No library folder found.  Skipping library $LIBRARY.${NO_COLOUR}"
 		return 1
 	fi
 
@@ -160,7 +160,7 @@ print_library_summary()
 	# Check if we can find the config file for this library.
 	if ! [ -r "$TCPATH/${LIB_SOURCE_PATH}/$LIBRARY/$LIBRARY_NAME.cfg" ]; then
 		# Just skip this component and move on.
-		echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.${NO_COLOUR}"
 		return 1
 	fi
 
@@ -236,12 +236,12 @@ source $TCPATH/bld/common/load_build_configs
 
 # COLLECT PROJECT INFORMATION.
 
-COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
 
 # COLLECT LIBRARY INFORMATION.
 
-LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | sed "s/\/[^/]*\.cfg//g"`
+LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 LIBRARY_COUNT=`echo ${LIBRARIES} | wc -w`
 
 # PRINT USER INFORMATION.

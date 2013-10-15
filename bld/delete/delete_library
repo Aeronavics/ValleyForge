@@ -50,7 +50,7 @@ source $TCPATH/bld/common/create_empty_dirs
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Work out what libraries there are.
-LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | sed "s/\/[^/]*\.cfg//g"`
+LIBRARIES=`find ${TCPATH}/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 LIBRARY_COUNT=`echo ${LIBRARIES} | wc -w`
 
 # Check if there are actually some valid choices.

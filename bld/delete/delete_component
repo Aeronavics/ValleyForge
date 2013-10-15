@@ -49,7 +49,7 @@ source $TCPATH/bld/common/create_empty_dirs
 ################################ SCRIPT PROPER STARTS HERE ###############################
 
 # Work out what components there are.
-COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
 
 # Check if there are actually some valid choices.

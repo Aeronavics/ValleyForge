@@ -73,7 +73,7 @@ check_active_component()
 	# Check if the active project doesn't actually exist.
 	elif [ ! -d $TCPATH/src/$CURR ]; then
 		# The active component doesn't exist (probably they've deleted it manually).
-	
+
 		# Check if there are actually any components listed in the source folder.
 		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
 			# Indicate to the user that there are no source components at the moment.
@@ -223,7 +223,7 @@ do
 	echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
 	echo -en "\t${UNDERLINED}I${NO_COLOUR}NFO    ${UNDERLINED}C${NO_COLOUR}REATE    ${UNDERLINED}E${NO_COLOUR}DIT    ${UNDERLINED}D${NO_COLOUR}ELETE    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}"
 	REDRAW_MENU=
-	
+
 	# Read a single character input from the user and select the appropriate response.
 	read -s -n 1
 	echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
@@ -245,7 +245,7 @@ do
 					"A" | "a" )
 						# Run the print component information script.
 						bash $TCPATH/bld/other/print_info_component
-		
+
 						# Redraw the top level menu, since the user will probably want to do something, based on the printed information.
 						REDRAW_MENU=1
 						break
@@ -254,7 +254,7 @@ do
 					"P" | "p" )
 						# Run the print project information script.
 						bash $TCPATH/bld/other/print_info_project
-						
+
 						# Check on the status of the active component in the project.
 						check_active_component
 
@@ -284,13 +284,13 @@ do
 						continue
 						;;
 				esac
-				
+
 				# We're done here.
 				break
-			done		        
+			done
 			;;
-					
-	
+
+
 		"C" | "c" )
 			# The user wants to create something.
 
@@ -332,10 +332,10 @@ do
 						continue
 						;;
 				esac
-				
+
 				# We're done here.
 				break
-			done		        
+			done
 			;;
 
 		"D" | "d" )
@@ -374,10 +374,10 @@ do
 						continue
 						;;
 				esac
-				
+
 				# We're done here.
 				break
-			done		
+			done
 			;;
 
 		"E" | "e" )
@@ -396,14 +396,14 @@ do
 				case "$REPLY" in
 					"A" | "a" )
 						# Work out what components there are.
-						COMPONENTS=`find . -regextype posix-extended -regex '.*/([^/]+)/\1\.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+						COMPONENTS=`find ./src -name '*.cfg' | sed "s/.*\/src\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 						COMPONENT_COUNT=`echo ${COMPONENTS} | wc -w`
 
 						# Check if there are actually some valid choices.
 						if [ ${COMPONENT_COUNT} == 0 ]; then
 							echo -e "${YELLOW}There are currently no components in this project.  Create a new component with CREATE -> CREATE COMPONENT.\n${NO_COLOUR}"
 							CURR=
-							
+
 
 						# Else if there is only one, then there is no choice involved.
 						elif [ ${COMPONENT_COUNT} == 0 ]; then
@@ -437,7 +437,7 @@ do
 							echo -e "${RED} No component set as active.  Cannot reconfigure active component.\n${NO_COLOUR}"
 							REDRAW_TOP=1
 							break
-						
+
 						# Check if the active project doesn't actually exist.
 						elif [ ! -d $TCPATH/src/$CURR ]; then
 							# The active component doesn't exist (probably they've deleted it manually).
@@ -445,14 +445,14 @@ do
 							REDRAW_TOP=1
 							break
 						fi
-							# Else we're good to go.						
+							# Else we're good to go.
 
 						# Run the create component script on the active component.
 						bash $TCPATH/bld/create/create_component -c $CURR
 						;;
 
 					"E" | "e" )
-						# Run the edit script.			
+						# Run the edit script.
 						bash $TCPATH/bld/edit/edit_user_config
 						;;
 
@@ -468,7 +468,7 @@ do
 						continue
 						;;
 				esac
-				
+
 				# We're done here.
 				break
 			done
