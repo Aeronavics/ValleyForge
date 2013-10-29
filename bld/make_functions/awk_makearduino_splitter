@@ -1,0 +1,44 @@
+#!/bin/awk
+
+# THIS IS AN AWK SCRIPT WHICH IS USED TO SEPARATE THE 'HEADER' AND 'BODY' PORTION OF A PDE/INO FILE.
+
+# TODO - We're using the AWK scripts from the Ardupilot project.  Although it's been heavily refactored and modified, it might still be GPL'd.
+
+# NOTE - Since some machines use MAWK instead of GAWK, we don't use any character classes (even though this is kinda ugly).
+
+BEGIN {	
+	scanning = 1; printing = (mode ~ "header") ? 1 : 0;
+}
+# On the first line, we insert a marker so we know where the following source code came from.
+(FNR == 1) && printing { 
+	printf "#line %d \"%s\"\n", FNR, FILENAME; 
+}
+# Initially for each line, set the flag toggle, which indicates if we have arrived at a line which isnt part of the header to true.
+{ toggle = 1 }
+# Then, if this line is commented out (between /* and */) then turn toggle back off again.
+/^[ \t\n]*\/\*/,/\*\// { 
+	toggle = 0;
+}
+# Or if this line is blank...
+/^[ \t\n]*$/ {
+	toggle = 0;
+}
+# Or if this line is just a C99 comment...
+/^[ \t\n]*\/\/.*/ {
+	toggle = 0;
+}
+# Or if this line is just a preprocessor directive...
+/^\#.*$/ { 	
+	toggle = 0;
+}
+# So, if we get to here and toggle is still turned on, then we have passed the header bit and reached the body of the file.
+scanning && toggle { 
+	scanning = 0;
+	printing = !printing;
+	# If we're now printing the body section (rather than NOT printing the header), we insert a marker.
+	if (printing) { 
+		printf "#line %d \"%s\"\n", FNR, FILENAME;
+	}
+}
+# By default, if printing is currently enabled, then print the current line.
+printing

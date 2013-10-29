@@ -1,0 +1,34 @@
+#!/bin/awk
+
+# THIS IS AN AWK SCRIPT WHICH IS USED TO PRODUCE FUNCTION PROTOTYPES FOR FUNCTIONS IN A PDE/INO FILE.
+
+# TODO - We're using the AWK scripts from the Ardupilot project.  Although it's been heavily refactored and modified, it might still be GPL'd.
+
+# NOTE - Since some machines use MAWK instead of GAWK, we don't use any character classes (even though this is kinda ugly).
+
+BEGIN { 
+	# We break the file delimited by the opening brace, so each record ends in something which might be a function definition.
+	RS="{";
+	# Then we assemble a regex which only matches a function definitions at the end of each record.
+	newline		= "(\n|^)[ \t\n]*";
+	qualifiers	= "([A-Za-z0-9_]+[ \t\n]+)*";
+	type		= "[A-Za-z0-9_]+[ \t\n]*[*&]*[ \t\n]+";
+	name      	= "([A-Za-z0-9_]+)[ \t\n]*";
+	args      	= "\([ \t\nA-Za-z0-9_,*&[\]]*\)";
+	extrawhitespace	= "[ \t\n]*$";
+	pattern    = newline qualifiers type name args extrawhitespace;
+}
+# If the current line matches our pattern for a function, then print a prototype for that function.
+match($0, pattern) {
+	# TODO - Check if the name was a reserved word?
+
+	# Extract just the part of the matching record which is actually the function definition.
+	proto = substr($0, RSTART, RLENGTH);
+	# Remove any newlines, so the definition is only on one line.
+	gsub("\n", " ", proto);
+	# Remove leading and trailing whitespace.
+	gsub(/^[ \t]+|[ \t]+$/, "", proto);
+	# Print the definition, with a semicolon, thus making it into a prototype.
+	printf "%s;\n", proto;
+}
+
