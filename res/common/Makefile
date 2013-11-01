@@ -36,6 +36,7 @@ BOLD_WHITE=\033[1;37m
 # Component & Filename Details.
 COMPONENT=BUILD_INSERTS_COMPONENT_HERE
 EXECUTABLE=BUILD_INSERTS_EXECUTABLE_HERE
+LOOSE_OBJECTS=BUILD_INSERTS_LOOSE_OBJECTS_HERE
 
 # Executables.
 CC=BUILD_INSERTS_C_COMPILER_HERE # The C compiler to use.
@@ -57,33 +58,35 @@ LFLAGS=BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 #	required sources file dependencies.  In this implementation, we assume that if a required header file has a matching source file in the same folder, then that 
 #	will probably be an object dependency (and hence the source should be compiled).
 define detect_source_dependencies
-	while read -a line; do 									\
+	while read -a line -r; do								\
 		for word in "$${line[@]}"; do 							\
-			if [[ $$word == *".h" && $$word != "$*.h" ]]; then			\
+			if [[ $$word == "\\" ]]; then						\
+				continue;							\
+			elif [[ $$word == *".h" && $$word != "$*.h" ]]; then			\
 				if [ -f "$${word/%.h/.c}" ]; then 				\
-					sed -i "s^$$word^$$word $${word/%.h/.o}^g" $(1);	\
+					real=$$(readlink -m $$word);				\
+					real=$${real/"$$(pwd)/"/};				\
+					sed -i "s^$$word^$$real $${real/%.h/.o}^g" $(1);	\
+				elif [ -f "$${word/%.h/.cpp}" ]; then 				\
+					real=$$(readlink -m $$word);				\
+					real=$${real/"$$(pwd)/"/};				\
+					sed -i "s^$$word^$$real $${real/%.h/.o}^g" $(1);	\
 				fi;								\
-			fi;									\
-		done;										\
-	done < $(1);										\
-	while read -a line; do									\
-		for word in "$${line[@]}"; do							\
-			if [[ $$word == *".hpp" && $$word != "$*.hpp" ]]; then			\
+			elif [[ $$word == *".hpp" && $$word != "$*.hpp" ]]; then		\
 				if [ -f "$${word/%.hpp/.cpp}" ]; then				\
-					sed -i "s^$$word^$$word $${word/%.hpp/.o}^g" $(1);	\
+					real=$$(readlink -m $$word);				\
+					real=$${real/"$$(pwd)/"/};				\
+					sed -i "s^$$word^$$real $${real/%.hpp/.o}^g" $(1);	\
 				fi;								\
-			fi;									\
-		done;										\
-	done < $(1);										\
-	while read -a line; do									\
-		for word in "$${line[@]}"; do							\
-			if [[ $$word == *".hs" && $$word != "$*.hs" ]]; then			\
+			elif [[ $$word == *".hs" && $$word != "$*.hs" ]]; then			\
 				if [ -f "$${word/%.hs/.s}" ]; then				\
-					sed -i "s^$$word^$$word $${word/%.hs/.o}^g" $(1);	\
+					real=$$(readlink -m $$word);				\
+					real=$${real/"$$(pwd)/"/};				\
+					sed -i "s^$$word^$$real $${real/%.hs/.o}^g" $(1);	\
 				fi;								\
 			fi;									\
 		done;										\
-	done < $(1)
+	done < $(1);
 endef
 
 #	This function records all of the object file dependencies for a particular object file (referenced by $1).  The function defines a
@@ -137,36 +140,36 @@ main: $(EXECUTABLE)
 
 #	EXECUTABLE FILES.
 
-%: %.ld %.lld
+%: %.d
 	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
 	$(LD) -o $@ $(shell cat $@.ld) $(shell cat $@.lld) $(LFLAGS)
 
 #	OBJECT FILES.
 
 # Object from C.
-%.o : %.c
+%.o : %.c %.dc
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Object from C++.
-%.o : %.cpp
+%.o : %.cpp %.dcpp
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(PC) $(PFLAGS) -c $< -o $@
 
 # Object from assembly.
-%.o : %.s
+%.o : %.s %.ds
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(AS) $(AFLAGS) $< -o $@
 
 #	ASSEMBLY FILES.
 
 # Assembly from C.
-%.s: %.c
+%.s: %.c %.dc
 	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -s $< -o $@
 
 # Assembly from CPP.
-%.s: %.cpp
+%.s: %.cpp %.dcpp
 	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
 	$(CC) $(PFLAGS) -s $< -o $@
 
@@ -178,7 +181,7 @@ main: $(EXECUTABLE)
 # Dependency from C.
 %.dc: %.c
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
-	@${CC} ${CFLAGS} -MM $^ > $@
+	@${CC} ${CFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
@@ -188,7 +191,7 @@ main: $(EXECUTABLE)
 # Dependency from C++.
 %.dcpp: %.cpp
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
-	@${PC} ${PFLAGS} -MM $^ > $@
+	@${PC} ${PFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
@@ -198,7 +201,7 @@ main: $(EXECUTABLE)
 # Dependency from assembly.
 %.ds: %.s
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
-	@${PC} ${PFLAGS} -MM $^ > $@
+	@${PC} ${PFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
@@ -214,16 +217,20 @@ ${EXECUTABLE}.d:
 	@echo -e "$(BOLD_WHITE)******** Calculating executable dependencies. ********$(NO_COLOUR)"
 	@# Work out what the main file is going to be, so we can build the output file.
 	@echo -e "Assuming executable ${EXECUTABLE} will depend upon ${EXECUTABLE}.o"
-	@echo -e "${EXECUTABLE}: ${EXECUTABLE}.o\n" >> ${EXECUTABLE}.d
+	@echo -e "${EXECUTABLE}: $(@:.d=.ld) $(@:.d=.lld)\n" >> ${EXECUTABLE}.d
 
 # Linking dependencies are calculated by a separate function.  These are not proper make-syntax dependencies, these are simply a list of those
 # object files which need to be included for linking a particular executable.  This allows linking only those object files which are required.
 
 # Linker dependency from source dependencies.
-%.ld: %.o
+%.ld: %.o $(LOOSE_OBJECTS)
 	@echo -e "$(BOLD_WHITE)******** Calculating linking dependencies for $*. ********$(NO_COLOUR)"
 	@$(call detect_link_dependencies,$*)
-	@cat $@
+	@echo $(LOOSE_OBJECTS) >> $@
+	@sed -i "s^ ^\n^g; /^$$/d" $@
+	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
+	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete linker dependency file $@ is `cat $@ | wc -l` lines long."; fi
+	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no linker dependencies (this seems unlikely, and probably indicates something is about to go wrong)."; fi
 
 # Library dependencies are easy enough to calculate; since unused objects are discarded by the linker, we can simply include all the library (archive)
 # files we find, and let the linker sort out which are actually needed.
@@ -232,7 +239,9 @@ ${EXECUTABLE}.d:
 %.lld: %.o
 	@echo -e "${BOLD_WHITE}******** Searching for library files to include. ********$(NO_COLOUR)"
 	@$(call detect_libraries,$*)
-	@cat $@
+	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
+	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete library dependency file $@ is `cat $@ | wc -l` lines long."; fi
+	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no library dependencies."; fi
 
 # IMPORT EXTERNAL DEPENDENCIES.
 
@@ -240,21 +249,19 @@ ${EXECUTABLE}.d:
 # additional rules later, so we have to include all the rules we might possibly need right from the start.
 
 # Include dependencies for C files.
--include ${patsubst %.c, %.dc, ${wildcard *.c}}
--include ${patsubst %.c, %.dc, ${wildcard **/*.c}}
+-include ${patsubst %.c, %.dc, ${shell find . -name "*.c"}}
 
 # Include dependencies for C++ files.
--include ${patsubst %.cpp, %.dcpp, ${wildcard *.cpp}}
--include ${patsubst %.cpp, %.dcpp, ${wildcard **/*.cpp}}
+-include ${patsubst %.cpp, %.dcpp, ${shell find . -name "*.cpp"}}
 
 # Include dependencies for assembly files.
--include ${patsubst %.s, %.ds, ${wildcard *.s}}
--include ${patsubst %.s, %.ds, ${wildcard **/*.s}}
+-include ${patsubst %.s, %.ds, ${shell find . -name "*.s"}}
 
 # Dependencies also need to be calculated for the executable as a whole, so that we actually have some rules which create us the desired output
 # file, using the appropriate source files.
 
 # Include dependencies for executable main.
-#-include ${EXECUTABLE}.d
+-include ${EXECUTABLE}.d
+
 
 

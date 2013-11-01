@@ -14,7 +14,7 @@ BEGIN {
 	qualifiers	= "([A-Za-z0-9_]+[ \t\n]+)*";
 	type		= "[A-Za-z0-9_]+[ \t\n]*[*&]*[ \t\n]+";
 	name      	= "([A-Za-z0-9_]+)[ \t\n]*";
-	args      	= "\([ \t\nA-Za-z0-9_,*&[\]]*\)";
+	args      	= "[(][][ \t\nA-Za-z0-9_,*&]*[)]";
 	extrawhitespace	= "[ \t\n]*$";
 	pattern    = newline qualifiers type name args extrawhitespace;
 }
