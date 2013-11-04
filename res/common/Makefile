@@ -180,7 +180,7 @@ main: $(EXECUTABLE)
 
 # Dependency from C.
 %.dc: %.c
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
 	@${CC} ${CFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
@@ -190,7 +190,7 @@ main: $(EXECUTABLE)
 
 # Dependency from C++.
 %.dcpp: %.cpp
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
@@ -200,7 +200,7 @@ main: $(EXECUTABLE)
 
 # Dependency from assembly.
 %.ds: %.s
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $*. ********$(NO_COLOUR)"
+	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
 	@${PC} ${PFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
@@ -237,7 +237,7 @@ ${EXECUTABLE}.d:
 
 # Linker library dependency from nothing.
 %.lld: %.o
-	@echo -e "${BOLD_WHITE}******** Searching for library files to include. ********$(NO_COLOUR)"
+	@echo -e "${BOLD_WHITE}******** Searching for library files to include for $*. ********$(NO_COLOUR)"
 	@$(call detect_libraries,$*)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
 	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete library dependency file $@ is `cat $@ | wc -l` lines long."; fi
