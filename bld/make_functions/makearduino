@@ -153,7 +153,7 @@ makearduino()
 		ARDUINO_USER_LIBRARIES=
 	fi
 
-	# If we are using a specific Arduino 'core', then we'll need to indicate this to arduino-mk.
+	# If we are using a specific Arduino 'core', then we'll need to include this instead of the regular Arduino core files.
 
 	# TODO - The default paths need to be calculated depending on the type of Arduino.
 

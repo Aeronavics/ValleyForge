@@ -281,32 +281,6 @@ unpack_arduinoc()
 		echo -e "${CYAN}Arduino compiler available.\n${NO_COLOUR}"
 	fi
 
-	# We also need to have a copy of the Arduino makefile, which is available via Git.
-	ARDUINO_MAKEFILE_VENDOR_REMOTE="https://github.com/sudar/Arduino-Makefile.git"
-	ARDUINO_MAKEFILE_VENDOR_LOCAL="${TMP_COMPILER_DIR}/arduino/arduino-mk"
-
-	# Check if the Arduino makefile repository has been downloaded already.
-	if [ ! -d "${TMP_COMPILER_DIR}/arduino/arduino-mk" ]; then
-		# We need to clone the repository before we can use it.		
-		echo -e "${CYAN}\tDownloading the Arduino makefile source...\n${NO_COLOUR}"
-		git clone --depth=1 ${ARDUINO_MAKEFILE_VENDOR_REMOTE} ${ARDUINO_MAKEFILE_VENDOR_LOCAL}
-		echo -e ""
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d "${ARDUINO_MAKEFILE_VENDOR_LOCAL}/.git" ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${ARDUINO_MAKEFILE_VENDOR_LOCAL} is not a git repository.  Cannot unpack Arduino makefile source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the Arduino makefile source...\n${NO_COLOUR}"
-			pushd ${ARDUINO_MAKEFILE_VENDOR_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
-  	fi
-
 	# TODO - Test that now the required files actually exist.
 
 	# All done.
