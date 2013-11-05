@@ -251,3 +251,45 @@ makearduino()
 	return 0
 }
 
+######################################## FUNCTION #########################################
+###											###
+### Name:		makearduino_bootloader						###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Builds the default Arduino bootloader for the current 		###
+###			component.  Since the Arduino IDE comes with a binary version	###
+###			the bootloader, this is trivial.			     	###
+###											###
+###########################################################################################
+
+makearduino_bootloader()
+{
+	# Set up the Arduino compiler, since it has the bootloader binary.
+	unpack_arduinoc
+
+	# Check if the build configuration specifies a bootloader file.
+	if [ -n "${BLOAD_ARDUINO_BOOTLOADER}" ]; then
+		# Check if this file doesn't actually exist.
+		if [ ! -f "$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/${BLOAD_ARDUINO_BOOTLOADER}" ]; then
+			# The file doesn't exist, so the bootloader configuration is probably incorrect.
+			echo -e "${RED}Bootloader file '${BLOAD_ARDUINO_BOOTLOADER}' not found.  Aborting...\n${NO_COLOUR}"
+		fi
+	else
+		# No file was specified, which indicates the bootloader configuration is incomplete.
+		echo -e "${RED}Bootloader configuration incomplete, no Arduino bootloader file specified.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# All we need to do is copy over the required file.
+	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
+	cp "$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/${BLOAD_ARDUINO_BOOTLOADER}" ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex
+
+	# We don't care about the MCU fuses, but typically Arduino devices lock the bootloader section.
+	echo -e "${YELLOW}NOTE - Arduino devices typically lock the bootloader section.  Remember to check fuse settings when uploading.\n${NO_COLOUR}"
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output binary written to ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
+	return 0
+}
+
