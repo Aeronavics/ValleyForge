@@ -18,13 +18,15 @@
 # Prompt the user to select the appropriate configuration for the target.
 echo -e "${CYAN}AVR specific configuration...\n${NO_COLOUR}"
 
-# Create a separate section in the component configuration file for target specific stuff.
-echo -e "### TARGET (AVR) SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+# If this is a new component, create a separate section in the component configuration file for target specific stuff.
+if [ ${NEW} ]; then
+	echo -e "### TARGET (AVR) SPECIFIC ###\n" >> ${CONFIG_FILE}
+fi
 
 # 1. Prompt the user to enter the clock speed the MCU will be running at.
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ ${NEW} ]; then
+if [ -z "`pull_key ${CONFIG_FILE} \"CLK_SPEED_IN_MHZ\"`" ]; then
 	echo -e -n "${GREEN}Please enter the clock speed, as an integer in MHz:${NO_COLOUR}"
 else
 	echo -e -n "${GREEN}Please enter the clock speed, as an integer in MHz: (Currently: ${NO_COLOUR}${CLK_SPEED_IN_MHZ}${GREEN})${NO_COLOUR}"
@@ -49,10 +51,7 @@ do
 	fi
 done
 # Write setting to the configuration file.
-echo -e "CLK_SPEED_IN_MHZ=${CLK_SPEED_IN_MHZ}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
-
-# Write any other configuration entries, then a blank line, to the configuration file.
-echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+push_key ${CONFIG_FILE} "CLK_SPEED_IN_MHZ" "${CLK_SPEED_IN_MHZ}"
 
 # All done.
 

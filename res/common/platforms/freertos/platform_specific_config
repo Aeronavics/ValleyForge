@@ -18,13 +18,15 @@
 # Now we perform any platform specific configuration.
 echo -e "${BOLD_CYAN}FreeRTOS specific configuration...\n${NO_COLOUR}"
 
-# Create a separate section in the component configuration file for platform specific stuff.
-echo -e "### PLATFORM (FreeRTOS) SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+# If this is a new component, create a separate section in the component configuration file for platform specific stuff.
+if [ ${NEW} ]; then 
+	echo -e "### PLATFORM (FreeRTOS) SPECIFIC ###\n" >> ${CONFIG_FILE}
+fi
 
 # 1. Ask if the user wants to include software timer functionality (an optional part of FreeRTOS).
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ ${NEW} ]; then
+if [ -z "`pull_key ${CONFIG_FILE} \"FREERTOS_IMPORT_SWTIMER\"`" ]; then
 	echo -e -n "${GREEN}Do you wish to use FreeRTOS software timer functionality: (Y/N)${NO_COLOUR}"
 else
 	DEFAULT=$([ "${FREERTOS_IMPORT_SWTIMER}" == "1" ] && echo "Y" || echo "N")
@@ -40,12 +42,12 @@ do
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Set the flag importing the software timer file.
 		echo -e "${REPLY}\n${CYAN}Importing software timer files.\n${NO_COLOUR}"
-		echo -e "FREERTOS_IMPORT_SWTIMER=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "FREERTOS_IMPORT_SWTIMER" "1"
 		break
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then
 		# Clear the flag importing the software timer file.
 		echo -e "${REPLY}\n${CYAN}Not importing software timer files.\n${NO_COLOUR}"
-		echo -e "FREERTOS_IMPORT_SWTIMER=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "FREERTOS_IMPORT_SWTIMER" "0"
 		break
 	elif [[ $REPLY == $'\n' ]]; then
 		# The user is apparently a moron.
@@ -59,7 +61,7 @@ done
 # 2. Ask if the user wants to include co-routine functionality (an optional part of FreeRTOS).
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ ${NEW} ]; then
+if [ -z "`pull_key ${CONFIG_FILE} \"FREERTOS_IMPORT_COROUTINE\"`" ]; then
 	echo -e -n "${GREEN}Do you wish to use FreeRTOS co-routine functionality: (Y/N)${NO_COLOUR}"
 else
 	DEFAULT=$([ "${FREERTOS_IMPORT_COROUTINE}" == "1" ] && echo "Y" || echo "N")
@@ -75,12 +77,12 @@ do
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Set the flag importing the co-routine file.
 		echo -e "${REPLY}\n${CYAN}Importing co-routine files.\n${NO_COLOUR}"
-		echo -e "FREERTOS_IMPORT_COROUTINE=1" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "FREERTOS_IMPORT_COROUTINE" "1"
 		break
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then
 		# Clear the flag importing the co-routine file.
 		echo -e "${REPLY}\n${CYAN}Not importing co-routine files.\n${NO_COLOUR}"
-		echo -e "FREERTOS_IMPORT_COROUTINE=" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "FREERTOS_IMPORT_COROUTINE" "0"
 		break
 	elif [[ $REPLY == $'\n' ]]; then
 		# The user is apparently a moron.
@@ -94,7 +96,7 @@ done
 # 3. Ask the user which heap implementation they wish to use.
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ ${NEW} ]; then
+if [ -z "`pull_key ${CONFIG_FILE} \"FREERTOS_MEMMAN_FILE\"`" ]; then
 	echo -e "${GREEN}Which memory (heap) manager would you like to use:${NO_COLOUR}"
 else
 	echo -e "${GREEN}Which memory (heap) manager would you like to use: (Currently: ${NO_COLOUR}${FREERTOS_MEMMAN_FILE##*/}${GREEN}})${NO_COLOUR}"
@@ -110,13 +112,10 @@ do
 	else
 		# A legitimate option was selected, so we can go now.
 		echo -e "${CYAN}Selected memory manager '$FREERTOS_MEMMAN_FILE'.\n${NO_COLOUR}"
-		echo -e "FREERTOS_MEMMAN_FILE=${FREERTOS_MEMMAN_FILE}" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "FREERTOS_MEMMAN_FILE" "${FREERTOS_MEMMAN_FILE}"
 		break
 	fi
 done
-
-# Write any other configuration entries, then a blank line, to the configuration file.
-echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 # Prompt the user that further manual configuration will be required, via the FreeRTOS config header.
 echo -e "${BOLD_YELLOW}Further manual configuration will be required; edit the FreeRTOS configuration header file to meet your application's requirements.\n${NO_COLOUR}"

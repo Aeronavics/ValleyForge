@@ -268,9 +268,89 @@ choose_bootloader()
 
 ##################################### MINOR FUNCTIONS ####################################
 
+# Add a single key to a configuration file, or modify the key if it already exists.
+push_key()
+{
+	# $1 - Configuration file.
+	# $2 - Key.
+	# $3 - Value.
+	# $4 - Flag indicating whether to concatenate or delete a key instead of assigning it.
+
+	# NOTE - The behaviour of this function when dealing with concatenating or deleting-type keys may not be immediately obvious.
+
+	# TODO - Check if the required fields are actually present.
+
+	# Check if the specified configuration file exists.
+	if [ ! -f "$1" ]; then
+		# The specified configuration file does not exist.
+		echo -e "${RED}Unable to add key to configuration file '$1'; file does not exist.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check whether we are just trying to delete a specific key/value pair.
+	if [ "$4" == "--delete" ]; then
+		# We are deleting a specific key/value pair, rather than inserting a new key, or replacing an existing key.
+
+		# If we can find the exact key/value pair (treating assignment and concatenation the same), then we delete it.
+		sed -r -i "\|\s*${2}=${3}\s*|d" ${1}
+		sed -r -i "\|\s*${2}[+]=${3}\s*|d" ${1}
+
+	# Check whether we should be concatenating this key rather than assigning it.
+	elif [ "$4" == "--concat" ]; then
+		# Because this is a concatenated key, we check if the complete key/value pair already exists, rather than just the key.
+		if [ -z "`cat ${1} | grep -E \"^\s*${2}[+]=${3}$\"`" ]; then
+			# We couldn't already find the key, so we just insert it add the end.
+			echo "${2}+=${3}" >> "${1}"
+		fi
+	
+	# Else this is just a regular assignment.
+	else
+		# Check if the key already exists in the file.
+		if [ -n "`cat ${1} | grep -E \"^\s*${2}=.*$\"`" ]; then
+			# The key already exists, so now we just change its value.
+			sed -r -i "s%^\s*${2}=.*$%${2}=${3}%g" ${1}
+		else
+			# We couldn't already find the key, so we just insert it add the end.
+			echo "${2}=${3}" >> "${1}"
+		fi
+	fi
+
+	# All done.
+	return 0	
+}
+
+# Fetch the value of a single key from a configuration file.  Returns empty if key not found.
+pull_key()
+{
+	# $1 - Configuration file.
+	# $1 - Key.
+
+	# NOTE - This function can be used to get the value of a key without actually loading the key from file.
+
+	# NOTE - However, the behavior in the case of multiple (usually concatenating) keys may not be immediately obvious.
+
+	# TODO - Check if the required fields are actually present.
+
+	# Check if the specified configuration file exists.
+	if [ ! -f "$1" ]; then
+		# The specified configuration file does not exist.
+		echo -e "${RED}Unable to read key from configuration file '$1'; file does not exist.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if the key is found in the file, and if so, print it out (since you can't return a string in bash).
+	echo `cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2`
+	echo `cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2`
+
+	# All done.
+	return 0
+}
+
 # Do any code generation which is required at config time.
 generate_code_config_time()
 {
+	# $1 - Component source directory.
+
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then
 		# The specified location is not a directory.
@@ -415,6 +495,8 @@ run_bload_specific_config()
 # Load component configuration, if one exists.
 load_component_config()
 {
+	# $1 - Specific configuration file to load.  If blank, then use the default.
+
 	# Check if this is a new component.
 	if [ ${NEW} ]; then
 		# This is a new component, so there will be no file to load.
@@ -694,21 +776,26 @@ fi
 
 # CREATE THE COMPONENT.
 
+# Figure out what the component's configuration file should be.
+CONFIG_FILE="$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg"
+
 # Check if we're creating a new component, as opposed to just reconfiguring one.
 if [ ${NEW} ]; then
 	# This is a new component, so we will need to create a directory for it.
 	echo -e "${CYAN}Creating component directory (src/$COMPONENT)...\n${NO_COLOUR}"
 	mkdir -p $TCPATH/src/$COMPONENT
-else
-	# Create a backup of any existing component configuration file, so we can use it to refer to.
-	mv "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg.bak"
+	echo -e "${CYAN}Creating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
+	echo -e "# Configuration file for component $COMPONENT_NAME.\n" > ${CONFIG_FILE}
 fi
 
 # TODO - We should check that this actually worked, and if it didn't, bail.
 
-# Create the configuration file for the component, overriding any existing configuration file.
-echo -e "${CYAN}Creating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
-echo -e "# Configuration file for component $COMPONENT_NAME.\n\nSUBSYSTEM='$NEW_SUBSYSTEM'\nTARGET=$NEW_TARGET\nPLATFORM=$NEW_PLATFORM\nBOOTLOADER=$NEW_BOOTLOADER\n" > $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+# Populate the configuration file for the component.
+echo -e "${CYAN}Populating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
+push_key ${CONFIG_FILE} "SUBSYSTEM" "${NEW_SUBSYSTEM}"
+push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
+push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
+push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
 
 # TODO - We should actually check if this works.
 
@@ -756,9 +843,6 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 	# Explain to the user what they should do now.
 	echo -e "${BOLD_WHITE}The working directory for component $COMPONENT_NAME can now be found at src/$COMPONENT.\n${NO_COLOUR}"
 fi
-
-# If we ended up with a backup component configuration file, delete it.
-rm "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg.bak" 2>/dev/null
 
 # All done.
 echo -e "${CYAN}All done.\n${NO_COLOUR}"

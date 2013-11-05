@@ -18,8 +18,10 @@
 # For the moment, we just print out a message to the user.
 echo -e "${BOLD_CYAN}LM3S1968 specific configuration...\n${NO_COLOUR}"
 
-# Create a separate section in the component configuration file for target specific stuff.
-echo -e "### TARGET (LM3S1968) SPECIFIC ###\n" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+# If this is a new component, create a separate section in the component configuration file for target specific stuff.
+if [ ${NEW} ]; then
+	echo -e "### TARGET (LM3S1968) SPECIFIC ###\n" >> ${CONFIG_FILE}
+fi
 
 # 1. Ask if the user wants to include the standard startup code file (taken from the Luminary Micro Peripheral Driver Library).
 
@@ -39,12 +41,14 @@ do
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Add the startup files to the list of files to import.
 		echo -e "${REPLY}\n${CYAN}Using standard startup code.\n${NO_COLOUR}"
-		echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
-		echo -e "SRC_IMPORT_FILES+=' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" --concat
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" --concat
 		break
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then
 		# Don't add the startup files.
 		echo -e "${REPLY}\n${CYAN}Not using standard startup code.\n${NO_COLOUR}"
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" --delete
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" --delete
 		break
 	elif [[ $REPLY == $'\n' ]]; then
 		# The user is apparently a moron.
@@ -54,9 +58,6 @@ do
 		echo -e -n "${REPLY}\n${RED}Invalid choice.  Try again.${NO_COLOUR}"
 	fi
 done
-
-# Write any other configuration entries, then a blank line, to the configuration file.
-echo -e "" >> $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 # All done.
 
