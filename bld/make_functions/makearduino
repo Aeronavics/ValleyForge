@@ -88,7 +88,7 @@ makearduino()
 
 	# List the sketch source files (PDE/INO) other than the parent.
 	export LC_ALL=C
-	ARDUINO_PDE_FILES=`find "$ARDUINO_BUILD_DIR" -not -name "${ARDUINO_SKETCH##*/}" -name "*.pde" -o -not -name "${ARDUINO_SKETCH##*/}" -name "*.ino" | sort`
+	ARDUINO_PDE_FILES=`find "$ARDUINO_BUILD_DIR" -maxdepth 1 -not -name "${ARDUINO_SKETCH##*/}" -name "*.pde" -o -not -name "${ARDUINO_SKETCH##*/}" -name "*.ino" | sort`
 	export LC_ALL=
 
 	# NOTE - The actual conversion logic is performed via a set of AWK scripts, which are stored as separate files.
@@ -104,7 +104,7 @@ makearduino()
 	# Then remove the PDE/INO files.
 	rm ${ARDUINO_PDE_FILES} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH}
 
-	# Since Arduino-mk can't detect them, make a list of all the user libraries we expect to use.
+	# Since the common Makefile can't detect them, make a list of all the user libraries we expect to use.
 
 	# Only create a user library listing if we specified a library directory to use.
 	if [ -n "${ARDUINO_LIB_DIR}" ]; then
@@ -122,7 +122,7 @@ makearduino()
 			ARDUINO_USER_LIBRARIES=
 			for HEADER_FILE in ${ARDUINO_IMPORTS}; do
 				# Check if this header file is somewhere in the user libraries folder.
-				USER_LIBRARY=`find "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" -name "${HEADER_FILE}"`
+				USER_LIBRARY=`find "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" -name "${HEADER_FILE}" | head -1`
 				USER_LIBRARY="${USER_LIBRARY%/*}"	# Cut the header file name off.
 				USER_LIBRARY="${USER_LIBRARY##*/}"	# Cut the root library path off.
 
@@ -132,7 +132,7 @@ makearduino()
 					continue
 				fi
 
-				# Check if the library is already in the of libraries.
+				# Check if the library is already in the list of libraries.
 				if [ -n "`echo ${ARDUINO_USER_LIBRARIES} | grep \"\b${USER_LIBRARY}\b\"`" ]; then
 					# The library is already in the list, so just move on.
 					continue
@@ -141,7 +141,12 @@ makearduino()
 				# Add the folder containing this header to the list of user libraries.
 				ARDUINO_USER_LIBRARIES+="${USER_LIBRARY} "
 			done
-			echo -e "${NO_COLOUR}\t${ARDUINO_USER_LIBRARIES}\n${NO_COLOUR}"
+			# Check if we actually found any dependencies, and if so, list them.
+			if [ -n "${ARDUINO_USER_LIBRARIES}" ]; then
+				echo -e "${NO_COLOUR}\t${ARDUINO_USER_LIBRARIES}\n${NO_COLOUR}"
+			else
+				echo -e "${YELLOW}\t\tNo user library dependencies detected.\n${NO_COLOUR}"
+			fi
 		else
 			# It seems a bit strange the specified library directory didn't exist.
 			echo -e "${YELLOW}\tThe specified Arduino user library directory (${ARDUINO_LIB_DIR}) didn't exist.\n${NO_COLOUR}"
@@ -157,7 +162,7 @@ makearduino()
 
 	# TODO - The default paths need to be calculated depending on the type of Arduino.
 
-	# By default, we use the regular arduino core.
+	# By default, we use the regular Arduino core (and associated Arduino libraries).
 	ARDUINO_VARI_PATH=
 	if [ -n "${ARDUINO_VARI_DIR}" ]; then
 		# Specify the path to the core variants directory.
@@ -165,8 +170,10 @@ makearduino()
 	else
 		# Specify the default core variants directory.
 		ARDUINO_VARI_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/avr/variants"
+		mkdir -p "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core/variants"
+		cp -rf ${ARDUINO_VARI_PATH} "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core"
+		ARDUINO_VARI_PATH="arduino_core/variants"
 	fi
-	# Leave the core directory path blank by default, so arduino-mk uses the regular core.
 	ARDUINO_CORE_PATH=
 	if [ -n "${ARDUINO_CORE_DIR}" ]; then
 		# Specify the path to the core directory.
@@ -174,7 +181,89 @@ makearduino()
 	else
 		# Specify the default core directory.
 		ARDUINO_CORE_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/avr/cores/arduino"
+		mkdir -p "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core/arduino"
+		cp -rf ${ARDUINO_CORE_PATH} "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core"
+		ARDUINO_CORE_PATH="arduino_core/arduino"
 	fi
+	ARDUINO_CORELIB_PATH=
+	if [ -n "${ARDUINO_CORELIB_DIR}" ]; then
+		# Specify the path to the core libraries directory.
+		ARDUINO_CORELIB_PATH="$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_CORELIB_DIR}"
+	else
+		# Specify the default core libraries directory.
+		ARDUINO_CORELIB_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/libraries"
+	fi
+
+	# Since the common Makefile can't detect them, make a list of all the core libraries we expect to use.
+
+	# Only create a user library listing if we specified a library directory to use.
+	if [ -n "${ARDUINO_CORELIB_PATH}" ]; then
+		# Check if the specified library directory actually exists.
+		if [ -d "${ARDUINO_CORELIB_PATH}" ]; then
+			# List all of the library directories we want to include.
+			echo -e "${CYAN}\tDetecting core library dependencies...\n${NO_COLOUR}"
+
+			# We do something which approximates dependency detection here.
+
+			# Get a list of all the imports from the CPP file.
+			ARDUINO_IMPORTS=`cat "${ARDUINO_CPP_FILE}" | grep -E '^#include\\s+(\\"|<)\\w+\\.h(\\"|>)' | sed -r 's^#include\\s+(\\"|<)^^g' | sed -r 's^(\\"|>).*$^^'`
+		
+			# Iterate over each of the imported header files.
+			ARDUINO_CORE_LIBRARIES=
+			for HEADER_FILE in ${ARDUINO_IMPORTS}; do
+				# Check if this header file is somewhere in the user libraries folder.
+				CORE_LIBRARY=`find "${ARDUINO_CORELIB_PATH}" -name "${HEADER_FILE}" | head -1`
+				CORE_LIBRARY="${CORE_LIBRARY%/*}"	# Cut the header file name off.
+				CORE_LIBRARY=${CORE_LIBRARY//${ARDUINO_CORELIB_PATH}/}
+				CORE_LIBRARY=${CORE_LIBRARY#*/}
+				CORE_LIBRARY=${CORE_LIBRARY%/*}		# Cut the root library path off.
+
+				# Check if we actually found a matching library.
+				if [ -z "${CORE_LIBRARY}" ]; then
+					# We didn't find a matching library, so just move on.
+					continue
+				fi
+
+				# Check if the library is already in the list of libraries.
+				if [ -n "`echo ${ARDUINO_CORE_LIBRARIES} | grep \"\b${CORE_LIBRARY}\b\"`" ]; then
+					# The library is already in the list, so just move on.
+					continue
+				fi
+
+				# Add the folder containing this header to the list of user libraries.
+				ARDUINO_CORE_LIBRARIES+="${CORE_LIBRARY} "
+			done
+			# Check if we actually found any dependencies, and if so, list them.
+			if [ -n "${ARDUINO_CORE_LIBRARIES}" ]; then
+				echo -e "${NO_COLOUR}\t${ARDUINO_CORE_LIBRARIES}\n${NO_COLOUR}"
+			else
+				echo -e "${YELLOW}\t\tNo core library dependencies detected.\n${NO_COLOUR}"
+			fi
+		else
+			# It seems a bit strange the specified library directory didn't exist.
+			echo -e "${YELLOW}\tThe specified Arduino core library directory (${ARDUINO_CORELIB_DIR}) didn't exist.\n${NO_COLOUR}"
+			ARDUINO_CORE_LIBRARIES=
+		fi
+	else
+		# Indicate there was no library directory specified, which shouldn't every happen.
+		echo -e "${RED}\tNo Arduino core library directory specified.  This is probably a bug.\n${NO_COLOUR}"
+		ARDUINO_CORE_LIBRARIES=
+	fi
+
+	# Since we will actually need to compile the core libraries, we'll need to copy the required ones in with the component.
+	mkdir "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core_libs"
+	for CORE_LIBRARY in ${ARDUINO_CORE_LIBRARIES}; do
+		# Iterate over all the source files we might need.
+		for FILE in `find "${ARDUINO_CORELIB_PATH}/${CORE_LIBRARY}" -name "*.h" -o -name "*.cpp"`; do
+			# TODO - At the moment, we're only supporting AVR type Arduinos, so we skip files with SAM in the pathname.
+			if [ -n "`echo \"${FILE}\" | grep -E 'arch/sam'`" ]; then
+				continue
+			fi		
+	
+			# Copy the file across.
+			cp ${FILE} "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core_libs"
+		done
+	done
 
 	# Now, work out exactly what we will need to have as our include path.
 
@@ -184,6 +273,8 @@ makearduino()
 		# Make a list of directories to include.
 		ARDUINO_INCLUDE_LIST+="-I ${ARDUINO_LIB_DIR}/${USER_LIBRARY} "
 	done
+	# Add the Arduino core library files we've already imported.
+	ARDUINO_INCLUDE_LIST+="-I arduino_core_libs "
 	# Add the Arduino core directories we selected.
 	ARDUINO_INCLUDE_LIST+="-I ${ARDUINO_CORE_PATH} -I ${ARDUINO_VARI_PATH}/mega "
 
