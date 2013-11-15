@@ -1,0 +1,333 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_arduino											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	15-11-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions for uploading code to Arduino type targets via the Arduino bootloader, which	###
+###			pretends to be a sort of non-compliant ISP programmer compatible with AVRDUDE.			###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Arduino based upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_arduino							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Uploads AVR HEX files to a target connected to the host PC by	###
+###			USB-Serial to an Arduino running the normal Arduino bootloader,	###
+###			using AVRDUDE.  This is basically a stripped down version of	###
+###			the proper AVRDUDE upload function.				###
+###											###
+###########################################################################################
+
+upload_arduino() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+	
+	upload_avrdude_finddevice_avrisp500()
+	{
+		# We look to see if there is anything that might be an AVR ISP500 available.
+		echo -e "${CYAN}Searching for any available Arduino's pretending to be AVR-ISP500 type programmers...${NO_COLOUR}"
+
+		# Get a list of all the device files which look like they could be ISP500's.
+		ISP_DEVICE_FILES=`ls /dev | grep "ttyACM"`
+
+		# Check to see if we didn't find any suitable devices.
+		if [ -z ${ISP_DEVICE_FILES} ]; then
+			# We didn't find any, so abort.
+			echo -e "${YELLOW}No suitable Arduino devices found.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE=
+			AVRDUDE_ISPDEVTYPE=
+
+		# Check to see if we found exactly one suitable device.
+		elif [ `echo ${ISP_DEVICE_FILES} | wc -l` == 1 ]; then
+			# This might be an AVR ISP500, so we use that.
+			echo -e "${CYAN}Found a device which might be an Arduino pretending to be an AVR-ISP500.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE="/dev/${ISP_DEVICE_FILES}"
+			AVRDUDE_ISPDEVTYPE="stk500v2"
+
+		# Else, we found multiple possible files.
+		else
+			# Since we found multiple files, we'll use the last one plugged in.
+			ISP_DEVICE_FILES=`dmesg | grep "cdc_acm" | grep -o "ttyACM[0123456789]*" | tail -n 1`
+			echo -e "${CYAN}Found multiple devices which might be an Arduino.  Using the last one plugged in.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE="/dev/${ISP_DEVICE_FILES}"
+			AVRDUDE_ISPDEVTYPE="stk500v2"
+		fi
+
+		# All done.
+		return			
+	}
+
+	# FUNCTION PROPER STARTS HERE.
+	
+	# DECLARE VARIABLES.
+	
+	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
+
+	# Check if we are supposed to be loading the application code.
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find application binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# This method of uploading cannot upload bootloaders so give an error.
+		echo -e "${RED}The Arduino bootloader cannot be used to upload a replacement bootloader.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if we are supposed to be setting fuses.
+	if [ $UPLOAD_FUSES ]; then
+		# This method of uploading cannot set fuses so give an error.
+		echo -e "${RED}The Arduino bootloader cannot be used to set device fuses.  Aborting...\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the AVR compiler, since we will need its binutils as well as AVRDUDE which we assume is part of the package.
+	unpack_avrc
+
+	# Sort out which file needs to be uploaded.
+	AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex"
+
+	# Figure out what the AVRDUDE 'part' setting should be.
+	
+	# Check if the component/build configuration set specified this.
+	if [ ! -z ${AVRDUDE_PART} ]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies the AVRDUDE 'part' setting should be '${AVRDUDE_PART}'.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this setting? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, then we'll need to ask them what to use.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the setting specified in the component/build configuration set.
+			AVRDUDE_PART=
+		fi
+	fi
+
+	# Check if the AVRDUDE part setting has been chosen yet.
+	if [ -z ${AVRDUDE_PART} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the value to use for the AVRDUDE 'part' setting: ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			AVRDUDE_PART=$REPLY
+			break
+		done
+	fi
+
+	# Figure out what the AVRDUDE 'programmer device' and 'programmer type' settings should be.
+
+	# Check if the component/build configuration set specified the device file.
+	if [[ ! -z ${AVRDUDE_ISPDEVFILE} && ! -z ${AVRDUDE_ISPDEVTYPE} ]]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies using device ${AVRDUDE_ISPDEVFILE} as the programmer.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this device? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the device specified in the component/build configuration set.
+			AVRDUDE_ISPDEVFILE=
+		fi
+	fi
+
+	# Check to see if we can find a suitable device to use.
+	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
+		# Try looking for an AVR ISP500.
+		upload_avrdude_finddevice_avrisp500
+	fi
+	if [ ! -z ${AVRDUDE_ISPDEVFILE} ]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}Found a programmer: device ${AVRDUDE_ISPDEVFILE} is a '${AVRDUDE_ISPDEVTYPE}' type programmer.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this device? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Don't use the device we found.
+			AVRDUDE_ISPDEVFILE=
+			AVRDUDE_ISPDEVTYPE=
+		fi
+	fi
+
+	# Check if the programmer has been chosen yet.
+	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the device file for the programmer AVRDUDE should use: ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			AVRDUDE_ISPDEVFILE=$REPLY
+			break
+		done
+
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the programmer type of the programmer at '${AVRDUDE_ISPDEVFILE}': ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without uploading anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			AVRDUDE_ISPDEVTYPE=$REPLY
+			break
+		done
+	fi	
+
+	# We don't need to unpack any other tools.
+
+	# We will need root privileges.  Warn the user in advance.
+	echo -e "${YELLOW}Programming using ISP requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	AVRDUDE_SUDO="sudo"
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via ISP device '${AVRDUDE_ISPDEVFILE}'? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via AVR ISP.\n${NO_COLOUR}"
+
+		# Upload the application code and fuse settings to flash.
+		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i
+
+		# Check the return value from the write operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Uploading error.  Failed to write binary via ISP.\n${NO_COLOUR}"
+			AVRDUDE_FAILED=1
+	
+		else
+			# Verify the upload was successful.
+			${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:v:"$AVRDUDE_BINARY":i
+
+			# Check the return value from the verify operation.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}Uploading error.  Failed to verify binary after writing.\n${NO_COLOUR}"
+				AVRDUDE_FAILED=2
+			else
+				# Everything went fine.
+				echo -e "${BOLD_WHITE}Uploading of component ${COMPONENT} completed successfully.\n${NO_COLOUR}"
+			fi
+		fi
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+
+		# Check if we created a combined binary which needs removing.
+		if [ -a "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex" ]; then
+			# Delete the combined binary file that was created.
+			rm "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
+		fi
+	fi
+	AVRDUDE_BINARY=
+	AVRDUDE_SUDO=
+
+	# All done.
+	if [ ${AVRDUDE_FAILED} ]; then
+		AVRDUDE_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+

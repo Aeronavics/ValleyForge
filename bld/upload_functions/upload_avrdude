@@ -110,7 +110,7 @@ upload_avrdude()
 	
 	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
 	
-	# Check if we shoudl be uploading a bootloader but aren't.
+	# Check if we should be uploading a bootloader but aren't.
 	if [ $BOOTLOADER -a ! $UPLOAD_BOOTLOADER ]; then
 		#  Warn the user that this will erase any existing bootloader.
 		echo -e "${YELLOW}Warning, not writing the bootloader with this upload method will result in erasing the bootloader in the device without replacing it.\n${NO_COLOUR}"
@@ -303,15 +303,104 @@ upload_avrdude()
 
 	# We don't need to unpack any other tools.
 
-
 	# We will need root privileges.  Warn the user in advance.
 	echo -e "${YELLOW}Programming using ISP requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
 	AVRDUDE_SUDO="sudo"
+	# Do something trivial, so that we ask for their password in a tidy fashion.
+	${AVRDUDE_SUDO} ls > /dev/null
+	echo ""
 	
+	# Check if we are supposed to be uploading fuse settings.
+	AVRDUDE_LOCK_BEFORE=
+	AVRDUDE_LOCK_DURING=
+	AVRDUDE_LOCK_AFTER=
+	if [ ${UPLOAD_FUSES} ]; then
+		# We are setting fuses, which means we also need to consider setting the lock byte.
+
+		# Check what the current state of the lock byte is.
+		echo -e "${CYAN}Reading lock byte from device at '${AVRDUDE_ISPDEVFILE}'...\n${NO_COLOUR}"
+		AVRDUDE_LOCK_BEFORE=$(${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U lock:r:-:h 2>/dev/null)
+		# Check the return value from the read operation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "${RED}Failed to read lock byte settings from device.\n${NO_COLOUR}"
+		else
+			# We've determined what the current lock settings are.
+			echo -e "${CYAN}The current value of the device's lock byte is: ${NO_COLOUR}${AVRDUDE_LOCK_BEFORE}${CYAN}.\n${NO_COLOUR}"
+		fi
+
+		# Select the appropriate lock value to use during the write operation.
+		if [ $UPLOAD_BOOTLOADER ]; then
+			# Since we are trying to upload a bootloader, we want to suggest that the bootloader section be unlocked.
+			echo -e "${CYAN}Since you are trying to upload a bootloader, you will need to ensure the device lock byte is set appropriately during the operation.${NO_COLOUR}"
+			echo -e "${GREEN}The default value shown should unlock the bootloader section to allowing uploading.${NO_COLOUR}"
+			AVRDUDE_LOCK_DURING=${AVRDUDE_UNLOCKED_BYTEVAL}
+		else
+			# Since we're not trying to upload a bootloader, lets suggest that the lock byte isn't changed during the write operation.
+			echo -e "${CYAN}Since you are not trying to upload a bootloader, it is probably safe to leave the device lock byte unchanged during the uploading operation.${NO_COLOUR}"
+			echo -e "${GREEN}To leave the byte unchanged, enter a blank value.${NO_COLOUR}"
+			AVRDUDE_LOCK_DURING=
+		fi
+		# Since the user might be a moron, and keep entering invalid value, we loop until a suitable value is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the value to set the lock byte to DURING the write operation as a hex number (e.g. 0x12):${NO_COLOUR}"
+			read -r -e -i "${AVRDUDE_LOCK_DURING}" -p " "
+			echo -e ""
+
+			# Check if the user actually just wants to exit without uploading anything.
+			if [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			AVRDUDE_LOCK_DURING=$REPLY
+			break
+		done
+	
+		# Most likely, after the upload we'll want to set the lock byte back to how it was.
+		echo -e "${CYAN}After the operation, it's most common to want to set the device lock byte back to whatever it was before uploading.${NO_COLOUR}"
+		if [ -n "${AVRDUDE_LOCK_BEFORE}" ]; then
+			# Since we read a value from the byte, we know what it was beforehand.
+			echo -e "${GREEN}To leave the byte as it was before uploading, enter a blank value.${NO_COLOUR}"
+			AVRDUDE_LOCK_AFTER=
+		else
+			# Since we didn't read a value from the byte, we don't know what it was beforehand.
+			echo -e "${GREEN}To leave the byte as it was before uploading, enter a blank value.${NO_COLOUR}"
+			AVRDUDE_LOCK_AFTER=
+		fi
+		# Since the user might be a moron, and keep entering invalid value, we loop until a suitable value is entered.
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the value to set the lock byte to AFTER the write operation as a hex number (e.g. 0x12):${NO_COLOUR}"
+			read -r -e -i "${AVRDUDE_LOCK_AFTER}" -p " "
+			echo -e ""
+
+			# Check if the user actually just wants to exit without uploading anything.
+			if [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# TODO - Eventually, it might be nice to check if the entered value is legit.
+		
+			# Else we use whatever they entered.
+			AVRDUDE_LOCK_AFTER=$REPLY
+			break
+		done
+	fi
+
+	# Check if we are supposed to be writing the fuse bits.
 	AVRDUDE_WRITE_FUSES=
 	AVRDUDE_VERIFY_FUSES=
-	# Check if we are supposed to be writing the fuse bits.
 	if [ $UPLOAD_FUSES ]; then
+		# We are setting fuses.
+
 		# Check if we have fuse bytes to program set by the configuration.
 		
 		CURRENT_LFUSE=$(${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -q -q -U lfuse:r:-:h 2>/dev/null)
@@ -504,8 +593,20 @@ upload_avrdude()
 		# Actually upload the component to the selected target.
 		echo -e "${CYAN}Uploading files for component $COMPONENT via AVR ISP.\n${NO_COLOUR}"
 
-		# Upload the application code to flash.
+		# Check if we need to change the lock byte before the operation begins.
+		if [ -n "${AVRDUDE_LOCK_DURING}" ]; then	
+			# Set the lock byte to the 'during' value.
+			${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U lock:w:"${AVRDUDE_LOCK_DURING}":m
+		fi
+
+		# Upload the application code and fuse settings to flash.
 		${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U flash:w:"$AVRDUDE_BINARY":i $AVRDUDE_WRITE_FUSES
+
+		# Check if we need to change the lock byte after the operation is done.
+		if [ -n "${AVRDUDE_LOCK_AFTER}" ]; then
+			# Set the lock byte to the 'after' value.
+			${AVRDUDE_SUDO} avrdude -C ${AVRDUDE_CONFIG_FILE} -p ${AVRDUDE_PART} -c ${AVRDUDE_ISPDEVTYPE} -P ${AVRDUDE_ISPDEVFILE} -U lock:w:"${AVRDUDE_LOCK_AFTER}":m
+		fi
 
 		# Check the return value from the write operation.
 		if [ $? != 0 ]; then
