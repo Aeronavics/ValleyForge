@@ -62,11 +62,17 @@
 // AVRs have only one CAN interface.
 enum Can_number {CAN_0};
 
-// The ATMega64M1 has only 6 message objects, this would be #ifdef'd for the at90can128 which has 15.
+// The ATMega64M1 has 6 message object
+#ifdef __AVR_ATmega64M1__
 enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5 };
-
-// Same thing here, each message object has a filter.
 enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5 };
+#endif //__AVR_ATmega64M1__
+
+#ifdef __AVR_AT90CAN128__
+enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14 };
+enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14 };
+#endif //__AVR_AT90CAN128__
+
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
 // with defined bit positions for the extended frame flag and the remote transmit flag.
