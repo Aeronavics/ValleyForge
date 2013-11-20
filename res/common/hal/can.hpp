@@ -76,11 +76,10 @@
  * 
  * AVR
  * 
- *  The AVR CAN module has a number of message object buffers, each buffer has its own mask and filter.
- *    - N buffers.
- *    - N acceptance filters. each of the Mask and Filter variety.
- *    - buffers and filters have 1-1 correspondance and this cannot be changed.
- *    - buffers are used for both transmit and receive (in transmit mode the same data as the filter is used for the message ID)
+ *  The AVR uses a full CAN controller. It has a number of message objects each has its own buffer, mask and filter
+ *    - AT90CAN128 has 15MOb and the Atmega64M1 has 6MOb
+ *    - Each MOb has a fixed connection to its buffer and filter
+ *    - MOb are used for both transmit and receive (in transmit mode the same data as the filter is used for the message ID)
  * 
  *    - One interrupt shared by the whole CAN peripheral, there are flags for module wide sitations and ones in the buffer concerned if such an interrupt is triggered.
  * 
@@ -90,7 +89,7 @@
  *    - 2 Recv buffers, 3 Transmit buffers, separate.
  *    - 2 Masks (1 per buffer), 6 filters (2 on one buffer, 4 on the other buffer) Masks affect all filters on that buffer.
  * 
- *    - One interrupt line used by the controller chip, an SPI transfer must be used to query status after the interrupt.
+ *    - One interrupt line used by the controller chip, an SPI transfer must be used to query status after the interrupt
  * 
  * STM32
  * 
@@ -201,7 +200,7 @@ class Can_object
 		* @param	mode	The mode to set the object to.
 		* @return	Flag indicating whether the operation was successful.
 		*/
-		bool set_mode(Can_object_mode);
+		bool set_mode(Can_object_mode mode);
 
 		/**
 		* Returns the current status of the object.
@@ -264,7 +263,7 @@ class Can_filter
 		* @param	object	The CAN message object which the filter should route into.
 		* @return	Flag indicating whether the operation was successful.
 		*/
-		bool set_object(Can_object);
+		bool set_object(Can_object object);
 
 		/**
 		* Gets the current mask value being used by the hardware filter/mask.
@@ -343,7 +342,7 @@ class Can_tree
 		// Fields.
 };
 
-#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) 
 /**
 * @class Can_tree_native
 *
@@ -357,14 +356,55 @@ class Can_tree_native : Can_tree
 
 		// Fields.
 
-		#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+		#if defined(__AVR_ATmega64M1__)
 		Can_filter filter_0;
 		Can_filter filter_1;
 		Can_filter filter_2;
+		Can_filter filter_3;
+		Can_filter filter_4;
+		Can_filter filter_5;
+		
 		Can_object object_0;
 		Can_object object_1;
 		Can_object object_2;
-		#endif // __AVR_AT90CAN128__ || __AVR_ATmega64M1__
+		Can_object object_3;
+		Can_object object_4;
+		Can_object object_5;
+		#endif // __AVR_ATmega64M1__
+		
+		#if defined(__AVR_AT90CAN128__)
+		Can_filter filter_0;
+		Can_filter filter_1;
+		Can_filter filter_2;
+		Can_filter filter_3;
+		Can_filter filter_4;
+		Can_filter filter_5;
+		Can_filter filter_6;
+		Can_filter filter_7;
+		Can_filter filter_8;
+		Can_filter filter_9;
+		Can_filter filter_10;
+		Can_filter filter_11;
+		Can_filter filter_12;
+		Can_filter filter_13;
+		Can_filter filter_14;
+		
+		Can_object object_0;
+		Can_object object_1;
+		Can_object object_2;
+		Can_object object_3;
+		Can_object object_4;
+		Can_object object_5;
+		Can_object object_6;
+		Can_object object_7;
+		Can_object object_8;
+		Can_object object_9;
+		Can_object object_10;
+		Can_object object_11;
+		Can_object object_12;
+		Can_object object_13;
+		Can_object object_14;
+		#endif // __AVR_AT90CAN128__ 
 
 	private:
 		// Methods.
@@ -393,8 +433,15 @@ class Can_tree_native : Can_tree
 
 		// Fields.
 
-		Can_filter can_0_filter_0;
-		Can_filter can_0_filter_1;
+		Can_filter rx_0_filter_0;
+		Can_filter rx_0_filter_1;
+		Can_filter rx_1_filter_0;
+		Can_filter rx_1_filter_1;
+		Can_filter rx_1_filter_2;
+		Can_filter rx_1_filter_3;
+		Can_filter rx_1_filter_4;
+		Can_filter rx_1_filter_5;
+		
 		Can_object rx_object_0;
 		Can_object rx_object_1;
 		Can_object tx_object_0;
