@@ -57,129 +57,9 @@
 
 #include <stdint.h>
 
-// Default CAN macros at given clock speeds and baudrates
-#ifndef <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
-#  error  This CLK_SPEED_IN_MHZ is not set
-#endif
-
-#ifndef <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
-#  error  The CAN_BAUDRATE value is not set
-#endif
-
-#define CAN_AUTOBAUD    0
-
-#if <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 16000             //!< Fclkio = 16 MHz, Tclkio = 62.5 ns
-#   if <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 100       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x12       // Tscl  = 10x Tclkio = 625 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 125       //!< -- 125Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x0E       // Tscl  = 8x Tclkio = 500 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 200       //!< -- 200Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x08       // Tscl  = 5x Tclkio = 312.5 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 250       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x06       // Tscl  = 4x Tclkio = 250 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 500       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x06       // Tscl = 4x Tclkio = 250 ns
-#       define CONF_CANBT2  0x04       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x13       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 1000      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x02       // Tscl  = 2x Tclkio = 125 ns
-#       define CONF_CANBT2  0x04       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x13       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == CAN_AUTOBAUD  // Treated later in the file
-#       define CONF_CANBT1  0x00       // Unused
-#       define CONF_CANBT2  0x00       // Unused
-#       define CONF_CANBT3  0x00       // Unused
-#   else
-#       error The CAN_BAUDRATE value is not set
-#   endif
-
-#elif <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 12000           //!< Fclkio = 12 MHz, Tclkio = 83.333 ns
-#   if <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 100       //!< -- 100Kb/s, 20x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x0A       // Tscl  = 6x Tclkio = 500 ns
-#       define CONF_CANBT2  0x0E       // Tsync = 1x Tscl, Tprs = 8x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x4B       // Tpsh1 = 6x Tscl, Tpsh2 = 5x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 125       //!< -- 125Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x0A       // Tscl  = 6x Tclkio = 500 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 200       //!< -- 200Kb/s, 20x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x04       // Tscl  = 3x Tclkio = 250 ns
-#       define CONF_CANBT2  0x0E       // Tsync = 1x Tscl, Tprs = 8x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x4B       // Tpsh1 = 6x Tscl, Tpsh2 = 5x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 250       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x04       // Tscl  = 3x Tclkio = 250 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 500       //!< -- 500Kb/s, 12x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x02       // Tscl  = 2x Tclkio = 166.666 ns
-#       define CONF_CANBT2  0x08       // Tsync = 1x Tscl, Tprs = 5x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x25       // Tpsh1 = 3x Tscl, Tpsh2 = 3x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 1000      //!< -- 1 Mb/s, 12x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x00       // Tscl  = 1x Tclkio = 83.333 ns
-#       define CONF_CANBT2  0x08       // Tsync = 1x Tscl, Tprs = 5x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x25       // Tpsh1 = 3x Tscl, Tpsh2 = 3x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == CAN_AUTOBAUD  // Treated later in the file
-#       define CONF_CANBT1  0x00       // Unused
-#       define CONF_CANBT2  0x00       // Unused
-#       define CONF_CANBT3  0x00       // Unused
-#   else
-#       error The CAN_BAUDRATE value is not set
-#   endif
-
-#elif <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 8000              //!< Fclkio = 8 MHz, Tclkio = 125 ns
-#   if   <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 100       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x08       // Tscl  = 5x Tclkio = 625 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>== 125       //!< -- 125Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x06       // Tscl  = 4x Tclkio = 500 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 200       //!< -- 200Kb/s, 20x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x02       // Tscl  = 2x Tclkio = 250 ns
-#       define CONF_CANBT2  0x0E       // Tsync = 1x Tscl, Tprs = 8x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x4B       // Tpsh1 = 6x Tscl, Tpsh2 = 5x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 250       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x02       // Tscl  = 2x Tclkio = 250 ns
-#       define CONF_CANBT2  0x0C       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x37       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 500       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x02       // Tscl  = 2x Tclkio = 250 ns
-#       define CONF_CANBT2  0x04       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x13       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == 1000      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
-#       define CONF_CANBT1  0x00       // Tscl  = 1x Tclkio = 125 ns
-#       define CONF_CANBT2  0x04       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-#       define CONF_CANBT3  0x13       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
-#   elif <<<TC_INSERTS_CAN_BAUD_RATES_HERE>>> == CAN_AUTOBAUD  // Treated later in the file
-#       define CONF_CANBT1  0x00       // Unused
-#       define CONF_CANBT2  0x00       // Unused
-#       define CONF_CANBT3  0x00       // Unused
-#   else
-#       error The CAN_BAUDRATE value is not set
-#   endif
-
-#else
-#   error This CLK_SPEED_IN_MHZ is not set
-#endif
-// -- Autobaud stuff, probably doesn't work yet
-    //! The first action of "can_bit_timing()" is to reset the CAN controller
-    //! "can_bit_timing()" lets the CAN controller disable
-    //! "can_bit_timing()" returns 1 if the setting of CANBTx registers is available
-    //!                and returns 0 if the setting of CANBTx registers is wrong
-#if     CAN_BAUDRATE == CAN_AUTOBAUD
-#   define Can_bit_timing(mode)  (can_auto_baudrate(mode) )
-#else
-#   define Can_bit_timing(mode)  (can_fixed_baudrate(mode))
-#endif
+uint8_t CONF_CANBT1;
+uint8_t CONF_CANBT2;
+uint8_t CONF_CANBT3; 
 
 #if defined(__AVR_AT90CAN128__)
 	#define CAN_PORT_IN     PIND
@@ -252,21 +132,22 @@
 
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
-
-// AVRs have only one CAN interface.
-enum Can_number {CAN_0};
-
 // The ATMega64M1 has 6 message object
 #ifdef __AVR_ATmega64M1__
 enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5 };
 enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5 };
 #endif //__AVR_ATmega64M1__
 
+
 // The AT90CAN128 has 15 message object
 #ifdef __AVR_AT90CAN128__
 enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14 };
 enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14 };
 #endif //__AVR_AT90CAN128__
+
+
+// AVRs only have one CAN channel
+enum Can_channel {CAN_0};
 
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
