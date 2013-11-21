@@ -141,7 +141,6 @@ struct Can_message
 
 struct Can_filter_data;
 struct Can_object_status;
-struct Can_status;
 
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
@@ -160,6 +159,18 @@ class Can_imp;
 class Can
 {
 	public:
+		//Fields
+	#if defined(__AVR_ATmega64M1__)
+		Can_filter filter[6];
+		Can_object buffer[6];
+	#endif // __AVR_ATmega64M1__
+	
+	#if defined(__AVR_AT90CAN128__)
+		Can_filter filter[15];
+		Can_object buffer[15];
+	#endif // __AVR_AT90CAN128__
+	
+	
 		//Methods
 	#if defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
 		static Can grab(Can_channel can_channel);
@@ -168,17 +179,6 @@ class Can
 	#if HAL_CANSPI_ENABLE
 		static Can grab(spi& spi_inst, gpio_pin& int_pin);
 	#endif 
-		
-		//Fields
-	#if defined(__AVR_ATmega64M1__)
-		Can_filter filter[6];
-		Can_buffer buffer[6];
-	#endif // __AVR_ATmega64M1__
-	
-	#if defined(__AVR_AT90CAN128__)
-		Can_filter filter[15];
-		Can_buffer buffer[15];
-	#endif // __AVR_AT90CAN128__
 	
 		/**
 		* Initialises the CAN interface with the desired configuration and also configures any relevant GPIO.
@@ -208,14 +208,6 @@ class Can
 		* @return	Nothing.	
 		*/
 		void detach_interrupt(Can_interrupt_name interrupt, Can_object object);
-		
-		/**
-		* Function to get the status of the CAN controller.
-		*
-		* @param	Nothing.
-		* @return	Struct indicating the current status of the CAN controller.
-		*/
-		Can_status get_status();
 		
 		/**
 		* Function to get the status of the CAN controller.
@@ -366,7 +358,7 @@ class Can_filter
 class Can_object
 {
 	public:
-		// Methods.
+		// Methods.	
 		/**
 		* Returns the mode of the object.
 		*
@@ -398,17 +390,18 @@ class Can_object
 		* @return	The current status of the object.
 		*/
 		Can_object_status get_status(void);
-
-
-		// Fields.
+		
+		//Fields
+		/**
+		 * Links this object to the hardware buffer
+		 * */
+		Can_object MOb_number;
 
 	private:
 		// Methods.
 		Can_object(void);
 		Can_object(Can_object const&);			// Poisoned.
 		Can_object operator =(Can_object const&);	// Poisoned.
-
-		// Fields.
 };
 
 
