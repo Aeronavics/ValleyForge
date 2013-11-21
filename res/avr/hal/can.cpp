@@ -34,25 +34,29 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 #include "can_platform.hpp"
 
-#include <avr/io.h>
 #include <avr/interrupt.h>
+#include <inttypes.h>
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+#include <stdio.h>
 
 /********************************************************************************************************************************/
 
+/******************** Implementation CAN class **********************/
 class Can_imp
 {
 	public:
 		//Methods
 		Can_command_response initialise(Can_rate rate, Can_mode mode);
 		
-		void transmit(Can_object obj, Can_message msg);
+		Can_status get_status();
 		
-	private:
-		//Methods
-		
-		//Fields
-		
+		//Fields		
 }
+
+//Global declaration of CAN controller implementation at compile time, cannot
+//be controlled by user as this maps to hardware implementation
+Can_imp CAN_controller;
 
 Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
 {
@@ -178,25 +182,86 @@ Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
 	#   error The CLK_SPEED_IN_MHZ is not set
 	#endif
 	
-	Can_conf_bt()	//configure fixed baud rate by assigning CANBT registers to the values above
+	Can_conf_bt();	//configure fixed baud rate by assigning CANBT registers to the values above
+	Can_reset();
 	
-	Can_reset()
-	can_clear_all_mob();
+	//delete data in CAN buffers
+	for (mob_number = 0; mob_number < NB_MOB; mob_number++)
+    {
+        CANPAGE = (mob_number << 4);    //! Page index
+        Can_clear_mob();                //! All MOb Registers=0
+    }
+	
 	Can_enable();
 	
 	if (mode == CAN_LISTEN)
 	{
-		CANGCON |= (1<<LISTEN)  //turn the LISTEN bit (Bit 3) of CANGCON on
+		CANGCON |= (1<<LISTEN);  //turn the LISTEN bit (Bit 3) of CANGCON on
 	}
 	else if (mode = CAN_NORMAL)
 	{
-		CANGCON &= !(1<<LISTEN)	//turn the LISTEN bit (Bit 3) of CANGCON off
-	}
+		CANGCON &= ~(1<<LISTEN); //turn the LISTEN bit (Bit 3) of CANGCON off
+	}	
 	
-	
-	
-	
-	
+	return CAN_ACK;
 }
 
 
+
+
+
+
+
+/************************ Interface CAN class ************************/
+
+bool done_init = false;
+void can_init(void)
+{
+	//Does nothing, no global initialization routines required
+	done_init = true;	
+}
+
+
+Can::Can(Can_imp* implementation)
+{
+	imp = implementation;	//attach the implementation
+	
+	//make sure the attached MOb's know what no. they are so they can 
+	//address themselves in the CANPAGE 
+	for (mob_number = 0; mob_number < NB_MOB; mob_number++)
+	{
+		this->buffer[mob_number].MOb_number = mob_number;
+	}
+	
+	return;
+}
+
+Can Can::grab(Can_channel can_channel)
+{
+	if (!done_init)
+	{
+		can_init();
+	}
+	
+	if (can_channel == CAN_0)
+	{
+		return Can(CAN_controller);
+	}
+}
+
+Can_command_response Can::initialise(Can_rate rate, Can_mode mode)
+{
+	imp->initialise(rate, mode);	
+}
+
+void Can::transmit(Can_object MOb, Can_message msg)
+{
+		
+}
+
+/************************ CAN MOb class ******************************/
+Can_object_mode Can_object::get_mode(void)
+{
+	CANPAGE = (this->MOb_number << 4);
+		
+}
