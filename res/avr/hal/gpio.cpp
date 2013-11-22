@@ -262,7 +262,7 @@ SIGNAL(INT3_vect) {
     intFunc[EINT_3 - INT_DIFF_OFFSET]();
 }
 
-#if (defined(__AVR_ATmega2560__) || (defined(__AVR_AT90CAN128__))
+#if (defined(__AVR_ATmega2560__)) || (defined(__AVR_AT90CAN128__))
 SIGNAL(INT4_vect) {
   if(intFunc[EINT_4 - INT_DIFF_OFFSET])
     intFunc[EINT_4 - INT_DIFF_OFFSET]();
