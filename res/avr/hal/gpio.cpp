@@ -262,7 +262,7 @@ SIGNAL(INT3_vect) {
     intFunc[EINT_3 - INT_DIFF_OFFSET]();
 }
 
-#if (defined(__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
+#if (defined(__AVR_ATmega2560__) || (defined(__AVR_AT90CAN128__))
 SIGNAL(INT4_vect) {
   if(intFunc[EINT_4 - INT_DIFF_OFFSET])
     intFunc[EINT_4 - INT_DIFF_OFFSET]();
@@ -391,7 +391,7 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 			    // if semaphore is free, check which pcint bank it is on, and set interrupt accordingly.
 			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			    {
-#if defined (__AVR_ATmega2560__)
+#if defined (__AVR_ATmega2560__) || (__AVR_Atmega64M1__)
 			      case PCINT_0:
 				PCICR |= (1 << PCINT_0);
 				PCMSK0 = (1 << address.pin);
@@ -405,8 +405,10 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 				PCICR |= (1 << PCINT_2);
 				PCMSK0 = (1 << address.pin);
 				break;
+#elif defined(__AVR_AT90CAN128__)
+				//do nothing, no PCINT on AT90CAN128
 #else
-#error not yet implemented for this cpu
+	#error not yet implemented for this cpu
 #endif
 			    }
 			}
@@ -427,7 +429,7 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 			intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = userFunc;  
 			switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			{
-#if defined (__AVR_ATmega2560__)
+#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
 			  case EINT_0:
 			    // Set the mode of interrupt.
 			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
@@ -462,8 +464,27 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 			    EICRB = (EICRB & ~((1 << ISC70) | (1 << ISC71))) | (mode << ISC70);
 			    EIMSK |= (1 << INT7);
 			    break;
+#elif defined(__AVR_Atmega64M1__)
+			  case EINT_0:
+			    // Set the mode of interrupt.
+			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
+			    // Enable the interrupt.
+			    EIMSK |= (1 << INT0);
+			    break;
+			  case EINT_1:
+			    EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
+			    EIMSK |= (1 << INT1);
+			    break;
+			  case EINT_2:
+			    EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+			    EIMSK |= (1 << INT2);
+			    break;
+			  case EINT_3:
+			    EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
+			    EIMSK |= (1 << INT3);
+			    break;	
 #else
-#error attachInterrupt not yet implemented for this cpu (case 1)
+	#error attachInterrupt not yet implemented for this cpu (case 1)
 			/*
 			  case 0:
 			  #if defined(EICRA) && defined(ISC00) && defined(EIMSK)
@@ -525,7 +546,7 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 			    // if semaphore is taken
 			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			    {
-#if defined (__AVR_ATmega2560__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_Atmega64M1__)
 			      case PCINT_0:
 				// Disable the interrupt.
 				PCICR &= ~(1 << PCINT_0);
@@ -540,8 +561,10 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 				PCICR &= ~(1 << PCINT_2);
 				PCMSK0 = 0;
 				break;
+#elif defined(__AVR_AT90CAN128__)
+				//do nothing, no PCINT on AT90CAN128
 #else
-#error not for this cpu yet
+	#error not for this cpu yet
 #endif
 			    }
 			    // Vacate the semaphore
@@ -560,7 +583,7 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 		    {
 			switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			{
-#if defined (__AVR_ATmega2560__)
+#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
 			      case EINT_0:
 				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
 				EIMSK &= ~(1 << INT0);
@@ -586,8 +609,20 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 			      case EINT_7:
 				EIMSK &= ~(1 << INT7);
 				break;
+#elif defined (__AVR_ATmega61M1__)
+				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
+				EIMSK &= ~(1 << INT0);
+				break;
+			      case EINT_1:
+				EIMSK &= ~(1 << INT1);
+				break;
+			      case EINT_2:
+				EIMSK &= ~(1 << INT2);
+				break;
+			      case EINT_3:
+				EIMSK &= ~(1 << INT3);						
 #else
-#error not implemented for this cpu
+	#error not implemented for this cpu
 				/*
 			      case 0:
 			      #if defined(EIMSK) && defined(INT0)
@@ -620,7 +655,7 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 	      }
 	      else
 	      {
-		  return GP_OUT_OF_RANGE;
+			return GP_OUT_OF_RANGE;
 	      }
 	      return GP_SUCCESS;
 	  }
