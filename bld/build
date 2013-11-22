@@ -821,7 +821,7 @@ do
 	fi
 done
 
-# Now wer are done with the actual work, we just have to tidy up.
+# Now we are done with the actual work, we just have to tidy up.
 echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
 
 # Check if we are supposed to be packing up the compilers after we are finished.
