@@ -166,9 +166,9 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 #	define T3_SIZE			0
 #	define T4_SIZE			0
 #	define T5_SIZE			0
-						// NOTE THESE NUMBERS (below) ARE WRONG, THEY ARE JUST COPY PASTED SO IT WILL COMPILE. IF TO BE USED THEY WILL HAVE TO BE FILLED IN!
+						
 #	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
-#	define EXT_INT_SIZE		8
+#	define EXT_INT_SIZE		4
 #	define INT_DIFF_OFFSET		3
 
 #	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
@@ -216,13 +216,13 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE,
 #	define T4_SIZE			0
 #	define T5_SIZE			0
 
-#	define NUM_BANKS		0	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
+#	define NUM_BANKS		0	// No PCINT pins hence not PCINT ports
 #	define EXT_INT_SIZE		8
 #	define INT_DIFF_OFFSET		3
 
 #	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 							      
-#	define PC_INT_SIZE		0
+#	define PC_INT_SIZE		0	//No PCINT pins
 
 #	define NUM_8_BIT_TIMERS		2
 #	define NUM_16_BIT_TIMERS	2
