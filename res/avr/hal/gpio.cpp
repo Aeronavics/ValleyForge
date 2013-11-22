@@ -391,7 +391,7 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 			    // if semaphore is free, check which pcint bank it is on, and set interrupt accordingly.
 			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			    {
-#if defined (__AVR_ATmega2560__) || (__AVR_Atmega64M1__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
 			      case PCINT_0:
 				PCICR |= (1 << PCINT_0);
 				PCMSK0 = (1 << address.pin);
@@ -464,7 +464,7 @@ inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_
 			    EICRB = (EICRB & ~((1 << ISC70) | (1 << ISC71))) | (mode << ISC70);
 			    EIMSK |= (1 << INT7);
 			    break;
-#elif defined(__AVR_Atmega64M1__)
+#elif defined(__AVR_ATmega64M1__)
 			  case EINT_0:
 			    // Set the mode of interrupt.
 			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
@@ -546,7 +546,7 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 			    // if semaphore is taken
 			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
 			    {
-#if defined (__AVR_ATmega2560__) || defined (__AVR_Atmega64M1__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
 			      case PCINT_0:
 				// Disable the interrupt.
 				PCICR &= ~(1 << PCINT_0);
@@ -609,7 +609,7 @@ inter_return_t gpio_pin_imp::disable_interrupt(void)
 			      case EINT_7:
 				EIMSK &= ~(1 << INT7);
 				break;
-#elif defined (__AVR_ATmega61M1__)
+#elif defined (__AVR_ATmega64M1__)
 				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
 				EIMSK &= ~(1 << INT0);
 				break;
