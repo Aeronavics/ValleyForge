@@ -25,7 +25,9 @@
  *
  *  DATE CREATED:	7-12-2011
  *
- *	This is the implementation for gpio for the atmega2560.
+ *	This is the implementation for gpio for the atmega2560, atmega64M1 and AT90CAN128.
+ *  All very similar except atmega64M1 is missing 4 external interrupt pins and AT90CAN128
+ *  is missing the PCINT pins
  *
  ********************************************************************************************************************************/
 
@@ -260,6 +262,7 @@ SIGNAL(INT3_vect) {
     intFunc[EINT_3 - INT_DIFF_OFFSET]();
 }
 
+#if (defined(__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
 SIGNAL(INT4_vect) {
   if(intFunc[EINT_4 - INT_DIFF_OFFSET])
     intFunc[EINT_4 - INT_DIFF_OFFSET]();
@@ -279,7 +282,9 @@ SIGNAL(INT7_vect) {
   if(intFunc[EINT_7 - INT_DIFF_OFFSET])
     intFunc[EINT_7 - INT_DIFF_OFFSET]();
 }
+#endif
 
+#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega2560__)
 SIGNAL(PCINT0_vect) {
   if(intFunc[PCINT_0])
     intFunc[PCINT_0]();
@@ -294,6 +299,7 @@ SIGNAL(PCINT2_vect) {
   if(intFunc[PCINT_2])
     intFunc[PCINT_2]();
 }
+#endif
 
 
 int8_t gpio_pin_imp::set_mode(gpio_mode mode)
