@@ -225,6 +225,7 @@ if [ $ALL ]; then
 	NAME=$(ls -C $TCPATH/src)
 
 	# TODO - This part is currently broken.
+	echo -e "${RED}Uploading all components is currently not implemented.\n${NO_COLOUR}"
 fi
 
 # UPLOAD THE COMPONENTS ONE BY ONE.
@@ -365,7 +366,7 @@ do
 			fi
 
 			# Check if the selected load function is actually valid.
-			UPLOAD_FUNCTION=$(echo "${UPLOAD_FUNCTIONS}" | grep -w -o "${UPLOAD_FUNCTION}")
+			UPLOAD_FUNCTION=`echo "${UPLOAD_FUNCTIONS}" | grep -w -o "${UPLOAD_FUNCTION}"`
 			if [ -z "${UPLOAD_FUNCTION}" ]; then
 				# The selected load function was not in the list of bootloaders, so the user is apparently a moron.
 				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
@@ -381,6 +382,13 @@ do
 	if [ -z "${UPLOAD_FUNCTION}" ]; then
 		# No upload function has been selected by now, so we are just going to skip this component.
 		echo -e "${YELLOW}No uploading method selected.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+		continue
+	fi
+
+	# Check if the upload function actually exists (if it doesn't, it means the build configuration is out of date).
+	if [ `declare -f | grep "${UPLOAD_FUNCTION} ()" | wc -l` == 0 ]; then
+		# The upload function doesn't exist.
+		echo -e "${RED}The upload function '${UPLOAD_FUNCTION}' does not exist.  Build configuration is probably obsolete.\n${NO_COLOUR}"
 		continue
 	fi
 		

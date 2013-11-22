@@ -28,7 +28,7 @@ BEGIN {
 	toggle = 0;
 }
 # Or if this line is just a preprocessor directive...
-/^\#.*$/ { 	
+/^[ \t\n]*\#.*$/ { 	
 	toggle = 0;
 }
 # So, if we get to here and toggle is still turned on, then we have passed the header bit and reached the body of the file.
