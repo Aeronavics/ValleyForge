@@ -423,6 +423,7 @@ preprocess_hal()
 
 	sed -i "s^<<<TC_INSERTS_TARGET_HERE>>>^$TARGET^g" $1
 	sed -i "s^<<<TC_INSERTS_PLATFORM_HERE>>>^$PLATFORM^g" $1
+	sed -i "s^<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>^$CLK_SPEED_IN_MHZ^g" $1
 
 	sed -i "s^<<<TC_INSERTS_IO_FILE_NAME_HERE>>>^$IOHEADER^g" $1
 	sed -i "s^<<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>^$STDINTHEADER^g" $1
