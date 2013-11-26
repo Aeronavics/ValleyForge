@@ -225,7 +225,7 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 
 	#	define NUM_BANKS		0	// No PCINT pins hence no PCINT ports
 	#	define EXT_INT_SIZE		8
-	#	define INT_DIFF_OFFSET		3
+	#	define INT_DIFF_OFFSET		6
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
