@@ -25,47 +25,293 @@
  *
  *  DATE CREATED:	14-11-2012
  *
- *	Functionality to provide implementation for CAN in target devices.
+ *	Functionality to provide implementation for CAN in AVR
  *
  ********************************************************************************************************************************/
 
 // INCLUDE THE MATCHING HEADER FILE.
-
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
-#include "can_platform.hpp"
 
+// INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
+#include "can_platform.hpp"
 #include <avr/interrupt.h>
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <stdio.h>
 
-/********************************************************************************************************************************/
-
-/******************** Implementation CAN class **********************/
-class Can_imp
+/**********************************************************************/
+// Allows object enums to be iterated, inelegantly, this must be defined for every implementation because it shouldn't be in in h file
+CAN_BUF operator++(CAN_BUF& f, int)
 {
-	public:
-		//Methods
-		Can_command_response initialise(Can_rate rate, Can_mode mode);
-		
-		Can_status get_status();
-		
-		//Fields		
+	int temp = f;
+	return f = static_cast<CAN_BUF> (++temp);
 }
 
-//Global declaration of CAN controller implementation at compile time, cannot
-//be controlled by user as this maps to hardware implementation
-Can_imp CAN_controller;
-
-Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
+CAN_FIL operator++(CAN_FIL& f, int)
 {
-	#ifndef <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
-		#  error  This CLK_SPEED_IN_MHZ is not set
-	#endif
+	int temp = f;
+	return f = static_cast<CAN_FIL> (++temp);
+}
 
-	//Set global variables depending on required baud rate at the chosen clock speed
-	#if <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 16000             //!< Fclkio = 16 MHz, Tclkio = 62.5 ns
+
+/**********************************************************************/
+/**
+ * Can buffer class
+ */
+void Can_buffer::set_number(CAN_BUF buf_num)
+{
+	MOb_no = buf_num;
+}
+
+bool Can_buffer::get_multimode(void)
+{
+	return true;	//true for AVR implementation
+}
+
+bool Can_buffer::set_mode(CAN_BUF_MODE mode)
+{
+	Can_set_mob(MOb_no);	//set CANPAGE to MOb of interest
+	
+	if (mode == CAN_OBJ_RX)
+	{
+		Can_config_rx()
+	}
+	else if (mode == CAN_OBJ_TX)
+	{
+		Can_config_tx()
+	}
+	return true;	//will implement register reading soon	
+}
+
+Can_message Can_buffer::read(void)
+{
+	Can_set_mob(MOb_no);	//set CANPAGE to MOb of interested
+	
+	Can_message msg;
+	msg.dlc = Can_get_dlc();
+	for (uint8_t i=0; i<msg.dlc; i++)
+	{
+		msg.data[i] = CANMSG;
+	}
+	
+	return msg;
+}
+
+void Can_buffer::clear(void)
+{
+	Can_set_mob(MOb_no);
+	Can_clear_mob();
+}
+
+CAN_BUF_STAT Can_buffer::get_status(void)
+{
+	Can_set_mob(MOb_no);
+	
+	if ((CANCDMOB & 0xC0) == 0x00) 
+	{
+		return BUF_DISABLE;
+	}
+	
+	uint8_t canstmob_copy = CANSTMOB; // Copy for test integrity
+	    
+	// If MOb is ENABLE, test if MOb is COMPLETED
+    // - MOb Status = 0x20 then MOB_RX_COMPLETED
+    // - MOb Status = 0x40 then MOB_TX_COMPLETED
+    // - MOb Status = 0xA0 then MOB_RX_COMPLETED_DLCW
+    uint8_t mob_status = canstmob_copy & ((1<<DLCW)|(1<<TXOK)|(1<<RXOK));
+    
+	if (mob_status == MOB_RX_COMPLETED)
+	{ 
+		return BUF_RX_COMPLETED;
+	}
+	else if (mob_status == MOB_TX_COMPLETED)
+	{
+		Can_mob_abort();
+		Can_clear_status_mob();
+		return BUF_TX_COMPLETED;
+	}
+	else if (mob_status == MOB_RX_COMPLETED_DLCW)
+	{
+		// deal with standard and extended frame stuff to be implemented
+		
+		Can_mob_abort();        // Freed the MOB
+        Can_clear_status_mob();
+		return BUF_RX_COMPLETED_DLCW;
+	}
+	
+	// If MOb is ENABLE & NOT_COMPLETED, test if MOb is in ERROR
+    // - MOb Status bit_0 = MOB_ACK_ERROR
+    // - MOb Status bit_1 = MOB_FORM_ERROR
+    // - MOb Status bit_2 = MOB_CRC_ERROR
+    // - MOb Status bit_3 = MOB_STUFF_ERROR
+    // - MOb Status bit_4 = MOB_BIT_ERROR
+	mob_status = canstmob_copy & ERR_MOB_MSK;
+	if (mob_status == MOB_ACK_ERROR)
+	{
+		return BUF_ACK_ERROR;
+	}
+	else if (mob_status == MOB_FORM_ERROR)
+	{
+		return BUF_FORM_ERROR;
+	}
+	else if (mob_status == MOB_CRC_ERROR)
+	{
+		return BUF_CRC_ERROR;
+	}
+	else if (mob_status == MOB_STUFF_ERROR)
+	{
+		return BUF_STUFF_ERROR;
+	}
+	else if (mob_status == MOB_BIT_ERROR)
+	{
+		return BUF_BIT_ERROR;
+	}
+	
+	// If CANSTMOB = 0 then MOB_NOT_COMPLETED
+	return BUF_NOT_COMPLETE;
+}
+
+/**********************************************************************/
+/**
+ * Can filter class
+ */
+
+void Can_filter::set_number(CAN_FIL fil_num)
+{
+	fil_no = fil_num;
+}
+
+bool Can_filter::set_buffer(Can_buffer* buffer)
+{
+	buffer_link = buffer;
+	return true;	//Always true for AVRs since their link is fixed, also it cannot be called in runtime
+}
+
+/**********************************************************************/
+/**
+ * Actual implementation of Can controller, all instances of Can controller
+ * created will point to an instance of this class. There will be as many
+ * instances as there are controllers in hardware. This class serves as
+ * a parent class to enclose the smaller elements and also a manager
+ * for CAN channel fields and methods. 
+ * 
+ * Though not meant to be interfaced by user, functions are declared 
+ * public because it is not declared in header and thus is invisible 
+ * outside this source.
+ */
+class Can_tree
+{
+	public:
+	//Methods
+		/**
+		 * Constructor for AVR specific implementation:
+		 * Buffers and filters are created and assigned arbitrary indices,
+		 * each filter is then linked to its respective buffer by this index.
+		 */
+		Can_tree(void);
+		
+		/**
+		 * Enables the controller
+		 */
+		void enable(void);
+		
+		/**
+		* Enables CAN related interrupts.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
+		void enable_interrupts(void);
+		 
+		/**
+		* Disables CAN related interrupts.
+		*
+		* @param	Nothing.
+		* @return	Nothing.
+		*/
+		void disable_interrupt(void);
+
+		/**
+		* Attaches a handler to a particular interrupt event that will be used if a handler has not been specified for the CAN object
+		* that caused the event.  If an interrupt handler is already attached to the particular interrupt condition specified, the old
+		* handler will be replaced with the new handler.
+		*
+		* @param	interrupt	The interrupt condition to attach the handler for.
+		* @param	handler		The handler for this interrupt condition.
+		* @return	Nothing.
+		*/
+		void attach_interrupt(CAN_INT_NAME interrupt, Interrupt_fn handler);
+
+		/**
+		 * Removes the default handler for a particular interrupt event.
+		 *
+		 * @param interrupt		The interrupt condition to attach the handler from.
+		 * @param object		The CAN message object to detach the handler from.
+		 * @return Nothing.
+		 */
+		 void detach_interrupt(CAN_INT_NAME);
+	
+	//Fields
+		Can_filter filter[NB_FIL];
+		Can_buffer buffer[NB_BUF];
+};
+
+Can_tree::Can_tree(void)
+{
+	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+	{
+		buffer[i] = Can_buffer();	//assign arbitrary index to buffer, CANPAGE access uses this number
+		buffer[i].set_number(i);
+	}
+	
+	for (CAN_FIL i=FILTER_0; i<NB_FIL; i++)
+	{
+		filter[i] = Can_filter();  //assign arbitrary index to filter
+		filter[i].set_number(i);
+		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
+	}
+	return;
+}
+
+void Can_tree::enable(void)
+{
+	Can_enable();
+}
+
+static Can_tree Can_tree_imps[NB_CTRL];
+
+
+/**********************************************************************/
+
+/**
+ * Interface class for CAN controller, users create an instance of this 
+ * and links it to the pre-instantiated instance reflecting the single
+ * hardware CAN controller
+ */
+ 
+Can::Can(Can_tree* imp)
+{
+	Can_controller = imp;	
+	return;
+}
+
+//Method implementations
+Can Can::link(CAN_CTRL controller)
+{
+	return Can(&Can_tree_imps[controller]);
+}
+
+void Can::initialise(CAN_RATE rate)
+{
+	//Assignment to prevent warnings, it will always be assigned a value if tool chain is configured properly
+	uint8_t CONF_CANBT1 = 0x00;
+	uint8_t CONF_CANBT2 = 0x00;
+	uint8_t CONF_CANBT3 = 0x00; 
+	
+	//Set CANBT registers to obtain correct baud rate given clock speed
+	if (CLK_MHZ == 16)             //!< Fclkio = 16 MHz, Tclkio = 62.5 ns
+	{
 		if (rate == CAN_100K)       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
 		{
 			CONF_CANBT1 = 0x12;       // Tscl  = 10x Tclkio = 625 ns
@@ -102,8 +348,9 @@ Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
 			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
 			CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
-
-	#elif <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 12000           //!< Fclkio = 12 MHz, Tclkio = 83.333 ns
+	}
+	else if (CLK_MHZ == 12)           //!< Fclkio = 12 MHz, Tclkio = 83.333 ns
+	{
 	    if (rate == CAN_100K)      //!< -- 100Kb/s, 20x Tscl, sampling at 75%
 	    {
 			CONF_CANBT1 = 0x0A;       // Tscl  = 6x Tclkio = 500 ns
@@ -140,8 +387,9 @@ Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
 	        CONF_CANBT2 = 0x08;       // Tsync = 1x Tscl, Tprs = 5x Tscl, Tsjw = 1x Tscl
             CONF_CANBT3 = 0x25;       // Tpsh1 = 3x Tscl, Tpsh2 = 3x Tscl, 3 sample points
 		}
-
-	#elif <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>> == 8000              //!< Fclkio = 8 MHz, Tclkio = 125 ns
+	}
+	else if (CLK_MHZ == 8)              //!< Fclkio = 8 MHz, Tclkio = 125 ns
+	{
 	    if (rate == CAN_100K)       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
 	    {
 	        CONF_CANBT1 = 0x08;       // Tscl  = 5x Tclkio = 625 ns
@@ -178,90 +426,24 @@ Can_command_response Can_imp::initialise(Can_rate rate, Can_mode mode)
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
-	#else
-	#   error The CLK_SPEED_IN_MHZ is not set
-	#endif
-	
-	Can_conf_bt();	//configure fixed baud rate by assigning CANBT registers to the values above
-	Can_reset();
-	
-	//delete data in CAN buffers
-	for (mob_number = 0; mob_number < NB_MOB; mob_number++)
-    {
-        CANPAGE = (mob_number << 4);    //! Page index
-        Can_clear_mob();                //! All MOb Registers=0
-    }
-	
-	Can_enable();
-	
-	if (mode == CAN_LISTEN)
-	{
-		CANGCON |= (1<<LISTEN);  //turn the LISTEN bit (Bit 3) of CANGCON on
-	}
-	else if (mode = CAN_NORMAL)
-	{
-		CANGCON &= ~(1<<LISTEN); //turn the LISTEN bit (Bit 3) of CANGCON off
-	}	
-	
-	return CAN_ACK;
-}
-
-
-
-
-
-
-
-/************************ Interface CAN class ************************/
-
-bool done_init = false;
-void can_init(void)
-{
-	//Does nothing, no global initialization routines required
-	done_init = true;	
-}
-
-
-Can::Can(Can_imp* implementation)
-{
-	imp = implementation;	//attach the implementation
-	
-	//make sure the attached MOb's know what no. they are so they can 
-	//address themselves in the CANPAGE 
-	for (mob_number = 0; mob_number < NB_MOB; mob_number++)
-	{
-		this->buffer[mob_number].MOb_number = mob_number;
 	}
 	
-	return;
-}
-
-Can Can::grab(Can_channel can_channel)
-{
-	if (!done_init)
-	{
-		can_init();
-	}
+	CANBT1 = CONF_CANBT1; 
+	CANBT2 = CONF_CANBT2; 
+	CANBT3 = CONF_CANBT3;
+	Can_reset();	
 	
-	if (can_channel == CAN_0)
+	
+	//clear all buffers
+	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
 	{
-		return Can(CAN_controller);
+		Can_controller->buffer[i].clear();
 	}
+	Can_controller->enable();	//write to registers to enable the controller
 }
 
-Can_command_response Can::initialise(Can_rate rate, Can_mode mode)
+Can_message Can::read(CAN_BUF buffer_name)
 {
-	imp->initialise(rate, mode);	
-}
-
-void Can::transmit(Can_object MOb, Can_message msg)
-{
-		
-}
-
-/************************ CAN MOb class ******************************/
-Can_object_mode Can_object::get_mode(void)
-{
-	CANPAGE = (this->MOb_number << 4);
-		
+	Can_message msg = Can_controller->buffer[buffer_name].read();
+	return msg;
 }
