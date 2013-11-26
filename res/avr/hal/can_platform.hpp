@@ -57,10 +57,12 @@
 
 #include <stdint.h>
 
-uint8_t CONF_CANBT1;
-uint8_t CONF_CANBT2;
-uint8_t CONF_CANBT3; 
+/******************* Macros for AVR registers ************************/
 
+// Globals to hold register values that set the baud rate
+
+ 
+// Pin mappings
 #if defined(__AVR_AT90CAN128__)
 	#define CAN_PORT_IN     PIND
 	#define CAN_PORT_DIR    DDRD
@@ -77,7 +79,7 @@ uint8_t CONF_CANBT3;
 	#define CAN_OUTPUT_PIN  2
 #endif
 
-// -- Masks
+// Masks
 #define ERR_GEN_MSK ((1<<SERG)|(1<<CERG)|(1<<FERG)|(1<<AERG))            //! MaSK for GENeral ERRors INTerrupts
 #define INT_GEN_MSK ((1<<BOFFIT)|(1<<BXOK)|(ERR_GEN_MSK))                //! MaSK for GENeral INTerrupts
 
@@ -103,7 +105,7 @@ uint8_t CONF_CANBT3;
 #define CONMOB      (CONMOB0)                                            //! CONfiguration MOb
 #define DLC         (DLC0)                                               //! Data Length Coding
 
-// -- Bit timing
+// Bit timing
 #define BRP_MIN     1       //! Prescaler of FOSC (TQ generation)
 #define BRP_MAX     64
 #define NTQ_MIN     8       //! Number of TQ in one CAN bit
@@ -118,58 +120,10 @@ uint8_t CONF_CANBT3;
 #define SJW_MIN     1       //! Synchro jump width
 #define SJW_MAX     4
 
-#if defined(__AVR_AT90CAN128__)
-	#define NB_MOB       15
-#endif
-
-#if defined(__AVR_ATmega64M1__)
-	#define NB_MOB       6
-#endif
-
 #define NB_DATA_MAX  8
-#define LAST_MOB_NB  (NB_MOB-1)
 #define NO_MOB       0xFF
 
-
-// DEFINE PUBLIC TYPES AND ENUMERATIONS.
-// The ATMega64M1 has 6 message object
-#ifdef __AVR_ATmega64M1__
-enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5 };
-enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5 };
-#endif //__AVR_ATmega64M1__
-
-
-// The AT90CAN128 has 15 message object
-#ifdef __AVR_AT90CAN128__
-enum Can_object { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14 };
-enum Can_filter { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14 };
-#endif //__AVR_AT90CAN128__
-
-
-// AVRs only have one CAN channel
-enum Can_channel {CAN_0};
-
-
-// This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
-// with defined bit positions for the extended frame flag and the remote transmit flag.
-struct Can_filter_data
-{
-	uint32_t id;
-	uint32_t mask;
-}
-
-// This needs to be defined to hold the specific status for message objects on this platform, this will likely have a common field for if a message is waiting in it and whether it is a transmit or receive object.
-struct Can_obj_status;
-
-// This needs to be defined to hold the specific status for the AVR CAN controller.
-struct Can_status;
-
-
-// FORWARD DEFINE PRIVATE PROTOTYPES.
-// DEFINE PUBLIC CLASSES.
-// DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
-
-// -- Stats
+// Status macros
 #define STATUS_CLEARED            0x00
     // ----------
 #define MOB_NOT_COMPLETED         0x00                                              // 0x00
@@ -190,14 +144,12 @@ struct Can_status;
 #define MOB_Rx_BENA 3
     // ----------
     
-// -- Function macros
+// Function macros
 #define Can_reset()       ( CANGCON  =  (1<<SWRES) )
 #define Can_enable()      ( CANGCON |=  (1<<ENASTB))
 #define Can_disable()     ( CANGCON &= ~(1<<ENASTB))
     // ----------
 #define Can_full_abort()  { CANGCON |=  (1<<ABRQ); CANGCON &= ~(1<<ABRQ); }
-    // ----------
-#define Can_conf_bt()     { CANBT1=CONF_CANBT1; CANBT2=CONF_CANBT2; CANBT3=CONF_CANBT3; }
     // ----------
 #define Can_set_mob(mob)       { CANPAGE = ((mob) << 4);}
 #define Can_set_mask_mob()     {  CANIDM4=0xFF; CANIDM3=0xFF; CANIDM2=0xFF; CANIDM1=0xFF; }
@@ -273,7 +225,6 @@ struct Can_status;
                                       CANIDM2   = CAN_SET_EXT_ID_20_13(mask); \
                                       CANIDM3   = CAN_SET_EXT_ID_12_5( mask); \
                                       CANIDM4   = CAN_SET_EXT_ID_4_0(  mask); }
-    // ----------
 
 
 #endif /*__CAN_PLATFORM_H__*/
