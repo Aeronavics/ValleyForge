@@ -128,6 +128,7 @@ enum CAN_INT_NAME {CAN_TX_ERROR, CAN_TX_COMPLETE, CAN_RX_ERROR, CAN_RX_COMPLETE,
 /************** ENUMERATIONS TO REPRESENT HARDWARE *********************/
 //AVRs only have 1 CAN controller
 #if (defined(__AVR_ATmega64M1__)) || (defined( __AVR_AT90CAN128__))
+#define FILTER_PER_BUFFER 1
 enum CAN_CTRL {CAN_0, NB_CTRL};
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
@@ -198,9 +199,8 @@ class Can_buffer
 		* Sets the mode of the object.  This may not work, depending on whether the CAN hardware offers support for multimode objects.
 		*
 		* @param	mode	The mode to set the object to.
-		* @return	Flag indicating whether the operation was successful.
 		*/
-		bool set_mode(CAN_BUF_MODE mode);
+		void set_mode(CAN_BUF_MODE mode);
 		
 		/**
 		* Returns the current status of the object.
@@ -219,16 +219,28 @@ class Can_buffer
 		Can_message read(void);
 		 
 		 /**
-		  * Transmit message by writing to a buffer assigned for transmission
+		  * Write message to buffer, note that this is used for message transmission
+		  * and must be called from the interface function as the filter linked to 
+		  * this buffer must also be modified
 		  * 
-		  * @param  Message to send
+		  * @param msg    Message to write
 		  */
-		void transmit(Can_message msg);
+		void write(Can_message msg);
 		
 		/**
 		 * Delete contents of buffer
 		 */
 		void clear(void);
+		
+		/**
+		 * Reset status register of buffer
+		 */
+		void clear_status(void);
+		
+		/**
+		 * Enables interrupt on the buffer
+		 */
+		void enable_interrupt(void);
 		
 		/**
 		* Attaches a handler to a particular interrupt event for a specific object.  If an interrupt handler is already attached to the
@@ -250,13 +262,12 @@ class Can_buffer
 		*/
 		void detach_interrupt(CAN_INT_NAME interrupt);
 		
-		
 	private:
 	// METHODS
 
 		
 	// FIELDS
-		CAN_BUF MOb_no;		//constructor needs this value
+		CAN_BUF buf_no;		//constructor needs this value
 		CAN_BUF_MODE mode;
 };
 
@@ -292,13 +303,21 @@ class Can_filter
 		 */
 		 bool set_buffer(Can_buffer* buffer);
 		 
+		/**
+		* Gets the current filter value being used by the hardware filter/mask.
+		*
+		* @param	Nothing.
+		* @return	The current filter value.
+		*/
+		 uint32_t get_filter_val(void);
+		
 	    /**
 		* Gets the current mask value being used by the hardware filter/mask.
 		*
 		* @param	Nothing.
 		* @return	The current mask value.
 		*/
-		 uint32_t get_mask(void);
+		 uint32_t get_mask_val(void);
 		
 		/**
 		* Sets the mask value being used by the hardware filter/mask.
@@ -308,15 +327,7 @@ class Can_filter
 		* @param	mask	The new value for the filter mask.
 		* @return	Nothing.
 		*/
-		void set_mask(uint32_t mask);
-		
-		/**
-		* Gets the current filter value being used by the hardware filter/mask.
-		*
-		* @param	Nothing.
-		* @return	The current filter value.
-		*/
-		uint32_t get_filter_val(void);
+		 void set_mask_val(uint32_t mask);
 		
 		/**
 		* Sets the filter value being used by the hardware filter/mask.
@@ -326,7 +337,7 @@ class Can_filter
 		* @param	filter	The new value for the filter.
 		* @return	Nothing.
 		*/
-		void set_filter_val(uint32_t filter);
+		 void set_filter_val(uint32_t filter);
 		
 		 
 	
@@ -364,10 +375,20 @@ class Can
 	     * Reads message from buffer specified
 	     * 
 	     * @param buffer_name   Name of the buffer to be read (use the enums)
+	     * @return The message inside the buffer
 	     */
 	    Can_message read(CAN_BUF buffer_name);
 	    
-	    
+	    /**
+	     * Transmits message from the buffer specified. Note the tranmission flag 
+	     * is not cleared in this function. To be implemented, use interrupt to clear
+	     * flag.
+	     * 
+	     * @param buffer_name   Name of the buffer to be used for sending (use the enums)
+	     * @param message		The message to send (struct with identifer and data length)
+	     * @return              Whether operation was successful
+	     */
+	   bool transmit(CAN_BUF buffer_name, Can_message msg);
     
 	
 	private:

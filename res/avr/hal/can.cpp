@@ -61,7 +61,12 @@ CAN_FIL operator++(CAN_FIL& f, int)
  */
 void Can_buffer::set_number(CAN_BUF buf_num)
 {
-	MOb_no = buf_num;
+	buf_no = buf_num;
+}
+
+CAN_BUF_MODE Can_buffer::get_mode(void)
+{
+	return mode;	
 }
 
 bool Can_buffer::get_multimode(void)
@@ -69,44 +74,61 @@ bool Can_buffer::get_multimode(void)
 	return true;	//true for AVR implementation
 }
 
-bool Can_buffer::set_mode(CAN_BUF_MODE mode)
+void Can_buffer::set_mode(CAN_BUF_MODE mode)
 {
-	Can_set_mob(MOb_no);	//set CANPAGE to MOb of interest
+	Can_set_mob(buf_no);	//set CANPAGE to MOb of interest
 	
 	if (mode == CAN_OBJ_RX)
 	{
-		Can_config_rx()
+		Can_config_rx();
+		mode = CAN_OBJ_RX;
 	}
 	else if (mode == CAN_OBJ_TX)
 	{
-		Can_config_tx()
+		Can_config_tx();
+		mode = CAN_OBJ_TX;	
 	}
-	return true;	//will implement register reading soon	
 }
 
 Can_message Can_buffer::read(void)
 {
-	Can_set_mob(MOb_no);	//set CANPAGE to MOb of interested
+	Can_set_mob(buf_no);	//set CANPAGE to MOb of interested
 	
 	Can_message msg;
 	msg.dlc = Can_get_dlc();
 	for (uint8_t i=0; i<msg.dlc; i++)
 	{
-		msg.data[i] = CANMSG;
+		msg.data[i] = CANMSG; 		//reading data from buffer, note CANMSG is auto-incremented
 	}
 	
 	return msg;
 }
 
+void Can_buffer::write(Can_message msg)
+{
+	Can_set_mob(buf_no);	//set CANPAGE to MOb of interested
+	Can_set_dlc(msg.dlc);
+	for (uint8_t i=0; i<msg.dlc; i++)
+	{
+		CANMSG = msg.data[i];	//writing data to buffer, note CANMSG is auto-incremented
+	}
+}
+
 void Can_buffer::clear(void)
 {
-	Can_set_mob(MOb_no);
+	Can_set_mob(buf_no);
 	Can_clear_mob();
+}
+
+void Can_buffer::clear_status(void)
+{
+	Can_set_mob(buf_no);
+	Can_clear_status_mob();
 }
 
 CAN_BUF_STAT Can_buffer::get_status(void)
 {
-	Can_set_mob(MOb_no);
+	Can_set_mob(buf_no);
 	
 	if ((CANCDMOB & 0xC0) == 0x00) 
 	{
@@ -172,6 +194,18 @@ CAN_BUF_STAT Can_buffer::get_status(void)
 	return BUF_NOT_COMPLETE;
 }
 
+void Can_buffer::enable_interrupt(void)
+{
+	if (buf_no < 8)
+	{
+		CANIE2 |= (1<<(buf_no));
+	}
+	else
+	{
+		CANIE1 |= (1<<(buf_no-8));
+	}
+}
+
 /**********************************************************************/
 /**
  * Can filter class
@@ -186,6 +220,35 @@ bool Can_filter::set_buffer(Can_buffer* buffer)
 {
 	buffer_link = buffer;
 	return true;	//Always true for AVRs since their link is fixed, also it cannot be called in runtime
+}
+
+bool Can_filter::get_routable(void)
+{
+	return false;	//Always false for AVRs since their link is fixed
+}
+
+uint32_t Can_filter::get_mask_val(void)
+{
+	return filter_data.mask;
+}
+
+uint32_t Can_filter::get_filter_val(void)
+{
+	return filter_data.id;
+}
+
+void Can_filter::set_mask_val(uint32_t mask)
+{
+	Can_set_mob(fil_no);
+	Can_set_ext_msk(mask);
+	filter_data.mask = mask;	//store as field so registers don't need to be accessed again
+}
+
+void Can_filter::set_filter_val(uint32_t filter)
+{
+	Can_set_mob(fil_no);
+	Can_set_ext_id(filter);
+	filter_data.id = filter;	//store as field so registers don't need to be accessed again
 }
 
 /**********************************************************************/
@@ -288,6 +351,19 @@ static Can_tree Can_tree_imps[NB_CTRL];
  * Interface class for CAN controller, users create an instance of this 
  * and links it to the pre-instantiated instance reflecting the single
  * hardware CAN controller
+ * 
+ * Example usage transmitting 'Hello world' over CAN:
+ * init_hal();						//hal library mainly covers semaphores which are not used for CAN but still think its better to call this
+ * int_on();						//turn interrupts on (not sure if this applies to CAN interrupts
+ * 
+ * Can my_can = Can::link(CAN_0);	//link to hardware implementation
+ * my_can.initialize(CAN_100K);		//set the baud rate to 100K
+ * 
+ * Can_message my_msg;
+ * my_msg.id = 0x00;
+ * my_msg.dlc = 12;
+ * my_msg.data = "Hello World!";
+ * my_can.transmit(my_msg);
  */
  
 Can::Can(Can_tree* imp)
@@ -428,22 +504,40 @@ void Can::initialise(CAN_RATE rate)
 		}
 	}
 	
-	CANBT1 = CONF_CANBT1; 
-	CANBT2 = CONF_CANBT2; 
-	CANBT3 = CONF_CANBT3;
-	Can_reset();	
-	
+	Can_reset();
+	Can_conf_bt();	//assign registers the above values of CONF_CANBT to set baudrate
 	
 	//clear all buffers
 	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
 	{
 		Can_controller->buffer[i].clear();
+		Can_controller->buffer[i].clear_status();
 	}
-	Can_controller->enable();	//write to registers to enable the controller
+	Can_controller->enable();	//write to CANGCON register to enable the controller
 }
 
 Can_message Can::read(CAN_BUF buffer_name)
 {
 	Can_message msg = Can_controller->buffer[buffer_name].read();
 	return msg;
+}
+
+bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
+{
+	if (Can_controller->buffer[buffer_name].get_status() == BUF_DISABLE)	//disabled means free
+	{
+		Can_controller->buffer[buffer_name].clear();
+		Can_controller->buffer[buffer_name].clear_status();
+		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
+		Can_controller->filter[buffer_name].set_filter_val(msg.id);
+				
+		Can_controller->buffer[buffer_name].write(msg);
+		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);	//enable tx mode to start sending message
+		return true;
+	}
+	else
+	{
+		return false;	//wasn't free
+	}
+
 }

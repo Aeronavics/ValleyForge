@@ -150,6 +150,7 @@
 #define Can_disable()     ( CANGCON &= ~(1<<ENASTB))
     // ----------
 #define Can_full_abort()  { CANGCON |=  (1<<ABRQ); CANGCON &= ~(1<<ABRQ); }
+#define Can_conf_bt()     { CANBT1=CONF_CANBT1; CANBT2=CONF_CANBT2; CANBT3=CONF_CANBT3; }
     // ----------
 #define Can_set_mob(mob)       { CANPAGE = ((mob) << 4);}
 #define Can_set_mask_mob()     {  CANIDM4=0xFF; CANIDM3=0xFF; CANIDM2=0xFF; CANIDM1=0xFF; }
