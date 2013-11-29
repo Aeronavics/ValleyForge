@@ -33,7 +33,6 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
-#include "can_platform.hpp"
 #include <avr/interrupt.h>
 #include <inttypes.h>
 #include <avr/io.h>
@@ -88,6 +87,14 @@ void Can_buffer::set_mode(CAN_BUF_MODE mode)
 		Can_config_tx();
 		mode = CAN_OBJ_TX;	
 	}
+	else if (mode == CAN_OBJ_RXB)
+	{
+		Can_config_rx_buffer();
+	}
+	else if (mode == CAN_OBJ_DISABLE)
+	{
+		DISABLE_MOB;
+	}
 }
 
 Can_message Can_buffer::read(void)
@@ -127,14 +134,25 @@ void Can_buffer::clear_status(void)
 }
 
 CAN_BUF_STAT Can_buffer::get_status(void)
-{
-	Can_set_mob(buf_no);
-	
-	if ((CANCDMOB & 0xC0) == 0x00) 
+{	
+	//by using CANEN registers, CANPAGE doesn't have to be written
+	if (buf_no < 8)
 	{
-		return BUF_DISABLE;
+		if ((CANEN2 & (1<<buf_no)) == 0x00)
+		{
+			return BUF_DISABLE;
+		}	
+	}
+	else
+	{
+		if ((CANEN1 & (1<<(buf_no-8))) == 0x00)
+		{
+			return BUF_DISABLE;
+		}
 	}
 	
+	//these operations however need to poll the correct buffer using CANPAGE	
+	Can_set_mob(buf_no);
 	uint8_t canstmob_copy = CANSTMOB; // Copy for test integrity
 	    
 	// If MOb is ENABLE, test if MOb is COMPLETED
@@ -204,6 +222,37 @@ void Can_buffer::enable_interrupt(void)
 	{
 		CANIE1 |= (1<<(buf_no-8));
 	}
+}
+
+void Can_buffer::disable_interrupt(void)
+{
+	if (buf_no < 8)
+	{
+		CANIE2 &= ~(1<<(buf_no));
+	}
+	else
+	{
+		CANIE1 &= ~(1<<(buf_no));
+	}
+}
+
+void Can_buffer::attach_interrupt(CAN_INT_NAME interrupt, Interrupt_fn handler)
+{
+	Can_set_mob(buf_no);
+	
+	if (interrupt == CAN_RX_COMPLETE)
+	{
+		CANGIE |= (1 << 5);	
+	}
+	else if (interrupt == CAN_TX_COMPLETE)
+	{
+		CANGIE |= (1 << 4);
+	}
+	else if (interrupt == CAN_RX_ERROR)
+	{
+		CANGIE |= (1 << 1);
+	}
+	//TODO: Make the interrupt handler work
 }
 
 /**********************************************************************/
@@ -279,41 +328,6 @@ class Can_tree
 		 */
 		void enable(void);
 		
-		/**
-		* Enables CAN related interrupts.
-		*
-		* @param	Nothing.
-		* @return	Nothing.
-		*/
-		void enable_interrupts(void);
-		 
-		/**
-		* Disables CAN related interrupts.
-		*
-		* @param	Nothing.
-		* @return	Nothing.
-		*/
-		void disable_interrupt(void);
-
-		/**
-		* Attaches a handler to a particular interrupt event that will be used if a handler has not been specified for the CAN object
-		* that caused the event.  If an interrupt handler is already attached to the particular interrupt condition specified, the old
-		* handler will be replaced with the new handler.
-		*
-		* @param	interrupt	The interrupt condition to attach the handler for.
-		* @param	handler		The handler for this interrupt condition.
-		* @return	Nothing.
-		*/
-		void attach_interrupt(CAN_INT_NAME interrupt, Interrupt_fn handler);
-
-		/**
-		 * Removes the default handler for a particular interrupt event.
-		 *
-		 * @param interrupt		The interrupt condition to attach the handler from.
-		 * @param object		The CAN message object to detach the handler from.
-		 * @return Nothing.
-		 */
-		 void detach_interrupt(CAN_INT_NAME);
 	
 	//Fields
 		Can_filter filter[NB_FIL];
@@ -386,6 +400,7 @@ void Can::initialise(CAN_RATE rate)
 	uint8_t CONF_CANBT3 = 0x00; 
 	
 	//Set CANBT registers to obtain correct baud rate given clock speed
+	//Warning: anything below 500K has not been fully tested
 	if (CLK_MHZ == 16)             //!< Fclkio = 16 MHz, Tclkio = 62.5 ns
 	{
 		if (rate == CAN_100K)       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
@@ -408,21 +423,21 @@ void Can::initialise(CAN_RATE rate)
 		}
 		else if (rate == CAN_250K)       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
 		{
-			CONF_CANBT1 = 0x06;       // Tscl  = 4x Tclkio = 250 ns
-			CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-			CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
+			CONF_CANBT1 = 0x0E;       // Tscl  = 4x Tclkio = 250 ns
+			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
+			CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_500K)       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
 	    {
-			CONF_CANBT1 = 0x06;       // Tscl = 4x Tclkio = 250 ns
-			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-			CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+			CONF_CANBT1 = 0x02;       // Tscl = 4x Tclkio = 125 ns
+			CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
+			CONF_CANBT3 = 0x37;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
 	    {
-			CONF_CANBT1 = 0x02;       // Tscl  = 2x Tclkio = 125 ns
-			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-			CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+			CONF_CANBT1 = 0x00;       // Tscl  = 2x Tclkio = 0.0625 ns
+			CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
+			CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	}
 	else if (CLK_MHZ == 12)           //!< Fclkio = 12 MHz, Tclkio = 83.333 ns
@@ -447,9 +462,9 @@ void Can::initialise(CAN_RATE rate)
 		}
 		else if (rate == CAN_250K)      //!< -- 250Kb/s, 16x Tscl, sampling at 75%
 		{
-			CONF_CANBT1 = 0x04;       // Tscl  = 3x Tclkio = 250 ns
-	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-			CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
+			CONF_CANBT1 = 0x0A;       // Tscl  = 3x Tclkio = 250 ns
+	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
+			CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_500K)       //!< -- 500Kb/s, 12x Tscl, sampling at 75%
 	    {
@@ -474,9 +489,9 @@ void Can::initialise(CAN_RATE rate)
 		}
 	    else if (rate == CAN_125K)       //!< -- 125Kb/s, 16x Tscl, sampling at 75%
 	    {
-	        CONF_CANBT1 = 0x06;       // Tscl  = 4x Tclkio = 500 ns
-	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
+	        CONF_CANBT1 = 0x0E;       // Tscl  = 4x Tclkio = 500 ns
+	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
+	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_200K)       //!< -- 200Kb/s, 20x Tscl, sampling at 75%
 	    {
@@ -486,34 +501,41 @@ void Can::initialise(CAN_RATE rate)
 		}
 	    else if (rate == CAN_250K)       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
 	    {
-	        CONF_CANBT1 = 0x02;       // Tscl  = 2x Tclkio = 250 ns
-	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
+	        CONF_CANBT1 = 0x06;       // Tscl  = 2x Tclkio = 250 ns
+	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
+	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_500K)       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
 	    {
-	        CONF_CANBT1 = 0x02;       // Tscl  = 2x Tclkio = 250 ns
-	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+	        CONF_CANBT1 = 0x00;       // Tscl  = 2x Tclkio = 250 ns
+	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
+	        CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
 	    {
 	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+	        CONF_CANBT3 = 0x12;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	}
 	
 	Can_reset();
 	Can_conf_bt();	//assign registers the above values of CONF_CANBT to set baudrate
+	CANPAGE &= ~(1<<AINC);	//set CANMSG to auto-increment
 	
 	//clear all buffers
 	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
 	{
 		Can_controller->buffer[i].clear();
 		Can_controller->buffer[i].clear_status();
+		Can_set_ide();	//this library always communicates with the an extended identifier
 	}
 	Can_controller->enable();	//write to CANGCON register to enable the controller
+}
+
+void Can::set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode)
+{
+	Can_controller->buffer[buffer_name].set_mode(mode);
 }
 
 Can_message Can::read(CAN_BUF buffer_name)
@@ -530,6 +552,7 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 		Can_controller->buffer[buffer_name].clear_status();
 		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
 		Can_controller->filter[buffer_name].set_filter_val(msg.id);
+		Can_controller->filter[buffer_name].set_mask_val(0x00000000);	//make all masks 0 because trasmission does not use it
 				
 		Can_controller->buffer[buffer_name].write(msg);
 		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);	//enable tx mode to start sending message
@@ -539,5 +562,14 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 	{
 		return false;	//wasn't free
 	}
+}
 
+CAN_BUF_STAT Can::get_buffer_status(CAN_BUF buffer_name)
+{
+	return Can_controller->buffer[buffer_name].get_status();
+}
+
+void Can::clear_buffer(CAN_BUF buffer_name)
+{
+	Can_controller->buffer[buffer_name].clear();
 }

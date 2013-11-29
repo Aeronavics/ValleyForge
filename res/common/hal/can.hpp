@@ -111,6 +111,8 @@
 	#include "hal/spi.hpp"
 #endif
 
+#include "can_platform.hpp"
+
 #define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>	//Using the preprocessor template gets kind of ugly
 
 /********************* Forward declaration **************************/
@@ -120,7 +122,7 @@ class Can_buffer;	//declared so typedef will work at top
 /************* Enumerations to represent CAN status ********************/
 enum CAN_RATE {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
 enum CAN_MODE {CAN_NORMAL, CAN_LISTEN};
-enum CAN_BUF_MODE {CAN_OBJ_RX, CAN_OBJ_TX};
+enum CAN_BUF_MODE {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
 enum CAN_BUF_STAT {BUF_NOT_COMPLETE, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
 
 enum CAN_INT_NAME {CAN_TX_ERROR, CAN_TX_COMPLETE, CAN_RX_ERROR, CAN_RX_COMPLETE, CAN_RX_OVERRUN};
@@ -241,6 +243,11 @@ class Can_buffer
 		 * Enables interrupt on the buffer
 		 */
 		void enable_interrupt(void);
+		
+		/**
+		 * Disables interrupt on the buffer
+		 */
+		void disable_interrupt(void);
 		
 		/**
 		* Attaches a handler to a particular interrupt event for a specific object.  If an interrupt handler is already attached to the
@@ -371,6 +378,11 @@ class Can
 		 */
 		void initialise(CAN_RATE rate);
 		
+		/**
+		 * Allows buffer to be set to receive, tramsit or disabled mode
+		 */
+		void set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode);
+		
 	    /**
 	     * Reads message from buffer specified
 	     * 
@@ -388,7 +400,22 @@ class Can
 	     * @param message		The message to send (struct with identifer and data length)
 	     * @return              Whether operation was successful
 	     */
-	   bool transmit(CAN_BUF buffer_name, Can_message msg);
+	    bool transmit(CAN_BUF buffer_name, Can_message msg);
+	   
+	   /**
+	    * Determine the status of a buffer
+	    * 
+	    * @param buffer_name	Name of the buffer to be asssessed (use the enums)
+	    * @return 				Status of the buffer
+	    */
+	    CAN_BUF_STAT get_buffer_status(CAN_BUF buffer_name);
+	    
+	   /**
+	    * Clear the selected buffer
+	    * 
+	    * @param buffer_name	Name of buffer to be send
+	    */
+	    void clear_buffer(CAN_BUF buffer_name);
     
 	
 	private:
