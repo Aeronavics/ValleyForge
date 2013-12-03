@@ -115,6 +115,8 @@
 
 #define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>	//Using the preprocessor template gets kind of ugly
 
+typedef void (*voidFuncPtr)(void);
+
 /********************* Forward declaration **************************/
 class Can_tree;		//declared because otherwise the interface class cannot point to it
 class Can_buffer;	//declared so typedef will work at top
@@ -125,7 +127,7 @@ enum CAN_MODE {CAN_NORMAL, CAN_LISTEN};
 enum CAN_BUF_MODE {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
 enum CAN_BUF_STAT {BUF_NOT_COMPLETE, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
 
-enum CAN_INT_NAME {CAN_TX_ERROR, CAN_TX_COMPLETE, CAN_RX_ERROR, CAN_RX_COMPLETE, CAN_RX_OVERRUN};
+enum CAN_INT_NAME {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
 
 /************** ENUMERATIONS TO REPRESENT HARDWARE *********************/
 //AVRs only have 1 CAN controller
@@ -157,6 +159,9 @@ enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTE
 #endif //__AVR_AT90CAN128__
 
 typedef void (*Interrupt_fn)(Can_buffer&);
+
+CAN_BUF operator++(CAN_BUF& f, int);
+CAN_FIL operator++(CAN_FIL& f, int);
 
 
 /********************* Struct definitions here ***********************/
@@ -201,8 +206,9 @@ class Can_buffer
 		* Sets the mode of the object.  This may not work, depending on whether the CAN hardware offers support for multimode objects.
 		*
 		* @param	mode	The mode to set the object to.
+		* @return   Boolean representing whether operation was successful
 		*/
-		void set_mode(CAN_BUF_MODE mode);
+		bool set_mode(CAN_BUF_MODE mode);
 		
 		/**
 		* Returns the current status of the object.
@@ -250,24 +256,32 @@ class Can_buffer
 		void disable_interrupt(void);
 		
 		/**
-		* Attaches a handler to a particular interrupt event for a specific object.  If an interrupt handler is already attached to the
-		* particular interrupt condition specified, the old handler will be replaced with the new handler.
+		* Attaches a handler to a particular interrupt event for object based
+		* interrupts. Original interrupt will be overwritten if a handler already
+		* exists (use test interrupt to see what interrupt conditions are used)
 		*
 		* @param	interrupt	The interrupt condition to attach the handler for.
-		* @param	object		The CAN message object to attach the handler for.
-		* @param	handler		The handler for this interrupt condition.
-		* @return	Nothing.
+		* @param	userFunc	The handler for this interrupt condition.
 		*/
-		void attach_interrupt(CAN_INT_NAME interrupt, Interrupt_fn handler);
+		void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
 		
 		/**
 		* Removes a handler for a specific object for a particular interrupt event.
 		*
-		* @param	interrupt	The interrupt condition to attach the handler from.
-		* @param	object		The CAN message object to detach the handler from.
+		* @param	interrupt	The interrupt condition to dettach the handler from.
 		* @return	Nothing.	
 		*/
 		void detach_interrupt(CAN_INT_NAME interrupt);
+		
+		/**
+		 * Boolean describing whether an interrupt handler is set for this condition
+		 * on this MOb
+		 * 
+		 * @param   interrupt   The MOb interrupt condition to test if enabled 
+		 * @return              Boolean describing whether an interrupt handler is set for this condition
+		 *
+		 */
+		bool test_interrupt(CAN_INT_NAME interrupt);
 		
 	private:
 	// METHODS
@@ -416,11 +430,74 @@ class Can
 	    * @param buffer_name	Name of buffer to be send
 	    */
 	    void clear_buffer(CAN_BUF buffer_name);
+	    
+	   /**
+	    * Set the value of the filter
+	    * 
+	    * @param filter_name	 Name of filter to be modified
+	    * @param filter_val		 Value to be written to filter
+	    * 			
+	    */
+	    void set_filter_val(CAN_BUF filter_name, uint32_t filter_val);
+	    
+	   /**
+	    * Enable interrupts on selected buffer
+	    */
+	    void enable_interrupt(CAN_BUF buffer_name);
+	    
+	   /**
+	    * Attach interrupt to selected buffer
+	    * 
+	    * @param buffer_name	Name of buffer to attach interrupt to
+	    * @param interrupt		The interrupt condition to attach the handler for.
+	    * @param userFunc 		The handler for this interrupt condition.
+	    */
+	    void attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void));
+	    
+	   /**
+	    * Attach interrupt to CAN channel
+	    * 
+	    * @param interrupt		The interrupt condition to attach the handler for.
+	    * @param userFunc		The handler for this interrupt condition
+	    */
+	    void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
+	    
+	   /**
+	    * Detach interrupt on selected buffer
+	    * 
+	    * @param buffer_name	Name of buffer to detach interrupt from
+	    * @param interrupt		The interrupt condition to detach the handler from.
+	    */
+	    void detach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
+	    
+	   /**
+	    * Detach interrupt on CAN channel
+	    * 
+	    * @param interrupt		The interrupt condition to detach the handler from
+	    */
+	    void detach_interrupt(CAN_INT_NAME interrupt);
+	    
+	   /**
+	    * Test interrupt of selected buffer
+	    * 
+	    * @param buffer_name    The name of buffer to test interrupt
+	    * @param interrupt		The interrupt condition to test
+	    */
+	    bool test_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
+	    
+	   /**
+	    * Test interrupt of CAN channel
+	    * 
+	    * @param interrupt		The interrupt condition to test
+	    */
+	    bool test_interrupt(CAN_INT_NAME interrupt);
+	    
     
 	
 	private:
 		Can(Can_tree* imp);	//called by link function
 		Can_tree* Can_controller;
+		
 };
 
 #endif

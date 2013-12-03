@@ -40,6 +40,9 @@
 #include <stdio.h>
 
 /**********************************************************************/
+volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
+
+/**********************************************************************/
 // Allows object enums to be iterated, inelegantly, this must be defined for every implementation because it shouldn't be in in h file
 CAN_BUF operator++(CAN_BUF& f, int)
 {
@@ -73,27 +76,35 @@ bool Can_buffer::get_multimode(void)
 	return true;	//true for AVR implementation
 }
 
-void Can_buffer::set_mode(CAN_BUF_MODE mode)
+bool Can_buffer::set_mode(CAN_BUF_MODE mode)
 {
 	Can_set_mob(buf_no);	//set CANPAGE to MOb of interest
 	
-	if (mode == CAN_OBJ_RX)
+	if (get_status() == BUF_DISABLE)
 	{
-		Can_config_rx();
-		mode = CAN_OBJ_RX;
+		if (mode == CAN_OBJ_RX)
+		{
+			Can_config_rx();
+			mode = CAN_OBJ_RX;
+		}
+		else if (mode == CAN_OBJ_TX)
+		{
+			Can_config_tx();
+			mode = CAN_OBJ_TX;	
+		}
+		else if (mode == CAN_OBJ_RXB)
+		{
+			Can_config_rx_buffer();
+		}
+		else if (mode == CAN_OBJ_DISABLE)
+		{
+			DISABLE_MOB;
+		}
+		return true;
 	}
-	else if (mode == CAN_OBJ_TX)
+	else
 	{
-		Can_config_tx();
-		mode = CAN_OBJ_TX;	
-	}
-	else if (mode == CAN_OBJ_RXB)
-	{
-		Can_config_rx_buffer();
-	}
-	else if (mode == CAN_OBJ_DISABLE)
-	{
-		DISABLE_MOB;
+		return false;
 	}
 }
 
@@ -151,7 +162,7 @@ CAN_BUF_STAT Can_buffer::get_status(void)
 		}
 	}
 	
-	//these operations however need to poll the correct buffer using CANPAGE	
+	//these operations however need to poll the correct buffer by setting CANPAGE first
 	Can_set_mob(buf_no);
 	uint8_t canstmob_copy = CANSTMOB; // Copy for test integrity
 	    
@@ -160,25 +171,28 @@ CAN_BUF_STAT Can_buffer::get_status(void)
     // - MOb Status = 0x40 then MOB_TX_COMPLETED
     // - MOb Status = 0xA0 then MOB_RX_COMPLETED_DLCW
     uint8_t mob_status = canstmob_copy & ((1<<DLCW)|(1<<TXOK)|(1<<RXOK));
-    
-	if (mob_status == MOB_RX_COMPLETED)
-	{ 
-		return BUF_RX_COMPLETED;
+    switch (mob_status)
+    {
+		case (MOB_RX_COMPLETED):
+			return BUF_RX_COMPLETED;
+	
+		case (MOB_TX_COMPLETED):
+			Can_mob_abort();		// Freed the MOB
+			Can_clear_status_mob();
+			return BUF_TX_COMPLETED;
+
+		case (MOB_RX_COMPLETED_DLCW):
+			Can_mob_abort();        // Freed the MOB
+			Can_clear_status_mob();
+			return BUF_RX_COMPLETED_DLCW;
+		default:
+			//do nothing, handled in other swtich statements
+			break;
 	}
-	else if (mob_status == MOB_TX_COMPLETED)
-	{
-		Can_mob_abort();
-		Can_clear_status_mob();
-		return BUF_TX_COMPLETED;
-	}
-	else if (mob_status == MOB_RX_COMPLETED_DLCW)
-	{
-		// deal with standard and extended frame stuff to be implemented
+
+	// deal with standard and extended frame stuff to be implemented
 		
-		Can_mob_abort();        // Freed the MOB
-        Can_clear_status_mob();
-		return BUF_RX_COMPLETED_DLCW;
-	}
+
 	
 	// If MOb is ENABLE & NOT_COMPLETED, test if MOb is in ERROR
     // - MOb Status bit_0 = MOB_ACK_ERROR
@@ -187,29 +201,24 @@ CAN_BUF_STAT Can_buffer::get_status(void)
     // - MOb Status bit_3 = MOB_STUFF_ERROR
     // - MOb Status bit_4 = MOB_BIT_ERROR
 	mob_status = canstmob_copy & ERR_MOB_MSK;
-	if (mob_status == MOB_ACK_ERROR)
+	switch (mob_status)
 	{
-		return BUF_ACK_ERROR;
+		case (MOB_ACK_ERROR):
+			return BUF_ACK_ERROR;
+		case (MOB_FORM_ERROR):
+			return BUF_FORM_ERROR;
+		case (MOB_CRC_ERROR):
+			return BUF_CRC_ERROR;
+		case (MOB_STUFF_ERROR):
+			return BUF_STUFF_ERROR;
+		case (MOB_BIT_ERROR):
+			return BUF_BIT_ERROR;
+		default:
+			//do nothing, handled in other swtich statements
+			break;
 	}
-	else if (mob_status == MOB_FORM_ERROR)
-	{
-		return BUF_FORM_ERROR;
-	}
-	else if (mob_status == MOB_CRC_ERROR)
-	{
-		return BUF_CRC_ERROR;
-	}
-	else if (mob_status == MOB_STUFF_ERROR)
-	{
-		return BUF_STUFF_ERROR;
-	}
-	else if (mob_status == MOB_BIT_ERROR)
-	{
-		return BUF_BIT_ERROR;
-	}
-	
-	// If CANSTMOB = 0 then MOB_NOT_COMPLETED
-	return BUF_NOT_COMPLETE;
+
+	return BUF_NOT_COMPLETE;	// If CANSTMOB = 0 then MOB_NOT_COMPLETED
 }
 
 void Can_buffer::enable_interrupt(void)
@@ -236,23 +245,64 @@ void Can_buffer::disable_interrupt(void)
 	}
 }
 
-void Can_buffer::attach_interrupt(CAN_INT_NAME interrupt, Interrupt_fn handler)
+void Can_buffer::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
 {
 	Can_set_mob(buf_no);
 	
-	if (interrupt == CAN_RX_COMPLETE)
+	switch(interrupt)
 	{
-		CANGIE |= (1 << 5);	
+		case (CAN_RX_COMPLETE):	
+			CANGIE |= (1 << ENRX);
+			intFunc[buf_no][interrupt] = userFunc;
+			break;
+		case (CAN_TX_COMPLETE):
+			CANGIE |= (1 << ENTX);
+			intFunc[buf_no][interrupt] = userFunc;
+			break;
+		case (CAN_GEN_ERROR):
+			CANGIE |= (1 << ENERG);
+			intFunc[buf_no][interrupt] = userFunc;
+			break;
+		default:
+			//do nothing, this case is used to prevent warnings
+			break;
 	}
-	else if (interrupt == CAN_TX_COMPLETE)
+}
+
+void Can_buffer::detach_interrupt(CAN_INT_NAME interrupt)
+{
+	Can_set_mob(buf_no);
+	switch(interrupt)
 	{
-		CANGIE |= (1 << 4);
+		case (CAN_RX_COMPLETE):
+			CANGIE &= ~(1 << ENRX);
+			break;
+		case (CAN_TX_COMPLETE):
+			CANGIE &= ~(1 << ENTX);
+			break;
+		case (CAN_GEN_ERROR):
+			CANGIE &= ~(1 << ENERG);
+			break;
+		default:
+			//do nothing, this case is used to prevent warnings
+			break;
 	}
-	else if (interrupt == CAN_RX_ERROR)
+}
+
+bool Can_buffer::test_interrupt(CAN_INT_NAME interrupt)
+{
+	Can_set_mob(buf_no);
+	switch(interrupt)
 	{
-		CANGIE |= (1 << 1);
+		case (CAN_RX_COMPLETE):
+			return (CANGIE & (1 << ENRX));
+		case (CAN_TX_COMPLETE):
+			return (CANGIE & (1 << ENTX));
+		case (CAN_GEN_ERROR):
+			return (CANGIE & (1 << ENERG));
+		default:
+			return false;
 	}
-	//TODO: Make the interrupt handler work
 }
 
 /**********************************************************************/
@@ -328,6 +378,31 @@ class Can_tree
 		 */
 		void enable(void);
 		
+		/**
+		 * Attach CAN channel interrupts, will overwrite existing interrupt
+		 * 
+		 * @param    interrupt   The interrupt condition to attach the handler to
+		 * @param    userFunc     The handler for this interrupt condition.
+		 * 
+		 */
+		void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
+		
+		/**
+		 * Detach interrupt to CAN channel
+		 * 
+		 * @param    interrupt   The interrupt condition to detach the handler from
+		 */
+		void detach_interrupt(CAN_INT_NAME interrupt);
+		
+		/**
+		 * Returns true if interrupt condition has handelr attached
+		 * 
+		 * @param    interrupt   The bus interrupt condition to test if enabled 
+		 * @return   Boolean describing whether an interrupt handler is set for this condition
+		 * 
+		 */ 			 
+		bool test_interrupt(CAN_INT_NAME interrupt);
+		
 	
 	//Fields
 		Can_filter filter[NB_FIL];
@@ -338,14 +413,14 @@ Can_tree::Can_tree(void)
 {
 	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
 	{
-		buffer[i] = Can_buffer();	//assign arbitrary index to buffer, CANPAGE access uses this number
-		buffer[i].set_number(i);
+		buffer[i] = Can_buffer();	
+		buffer[i].set_number(i);	//assign arbitrary index to buffer, CANPAGE access uses this number
 	}
 	
 	for (CAN_FIL i=FILTER_0; i<NB_FIL; i++)
 	{
-		filter[i] = Can_filter();  //assign arbitrary index to filter
-		filter[i].set_number(i);
+		filter[i] = Can_filter();  
+		filter[i].set_number(i);	//assign arbitrary index to filter
 		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
 	}
 	return;
@@ -354,6 +429,63 @@ Can_tree::Can_tree(void)
 void Can_tree::enable(void)
 {
 	Can_enable();
+}
+
+void Can_tree::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
+{
+	bool interrupt_valid;
+	switch (interrupt)
+	{
+		case (CAN_TIME_OVERRUN):
+			CANGIE |= (1 << ENOVRT);
+			interrupt_valid = true;
+			break;
+		case (CAN_BUS_OFF):
+			CANGIE |= (1 << ENBOFF);
+			interrupt_valid = true;
+			break;
+		default:
+			interrupt_valid = false;
+			break;
+	}
+	
+	if (interrupt_valid)	
+	{
+		//for channel based interrupts, must apply to ALL MOb vectors due to the way interrupt functions are addressed
+		for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+		{
+			intFunc[i][interrupt];	
+		}
+	}
+}
+
+void Can_tree::detach_interrupt(CAN_INT_NAME interrupt)
+{
+	switch(interrupt)
+	{
+		case (CAN_TIME_OVERRUN):
+			CANGIE &= ~(1<<ENOVRT);
+			break;
+		case (CAN_BUS_OFF):
+			CANGIE &= ~(1<<ENBOFF);
+			break;
+		default:
+			//do nothing, this case is used to prevent warnings
+			break;
+	}
+}
+
+bool Can_tree::test_interrupt(CAN_INT_NAME interrupt)
+{
+	switch(interrupt)
+	{
+		case (CAN_TIME_OVERRUN):
+			return (CANGIE & (1<<ENOVRT));
+		case (CAN_BUS_OFF):
+			return (CANGIE & (1<<ENBOFF));
+		default:
+			return false;
+	}		
 }
 
 static Can_tree Can_tree_imps[NB_CTRL];
@@ -368,16 +500,16 @@ static Can_tree Can_tree_imps[NB_CTRL];
  * 
  * Example usage transmitting 'Hello world' over CAN:
  * init_hal();						//hal library mainly covers semaphores which are not used for CAN but still think its better to call this
- * int_on();						//turn interrupts on (not sure if this applies to CAN interrupts
+ * int_on();						//turn interrupts on (not sure if this applies to CAN interrupts)
  * 
  * Can my_can = Can::link(CAN_0);	//link to hardware implementation
- * my_can.initialize(CAN_100K);		//set the baud rate to 100K
+ * my_can.initialize(CAN_500K);		//set the baud rate to 500K
  * 
  * Can_message my_msg;
  * my_msg.id = 0x00;
- * my_msg.dlc = 12;
- * my_msg.data = "Hello World!";
- * my_can.transmit(my_msg);
+ * my_msg.dlc = 8;
+ * my_msg.data = "01234567";	//note: this represents a message, its not a string literal
+ * my_can.transmit(OBJ_0, my_msg);	//transmit message using buffer 0
  */
  
 Can::Can(Can_tree* imp)
@@ -528,7 +660,6 @@ void Can::initialise(CAN_RATE rate)
 	{
 		Can_controller->buffer[i].clear();
 		Can_controller->buffer[i].clear_status();
-		Can_set_ide();	//this library always communicates with the an extended identifier
 	}
 	Can_controller->enable();	//write to CANGCON register to enable the controller
 }
@@ -550,8 +681,9 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 	{
 		Can_controller->buffer[buffer_name].clear();
 		Can_controller->buffer[buffer_name].clear_status();
-		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
-		Can_controller->filter[buffer_name].set_filter_val(msg.id);
+		
+		Can_set_ide();	//this library always communicates with the an extended identifier
+		Can_controller->filter[buffer_name].set_filter_val(msg.id);		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
 		Can_controller->filter[buffer_name].set_mask_val(0x00000000);	//make all masks 0 because trasmission does not use it
 				
 		Can_controller->buffer[buffer_name].write(msg);
@@ -573,3 +705,74 @@ void Can::clear_buffer(CAN_BUF buffer_name)
 {
 	Can_controller->buffer[buffer_name].clear();
 }
+
+void Can::set_filter_val(CAN_BUF filter_name, uint32_t filter_val)
+{
+	Can_controller->filter[filter_name].set_filter_val(filter_val);
+}
+
+void Can::enable_interrupt(CAN_BUF buffer_name)
+{
+	Can_controller->buffer[buffer_name].enable_interrupt();
+}
+
+void Can::attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void))
+{
+	Can_controller->buffer[buffer_name].attach_interrupt(interrupt, userFunc);
+}
+
+void Can::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
+{
+	Can_controller->attach_interrupt(interrupt, userFunc);
+}
+
+void Can::detach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt)
+{
+	Can_controller->buffer[buffer_name].detach_interrupt(interrupt);
+}
+
+void Can::detach_interrupt(CAN_INT_NAME interrupt)
+{
+	Can_controller->detach_interrupt(interrupt);
+}
+
+bool Can::test_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt)
+{
+	return Can_controller->buffer[buffer_name].test_interrupt(interrupt);
+}
+
+bool Can::test_interrupt(CAN_INT_NAME interrupt)
+{
+	return Can_controller->test_interrupt(interrupt);
+}
+
+/**********************************************************************/
+//CAN Interrupt declarations
+ //Note these address registers at the low level rather than call 
+ //API functions for speed sake
+ 
+ ISR(CANIT_vect)	//CAN Trasfer complete interrupt
+ {
+	 CANPAGE = CANHPMOB & 0xF0;		//Select highest priority MOb
+		
+	 if (CANSTMOB | MOB_RX_COMPLETED)
+	 {
+		 intFunc[(CANPAGE>>4)][CAN_RX_COMPLETE]();
+	 }
+	 else if (CANSTMOB | MOB_TX_COMPLETED)
+	 {
+		 intFunc[(CANPAGE>>4)][CAN_TX_COMPLETE]();
+	 }
+	 else if (CANSTMOB | ERR_MOB_MSK)
+	 {
+		 intFunc[(CANPAGE>>4)][CAN_GEN_ERROR]();
+	 }	 
+ }
+ 
+ ISR(OVRIT_vect)	//CAN Timer overrun error interrupt
+ {
+	 CANPAGE = CANHPMOB & 0xF0;
+	 intFunc[(CANPAGE>>4)][CAN_TIME_OVERRUN]();
+ }
+ 
+ 

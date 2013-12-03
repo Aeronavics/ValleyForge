@@ -280,7 +280,7 @@ SIGNAL(INT6_vect) {
 
 SIGNAL(INT7_vect) {
   if(intFunc[EINT_7 - INT_DIFF_OFFSET])
-    intFunc[EINT_7 - INT_DIFF_OFFSET]();
+	intFunc[EINT_7 - INT_DIFF_OFFSET]();
 }
 #endif
 
