@@ -125,14 +125,13 @@ class Can_buffer;	//declared so typedef will work at top
 enum CAN_RATE {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
 enum CAN_MODE {CAN_NORMAL, CAN_LISTEN};
 enum CAN_BUF_MODE {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
-enum CAN_BUF_STAT {BUF_NOT_COMPLETE, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
+enum CAN_BUF_STAT {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
 
 enum CAN_INT_NAME {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
 
 /************** ENUMERATIONS TO REPRESENT HARDWARE *********************/
 //AVRs only have 1 CAN controller
 #if (defined(__AVR_ATmega64M1__)) || (defined( __AVR_AT90CAN128__))
-#define FILTER_PER_BUFFER 1
 enum CAN_CTRL {CAN_0, NB_CTRL};
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
@@ -348,7 +347,7 @@ class Can_filter
 		* @param	mask	The new value for the filter mask.
 		* @return	Nothing.
 		*/
-		 void set_mask_val(uint32_t mask);
+		 void set_mask_val(uint32_t mask, bool RTR);
 		
 		/**
 		* Sets the filter value being used by the hardware filter/mask.
@@ -356,9 +355,11 @@ class Can_filter
 		* NOTE - Not all the bits of the filter may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
 		*
 		* @param	filter	The new value for the filter.
+		* @param    RTR		Boolean deciding whether to turn RTR on
+		* 
 		* @return	Nothing.
 		*/
-		 void set_filter_val(uint32_t filter);
+		 void set_filter_val(uint32_t filter, bool RTR);
 		
 		 
 	
@@ -389,8 +390,11 @@ class Can
 		/**
 		 * Initializes controller for first use. Clears all buffers and
 		 * enables MObs
+		 * 
+		 * @param rate		Baud rate of bus to use
+		 * @return 			Whether bus was successfully initialized
 		 */
-		void initialise(CAN_RATE rate);
+		bool initialise(CAN_RATE rate);
 		
 		/**
 		 * Allows buffer to be set to receive, tramsit or disabled mode
@@ -407,8 +411,7 @@ class Can
 	    
 	    /**
 	     * Transmits message from the buffer specified. Note the tranmission flag 
-	     * is not cleared in this function. To be implemented, use interrupt to clear
-	     * flag.
+	     * is not cleared in this function. Uses extended identifier.
 	     * 
 	     * @param buffer_name   Name of the buffer to be used for sending (use the enums)
 	     * @param message		The message to send (struct with identifer and data length)
@@ -432,13 +435,29 @@ class Can
 	    void clear_buffer(CAN_BUF buffer_name);
 	    
 	   /**
-	    * Set the value of the filter
+	    * Clear the status register of selected buffer
+	    * 
+	    * @param buffer_name
+	    */
+	    void clear_buffer_status(CAN_BUF buffer_name);
+	    
+	   /**
+	    * Set the value of the selectedfilter
 	    * 
 	    * @param filter_name	 Name of filter to be modified
 	    * @param filter_val		 Value to be written to filter
-	    * 			
+	    * @param RTR			 Setting of the RTR filter bit	
 	    */
-	    void set_filter_val(CAN_BUF filter_name, uint32_t filter_val);
+	    void set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR);
+	    
+	   /**
+	    * Set the value of the selected mask
+	    * 
+	    * @param filter_name	Name of the filter to be modified
+	    * @param mask_val		Value to be written to the mask
+	    * @param RTR			Setting of the RTR mask bit
+	    */
+	    void set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR);
 	    
 	   /**
 	    * Enable interrupts on selected buffer

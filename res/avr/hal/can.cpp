@@ -38,6 +38,19 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <stdio.h>
+#include <util/delay.h>
+
+#define F_CPU (<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000)	//Used for delaying
+#define ENABLE_TOUT_MS  500;									//Controller enable timeout
+
+//different interrupt vector names for different micros
+#if defined(__AVR_AT90CAN128__)
+	#define GEN_CAN_IT_VECT CANINT_vect
+	#define OVR_TIM_IT_VECT OVRIT_vect
+#elif defined (__AVR_ATmega64M1__)
+	#define GEN_CAN_IT_VECT CAN_INT_vect
+	#define OVR_TIM_IT_VECT CAN_TOVF_vect
+#endif
 
 /**********************************************************************/
 volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
@@ -80,32 +93,28 @@ bool Can_buffer::set_mode(CAN_BUF_MODE mode)
 {
 	Can_set_mob(buf_no);	//set CANPAGE to MOb of interest
 	
-	if (get_status() == BUF_DISABLE)
+	switch (mode)
 	{
-		if (mode == CAN_OBJ_RX)
-		{
+		case (CAN_OBJ_RX):
 			Can_config_rx();
 			mode = CAN_OBJ_RX;
-		}
-		else if (mode == CAN_OBJ_TX)
-		{
+			break;
+	
+		case (CAN_OBJ_TX):
 			Can_config_tx();
 			mode = CAN_OBJ_TX;	
-		}
-		else if (mode == CAN_OBJ_RXB)
-		{
+			break;
+			
+		case (CAN_OBJ_RXB):
 			Can_config_rx_buffer();
-		}
-		else if (mode == CAN_OBJ_DISABLE)
-		{
+			mode = CAN_OBJ_RXB;
+			break;
+			
+		case (CAN_OBJ_DISABLE):
 			DISABLE_MOB;
-		}
-		return true;
+			mode = CAN_OBJ_DISABLE;
 	}
-	else
-	{
-		return false;
-	}
+	return true;	//maybe this should return void
 }
 
 Can_message Can_buffer::read(void)
@@ -132,12 +141,6 @@ void Can_buffer::write(Can_message msg)
 	}
 }
 
-void Can_buffer::clear(void)
-{
-	Can_set_mob(buf_no);
-	Can_clear_mob();
-}
-
 void Can_buffer::clear_status(void)
 {
 	Can_set_mob(buf_no);
@@ -146,63 +149,22 @@ void Can_buffer::clear_status(void)
 
 CAN_BUF_STAT Can_buffer::get_status(void)
 {	
-	//by using CANEN registers, CANPAGE doesn't have to be written
-	if (buf_no < 8)
+	Can_set_mob(buf_no);
+	uint8_t canstmob_copy = CANSTMOB;	//copy for test integrity
+	
+	if ((CANCDMOB & CONMOB_MSK) == 0x00)
 	{
-		if ((CANEN2 & (1<<buf_no)) == 0x00)
-		{
-			return BUF_DISABLE;
-		}	
-	}
-	else
-	{
-		if ((CANEN1 & (1<<(buf_no-8))) == 0x00)
-		{
-			return BUF_DISABLE;
-		}
+		return BUF_DISABLE;
 	}
 	
-	//these operations however need to poll the correct buffer by setting CANPAGE first
-	Can_set_mob(buf_no);
-	uint8_t canstmob_copy = CANSTMOB; // Copy for test integrity
-	    
-	// If MOb is ENABLE, test if MOb is COMPLETED
-    // - MOb Status = 0x20 then MOB_RX_COMPLETED
-    // - MOb Status = 0x40 then MOB_TX_COMPLETED
-    // - MOb Status = 0xA0 then MOB_RX_COMPLETED_DLCW
-    uint8_t mob_status = canstmob_copy & ((1<<DLCW)|(1<<TXOK)|(1<<RXOK));
-    switch (mob_status)
-    {
+	switch (canstmob_copy)
+	{
 		case (MOB_RX_COMPLETED):
 			return BUF_RX_COMPLETED;
-	
 		case (MOB_TX_COMPLETED):
-			Can_mob_abort();		// Freed the MOB
-			Can_clear_status_mob();
 			return BUF_TX_COMPLETED;
-
 		case (MOB_RX_COMPLETED_DLCW):
-			Can_mob_abort();        // Freed the MOB
-			Can_clear_status_mob();
 			return BUF_RX_COMPLETED_DLCW;
-		default:
-			//do nothing, handled in other swtich statements
-			break;
-	}
-
-	// deal with standard and extended frame stuff to be implemented
-		
-
-	
-	// If MOb is ENABLE & NOT_COMPLETED, test if MOb is in ERROR
-    // - MOb Status bit_0 = MOB_ACK_ERROR
-    // - MOb Status bit_1 = MOB_FORM_ERROR
-    // - MOb Status bit_2 = MOB_CRC_ERROR
-    // - MOb Status bit_3 = MOB_STUFF_ERROR
-    // - MOb Status bit_4 = MOB_BIT_ERROR
-	mob_status = canstmob_copy & ERR_MOB_MSK;
-	switch (mob_status)
-	{
 		case (MOB_ACK_ERROR):
 			return BUF_ACK_ERROR;
 		case (MOB_FORM_ERROR):
@@ -213,12 +175,9 @@ CAN_BUF_STAT Can_buffer::get_status(void)
 			return BUF_STUFF_ERROR;
 		case (MOB_BIT_ERROR):
 			return BUF_BIT_ERROR;
-		default:
-			//do nothing, handled in other swtich statements
-			break;
-	}
-
-	return BUF_NOT_COMPLETE;	// If CANSTMOB = 0 then MOB_NOT_COMPLETED
+		case (0x00):
+			return BUF_NOT_COMPLETED;
+	}	
 }
 
 void Can_buffer::enable_interrupt(void)
@@ -336,17 +295,36 @@ uint32_t Can_filter::get_filter_val(void)
 	return filter_data.id;
 }
 
-void Can_filter::set_mask_val(uint32_t mask)
+void Can_filter::set_mask_val(uint32_t mask, bool RTR)
 {
 	Can_set_mob(fil_no);
 	Can_set_ext_msk(mask);
+	
+	if (RTR)
+	{
+		Can_set_rtrmsk();
+	}
+	else
+	{
+		Can_clear_rtrmsk();
+	}
 	filter_data.mask = mask;	//store as field so registers don't need to be accessed again
 }
 
-void Can_filter::set_filter_val(uint32_t filter)
+void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 {
 	Can_set_mob(fil_no);
 	Can_set_ext_id(filter);
+	
+	if (RTR)
+	{
+		Can_set_rtr();
+	}
+	else
+	{
+		Can_clear_rtr();
+	}
+	
 	filter_data.id = filter;	//store as field so registers don't need to be accessed again
 }
 
@@ -524,12 +502,21 @@ Can Can::link(CAN_CTRL controller)
 	return Can(&Can_tree_imps[controller]);
 }
 
-void Can::initialise(CAN_RATE rate)
+bool Can::initialise(CAN_RATE rate)
 {
 	//Assignment to prevent warnings, it will always be assigned a value if tool chain is configured properly
 	uint8_t CONF_CANBT1 = 0x00;
 	uint8_t CONF_CANBT2 = 0x00;
-	uint8_t CONF_CANBT3 = 0x00; 
+	uint8_t CONF_CANBT3 = 0x00;
+	
+	Can_reset();
+	
+	//clear all buffers
+	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+	{
+		Can_controller->buffer[i].set_mode(CAN_OBJ_DISABLE);
+		Can_controller->buffer[i].clear_status();	
+	}
 	
 	//Set CANBT registers to obtain correct baud rate given clock speed
 	//Warning: anything below 500K has not been fully tested
@@ -639,29 +626,47 @@ void Can::initialise(CAN_RATE rate)
 		}
 	    else if (rate == CAN_500K)       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
 	    {
+			#if defined(__AVR_AT90CAN128__)		//tested
 	        CONF_CANBT1 = 0x00;       // Tscl  = 2x Tclkio = 250 ns
 	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+	        CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points 
+	        #elif defined(__AVR_ATmega64M1__)	//untested
+	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
+			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
+			CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+			#else
+				#error not yet implemented for this cpu
+	        #endif 
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
-	    {
+	    {	
+			//tested for AT90CAN
 	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x12;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	}
-	
-	Can_reset();
 	Can_conf_bt();	//assign registers the above values of CONF_CANBT to set baudrate
-	CANPAGE &= ~(1<<AINC);	//set CANMSG to auto-increment
 	
-	//clear all buffers
-	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
-	{
-		Can_controller->buffer[i].clear();
-		Can_controller->buffer[i].clear_status();
-	}
 	Can_controller->enable();	//write to CANGCON register to enable the controller
+	
+	//poll CAN controller initialization status
+	uint16_t poll_t = ENABLE_TOUT_MS;
+	while (!(CANGSTA & (1<<ENFG)) && poll_t)
+	{
+		_delay_ms(1);
+		poll_t -= 1;			
+	}
+	
+	if (poll_t > 0)
+	{
+		return true;	//CAN controller successfully initialized
+	}
+	else
+	{
+		return false;	//CAN controller failed to initialize
+	}
+	
 }
 
 void Can::set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode)
@@ -671,6 +676,7 @@ void Can::set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode)
 
 Can_message Can::read(CAN_BUF buffer_name)
 {
+	Can_clear_rplv();
 	Can_message msg = Can_controller->buffer[buffer_name].read();
 	return msg;
 }
@@ -682,17 +688,18 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 		Can_controller->buffer[buffer_name].clear();
 		Can_controller->buffer[buffer_name].clear_status();
 		
-		Can_set_ide();	//this library always communicates with the an extended identifier
-		Can_controller->filter[buffer_name].set_filter_val(msg.id);		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
-		Can_controller->filter[buffer_name].set_mask_val(0x00000000);	//make all masks 0 because trasmission does not use it
+		Can_controller->filter[buffer_name].set_filter_val(msg.id, false);		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
+		Can_controller->filter[buffer_name].set_mask_val(0x00, false);	//make all masks 0 because trasmission does not use it
 				
 		Can_controller->buffer[buffer_name].write(msg);
-		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);	//enable tx mode to start sending message
+		Can_clear_rplv(); 	//set reply off
+		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);		//enable tx mode to start sending message
+		
 		return true;
 	}
 	else
 	{
-		return false;	//wasn't free
+		return false;		//wasn't free
 	}
 }
 
@@ -706,9 +713,19 @@ void Can::clear_buffer(CAN_BUF buffer_name)
 	Can_controller->buffer[buffer_name].clear();
 }
 
-void Can::set_filter_val(CAN_BUF filter_name, uint32_t filter_val)
+void Can::clear_buffer_status(CAN_BUF buffer_name)
 {
-	Can_controller->filter[filter_name].set_filter_val(filter_val);
+	Can_controller->buffer[buffer_name].clear_status();
+}
+
+void Can::set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR)
+{
+	Can_controller->filter[filter_name].set_filter_val(filter_val, RTR);
+}
+
+void Can::set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR)
+{
+	Can_controller->filter[filter_name].set_mask_val(mask_val, RTR);
 }
 
 void Can::enable_interrupt(CAN_BUF buffer_name)
@@ -748,10 +765,12 @@ bool Can::test_interrupt(CAN_INT_NAME interrupt)
 
 /**********************************************************************/
 //CAN Interrupt declarations
- //Note these address registers at the low level rather than call 
+ //Note: These address registers at the low level rather than call 
  //API functions for speed sake
+ //
+ //Note: User must reset interrupt flags themselves
  
- ISR(CANIT_vect)	//CAN Trasfer complete interrupt
+ ISR(GEN_CAN_IT_VECT)	//CAN Trasfer complete interrupt
  {
 	 CANPAGE = CANHPMOB & 0xF0;		//Select highest priority MOb
 		
@@ -769,7 +788,7 @@ bool Can::test_interrupt(CAN_INT_NAME interrupt)
 	 }	 
  }
  
- ISR(OVRIT_vect)	//CAN Timer overrun error interrupt
+ ISR(OVR_TIM_IT_VECT)	//CAN Timer overrun error interrupt
  {
 	 CANPAGE = CANHPMOB & 0xF0;
 	 intFunc[(CANPAGE>>4)][CAN_TIME_OVERRUN]();
