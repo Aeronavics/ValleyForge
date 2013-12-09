@@ -235,11 +235,6 @@ class Can_buffer
 		void write(Can_message msg);
 		
 		/**
-		 * Delete contents of buffer
-		 */
-		void clear(void);
-		
-		/**
 		 * Reset status register of buffer
 		 */
 		void clear_status(void);
@@ -428,13 +423,6 @@ class Can
 	    CAN_BUF_STAT get_buffer_status(CAN_BUF buffer_name);
 	    
 	   /**
-	    * Clear the selected buffer
-	    * 
-	    * @param buffer_name	Name of buffer to be send
-	    */
-	    void clear_buffer(CAN_BUF buffer_name);
-	    
-	   /**
 	    * Clear the status register of selected buffer
 	    * 
 	    * @param buffer_name
@@ -460,9 +448,17 @@ class Can
 	    void set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR);
 	    
 	   /**
-	    * Enable interrupts on selected buffer
+	    * Enable interrupts on the CAN channel. This method must be invoked
+	    * to enable buffer interrupts
 	    */
-	    void enable_interrupt(CAN_BUF buffer_name);
+	    void enable_interrupts(void);
+	    
+	   /**
+	    * Enable interrupts on selected buffer
+	    * 
+	    * @param buffer_name	Name of the buffer to have interrupt enabled
+	    */
+	    void enable_buffer_interrupt(CAN_BUF buffer_name);
 	    
 	   /**
 	    * Attach interrupt to selected buffer
@@ -510,6 +506,11 @@ class Can
 	    * @param interrupt		The interrupt condition to test
 	    */
 	    bool test_interrupt(CAN_INT_NAME interrupt);
+	    
+	   /**
+	    * Return the name of the buffer that triggered the last interrupt
+	    */
+	    CAN_BUF get_interrrupted_buffer(void);
 	    
     
 	
