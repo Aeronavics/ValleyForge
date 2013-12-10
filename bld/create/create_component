@@ -792,7 +792,7 @@ fi
 
 # Populate the configuration file for the component.
 echo -e "${CYAN}Populating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
-push_key ${CONFIG_FILE} "SUBSYSTEM" "${NEW_SUBSYSTEM}"
+push_key ${CONFIG_FILE} "SUBSYSTEM" "\"${NEW_SUBSYSTEM}\""
 push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
