@@ -64,17 +64,17 @@ source $TCPATH/bld/common/create_empty_dirs
 print_component_summary()
 {
 	# Check if no component is currently selected.
-	if [ -z $COMPONENT ]; then
+	if [ -z "$COMPONENT" ]; then
 		# No component was specified, so bail.
 		echo -e "${RED}No component selected.  Nothing to do.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# Then, check if the component actually exists.
 	if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 		# The component does't have a matching source folder, so bail.
 		echo -e "${RED}No source folder found.  Skipping component $COMPONENT.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# To print summary information, we need to load the build configuration for the component.
@@ -89,11 +89,11 @@ print_component_summary()
 	if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 		# Just skip this component and move on.
 		echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 	# Reset any variables which may have been set by a previous component.
 	source $TCPATH/bld/common/clear_bconf_vars
@@ -103,7 +103,7 @@ print_component_summary()
 	if [ `declare -f | grep "$BCONF ()" | wc -l` == 0 ]; then
 		# No matching build configuration was found, so skip this component and move on.
 		echo -e "${RED}No suitable build configuration found.  Skipping component $COMPONENT.${NO_COLOUR}"
-		return 1
+		return
 	else
 		# There is a matching build configuration, so load it.
 		$BCONF
@@ -112,7 +112,7 @@ print_component_summary()
 		if [ -z "$BCONF_NAME" ]; then
 			# At least one of the required variables was not set, so skip this component and move on.
 			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.${NO_COLOUR}"
-			return 1
+			return
 		fi
 	fi
 
@@ -136,17 +136,17 @@ print_component_summary()
 print_library_summary()
 {
 	# Check if no library is currently selected.
-	if [ -z $LIBRARY ]; then
+	if [ -z "$LIBRARY" ]; then
 		# No library was specified, so bail.
 		echo -e "${RED}No library selected.  Nothing to do.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# Then, check if the library actually exists.
 	if [ ! -d "$TCPATH/${LIB_SOURCE_PATH}/$COMPONENT" ]; then
 		# The library does't have a matching folder, so bail.
 		echo -e "${RED}No library folder found.  Skipping library $LIBRARY.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# To print summary information, we need to load the configuration for the library.
@@ -161,7 +161,7 @@ print_library_summary()
 	if ! [ -r "$TCPATH/${LIB_SOURCE_PATH}/$LIBRARY/$LIBRARY_NAME.cfg" ]; then
 		# Just skip this component and move on.
 		echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.${NO_COLOUR}"
-		return 1
+		return
 	fi
 
 	# Extract relevant configuration information from the configuration file.
