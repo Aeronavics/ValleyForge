@@ -23,7 +23,7 @@
  *  @brief 
  *  This is the header file which implements various public types and enums that will differ between platforms for the can module.
  * 
- *  @author		Paul Davey
+ *  @author		George Xian
  *
  *  @date		7-02-2013
  * 

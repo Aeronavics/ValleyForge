@@ -136,6 +136,7 @@ enum CAN_CTRL {CAN_0, NB_CTRL};
 
 // This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
 // with defined bit positions for the extended frame flag and the remote transmit flag.
+
 typedef struct 
 {
 	uint32_t id;
@@ -164,11 +165,14 @@ CAN_FIL operator++(CAN_FIL& f, int);
 
 
 /********************* Struct definitions here ***********************/
+/**
+ * Struct to represent a Can frame
+ */
 typedef struct 
 {
-	uint32_t id;	//Up to 29 bits for extended identifier
-	uint8_t dlc;	//Data length identifier, uses 4 bits
-	uint8_t data[8];//8 bytes of actual data
+	uint32_t id;		///Up to 29 bits for extended identifier
+	uint8_t dlc;		///Data length identifier, uses 4 bits
+	uint8_t data[8];	///8 bytes of payload data
 } Can_message;
 
 
@@ -181,7 +185,10 @@ class Can_buffer
 	public:
 	// METHODS
 		/**
-		 * Store its address in its field so it can reference itself via registers
+		 * Store an arbitrary address in its field so it can reference itself via registers.
+		 * 
+		 * @param   buf_num  The number to assign to this buffer.
+		 * @return  Nothing.
 		 */
 		void set_number(CAN_BUF buf_num);
 		
@@ -202,10 +209,11 @@ class Can_buffer
 		bool get_multimode(void);
 	
 		/**
-		* Sets the mode of the object.  This may not work, depending on whether the CAN hardware offers support for multimode objects.
+		* Sets the mode of the object.  This may not work, depending on 
+		* whether the CAN hardware offers support for multimode objects.
 		*
 		* @param	mode	The mode to set the object to.
-		* @return   Boolean representing whether operation was successful
+		* @return   Flag indicating whether operation was successful.
 		*/
 		bool set_mode(CAN_BUF_MODE mode);
 		
@@ -213,46 +221,55 @@ class Can_buffer
 		* Returns the current status of the object.
 		*
 		* @param	Nothing.
-		* @return	The current status of the object.
+		* @return	The current status of the buffer (one of possible CAN_BUF_STATs).
 		*/
 		CAN_BUF_STAT get_status(void);
 		
 		/**
 		 * Read what is in the buffer (moves it away from buffer and
-		 * into memory)
+		 * into memory).
 		 * 
-		 * @return  The message contained in buffer
+		 * @param   Nothing.
+		 * @return  The message contained in buffer.
 		 */
 		Can_message read(void);
 		 
 		 /**
-		  * Write message to buffer, note that this is used for message transmission
-		  * and must be called from the interface function as the filter linked to 
-		  * this buffer must also be modified
+		  * Write message to buffer
 		  * 
-		  * @param msg    Message to write
+		  * @param   msg    Message to write to the buffer.
+		  * @return  Nothing.
 		  */
 		void write(Can_message msg);
 		
 		/**
 		 * Reset status register of buffer
+		 * 
+		 * @param    Nothing.
+		 * @return   Nothing.
 		 */
 		void clear_status(void);
 		
 		/**
 		 * Enables interrupt on the buffer
+		 * 
+		 * @param    Nothing.
+		 * @return   Nothing.
 		 */
 		void enable_interrupt(void);
 		
 		/**
 		 * Disables interrupt on the buffer
+		 * 
+		 * @param    Nothing
+		 * @return   Nothing
 		 */
 		void disable_interrupt(void);
 		
 		/**
 		* Attaches a handler to a particular interrupt event for object based
 		* interrupts. Original interrupt will be overwritten if a handler already
-		* exists (use test interrupt to see what interrupt conditions are used)
+		* exists (use test interrupt to see what interrupt conditions are used).
 		*
 		* @param	interrupt	The interrupt condition to attach the handler for.
 		* @param	userFunc	The handler for this interrupt condition.
@@ -269,10 +286,10 @@ class Can_buffer
 		
 		/**
 		 * Boolean describing whether an interrupt handler is set for this condition
-		 * on this MOb
+		 * on this buffer.
 		 * 
-		 * @param   interrupt   The MOb interrupt condition to test if enabled 
-		 * @return              Boolean describing whether an interrupt handler is set for this condition
+		 * @param   interrupt   The MOb interrupt condition to test if enabled.
+		 * @return              Flag indicating whether an interrupt handler is set for this condition.
 		 *
 		 */
 		bool test_interrupt(CAN_INT_NAME interrupt);
@@ -283,7 +300,7 @@ class Can_buffer
 		
 	// FIELDS
 		CAN_BUF buf_no;		//constructor needs this value
-		CAN_BUF_MODE mode;
+		CAN_BUF_MODE mode;	//current mode of the buffer
 };
 
 /**
@@ -294,27 +311,35 @@ class Can_filter
 	public:
 	//METHODS		 
 		/**
-		 * Store its address in its field so it can reference itself via registers
+		 * Store an arbitrary address in its field so it can reference itself via registers.
+		 * 
+		 * @param   fil_num    The number to assign to this filter.
+		 * @return  Nothing.
 		 */
 		 void set_number(CAN_FIL fil_num);
 		
 		/**
-		 * Returns buffer this is linked to
+		 * Returns buffer this filter is linked to.
 		 * 
-		 * @return     pointer to buffer linked to this filter
+		 * @param   Nothing.
+		 * @return  Pointer to buffer linked to this filter.
 		 */
 		 Can_buffer* get_buffer(void);
 		 
 		/**
 		 * Returns whether filter can be re-assigned to a different 
-		 * buffer
+		 * buffer.
+		 * 
+		 * @param   Nothing.
+		 * @return  Flag indicating whether filter can be re-assigned.
 		 */
 		 bool get_routable(void);
 		 
 		/**
 		 * Sets the buffer linked to this filter
 		 * 
-		 * @return Flag indicating whether its possible
+		 * @param   buffer   Buffer to link this filter to.
+		 * @return  Flag indicating whether it was successful.
 		 */
 		 bool set_buffer(Can_buffer* buffer);
 		 
@@ -350,7 +375,7 @@ class Can_filter
 		* NOTE - Not all the bits of the filter may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
 		*
 		* @param	filter	The new value for the filter.
-		* @param    RTR		Boolean deciding whether to turn RTR on
+		* @param    RTR		Setting of the RTR bit.
 		* 
 		* @return	Nothing.
 		*/
@@ -378,29 +403,34 @@ class Can
 	public:
 	// METHODS
 		/**
-		 * Links up the created instance with the hardware implementationn
+		 * Links up the created instance with the hardware implementation.
 		 */
 		static Can link(CAN_CTRL controller);
 		
 		/**
-		 * Initializes controller for first use. Clears all buffers and
-		 * enables MObs
+		 * Initializes controller for first use. Sets the baud rate for
+		 * the controller.
 		 * 
-		 * @param rate		Baud rate of bus to use
-		 * @return 			Whether bus was successfully initialized
+		 * @param    rate   Baud rate of bus to use.
+		 * @return 	 Whether bus was successfully initialized.
 		 */
 		bool initialise(CAN_RATE rate);
 		
 		/**
-		 * Allows buffer to be set to receive, tramsit or disabled mode
+		 * Set the buffer transfer direction e.g. receive, trasmit 
+		 * or disabled the buffer.
+		 * 
+		 * @param    buffer_name    Name of the buffer to set (use the enums)..
+		 * @param    mode           Mode to set buffer to.
+		 * @return   Nothing.
 		 */
 		void set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode);
 		
 	    /**
-	     * Reads message from buffer specified
+	     * Reads message from buffer specified.
 	     * 
-	     * @param buffer_name   Name of the buffer to be read (use the enums)
-	     * @return The message inside the buffer
+	     * @param    buffer_name    Name of the buffer to be read (use the enums).
+	     * @return   The message inside the buffer.
 	     */
 	    Can_message read(CAN_BUF buffer_name);
 	    
@@ -408,110 +438,148 @@ class Can
 	     * Transmits message from the buffer specified. Note the tranmission flag 
 	     * is not cleared in this function. Uses extended identifier.
 	     * 
-	     * @param buffer_name   Name of the buffer to be used for sending (use the enums)
-	     * @param message		The message to send (struct with identifer and data length)
-	     * @return              Whether operation was successful
+	     * @param    buffer_name    Name of the buffer to be used for sending (use the enums).
+	     * @param    message		The message to send (struct with identifer and data length).
+	     * @return   Flag indicating whether operation was successful.
 	     */
 	    bool transmit(CAN_BUF buffer_name, Can_message msg);
 	   
 	   /**
-	    * Determine the status of a buffer
+	    * Determine the status of a buffer.
 	    * 
-	    * @param buffer_name	Name of the buffer to be asssessed (use the enums)
-	    * @return 				Status of the buffer
+	    * @param     buffer_name	Name of the buffer to be asssessed (use the enums).
+	    * @return 	 Status of the buffer.
 	    */
 	    CAN_BUF_STAT get_buffer_status(CAN_BUF buffer_name);
 	    
 	   /**
-	    * Clear the status register of selected buffer
+	    * Clear the status register of selected buffer.
 	    * 
-	    * @param buffer_name
+	    * @param     buffer_name    Name of the buffer to clear status (use the enums).
+	    * @return    Nothing.
 	    */
 	    void clear_buffer_status(CAN_BUF buffer_name);
 	    
 	   /**
-	    * Set the value of the selectedfilter
+	    * Set the value of the selected filter.
 	    * 
-	    * @param filter_name	 Name of filter to be modified
-	    * @param filter_val		 Value to be written to filter
-	    * @param RTR			 Setting of the RTR filter bit	
+	    * @param     filter_name	Name of filter to be modified.
+	    * @param     filter_val		Value to be written to filter.
+	    * @param     RTR			Setting of the RTR filter bit.	
 	    */
 	    void set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR);
 	    
 	   /**
-	    * Set the value of the selected mask
+	    * Set the value of the selected mask.
 	    * 
-	    * @param filter_name	Name of the filter to be modified
-	    * @param mask_val		Value to be written to the mask
-	    * @param RTR			Setting of the RTR mask bit
+	    * @param     filter_name	Name of the filter to be modified.
+	    * @param     mask_val		Value to be written to the mask.
+	    * @param     RTR			Setting of the RTR mask bit.
 	    */
 	    void set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR);
 	    
 	   /**
-	    * Enable interrupts on the CAN channel. This method must be invoked
-	    * to enable buffer interrupts
+	    * Master interrupt enable.
+	    * 
+	    * @param	 Nothing.
+	    * @return    Nothing.
 	    */
 	    void enable_interrupts(void);
 	    
 	   /**
-	    * Enable interrupts on selected buffer
+	    * Master interrupt disable.
 	    * 
-	    * @param buffer_name	Name of the buffer to have interrupt enabled
+	    * @param	 Nothing.
+	    * @return    Nothing.
+	    */
+	    void disable_interrupts(void);
+	    
+	   /**
+	    * Enable interrupts on selected buffer.
+	    * 
+	    * @param     buffer_name	Name of the buffer to have interrupt enabled.
+	    * @return	 Nothing.
 	    */
 	    void enable_buffer_interrupt(CAN_BUF buffer_name);
 	    
 	   /**
-	    * Attach interrupt to selected buffer
+	    * Disable interrupts on selected buffer.
 	    * 
-	    * @param buffer_name	Name of buffer to attach interrupt to
-	    * @param interrupt		The interrupt condition to attach the handler for.
-	    * @param userFunc 		The handler for this interrupt condition.
+	    * @param     buffer_name    Name of the buffer to have interrupt disabled.
+	    * @return    Nothing.
+	    */
+	    void disable_buffer_interrupt(CAN_BUF buffer_name);
+	    
+	   /**
+	    * Attach interrupt handler to selected buffer based event.
+	    * 
+	    * @param     buffer_name	Name of buffer to attach interrupt to.
+	    * @param     interrupt		The interrupt event to attach the handler to.
+	    * @param     userFunc 		The handler for this interrupt condition.
+	    * @return    Nothing.
 	    */
 	    void attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void));
 	    
 	   /**
-	    * Attach interrupt to CAN channel
+	    * Attach interrupt handler to channel based event.
 	    * 
-	    * @param interrupt		The interrupt condition to attach the handler for.
-	    * @param userFunc		The handler for this interrupt condition
+	    * @param     interrupt		The interrupt event to attach the handler to.
+	    * @param     userFunc		The handler for this interrupt event.
+	    * @return    Nothing.
 	    */
 	    void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
 	    
 	   /**
 	    * Detach interrupt on selected buffer
 	    * 
-	    * @param buffer_name	Name of buffer to detach interrupt from
-	    * @param interrupt		The interrupt condition to detach the handler from.
+	    * @param     buffer_name	Name of buffer to detach interrupt from.
+	    * @param     interrupt		The interrupt event to detach the handler from.
+	    * @return    Nothing.
 	    */
 	    void detach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
 	    
 	   /**
 	    * Detach interrupt on CAN channel
 	    * 
-	    * @param interrupt		The interrupt condition to detach the handler from
+	    * @param     interrupt		The interrupt event to detach the handler from.
+	    * @return    Nothing.
 	    */
 	    void detach_interrupt(CAN_INT_NAME interrupt);
 	    
 	   /**
-	    * Test interrupt of selected buffer
+	    * Test whether existing handler is attached to an event on this buffer
 	    * 
-	    * @param buffer_name    The name of buffer to test interrupt
-	    * @param interrupt		The interrupt condition to test
+	    * @param     buffer_name    The name of buffer to test interrupt.
+	    * @param     interrupt		The interrupt event to test.
+	    * @return    Flag indicating whether interrupt event has an existing handler.
 	    */
 	    bool test_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
 	    
 	   /**
-	    * Test interrupt of CAN channel
+	    * Test whether existing handler is attached to an event on the channel
 	    * 
-	    * @param interrupt		The interrupt condition to test
+	    * @param     interrupt		The interrupt event to test.
+	    * @return    Flag indicating whether interrupt event has an existing handler.
 	    */
 	    bool test_interrupt(CAN_INT_NAME interrupt);
 	    
 	   /**
-	    * Return the name of the buffer that triggered the last interrupt
+	    * Return the name of the buffer that triggered the current interrupt. 
+	    * Should only call inside handler function as return value may not be
+	    * valid outside of a handler
+	    * 
+	    * @param     Nothing.
+	    * @return    Name of the buffer that triggered the interrupt.
 	    */
 	    CAN_BUF get_interrrupted_buffer(void);
 	    
+	   /**
+	    * Clear interrupt flags of controller based interrupts.
+	    * 
+	    * @param	 interrupt      The interrupt event flag to clear.
+	    * @return    Nothing.
+	    */
+	    void clear_controller_interrupts(CAN_INT_NAME interrupt);
     
 	
 	private:

@@ -135,6 +135,7 @@ Can_message Can_buffer::read(void)
 void Can_buffer::write(Can_message msg)
 {
 	Can_set_mob(buf_no);	//set CANPAGE to MOb of interested
+	Can_clear_dlc();
 	Can_set_dlc(msg.dlc);
 	for (uint8_t i=0; i<msg.dlc; i++)
 	{
@@ -362,6 +363,11 @@ class Can_tree
 		void enable_interrupts(void);
 		
 		/**
+		 * Disables interrupts on the controller
+		 */
+		void disable_interrupts(void);
+		
+		/**
 		 * Attach CAN channel interrupts, will overwrite existing interrupt
 		 * 
 		 * @param    interrupt   The interrupt condition to attach the handler to
@@ -417,6 +423,11 @@ void Can_tree::enable(void)
 void Can_tree::enable_interrupts(void)
 {
 	CANGIE |= (1<<ENIT);	
+}
+
+void Can_tree::disable_interrupts(void)
+{
+	CANGIE &= ~(1<<ENIT);
 }
 
 void Can_tree::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
@@ -612,48 +623,45 @@ bool Can::initialise(CAN_RATE rate)
 	{
 	    if (rate == CAN_100K)       //!< -- 100Kb/s, 16x Tscl, sampling at 75%
 	    {
+			//only works for ATMega64M1
 	        CONF_CANBT1 = 0x08;       // Tscl  = 5x Tclkio = 625 ns
 	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_125K)       //!< -- 125Kb/s, 16x Tscl, sampling at 75%
 	    {
+			//only works for ATMega64M1
 	        CONF_CANBT1 = 0x0E;       // Tscl  = 4x Tclkio = 500 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
+
 		}
 	    else if (rate == CAN_200K)       //!< -- 200Kb/s, 20x Tscl, sampling at 75%
 	    {
+			//isn't supported by PCAN
 	        CONF_CANBT1 = 0x02;       // Tscl  = 2x Tclkio = 250 ns
 	        CONF_CANBT2 = 0x0E;       // Tsync = 1x Tscl, Tprs = 8x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x4B;       // Tpsh1 = 6x Tscl, Tpsh2 = 5x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_250K)       //!< -- 250Kb/s, 16x Tscl, sampling at 75%
 	    {
+			//only works for ATMega64M1
 	        CONF_CANBT1 = 0x06;       // Tscl  = 2x Tclkio = 250 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_500K)       //!< -- 500Kb/s, 8x Tscl, sampling at 75%
 	    {
-			#if defined(__AVR_AT90CAN128__)		//tested
 	        CONF_CANBT1 = 0x00;       // Tscl  = 2x Tclkio = 250 ns
 	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points 
-	        #elif defined(__AVR_ATmega64M1__)	//untested
-	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
-			CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-			CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
-			#else
-				#error not yet implemented for this cpu
-	        #endif 
+	        CONF_CANBT3 = 0x36;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
-	    {	
-			//tested for AT90CAN
+	    {
+			//doesn't work for both chips
 	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
-	        CONF_CANBT3 = 0x12;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
+	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
 		}
 	}
 	Can_conf_bt();	//assign registers the above values of CONF_CANBT to set baudrate
@@ -737,9 +745,19 @@ void Can::enable_interrupts(void)
 	Can_controller->enable_interrupts();
 }
 
+void Can::disable_interrupts(void)
+{
+	Can_controller->disable_interrupts();
+}
+
 void Can::enable_buffer_interrupt(CAN_BUF buffer_name)
 {
 	Can_controller->buffer[buffer_name].enable_interrupt();
+}
+
+void Can::disable_buffer_interrupt(CAN_BUF buffer_name)
+{
+	Can_controller->buffer[buffer_name].disable_interrupt();
 }
 
 void Can::attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void))
@@ -775,6 +793,18 @@ bool Can::test_interrupt(CAN_INT_NAME interrupt)
 CAN_BUF Can::get_interrrupted_buffer(void)
 {
 	return interrupt_service_buffer;
+}
+
+bool clear_controller_interrupts(CAN_INT_NAME interrupt)
+{
+	//writing logical one resets the flag
+	switch (interrupt)
+	{
+		case (CAN_BUS_OFF):
+			CANGIT |= (1<<BOFFIT);
+		case (CAN_TIME_OVERRUN):
+			CANGIT |= (1<<OVRTIM);
+	}
 }
 
 /**********************************************************************/
@@ -813,8 +843,6 @@ SIGNAL(OVR_TIM_IT_VECT)	//CAN Timer overrun error interrupt
 	volatile uint8_t canpage_save = CANHPMOB & 0xF0;
 	CANPAGE = canpage_save;
 	intFunc[(CANPAGE>>4)][CAN_TIME_OVERRUN]();
-	
-	CANGIT &= ~(1<<OVRTIM);	
 }
  
  
