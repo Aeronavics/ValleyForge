@@ -12,7 +12,7 @@
 /* Specify the location of the FLASH and RAM memories of the target within the address space. */
 MEMORY
 {
-    flash (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+    flash (rx) : ORIGIN = 0x08000000, LENGTH = 128K
     ram (rwx) : ORIGIN = 0x20000000, LENGTH = 8K
 }
 
