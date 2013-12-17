@@ -201,7 +201,7 @@ main: $(EXECUTABLE)
 # Dependency from assembly.
 %.ds: %.s
 	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
-	@${PC} ${PFLAGS} -M $^ > $@
+	@${AS} ${AFLAGS} -M $^ > $@
 	@sed "s^.*:^$*.o:^g" -i $@
 	@$(call detect_source_dependencies,$@)
 	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
