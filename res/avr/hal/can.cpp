@@ -23,7 +23,7 @@
  * 
  *  AUTHOR: 		George Xian
  *
- *  DATE CREATED:	14-11-2012
+ *  DATE CREATED:	14-11-2013
  *
  *	Functionality to provide implementation for CAN in AVR
  *
@@ -288,12 +288,12 @@ bool Can_filter::get_routable(void)
 
 uint32_t Can_filter::get_mask_val(void)
 {
-	return filter_data.mask;
+	return mask_data;
 }
 
 uint32_t Can_filter::get_filter_val(void)
 {
-	return filter_data.id;
+	return filter_data;
 }
 
 void Can_filter::set_mask_val(uint32_t mask, bool RTR)
@@ -309,7 +309,7 @@ void Can_filter::set_mask_val(uint32_t mask, bool RTR)
 	{
 		Can_clear_rtrmsk();
 	}
-	filter_data.mask = mask;	//store as field so registers don't need to be accessed again
+	mask_data = mask;	//store as field so registers don't need to be accessed again
 }
 
 void Can_filter::set_filter_val(uint32_t filter, bool RTR)
@@ -326,7 +326,7 @@ void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 		Can_clear_rtr();
 	}
 	
-	filter_data.id = filter;	//store as field so registers don't need to be accessed again
+	filter_data = filter;	//store as field so registers don't need to be accessed again
 }
 
 /**********************************************************************/
@@ -501,7 +501,7 @@ static Can_tree Can_tree_imps[NB_CTRL];
  * init_hal();						//hal library mainly covers semaphores which are not used for CAN but still think its better to call this
  * int_on();						//turn interrupts on (not sure if this applies to CAN interrupts)
  * 
- * Can my_can = Can::link(CAN_0);	//link to hardware implementation
+ * Can my_can = Can::bind(CAN_0);	//link to hardware implementation
  * my_can.initialize(CAN_500K);		//set the baud rate to 500K
  * 
  * Can_message my_msg;
@@ -518,7 +518,7 @@ Can::Can(Can_tree* imp)
 }
 
 //Method implementations
-Can Can::link(CAN_CTRL controller)
+Can Can::bind(CAN_CTRL controller)
 {
 	return Can(&Can_tree_imps[controller]);
 }

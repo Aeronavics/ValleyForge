@@ -133,30 +133,34 @@ enum CAN_INT_NAME {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR,
 //AVRs only have 1 CAN controller
 #if (defined(__AVR_ATmega64M1__)) || (defined( __AVR_AT90CAN128__))
 enum CAN_CTRL {CAN_0, NB_CTRL};
+#endif
 
-// This needs to be defined to hold the relevent data for a filter on this platform, on the AVR this is a 32 bit ID and a 32 bit mask,
-// with defined bit positions for the extended frame flag and the remote transmit flag.
+//Linux has no well-defined controller definition but have one anyways to fit the interface
+#ifdef __linux__
+enum CAN_CTRL {CAN_0, NB_CTRL};
+#endif
 
-typedef struct 
-{
-	uint32_t id;
-	uint32_t mask;
-} Can_filter_data;
-
+#ifdef ____
 #endif
 
 
-// The ATMega64M1 has 6 message object
+// The ATMega64M1 has 6 message objects
 #ifdef __AVR_ATmega64M1__
 enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, NB_BUF };
 enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, NB_FIL };
 #endif //__AVR_ATmega64M1__
 
-// The AT90CAN128 has 15 message object
+// The AT90CAN128 has 15 message objects
 #ifdef __AVR_AT90CAN128__
 enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14, NB_BUF };
 enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14, NB_FIL };
 #endif //__AVR_AT90CAN128__
+
+// The linux has no well-defined message objects but have as many as I can to fit the interface
+#ifdef __linux__
+enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14, OBJ15, OBJ16, OBJ17, OBJ18, OBJ19, OBJ20, NB_BUF };
+enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14, FILTER_15, FILTER_16, FILTER_17, FILTER_18, FILTER_19, FILTER20, NB_FIL };
+#endif //__Native_Linux__
 
 typedef void (*Interrupt_fn)(Can_buffer&);
 
@@ -391,8 +395,8 @@ class Can_filter
 		CAN_FIL fil_no;	//constructor needs this value
 		// Which buffer does this filter affect (depending on hardware configuration, this can be optional)
 		Can_buffer* buffer_link;
-		Can_filter_data filter_data;						
-		
+		uint32_t filter_data;
+		uint32_t mask_data;						
 };
 
 /**
@@ -403,9 +407,9 @@ class Can
 	public:
 	// METHODS
 		/**
-		 * Links up the created instance with the hardware implementation.
+		 * Binds the interface with the hardware implementation.
 		 */
-		static Can link(CAN_CTRL controller);
+		static Can bind(CAN_CTRL controller);
 		
 		/**
 		 * Initializes controller for first use. Sets the baud rate for

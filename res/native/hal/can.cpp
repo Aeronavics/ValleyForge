@@ -115,12 +115,9 @@ Can_message Can::read(CAN_BUF buffer_name)
 
 	/* ************** Reading message ************** */
 	struct can_frame frame;
-	int nbytes = ::read(s, &frame, sizeof(struct can_frame));
+	::recv(s, &frame, sizeof(frame), 0);
 	
-	if (nbytes < 0)
-	{
-		frame.can_id = -1;	//file descriptor read error
-	}
+
 	close(s);
 	
 	Can_message msg;
@@ -149,11 +146,15 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 	}
 	
 	/* ************** Writing frame to buffer **************** */
-	if (write(s, &frame, sizeof(frame)) < 0)
+	int ret;
+	while ((ret = send(s, &frame, sizeof(frame), 0)) != sizeof(frame))
 	{
-		return false;	//file descriptor writing error
+		if (ret < 0)
+		{
+			return false;	//send error
+		}
 	}
-
+		
 	if (close(s) < 0)
 	{
 		return false;	//file descriptor closing error
