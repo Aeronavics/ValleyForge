@@ -20,7 +20,7 @@ echo -e "${BOLD_CYAN}LM3S1968 specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for target specific stuff.
 if [ ${NEW} ]; then
-	echo -e "### TARGET (LM3S1968) SPECIFIC ###\n" >> ${CONFIG_FILE}
+	echo -e "\n### TARGET (LM3S1968) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
 # 1. Ask if the user wants to include the standard startup code file (taken from the Luminary Micro Peripheral Driver Library).

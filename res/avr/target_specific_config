@@ -20,7 +20,7 @@ echo -e "${CYAN}AVR specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for target specific stuff.
 if [ ${NEW} ]; then
-	echo -e "### TARGET (AVR) SPECIFIC ###\n" >> ${CONFIG_FILE}
+	echo -e "\n### TARGET (AVR) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
 # 1. Prompt the user to enter the clock speed the MCU will be running at.
