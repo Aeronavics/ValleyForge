@@ -140,26 +140,25 @@ enum CAN_CTRL {CAN_0, NB_CTRL};
 enum CAN_CTRL {CAN_0, NB_CTRL};
 #endif
 
-#ifdef ____
-#endif
-
-
 // The ATMega64M1 has 6 message objects
 #ifdef __AVR_ATmega64M1__
-enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, NB_BUF };
-enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, NB_FIL };
+enum CAN_BUF { BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, NB_BUF };
+enum CAN_FIL { FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, NB_FIL };
+enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, NB_MSK };
 #endif //__AVR_ATmega64M1__
 
 // The AT90CAN128 has 15 message objects
 #ifdef __AVR_AT90CAN128__
 enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14, NB_BUF };
-enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14, NB_FIL };
+enum CAN_FIL { FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, NB_FIL };
+enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, MSK_6, MSK_7, MSK_8, MSK_9, MSK_10, MSK_11, MSK_12, MSK_13, MSK_14, NB_MSK };
 #endif //__AVR_AT90CAN128__
 
 // The linux has no well-defined message objects but have as many as I can to fit the interface
 #ifdef __linux__
-enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14, OBJ15, OBJ16, OBJ17, OBJ18, OBJ19, OBJ20, NB_BUF };
-enum CAN_FIL { FILTER_0, FILTER_1, FILTER_2, FILTER_3, FILTER_4, FILTER_5, FILTER_6, FILTER_7, FILTER_8, FILTER_9, FILTER_10, FILTER_11, FILTER_12, FILTER_13, FILTER_14, FILTER_15, FILTER_16, FILTER_17, FILTER_18, FILTER_19, FILTER20, NB_FIL };
+enum CAN_BUF { OBJ_0 };
+enum CAN_FIL { FIL_0 };
+enum CAN_MSK { MSK_0 };
 #endif //__Native_Linux__
 
 typedef void (*Interrupt_fn)(Can_buffer&);
@@ -308,7 +307,7 @@ class Can_buffer
 };
 
 /**
- * Filter class, this object can program filter and mask values
+ * Filter class, this object can program filter values
  */
 class Can_filter
 {
@@ -398,6 +397,63 @@ class Can_filter
 		uint32_t filter_data;
 		uint32_t mask_data;						
 };
+
+/**
+ * Filter class, this object can program mask values
+ */
+class Can_mask
+{
+	public:
+		/**
+		 * Store an arbitrary address in its field so it can reference itself via registers.
+		 * 
+		 * @param    msk_num    The number to assign to this mask    
+		 * @return   Nothing
+		 */
+		void set_number(CAN_MSK msk_num);
+		
+		/**
+		 * Returns the filter this is connected to
+		 * 
+		 * @param    Nothing
+		 * @return   The filter this mask is connected to
+		 */
+		Can_filter* get_filter(void);
+		
+		/**
+		 * Returns whether this mask can be re-configured to otherfilters
+		 * 
+		 * @param    Nothing
+		 * @return   Flag indicating whether this mask can be re-configured to other filters
+		 */
+		bool get_routable(void);
+		
+		/**
+		 * Set the filter this mask connects to
+		 */
+		bool set_filter(void); 
+		
+		/**
+		 * Get the value this mask currently has
+		 * 
+		 * @param    Nothing
+		 * @return   The current mask value
+		 */
+		uint32_t get_mask_val(void);
+		
+		/**
+		 * Set the value of this mask
+		 * 
+		 * @param    mask    New value for this mask
+		 * @return   Nothing
+		 */
+		void set_mask_val(uint32_t mask);
+		
+	private:
+		Can_filter* filter_link;
+		uint32_t mask_data;	
+}
+
 
 /**
  * Interface class for a CAN controller
