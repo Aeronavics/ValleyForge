@@ -2,7 +2,7 @@
  *
  *  FILE: 		startup.c
  *
- *  TARGET:		STM32F100RBT6B
+ *  TARGET:		STM32F103RBT6
  *
  *  AUTHOR: 		Edwin Hayes
  *
@@ -66,7 +66,7 @@ void (* const table_interrupt_vector[])(void) =
 	0, 			// 13 - Reserved.
 	handler_default,	// 14 - (PendSV) Pendable system service call handler.
 	handler_default,	// 15 - (SysTick) System tick timer handler.
-	// Peripheral interupts.
+	// Peripheral interupts (IRQ).
 	handler_default,	// 00
 	handler_default,	// 01
 	handler_default,	// 02
