@@ -36,6 +36,85 @@ TMP_COMPILER_DIR="${TCPATH}/tmp/tmp_compiler"
 
 ######################################## FUNCTION #########################################
 ###											###
+### NAME:		unpack_stlink							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if STLink is available for use, and if not, sets it up	###
+###			ready to go.  							###
+###											###
+###########################################################################################
+
+unpack_stlink()
+{
+	# Check to see if STLink is already available.
+
+	# Check if there is a cached copy of the tool.
+	if [ -f "${TMP_COMPILER_DIR}/stlink/st-util" ]; then
+		# We don't need to do anything, since the tool is already ready to go.
+		echo -e "${CYAN}STLink (already) available.\n${NO_COLOUR}"
+	else
+		# The tool isn't ready, so we need to unpack it.
+
+		# We'll need the vendor source for the tool, which we can build it from.
+		unpack_vendor_stlink
+
+		# Check if that worked.
+		if [ ! -d "${VENDOR_STLINK_LOCAL}" ]; then
+			# Something went wrong.
+			echo -e "${RED}Unable to fetch STLink source.\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# Copy the vendor source into a temporary location.
+		cp -rf "${VENDOR_STLINK_LOCAL}" "${TMP_COMPILER_DIR}/stlink"
+		rm -rf "${TMP_COMPILER_DIR}/stlink/.git"
+
+		# Build the STLink software.  This might take a while.
+		echo -e "${CYAN}Building STLink...\n${NO_COLOUR}"
+		pushd "${TMP_COMPILER_DIR}/stlink" >/dev/null
+			# The build process uses autotools.  First, we need to autogen the configure script.
+		${TMP_COMPILER_DIR}/stlink/autogen.sh
+		# Check if autogen worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build STLink: the 'autogen' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+			# Then we configure.
+		${TMP_COMPILER_DIR}/stlink/configure
+		# Check if configuring worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build STLink: the 'configure' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+			# Then, we make.
+		make
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build STLink: the 'make' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+
+		# We should be all good to go now.
+		popd >/dev/null
+		echo -e "${CYAN}\nSTLink available.\n${NO_COLOUR}"
+
+	fi
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
 ### NAME:		unpack_openocd							###
 ###											###
 ### Inputs/Outputs:	None.								###
@@ -142,7 +221,33 @@ unpack_openocd()
 pack_allt()
 {
 	# Just pack each of the tools in turn.
+	pack_stlink
 	pack_openocd
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_stlink							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if STLink was previously unpacked, and if it was, then	###
+###			packs it up again.						###
+###											###
+###########################################################################################
+
+pack_stlink()
+{
+	# Check if STLink exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/stlink" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up STLink...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/stlink"
+    	fi
+		# Else, the tool is already packed.
+
+	# All done.
+	return	
 }
 
 ######################################## FUNCTION #########################################

@@ -146,6 +146,7 @@ unpack_embeddedarmc()
 			ln -s `which arm-none-eabi-objcopy` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objcopy"
 			ln -s `which arm-none-eabi-objdump` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objdump"
 			ln -s `which arm-none-eabi-size` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-size"
+			ln -s `which arm-none-eabi-gdb` "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-gdb"
 
 			# TODO - Probably need to link some files other than just GCC.
 

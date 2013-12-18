@@ -36,7 +36,6 @@ SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
-
 # DEFINE CONSTANTS.
 
 # Define file names.
@@ -52,6 +51,9 @@ source $TCPATH/bld/other/setup_compilers
 
 # Define the functions used to set up other tools.
 source $TCPATH/bld/other/setup_tools
+
+# Define the functions used to set up vendor sources.
+source $TCPATH/bld/other/setup_vendorsources
 
 # Define the functions used to actually upload components.
 for f in $TCPATH/bld/upload_functions/upload*; do
