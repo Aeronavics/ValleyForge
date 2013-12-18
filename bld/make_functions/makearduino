@@ -116,15 +116,16 @@ makearduino()
 			# We do something which approximates dependency detection here.
 
 			# Get a list of all the imports from the CPP file.
-			ARDUINO_IMPORTS=`cat "${ARDUINO_CPP_FILE}" | grep -E '^#include\\s+(\\"|<)\\w+\\.h(\\"|>)' | sed -r 's^#include\\s+(\\"|<)^^g' | sed -r 's^(\\"|>).*$^^'`
+			ARDUINO_IMPORTS=`cat "${ARDUINO_CPP_FILE}" | grep -E '^#include\\s+(\\"|<)(\\w|\\.|/)+\\.h(\\"|>)' | sed -r 's^#include\\s+(\\"|<)^^g' | sed -r 's^(\\"|>).*$^^'`
 		
 			# Iterate over each of the imported header files.
 			ARDUINO_USER_LIBRARIES=
 			for HEADER_FILE in ${ARDUINO_IMPORTS}; do
 				# Check if this header file is somewhere in the user libraries folder.
-				USER_LIBRARY=`find "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" -name "${HEADER_FILE}" | head -1`
-				USER_LIBRARY="${USER_LIBRARY%/*}"	# Cut the header file name off.
-				USER_LIBRARY="${USER_LIBRARY##*/}"	# Cut the root library path off.
+				USER_LIBRARY=`find "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}" -wholename "*/${HEADER_FILE}" | head -1`
+				USER_LIBRARY="${USER_LIBRARY///${HEADER_FILE}}" # Cut the header file name off.
+				USER_LIBRARY_ROOT="$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_LIB_DIR}/"
+				USER_LIBRARY="${USER_LIBRARY/${USER_LIBRARY_ROOT}}" # Cut the root library path off.
 
 				# Check if we actually found a matching library.
 				if [ -z "${USER_LIBRARY}" ]; then

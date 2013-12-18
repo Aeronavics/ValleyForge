@@ -16,11 +16,11 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # For the moment, we just print out a message to the user.
-echo -e "${BOLD_CYAN}LM3S1968 specific configuration...\n${NO_COLOUR}"
+echo -e "${BOLD_CYAN}STM32F100RBT6B specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for target specific stuff.
 if [ ${NEW} ]; then
-	echo -e "\n### TARGET (LM3S1968) SPECIFIC ###\n" >> ${CONFIG_FILE}
+	echo -e "\n### TARGET (STM32F100RBT6B) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
 # 1. Ask if the user wants to include the standard startup code file (taken from the Luminary Micro Peripheral Driver Library).
@@ -29,7 +29,7 @@ fi
 if [ ${NEW} ]; then
 	echo -e -n "${GREEN}Do you wish to use standard startup code (else you must create your own)? (Y/N)${NO_COLOUR}"
 else
-	DEFAULT=$([ "`echo \"${SRC_IMPORT_FILES}\" | grep 'res/arm/embedded-arm/lm3s1968/startup.c:startup.c'`" = "" ] && echo "N" || echo "Y")
+	DEFAULT=$([ "`echo \"${SRC_IMPORT_FILES}\" | grep 'res/arm/embedded-arm/stm32f100rbt6b/startup.c:startup.c'`" = "" ] && echo "N" || echo "Y")
 	echo -e -n "${GREEN}Do you wish to use standard startup code (else you must create your own)? (Y/N) (Currently: ${NO_COLOUR}${DEFAULT}${GREEN})${NO_COLOUR}"
 fi
 # We loop continuously until the user enters a valid choice.
@@ -41,14 +41,14 @@ do
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Add the startup files to the list of files to import.
 		echo -e "${REPLY}\n${CYAN}Using standard startup code.\n${NO_COLOUR}"
-		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" --concat
-		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" --concat
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/stm32f100rbt6b/startup.s:startup.c'" --concat
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/stm32f100rbt6b/startup.h:startup.h'" --concat
 		break
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then
 		# Don't add the startup files.
 		echo -e "${REPLY}\n${CYAN}Not using standard startup code.\n${NO_COLOUR}"
-		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.c:startup.c'" --delete
-		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/lm3s1968/startup.h:startup.h'" --delete
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/stm32f100rbt6b/startup.s:startup.c'" --delete
+		push_key ${CONFIG_FILE} "SRC_IMPORT_FILES" "' res/arm/embedded-arm/stm32f100rbt6b/startup.h:startup.h'" --delete
 		break
 	elif [[ $REPLY == $'\n' ]]; then
 		# The user is apparently a moron.

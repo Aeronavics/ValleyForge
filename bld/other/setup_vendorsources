@@ -42,6 +42,9 @@ VENDOR_MAVLINK_REMOTE="https://github.com/mavlink/mavlink.git"
 VENDOR_FREERTOS_LOCAL=${TCPATH}/res/vendor/freertos
 VENDOR_FREERTOS_REMOTE="http://sourceforge.net/projects/freertos/files/latest/download?source=files"
 
+VENDOR_STLINK_LOCAL=${TCPATH}/res/vendor/stlink
+VENDOR_STLINK_REMOTE="https://github.com/texane/stlink.git"
+
 ######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_mavlink							###
@@ -126,6 +129,49 @@ unpack_freertos()
 
 ######################################## FUNCTION #########################################
 ###											###
+### NAME:		unpack_vendor_stlink						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the STlink vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_vendor_stlink()
+{
+	# TODO - This.
+
+	# Check if the STLink repository has been downloaded already.
+	if [ ! -d ${VENDOR_STLINK_LOCAL} ]; then
+		# We need to clone the repository before we can use it.		
+		echo -e "${CYAN}\tDownloading the STLink vendor source...\n${NO_COLOUR}"
+		git clone --depth=1 ${VENDOR_STLINK_REMOTE} ${VENDOR_STLINK_LOCAL}
+		echo -e ""
+	else
+		# Check if the directory is not actually a git repository, which would indicate something bad.
+		if [ ! -d ${VENDOR_STLINK_LOCAL}/.git ]; then
+			# The directory isn't a git repository, so something is very wrong.
+			echo -e "${RED}The directory ${VENDOR_STLINK_LOCAL} is not a git repository.  Cannot unpack STLink source.\n${NO_COLOUR}"
+			return 1
+		else
+			# The repository already exists, so just need to make sure it is up to date.
+			echo -e "${CYAN}\tUpdating the STLink vendor source...\n${NO_COLOUR}"
+			pushd ${VENDOR_STLINK_LOCAL} >/dev/null
+			git pull
+			echo -e ""
+			popd >/dev/null
+		fi
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
 ### NAME:		pack_allv							###
 ###											###
 ### Inputs/Outputs:	None.								###
@@ -140,6 +186,7 @@ pack_allv()
 	# Just pack each of the vendor sources in turn.
 	pack_mavlink
 	pack_freertos
+	pack_vendor_stlink
 }
 
 ######################################## FUNCTION #########################################
@@ -192,6 +239,30 @@ pack_freertos()
 	return	
 }
 
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_vendor_stlink						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the STLink vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_vendor_stlink()
+{
+	# Check if the STLink repository has been downloaded already.
+	if [ -d ${VENDOR_STLINK_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.		
+		echo -e "${CYAN}\tCleaning up STLink vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_STLINK_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
 
 # ALL DONE.
 

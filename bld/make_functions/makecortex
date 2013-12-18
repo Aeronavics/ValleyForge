@@ -116,9 +116,12 @@ makecortex()
 	fi
 	echo -e ""
 
-	# Print out details of the size of the generated hex file.
+	# Also copy the ELF across, in case we also want that.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/$COMPONENT_NAME $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+
+	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
 	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals --target binary $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"

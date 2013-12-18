@@ -20,7 +20,7 @@ echo -e "${BOLD_CYAN}FreeRTOS specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for platform specific stuff.
 if [ ${NEW} ]; then 
-	echo -e "### PLATFORM (FreeRTOS) SPECIFIC ###\n" >> ${CONFIG_FILE}
+	echo -e "\n### PLATFORM (FreeRTOS) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
 # 1. Ask if the user wants to include software timer functionality (an optional part of FreeRTOS).

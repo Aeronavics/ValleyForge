@@ -1,0 +1,168 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		upload_stlink											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	17-12-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions for uploading code to targets using ST-Link (as used in STM32 Dev Boards).	###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported STLink upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		upload_stlink							###
+###											###
+### Inputs/Outputs:	None								###
+###											###
+### Purpose:		Uploads files to a target connected to the host PC, though the	###
+###			use of STLink and GDB.						###
+###											###
+###########################################################################################
+
+upload_stlink() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if we are supposed to be loading the application code.
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.elf" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find application executable (ARM ELF) for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+
+		# TODO - Fixme.
+		echo -e "${RED}Loading bootloader via STLink is unsupported at this time.\n${NO_COLOUR}"
+		return 1
+
+#		# Check that the expected binary is available in the toolchain output folder.
+#		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin" ]; then
+#			# The expected binary file was not present.
+#			echo -e "${RED}Could not find bootloader binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+#			return 1
+#		fi
+	fi
+
+	# TODO - Unpack other tools?  There is the question of what to do if we need a compiler's binutils?  Probably assume embedded-arm, since only STM32 uses STLink?
+
+	# Unpack the embedded ARM compiler (we need it's debugger).
+	unpack_embeddedarmc
+	
+	# Unpack STLink.
+	unpack_stlink
+
+	# TODO - Fix me.
+
+	# Sort out which file needs to be uploaded.
+#	if [ "${UPLOAD_APPLICATION}" -a "${UPLOAD_BOOTLOADER}" ]; then
+#		# Create a combined binary temporarily to upload.
+#		srec_cat "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" -I
+#
+#		# Set the file to flash to be the combined binary.
+#		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
+#	
+#	elif [ ${UPLOAD_BOOTLOADER} ]; then
+#		# Set the file to flash to be the bootloader binary.
+#		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex"
+#
+#	else
+		# Set the file to flash to be the application binary.
+		STLINK_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.elf"
+#	fi
+
+	# TODO - If we started ST_Util now, we could see if it found the STLink HW before we commit to anything.
+	
+	echo -e "${YELLOW}Programming using STLink requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	
+	# We don't need to unpack any other tools.
+
+	# TODO - Fix me.
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via STLink? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via STLink.\n${NO_COLOUR}"
+
+		# Start up the STLink utility server.
+		sudo ${TMP_COMPILER_DIR}/stlink/st-util -1 2>&1 1>"${TMP_COMPILER_DIR}/stlink/stlink.log" &
+		sleep 2s
+
+		# Debug the ELF file we built.
+		sudo ${DEBUGGER} ${STLINK_BINARY} -ex "tar extended-remote :4242" -ex "load" -ex "disconnect" -ex "quit"
+		GDB_RETURN=$?
+
+		# Close down the STLink utility server.
+		sudo killall ${TMP_COMPILER_DIR}/stlink/st-util
+
+		# Check the return value from the write operation.
+		if [ $GDB_RETURN != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Uploading error.  Failed to write binary via OpenOCD.\n${NO_COLOUR}"
+			UPLOAD_FAILED=1
+		else
+			# Else the operation worked.
+			echo ""
+		fi
+		GDB_RETURN=
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+	fi
+	STLINK_BINARY=
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+
