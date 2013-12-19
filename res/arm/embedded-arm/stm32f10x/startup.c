@@ -2,7 +2,7 @@
  *
  *  FILE: 		startup.c
  *
- *  TARGET:		STM32F100RBT6B
+ *  TARGET:		STM32F10x
  *
  *  AUTHOR: 		Edwin Hayes
  *
@@ -49,24 +49,24 @@ void handler_reset(void);
 __attribute__ ((section(".isr_vector")))
 void (* const table_interrupt_vector[])(void) =
 {
-	// Core interrupts.
+	// Core interrupts (exceptions).
 	(void *) &_estack,	// 00 - Stack location.
-	handler_reset,		// 01 -	Reset Interrupt Handler.
-	handler_default,	// 02 - NMI (Non-Maskable Interrupt) Handler
-	handler_default,	// 03 - Hardfault Handler
-	handler_default,	// 04
-	handler_default,	// 05
-	handler_default,	// 06
-	0, 			// 07
-	0, 			// 08
-	0, 			// 09
-	0, 			// 10
-	handler_default,	// 11
-	handler_default,	// 12
-	0, 			// 13
-	handler_default,	// 14
-	handler_default,	// 15
-	// Peripheral interupts.
+	handler_reset,		// 01 -	(Reset) Reset interrupt handler.
+	handler_default,	// 02 - (NMI) Non-maskable interrupt handler.
+	handler_default,	// 03 - (HardFault) Handler for all classes of unhandled fault.
+	handler_default,	// 04 - (MemManage) Memory management handler.
+	handler_default,	// 05 - (BusFault) Prefetch and memory access fault handler.
+	handler_default,	// 06 - (UsageFault) Undefined instruction or illegal state handler.
+	0, 			// 07 - Reserved.
+	0, 			// 08 - Reserved.
+	0, 			// 09 - Reserved.
+	0, 			// 10 - Reserved.
+	handler_default,	// 11 - (SVCall) System service call (SWI) handler.
+	handler_default,	// 12 - Reserved for debug monitor.
+	0, 			// 13 - Reserved.
+	handler_default,	// 14 - (PendSV) Pendable system service call handler.
+	handler_default,	// 15 - (SysTick) System tick timer handler.
+	// Peripheral interupts (IRQ).
 	handler_default,	// 00
 	handler_default,	// 01
 	handler_default,	// 02
