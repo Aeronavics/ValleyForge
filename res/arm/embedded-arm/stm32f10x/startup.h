@@ -2,7 +2,7 @@
  *
  *  FILE: 		startup.h
  *
- *  TARGET:		STM32F100RBT6B
+ *  TARGET:		STM32F10x
  *
  *  AUTHOR: 		Edwin Hayes
  *
