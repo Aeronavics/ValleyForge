@@ -70,6 +70,11 @@ CAN_FIL operator++(CAN_FIL& f, int)
 	return f = static_cast<CAN_FIL> (++temp);
 }
 
+CAN_MSK operator++(CAN_MSK& f, int)
+{
+	int temp = f;
+	return f = static_cast<CAN_MSK>(++temp);
+}
 
 /**********************************************************************/
 /**
@@ -78,6 +83,11 @@ CAN_FIL operator++(CAN_FIL& f, int)
 void Can_buffer::set_number(CAN_BUF buf_num)
 {
 	buf_no = buf_num;
+}
+
+CAN_BUF Can_buffer::get_number(void)
+{
+	return buf_no;
 }
 
 CAN_BUF_MODE Can_buffer::get_mode(void)
@@ -179,7 +189,7 @@ CAN_BUF_STAT Can_buffer::get_status(void)
 			return BUF_BIT_ERROR;
 		case (0x00):
 			return BUF_NOT_COMPLETED;
-	}	
+	}
 }
 
 void Can_buffer::enable_interrupt(void)
@@ -275,10 +285,24 @@ void Can_filter::set_number(CAN_FIL fil_num)
 	fil_no = fil_num;
 }
 
-bool Can_filter::set_buffer(Can_buffer* buffer)
+Can_buffer* Can_filter::get_buffer(void)
+{
+	return buffer_link;
+}
+
+void Can_filter::set_buffer(Can_buffer* buffer)
 {
 	buffer_link = buffer;
-	return true;	//Always true for AVRs since their link is fixed, also it cannot be called in runtime
+}
+
+Can_mask* Can_filter::get_mask(void)
+{
+	return mask_link;
+}
+
+void Can_filter::set_mask(Can_mask* mask)
+{
+	mask_link = mask;
 }
 
 bool Can_filter::get_routable(void)
@@ -286,35 +310,14 @@ bool Can_filter::get_routable(void)
 	return false;	//Always false for AVRs since their link is fixed
 }
 
-uint32_t Can_filter::get_mask_val(void)
-{
-	return mask_data;
-}
-
 uint32_t Can_filter::get_filter_val(void)
 {
 	return filter_data;
 }
 
-void Can_filter::set_mask_val(uint32_t mask, bool RTR)
-{
-	Can_set_mob(fil_no);
-	Can_set_ext_msk(mask);
-	
-	if (RTR)
-	{
-		Can_set_rtrmsk();
-	}
-	else
-	{
-		Can_clear_rtrmsk();
-	}
-	mask_data = mask;	//store as field so registers don't need to be accessed again
-}
-
 void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 {
-	Can_set_mob(fil_no);
+	Can_set_mob(fil_no);	//For AVRs, filters are not distinct from MOb
 	Can_set_ext_id(filter);
 	
 	if (RTR)
@@ -327,6 +330,36 @@ void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 	}
 	
 	filter_data = filter;	//store as field so registers don't need to be accessed again
+}
+
+/**********************************************************************/
+/**
+ * Can mask class
+ */
+void Can_mask::set_number(CAN_MSK msk_num)
+{
+	msk_no = msk_num;
+}
+
+uint32_t Can_mask::get_mask_val(void)
+{
+	return mask_data;
+}
+
+void Can_mask::set_mask_val(uint32_t mask, bool RTR)
+{
+	Can_set_mob(msk_no);	//For AVRs, masks are not distinct from MOb
+	Can_set_ext_msk(mask);
+	
+	if (RTR)
+	{
+		Can_set_rtrmsk();
+	}
+	else
+	{
+		Can_clear_rtrmsk();
+	}
+	mask_data = mask;	//store as field so registers don't need to be accessed again
 }
 
 /**********************************************************************/
@@ -384,7 +417,7 @@ class Can_tree
 		void detach_interrupt(CAN_INT_NAME interrupt);
 		
 		/**
-		 * Returns true if interrupt condition has handelr attached
+		 * Returns true if interrupt condition has handler attached
 		 * 
 		 * @param    interrupt   The bus interrupt condition to test if enabled 
 		 * @return   Boolean describing whether an interrupt handler is set for this condition
@@ -394,23 +427,28 @@ class Can_tree
 		
 	
 	//Fields
+		Can_mask mask[NB_MSK];
 		Can_filter filter[NB_FIL];
 		Can_buffer buffer[NB_BUF];
 };
 
 Can_tree::Can_tree(void)
 {
-	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
 	{
-		buffer[i] = Can_buffer();	
 		buffer[i].set_number(i);	//assign arbitrary index to buffer, CANPAGE access uses this number
 	}
 	
-	for (CAN_FIL i=FILTER_0; i<NB_FIL; i++)
-	{
-		filter[i] = Can_filter();  
+	for (CAN_FIL i=FIL_0; i<NB_FIL; i++)
+	{  
 		filter[i].set_number(i);	//assign arbitrary index to filter
 		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
+		filter[i].set_mask(&mask[i]);		//link mask to corresponding filter using index
+	}
+	
+	for (CAN_MSK i=MSK_0; i<NB_MSK; i++)
+	{
+		mask[i].set_number(i);
 	}
 	return;
 }
@@ -451,7 +489,7 @@ void Can_tree::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
 	if (interrupt_valid)	
 	{
 		//for channel based interrupts, must apply to ALL MOb vectors due to the way interrupt functions are addressed
-		for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+		for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
 		{
 			intFunc[i][interrupt];	
 		}
@@ -507,7 +545,7 @@ static Can_tree Can_tree_imps[NB_CTRL];
  * Can_message my_msg;
  * my_msg.id = 0x00;
  * my_msg.dlc = 8;
- * my_msg.data = "01234567";	//note: this represents a message, its not a string literal
+ * my_msg.data = "01234567";		//note: this represents a message, its not a string literal
  * my_can.transmit(OBJ_0, my_msg);	//transmit message using buffer 0
  */
  
@@ -533,7 +571,7 @@ bool Can::initialise(CAN_RATE rate)
 	Can_reset();
 	
 	//clear all buffers
-	for (CAN_BUF i=OBJ_0; i<NB_BUF; i++)
+	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
 	{
 		Can_controller->buffer[i].set_mode(CAN_OBJ_DISABLE);
 		Can_controller->buffer[i].clear_status();	
@@ -705,12 +743,12 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 	{
 		Can_controller->buffer[buffer_name].clear_status();
 		
-		Can_controller->filter[buffer_name].set_filter_val(msg.id, false);		//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
-		Can_controller->filter[buffer_name].set_mask_val(0x00, false);	//make all masks 0 because trasmission does not use it
+		Can_controller->filter[buffer_name].set_filter_val(msg.id, false);	//setting the ID of the corresponding MOb filter in transmission is equivalent to setting its identifier
+		Can_controller->mask[buffer_name].set_mask_val(0x00, false);		//make all masks 0 because trasmission does not use it
 				
 		Can_controller->buffer[buffer_name].write(msg);
 		Can_clear_rplv(); 	//set reply off
-		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);		//enable tx mode to start sending message
+		Can_controller->buffer[buffer_name].set_mode(CAN_OBJ_TX);			//enable tx mode to start sending message
 		
 		return true;
 	}
@@ -735,9 +773,19 @@ void Can::set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR)
 	Can_controller->filter[filter_name].set_filter_val(filter_val, RTR);
 }
 
-void Can::set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR)
+uint32_t Can::get_filter_val(CAN_FIL filter_name)
 {
-	Can_controller->filter[filter_name].set_mask_val(mask_val, RTR);
+	return Can_controller->filter[filter_name].get_filter_val();
+}
+
+void Can::set_mask_val(CAN_MSK mask_name, uint32_t mask_val, bool RTR)
+{
+	Can_controller->mask[mask_name].set_mask_val(mask_val, RTR);
+}
+
+uint32_t Can::get_mask_val(CAN_MSK mask_name)
+{
+	return Can_controller->mask[mask_name].get_mask_val();
 }
 
 void Can::enable_interrupts(void)
@@ -804,7 +852,11 @@ bool clear_controller_interrupts(CAN_INT_NAME interrupt)
 			CANGIT |= (1<<BOFFIT);
 		case (CAN_TIME_OVERRUN):
 			CANGIT |= (1<<OVRTIM);
+		default:
+			break;
 	}
+	
+	return true;
 }
 
 /**********************************************************************/

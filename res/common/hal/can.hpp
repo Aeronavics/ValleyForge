@@ -120,6 +120,8 @@ typedef void (*voidFuncPtr)(void);
 /********************* Forward declaration **************************/
 class Can_tree;		//declared because otherwise the interface class cannot point to it
 class Can_buffer;	//declared so typedef will work at top
+class Can_filter;
+class Can_mask;
 
 /************* Enumerations to represent CAN status ********************/
 enum CAN_RATE {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
@@ -149,14 +151,14 @@ enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, NB_MSK };
 
 // The AT90CAN128 has 15 message objects
 #ifdef __AVR_AT90CAN128__
-enum CAN_BUF { OBJ_0, OBJ_1, OBJ_2, OBJ_3, OBJ_4, OBJ_5, OBJ_6, OBJ_7, OBJ_8, OBJ_9, OBJ_10, OBJ_11, OBJ_12, OBJ_13, OBJ_14, NB_BUF };
+enum CAN_BUF { BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, BUF_6, BUF_7, BUF_8, BUF_9, BUF_10, BUF_11, BUF_12, BUF_13, BUF_14, NB_BUF };
 enum CAN_FIL { FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, NB_FIL };
 enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, MSK_6, MSK_7, MSK_8, MSK_9, MSK_10, MSK_11, MSK_12, MSK_13, MSK_14, NB_MSK };
 #endif //__AVR_AT90CAN128__
 
 // The linux has no well-defined message objects but have as many as I can to fit the interface
 #ifdef __linux__
-enum CAN_BUF { OBJ_0 };
+enum CAN_BUF { BUF_0 };
 enum CAN_FIL { FIL_0 };
 enum CAN_MSK { MSK_0 };
 #endif //__Native_Linux__
@@ -194,6 +196,14 @@ class Can_buffer
 		 * @return  Nothing.
 		 */
 		void set_number(CAN_BUF buf_num);
+		
+		/** 
+		 * Get the arbitrary registry reference address of this buffer
+		 * 
+		 * @param    Nothing.
+		 * @return   Address of this buffer
+		 */
+		CAN_BUF get_number(void);
 		
 		/**
 		* Returns the mode of the object.
@@ -334,7 +344,7 @@ class Can_filter
 		 * buffer.
 		 * 
 		 * @param   Nothing.
-		 * @return  Flag indicating whether filter can be re-assigned.
+		 * @return  Nothing.
 		 */
 		 bool get_routable(void);
 		 
@@ -342,9 +352,25 @@ class Can_filter
 		 * Sets the buffer linked to this filter
 		 * 
 		 * @param   buffer   Buffer to link this filter to.
-		 * @return  Flag indicating whether it was successful.
+		 * @return  Nothing.
 		 */
-		 bool set_buffer(Can_buffer* buffer);
+		 void set_buffer(Can_buffer* buffer);
+		 
+		/**
+		 * Returns the mask this is linked to
+		 * 
+		 * @param	Nothing.
+		 * @return  Pointer to the mask linked to this filter
+		 */
+		 Can_mask* get_mask(void);
+		 
+		/**
+		 * Sets the mask linked to this buffer
+		 * 
+		 * @param    mask    The mask to link this filter to.
+		 * @return   Nothing.
+		 */
+		 void set_mask(Can_mask* mask);
 		 
 		/**
 		* Gets the current filter value being used by the hardware filter/mask.
@@ -353,24 +379,6 @@ class Can_filter
 		* @return	The current filter value.
 		*/
 		 uint32_t get_filter_val(void);
-		
-	    /**
-		* Gets the current mask value being used by the hardware filter/mask.
-		*
-		* @param	Nothing.
-		* @return	The current mask value.
-		*/
-		 uint32_t get_mask_val(void);
-		
-		/**
-		* Sets the mask value being used by the hardware filter/mask.
-		*
-		* NOTE - Not all the bits of the mask may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
-		*
-		* @param	mask	The new value for the filter mask.
-		* @return	Nothing.
-		*/
-		 void set_mask_val(uint32_t mask, bool RTR);
 		
 		/**
 		* Sets the filter value being used by the hardware filter/mask.
@@ -392,10 +400,9 @@ class Can_filter
 	
 	//FIELDS
 		CAN_FIL fil_no;	//constructor needs this value
-		// Which buffer does this filter affect (depending on hardware configuration, this can be optional)
 		Can_buffer* buffer_link;
-		uint32_t filter_data;
-		uint32_t mask_data;						
+		Can_mask* mask_link;
+		uint32_t filter_data;				
 };
 
 /**
@@ -413,27 +420,6 @@ class Can_mask
 		void set_number(CAN_MSK msk_num);
 		
 		/**
-		 * Returns the filter this is connected to
-		 * 
-		 * @param    Nothing
-		 * @return   The filter this mask is connected to
-		 */
-		Can_filter* get_filter(void);
-		
-		/**
-		 * Returns whether this mask can be re-configured to otherfilters
-		 * 
-		 * @param    Nothing
-		 * @return   Flag indicating whether this mask can be re-configured to other filters
-		 */
-		bool get_routable(void);
-		
-		/**
-		 * Set the filter this mask connects to
-		 */
-		bool set_filter(void); 
-		
-		/**
 		 * Get the value this mask currently has
 		 * 
 		 * @param    Nothing
@@ -447,12 +433,12 @@ class Can_mask
 		 * @param    mask    New value for this mask
 		 * @return   Nothing
 		 */
-		void set_mask_val(uint32_t mask);
+		void set_mask_val(uint32_t mask, bool RTR);
 		
 	private:
-		Can_filter* filter_link;
+		CAN_MSK msk_no;
 		uint32_t mask_data;	
-}
+};
 
 
 /**
@@ -530,13 +516,29 @@ class Can
 	    void set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR);
 	    
 	   /**
+	    * Retrieve the value the selected filter has stored
+	    * 
+	    * @param	 filter_name    Name of filter retrieve value.
+	    * @return    The value stored in the filter.
+	    */
+	    uint32_t get_filter_val(CAN_FIL filter_name);
+	    
+	   /**
 	    * Set the value of the selected mask.
 	    * 
-	    * @param     filter_name	Name of the filter to be modified.
+	    * @param     mask_name  	Name of the mask to be modified.
 	    * @param     mask_val		Value to be written to the mask.
 	    * @param     RTR			Setting of the RTR mask bit.
 	    */
-	    void set_mask_val(CAN_FIL filter_name, uint32_t mask_val, bool RTR);
+	    void set_mask_val(CAN_MSK mask_name, uint32_t mask_val, bool RTR);
+	    
+	   /**
+	    * Retreive the value the selected mask has stored
+	    * 
+	    * @param     mask_name      Name of the mask to retrieve value.
+	    * @return    The value stored in the mask.
+	    */
+	    uint32_t get_mask_val(CAN_MSK mask_name);
 	    
 	   /**
 	    * Master interrupt enable.
