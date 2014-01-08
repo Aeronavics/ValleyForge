@@ -38,7 +38,7 @@ LINKER=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/b
 OBJCOPY=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objcopy
 OBJDUMP=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objdump
 SIZE=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-size
-CFLAGS='-I . -Wall -mcpu=${MCU_CODE} -mthumb -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions'
+CFLAGS='-I . -Wall -mcpu=${MCU_CODE} -mthumb'
 PFLAGS=${CFLAGS}
 AFLAGS='-x assembler-with-cpp -Wa -gstabs -mcpu=${MCU_CODE} -mthumb'
 LFLAGS='-Wl,-Map,${COMPONENT}.map -mcpu=${MCU_CODE} -mthumb -nostdlib'
@@ -79,7 +79,7 @@ LINKER=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/b
 OBJCOPY=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objcopy
 OBJDUMP=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-objdump
 SIZE=${TCPATH}/tmp/tmp_compiler/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-size
-CFLAGS='-I . -I ./freertos -Wall -mcpu=${MCU_CODE} -mthumb -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions'
+CFLAGS='-I . -I ./freertos -Wall -mcpu=${MCU_CODE} -mthumb'
 PFLAGS=${CFLAGS}
 AFLAGS='-x assembler-with-cpp -Wa -gstabs -mcpu=${MCU_CODE} -mthumb'
 LFLAGS='-Wl,-Map,${COMPONENT}.map -mcpu=${MCU_CODE} -mthumb -nostartfiles'

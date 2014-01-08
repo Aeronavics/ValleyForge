@@ -1,0 +1,677 @@
+#! /bin/bash
+# Having the shebang at the top makes my text editor colour the contents of the file nicely.  It isn't required though.
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+# This is a config file for the different targets of the ValleyForge toolchain.
+
+# This file contains configurations for AVR architecture targets.
+
+# This section contains information on the application build profiles.
+
+function bconf_ATmega64M1_BareMetal()
+{
+BCONF_NAME="ATmega64M1 Bare Metal"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST=
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=atmega64m1
+PORT_COUNT="B C D E"
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG=
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="m64m1"
+APPLICATION_FLASH_SIZE="60K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9684"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+}
+
+function bconf_ATmega64M1_FreeRTOS()
+{
+BCONF_NAME="ATmega64M1 FreeRTOS"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio"
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=atmega64m1
+PORT_COUNT="B C D E"
+LINKSCRIPT=
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG="res/common/platforms/freertos/platform_specific_config"
+FREERTOS_COMMON_SOURCE="${TCPATH}/res/vendor/freertos/Source"
+FREERTOS_PORTABLE_SOURCE="${TCPATH}/res/vendor/freertos/Source/portable/GCC/ATMega323"
+FREERTOS_CONFIG_FILE="${TCPATH}/res/vendor/freertos/Demo/AVR_ATMega323_WinAVR/FreeRTOSConfig.h"
+FREERTOS_MEMMAN_FILES="${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_1.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_2.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_3.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_4.c"
+FREERTOS_PATCHES="${TCPATH}/res/avr/platforms/freertos/patches"
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="m64m1"
+APPLICATION_FLASH_SIZE="60K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9684"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+CODE_GENERATORS_CONFIG_TIME="gen_freertos"
+}
+
+function bconf_ATmega2560_BareMetal()
+{
+BCONF_NAME="ATmega2560 Bare Metal"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio watchdog mem tc usart spi"
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=atmega2560
+PORT_COUNT="A B C D E F G H I J K L"
+SHARED_FUNCTIONS_ADDRESS="0x3F9E0"
+BOOTLOADER_TRAMPOLINE_ADDRESS="0x0000"
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG=
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="m2560"
+APPLICATION_FLASH_SIZE="248K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9801"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+}
+
+function bconf_ATmega2560_FreeRTOS()
+{
+BCONF_NAME="ATmega2560 FreeRTOS"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall -D FREE_RTOS_INC'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio watchdog mem tc"
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=atmega2560
+PORT_COUNT="A B C D E F G H I J K L"
+SHARED_FUNCTIONS_ADDRESS="0x3F9E0"
+BOOTLOADER_TRAMPOLINE_ADDRESS="0x0000"
+LINKSCRIPT=${TCPATH}/res/avr/freertos/atmega2560/linker_script.x
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG="res/common/platforms/freertos/platform_specific_config"
+FREERTOS_COMMON_SOURCE="${TCPATH}/res/vendor/freertos/Source"
+FREERTOS_PORTABLE_SOURCE="${TCPATH}/res/vendor/freertos/Source/portable/GCC/ATMega323"
+FREERTOS_CONFIG_FILE="${TCPATH}/res/vendor/freertos/Demo/AVR_ATMega323_WinAVR/FreeRTOSConfig.h"
+FREERTOS_MEMMAN_FILES="${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_1.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_2.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_3.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_4.c"
+FREERTOS_PATCHES="${TCPATH}/res/avr/platforms/freertos/patches"
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="m2560"
+APPLICATION_FLASH_SIZE="248K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9801"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+CODE_GENERATORS_CONFIG_TIME="gen_freertos"
+}
+
+function bconf_AT90CAN128_BareMetal()
+{
+BCONF_NAME="AT90CAN128 Bare Metal"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio can"
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=at90can128
+PORT_COUNT="A B C D E F G"
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG=
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="c128"
+APPLICATION_FLASH_SIZE="120K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9781"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+}
+
+function bconf_AT90CAN128_FreeRTOS()
+{
+BCONF_NAME="AT90CAN128 FreeRTOS"
+MAKEFUNCTION=makeavr
+MAKEFILE=${TCPATH}/res/common/Makefile
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE}'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio"
+	# Target specific keys.
+TARGET_SPECIFIC_CONFIG=res/avr/target_specific_config
+MCU_CODE=at90can128
+PORT_COUNT="A B C D E F G"
+	# Platform specific keys.
+PLATFORM_SPECIFIC_CONFIG="res/common/platforms/freertos/platform_specific_config"
+FREERTOS_COMMON_SOURCE="${TCPATH}/res/vendor/freertos/Source"
+FREERTOS_PORTABLE_SOURCE="${TCPATH}/res/vendor/freertos/Source/portable/GCC/ATMega323"
+FREERTOS_CONFIG_FILE="${TCPATH}/res/vendor/freertos/Demo/AVR_ATMega323_WinAVR/FreeRTOSConfig.h"
+FREERTOS_MEMMAN_FILES="${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_1.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_2.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_3.c ${TCPATH}/res/vendor/freertos/Source/portable/MemMang/heap_4.c"
+FREERTOS_PATCHES="${TCPATH}/res/avr/platforms/freertos/patches"
+	# Uploading keys (common).
+UPLOAD_FUNCTIONS="upload_avrdude upload_can"
+	# Uploading keys (via upload_avrdude).
+AVRDUDE_PART="c128"
+APPLICATION_FLASH_SIZE="120K"
+FLASH_PAGE_SIZE=256
+SIGNATURE="0x1E9781"
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_bootappinterface_avr gen_avrmagic"
+CODE_GENERATORS_CONFIG_TIME="gen_freertos"
+}
+
+# This section contains information on the bootloader build profiles.
+
+function bload_ATmega2560_ISP()
+{
+BLOAD_NAME="ATmega2560 ISP Only Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# HAL specific keys.
+	# TODO - Do we actually use the HAL in the AVR modular bootloader?  I thought we didn't.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio watchdog tc mem"
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega2560
+BOOTSTART="3E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x3FFDE"
+PORT_COUNT="A B C D E F G H I J K L"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_isp
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_ATmega2560_I2C()
+{
+BLOAD_NAME="ATmega2560 I2C Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# HAL specific keys.
+HAL_HEADER_PATH=res/common/hal
+HAL_SOURCE_PATH=res/avr/hal
+HAL_EN_LIST="gpio watchdog tc mem"
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega2560
+BOOTSTART="0x3E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x3FFDE"
+PORT_COUNT="A B C D E F G H I J K L"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_i2c
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_ATmega2560_CANSPI()
+{
+BLOAD_NAME="ATmega2560 CANbus via Microchip MCP2515 via SPI Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega2560
+BOOTSTART="0x3E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x3F9E0"
+PORT_COUNT="A B C D E F G H I J K L"
+PIN_CHANGE_INTERRUPT_VECTORS="PCINT0_vect PCINT1_vect PCINT2_vect"
+PIN_CHANGE_INTERRUPTS="PCINT0 PCINT1 PCINT2 PCINT3 PCINT4 PCINT5 PCINT6 PCINT7 PCINT8 PCINT9 PCINT10 PCINT11 PCINT12 PCINT13 PCINT14 PCINT15 PCINT16 PCINT17 PCINT18 PCINT19 PCINT20 PCINT21 PCINT22 PCINT23"
+PIN_CHANGE_INTERRUPT_PORTS="B E J K"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_canspi
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_avrmagic"
+}
+
+function bload_ATmega64M1_ISP()
+{
+BLOAD_NAME="ATmega64M1 ISP Only Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega64m1
+BOOTSTART="0xE000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x7FDE"
+PORT_COUNT="B C D E"
+MAX_EEPROM_ADDRESS="07FF"
+ACTIVE_MODULE=bootloader_module_isp
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_ATmega64M1_I2C()
+{
+BLOAD_NAME="ATmega64M1 I2C Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega64m1
+BOOTSTART="0xF000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x7FDE"
+PORT_COUNT="B C D E"
+MAX_EEPROM_ADDRESS="07FF"
+ACTIVE_MODULE=bootloader_module_i2c
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_ATmega64M1_CANSPI()
+{
+BLOAD_NAME="ATmega64M1 CANbus via Microchip MCP2515 via SPI Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega64m1
+BOOTSTART="0xE000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0xFFCE"
+PORT_COUNT="B C D E"
+PIN_CHANGE_INTERRUPT_VECTORS="PCINT0_vect PCINT1_vect PCINT2_vect PCINT3_vect"
+PIN_CHANGE_INTERRUPTS="PCINT0 PCINT1 PCINT2 PCINT3 PCINT4 PCINT5 PCINT6 PCINT7 
+PCINT8 PCINT9 PCINT10 PCINT11 PCINT12 PCINT13 PCINT14 PCINT15 PCINT16 PCINT17 
+PCINT18 PCINT19 PCINT20 PCINT21 PCINT22 PCINT23 PCINT24 PCINT25 PCINT26"
+PIN_CHANGE_INTERRUPT_PORTS="B C D E"
+MAX_EEPROM_ADDRESS="07FF"
+ACTIVE_MODULE=bootloader_module_canspi
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_avrmagic"
+}
+
+function bload_ATmega64M1_CAN()
+{
+BLOAD_NAME="ATmega64M1 CANbus Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=atmega64m1
+BOOTSTART="0xE000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x7FDE"
+PORT_COUNT="B C D E"
+MAX_EEPROM_ADDRESS="07FF"
+ACTIVE_MODULE=bootloader_module_can
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_avrmagic"
+}
+
+function bload_AT90CAN128_ISP()
+{
+BLOAD_NAME="AT90CAN128 ISP Only Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=at90can128
+BOOTSTART="0x1E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x1FFDE"
+PORT_COUNT="A B C D E F G"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_isp
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_AT90CAN128_I2C()
+{
+BLOAD_NAME="AT90CAN128 I2C Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=at90can128
+BOOTSTART="0x1E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x1FFDE"
+PORT_COUNT="A B C D E F G"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_i2c
+	# Code generation keys.
+CODE_GENERATORS="gen_avrmagic"
+}
+
+function bload_AT90CAN128_CANSPI()
+{
+BLOAD_NAME="AT90CAN128 CANbus via Microchip MCP2515 via SPI Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=at90can128
+BOOTSTART="0x1E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x1FFDE"
+PORT_COUNT="A B C D E F G"
+PIN_INTERRUPT_VECTORS="INT0_vect INT1_vect INT2_vect INT3_vect INT4_vect INT5_vect INT6_vect INT7_vect"
+PIN_CHANGE_INTERRUPT_PORTS="D E"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_canspi
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_avrmagic"
+}
+
+function bload_AT90CAN128_CAN()
+{
+BLOAD_NAME="AT90CAN128 CANbus Bootloader"
+MAKEFUNCTION=makeavr_bootloader
+MAKEFILE=${TCPATH}/res/common/Makefile
+SOURCEPATH=${TCPATH}/res/avr/bootloader
+IOHEADER="<avr/io.h>"
+STDINTHEADER="<stdint.h>"
+	# Compilers and flags.
+C_COMPILER=avr-gcc
+P_COMPILER=avr-g++
+ASSEMBLER=avr-as
+LINKER=avr-gcc
+OBJCOPY=avr-objcopy
+OBJDUMP=avr-objdump
+SIZE=avr-size
+OPTLEVEL="s" # Choose s for size, or 0-3 for performance.
+CFLAGS='-I . -g -mmcu=${MCU_CODE} -O${OPTLEVEL} -fpack-struct -fshort-enums -funsigned-bitfields -funsigned-char -fno-exceptions -Wall'
+PFLAGS=${CFLAGS}
+AFLAGS='-mmcu=${MCU_CODE} -Wa'
+LFLAGS='-Wl,-Map,${COMPONENT}.map -mmcu=${MCU_CODE} -Wl,--section-start=.text=${BOOTSTART} -Wl,--section-start=.shared_jumptable=${SHARED_FUNCTIONS_ADDRESS} -Wl,--undefined=_jumptable'
+	# Target specific keys.
+BLOAD_SPECIFIC_CONFIG=res/avr/bload_specific_config
+MCU_CODE=at90can128
+BOOTSTART="0x1E000" # Starting address to place bootloader at.  See datasheet.
+SHARED_FUNCTIONS_ADDRESS="0x1FFDE"
+PORT_COUNT="A B C D E F G"
+MAX_EEPROM_ADDRESS="0FFF"
+ACTIVE_MODULE=bootloader_module_can
+	# Code generation keys.
+CODE_GENERATORS="gen_canmsgs gen_avrmagic"
+}
