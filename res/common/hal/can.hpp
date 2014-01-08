@@ -119,7 +119,7 @@ typedef void (*voidFuncPtr)(void);
 
 /********************* Forward declaration **************************/
 class Can_tree;		//declared because otherwise the interface class cannot point to it
-class Can_buffer;	//declared so typedef will work at top
+class Can_buffer;	
 class Can_filter;
 class Can_mask;
 
@@ -167,7 +167,7 @@ typedef void (*Interrupt_fn)(Can_buffer&);
 
 CAN_BUF operator++(CAN_BUF& f, int);
 CAN_FIL operator++(CAN_FIL& f, int);
-
+CAN_MSK operator++(CAN_MSK& f, int);
 
 /********************* Struct definitions here ***********************/
 /**
