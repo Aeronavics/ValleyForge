@@ -34,7 +34,7 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 #include <stdio.h>
-#include "io.h"
+#include <io.h>
 
 // DEFINE PRIVATE MACROS.
 typedef enum
@@ -157,6 +157,105 @@ gpio_pin::gpio_pin(gpio_pin_imp* implementation)
 	return;
 }
 
+int8_t gpio_pin::set_mode(gpio_mode mode)
+{
+	return (imp->set_mode(mode));
+}
+
+int8_t gpio_pin::write(gpio_output_state value)
+{
+	return (imp->write(value));
+}
+
+void gpio_pin::vacate(void)
+{
+	// Check if we're already vacated, since there shouldn't be an error if you vacate twice.
+	if (imp != NULL)
+	{		
+		// We haven't vacated yet, so vacate the semaphore.
+		imp->s->vacate();
+	}
+
+	// Break the link to the implementation.
+	imp = NULL;
+
+	// The gpio_pin is now useless.
+	
+	// All done.
+	return;
+}
+
+gpio_pin gpio_pin::grab(gpio_pin_address address)
+{
+	// Check if the GPIO stuff has been initialized.
+	if (!done_init)
+	{
+		// Initialize the GPIO stuff.
+		gpio_init();
+	}
+
+	// Try to procure the semaphore.
+	if (gpio_pin_imps[address.port][address.pin].s->procure())
+	{
+		// We got the semaphore!
+		return gpio_pin(&gpio_pin_imps[address.port][address.pin]);
+	}
+	else
+	{
+		// Procuring the semaphore failed, so the pin is already in use.
+		return NULL;
+	}
+}
+
+// IMPLEMENT PRIVATE FUNCTIONS.
+
+void gpio_init(void)
+{
+	// Attach the gpio pin implementations to the semaphores which control the corresponding pins.
+	for (uint8_t i = 0; i < NUM_PORTS; i++)
+	{
+		for (uint8_t j = 0; j < NUM_PINS; j++)
+		{
+			// Attach the semaphores to those in the pin implementations.
+			gpio_pin_imps[i][j].s = &semaphores[i][j];
+			gpio_pin_imps[i][j].address.port = (port_t)i;
+			gpio_pin_imps[i][j].address.pin = (pin_t)j;
+			
+			switch (gpio_pin_imps[i][j].address.port)
+			{
+				case(PORT_A):
+					gpio_pin_imps[i][j].port_address = GPIOA;
+					break;
+				case(PORT_B):
+					gpio_pin_imps[i][j].port_address = GPIOB;
+					break;
+				case(PORT_C):
+					gpio_pin_imps[i][j].port_address = GPIOC;
+					break;
+				case(PORT_D):
+					gpio_pin_imps[i][j].port_address = GPIOD;
+					break;
+				case(PORT_E):
+					gpio_pin_imps[i][j].port_address = GPIOE;
+					break;
+				default:
+					break;	//extra enums were made due to the target global hal.hpp, STM32103x doesn't have this many ports
+			}
+		}
+	}
+
+	// We don't need to do this again.
+	done_init = true;
+
+	// All done.
+	return;
+}
+
+// DECLARE ISRs
+
+// Each ISR calls the user specified function, by invoking the function pointer in the array of function pointers.
+// This offset is here because the interrupts are enumerated, not in the same order as the function array. This is because the number of interrupts changes with architecture.
+// TODO
 /* ****************************************************************** */
 
 int8_t gpio_pin_imp::set_mode(gpio_mode mode)
@@ -168,7 +267,7 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 		return -1;
 	}
 	
-	uint32_t currentmode = 0x00, current_pin = 0x00, pinpos = 0x00, pos=0x00;
+	uint32_t currentmode = 0x00, currentpin = 0x00, pinpos = 0x00, pos=0x00;
 	uint32_t tmpreg = 0x00, pinmask = 0x00;
 	
 	//GPIO Mode configuration for output	
@@ -231,7 +330,7 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 	//GPIO CRH Configuration for pin 8-16
 	if (address.pin >= PIN_8)
 	{
-		tmpgreg = port_address->CRH;
+		tmpreg = port_address->CRH;
 		for (pinpos = 0x00; pinpos < 0x08; pinpos++)
 		{
 			pos = (((uint32_t) 0x01) << (pinpos + 0x08));
@@ -315,4 +414,6 @@ int8_t gpio_pin_imp::write(gpio_output_state value)
 	}
 	return 0;		
 }
+
+
 
