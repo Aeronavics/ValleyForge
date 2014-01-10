@@ -34,7 +34,6 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 #include <stdio.h>
-#include <io.h>
 
 // DEFINE PRIVATE MACROS.
 typedef enum
@@ -167,6 +166,11 @@ int8_t gpio_pin::write(gpio_output_state value)
 	return (imp->write(value));
 }
 
+gpio_input_state gpio_pin::read(void)
+{
+	return (imp->read());
+}
+
 void gpio_pin::vacate(void)
 {
 	// Check if we're already vacated, since there shouldn't be an error if you vacate twice.
@@ -263,108 +267,65 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 	/* Check to see if parameters are right size */
 	if (address.port >= NUM_PORTS) 
 	{
-		/* Parameter is wrong size*/
+		//Parameter is wrong size
 		return -1;
 	}
 	
-	uint32_t currentmode = 0x00, currentpin = 0x00, pinpos = 0x00, pos=0x00;
-	uint32_t tmpreg = 0x00, pinmask = 0x00;
+	/* Enable the GPIO port */
+	RCC->APB2ENR |= (1<<(address.port + 2));
 	
-	//GPIO Mode configuration for output	
-	switch (mode) 
+	/* Determine value to write to CRL or CRH */
+	uint32_t CNFy, MODEy;
+	if (mode == INPUT || mode == INPUT_PD || mode == INPUT_PU) 
 	{
-		case(OUTPUT_OD):
-			currentmode = ((uint32_t) GPIO_Mode_Out_OD) & ((uint32_t) 0x0F);
-			currentmode |= (uint32_t) GPIO_Speed_50MHz;
-			break;
-		case(OUTPUT_PP):
-			currentmode = ((uint32_t) GPIO_Mode_Out_PP) & ((uint32_t) 0x0F);
-			currentmode |= (uint32_t) GPIO_Speed_50MHz;
-			break;
-		case(OUTPUT):
-			currentmode = ((uint32_t) GPIO_Mode_Out_PP) & ((uint32_t) 0x0F);
-			currentmode |= (uint32_t) GPIO_Speed_50MHz;
-			break;
-		default:
-			break;
-	}
-	
-	//GPIO CRL Configuration for pin 0-8
-	if (address.pin < PIN_8)
-	{
-		tmpreg = port_address->CRL;
-		for (pinpos=0x00; pinpos < 0x08; pinpos++)
+		MODEy = 0b00;
+		if (mode == INPUT)
 		{
-			pos = ((uint32_t) 0x01) << pinpos;
-			/* Get the port pins position */
-			currentpin = (1<<address.pin) & pos;
-			
-			if (currentpin == pos)
-			{
-				pos = pinpos << 2;
-				/* Clear the corresponding low control register bits */
-				pinmask = ((uint32_t) 0x0F) << pos;
-				tmpreg &= ~pinmask;
-				
-				/* Write the mode configuration in the corresponding bits */
-				tmpreg |= (currentmode << pos);
-				
-				/* Reset the corresponding ODR bit */
-				switch (mode)
-				{
-					case(INPUT_PD):	//reset ODR bit for pull down
-						port_address->BRR = (((uint32_t) 0x01) << pinpos);
-						break;
-					case(INPUT_PU):	//set ODR but for pull up
-						port_address->BSRR = (((uint32_t) 0x01) << pinpos);
-						break;
-					default:
-						break;
-				}
-			}
-		}		
-		port_address->CRL = tmpreg;
-		tmpreg = 0;
-	}
-	
-	//GPIO CRH Configuration for pin 8-16
-	if (address.pin >= PIN_8)
-	{
-		tmpreg = port_address->CRH;
-		for (pinpos = 0x00; pinpos < 0x08; pinpos++)
-		{
-			pos = (((uint32_t) 0x01) << (pinpos + 0x08));
-			/* Get the port pin's position*/
-			currentpin = ((1<<address.pin) & pos);
-			if (currentpin == pos)
-			{
-				pos = pinpos << 2;
-				/* Clear the corresponding high control register bits */
-				pinmask = ((uint32_t) 0x0F) << pos;
-				tmpreg &= ~pinmask;
-				
-				/* Write the mode configuration in the corresponding bits */
-				tmpreg |= (currentmode << pos);
-				
-				/* Reset the corresponding ODR bit */
-				switch (mode)
-				{
-					case (INPUT_PD): //reset ODR bit for pull down
-						port_address->BRR = (((uint32_t) 0x01) << (pinpos + 0x08));
-						break;
-					case (INPUT_PU): //set ODR but for pull up
-						port_address->BSRR = (((uint32_t) 0x01) << (pinpos + 0x08));
-						break;
-					default:
-						break;
-				}
-			}
+			//unspecified becomes floating
+			CNFy = 0b01;
 		}
-		port_address->CRH = tmpreg;
+		else
+		{
+			//pull up or down is specified on BSRR register
+			CNFy = 0b10;
+		}
+	}
+	else if (mode == OUTPUT || mode == OUTPUT_OD || mode == OUTPUT_PP)
+	{
+		MODEy = 0b11;	//output max speed
+		if (mode == OUTPUT || mode == OUTPUT_PP)
+		{
+			//unspecified becomes push-pull
+			CNFy = 0b00;
+		}
+		else
+		{
+			//open drain
+			CNFy = 0b01;
+		}
+	}
+
+	/* Write to control register */
+	uint8_t CR_offset = (address.pin % 8) * 4;	//CR has 4 bits for each pin
+	if (address.pin < 8)
+	{
+		port_address->CRL |= ((CNFy << (CR_offset+2)) | (MODEy << (CR_offset)));
+	}
+	else 
+	{
+		port_address->CRH |= ((CNFy << (CR_offset+2)) | (MODEy << (CR_offset)));
 	}
 	
-	this->mode = mode;
-	return 0;
+	/* if pull-up/down specified, write to BSRR register to set it */
+	if (mode == INPUT_PD)
+	{
+		port_address->BRR |= (1 << address.pin);		
+	}
+	else if (mode == INPUT_PU)
+	{
+		port_address->BSRR |= (1 << address.pin);
+	}
+	return 0;	//mode setup successful
 }
 
 gpio_input_state gpio_pin_imp::read(void)
@@ -402,11 +363,11 @@ int8_t gpio_pin_imp::write(gpio_output_state value)
 	
 	if (value == O_LOW)
 	{
-		port_address->ODR |= ((uint32_t) (1<<address.pin));
+		port_address->ODR &= ~((uint32_t) (1<<address.pin));
 	}
 	else if (value == O_HIGH)
 	{
-		port_address->ODR &= ~(((uint32_t) (1<<address.pin)));
+		port_address->ODR |= (((uint32_t) (1<<address.pin)));
 	}
 	else if (value == O_TOGGLE) 
 	{
