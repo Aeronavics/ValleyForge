@@ -639,9 +639,29 @@ class Can
 	    * Clear interrupt flags of controller based interrupts.
 	    * 
 	    * @param	 interrupt      The interrupt event flag to clear.
-	    * @return    Nothing.
+	    * @return    Flag representing whether operation was successful
 	    */
-	    void clear_controller_interrupts(CAN_INT_NAME interrupt);
+	    bool clear_controller_interrupts(CAN_INT_NAME interrupt);
+	    
+		/** 
+		 * Allows access to the GPIO pin to be relinquished and assumed elsewhere. Use this
+		 * when are process has finished with a pin and no longer needs control over it. This 
+		 * lets another process grab control of that pin.
+		 *
+		 * @param  Nothing.
+		 * @return Nothing.
+		 */
+		 void vacate(void);
+	    
+	    /**
+		 * Gets run whenever the instance of class gpio_pin goes out of scope.
+		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
+		 * This is useful for vacating a pin automatically, without using the vacate function. However,
+		 * users are recommended to use the vacate function for consistency and safety.
+		 * @param Nothing
+		 * @return Nothing
+		 */
+	    ~Can(void);
     
 	
 	private:

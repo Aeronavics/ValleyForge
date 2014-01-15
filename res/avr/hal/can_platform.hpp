@@ -64,19 +64,19 @@
  
 // Pin mappings
 #if defined(__AVR_AT90CAN128__)
-	#define CAN_PORT_IN     PIND
+	#define CAN_PORT_IN     PORT_D
 	#define CAN_PORT_DIR    DDRD
-	#define CAN_PORT_OUT    PORTD
-	#define CAN_INPUT_PIN   6
-	#define CAN_OUTPUT_PIN  5
+	#define CAN_PORT_OUT    PORT_D
+	#define CAN_INPUT_PIN   PIN_6
+	#define CAN_OUTPUT_PIN  PIN_5
 #endif
 
 #if defined (__AVR_ATmega64M1__)
-	#define CAN_PORT_IN     PINC 
+	#define CAN_PORT_IN     PORT_C 
 	#define CAN_PORT_DIR    DDRC
-	#define CAN_PORT_OUT    PORTC 
-	#define CAN_INPUT_PIN   3 
-	#define CAN_OUTPUT_PIN  2
+	#define CAN_PORT_OUT    PORT_C 
+	#define CAN_INPUT_PIN   PIN_3 
+	#define CAN_OUTPUT_PIN  PIN_2
 #endif
 
 // Masks

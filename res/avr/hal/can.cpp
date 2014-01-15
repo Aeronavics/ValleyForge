@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <util/delay.h>
 
-#define F_CPU (<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000)	//Used for delaying
+//#define F_CPU (<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000)	//Used for delaying
 #define ENABLE_TOUT_MS  500;									//Controller enable timeout
 
 //different interrupt vector names for different micros
@@ -53,28 +53,17 @@
 #endif
 
 /**********************************************************************/
+bool can_initialised = false;
+
 volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
 volatile CAN_BUF interrupt_service_buffer;
 
+// DECLARE IMPORTED GLOBAL VARIABLES.
+extern semaphore semaphores[NUM_PORTS][NUM_PINS];
+
 /**********************************************************************/
-// Allows object enums to be iterated, inelegantly, this must be defined for every implementation because it shouldn't be in in h file
-CAN_BUF operator++(CAN_BUF& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_BUF> (++temp);
-}
-
-CAN_FIL operator++(CAN_FIL& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_FIL> (++temp);
-}
-
-CAN_MSK operator++(CAN_MSK& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_MSK>(++temp);
-}
+// FORWARD DECLARATION
+void init_can(void);
 
 /**********************************************************************/
 /**
@@ -430,26 +419,41 @@ class Can_tree
 		Can_mask mask[NB_MSK];
 		Can_filter filter[NB_FIL];
 		Can_buffer buffer[NB_BUF];
+		
+		semaphore* RX_pin_s;
+		semaphore* TX_pin_s;
 };
 
 Can_tree::Can_tree(void)
 {
-	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+	if (!can_initialised)
 	{
-		buffer[i].set_number(i);	//assign arbitrary index to buffer, CANPAGE access uses this number
+		init_can();
 	}
 	
-	for (CAN_FIL i=FIL_0; i<NB_FIL; i++)
-	{  
-		filter[i].set_number(i);	//assign arbitrary index to filter
-		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
-		filter[i].set_mask(&mask[i]);		//link mask to corresponding filter using index
+	uint8_t num_buf = static_cast<uint8_t>(NB_BUF);
+	for (uint8_t i=0; i<num_buf; i++)
+	{
+		CAN_BUF n = static_cast<CAN_BUF>(i);
+		buffer[n].set_number(static_cast<CAN_BUF>(n));	//assign arbitrary index to buffer, CANPAGE access uses this number
 	}
 	
-	for (CAN_MSK i=MSK_0; i<NB_MSK; i++)
+	uint8_t num_fil = static_cast<uint8_t>(NB_FIL);
+	for (uint8_t i=FIL_0; i<num_fil; i++)
 	{
-		mask[i].set_number(i);
+		CAN_FIL n = static_cast<CAN_FIL>(i);
+		filter[n].set_number(n);			//assign arbitrary index to filter
+		filter[n].set_buffer(&buffer[n]);	//link filter to corresponding buffer using index
+		filter[n].set_mask(&mask[n]);		//link mask to corresponding filter using index
 	}
+	
+	uint8_t num_msk = static_cast<uint8_t>(NB_MSK);
+	for (uint8_t i=MSK_0; i<num_msk; i++)
+	{
+		CAN_MSK n = static_cast<CAN_MSK>(i);
+		mask[n].set_number(n);
+	}
+	
 	return;
 }
 
@@ -489,7 +493,7 @@ void Can_tree::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
 	if (interrupt_valid)	
 	{
 		//for channel based interrupts, must apply to ALL MOb vectors due to the way interrupt functions are addressed
-		for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+		for (uint8_t i=BUF_0; i<NB_BUF; i++)
 		{
 			intFunc[i][interrupt];	
 		}
@@ -558,7 +562,14 @@ Can::Can(Can_tree* imp)
 //Method implementations
 Can Can::bind(CAN_CTRL controller)
 {
-	return Can(&Can_tree_imps[controller]);
+	if (Can_tree_imps[controller].TX_pin_s->procure() && Can_tree_imps[controller].RX_pin_s->procure())
+	{
+		return Can(&Can_tree_imps[controller]);
+	} 
+	else
+	{
+		return NULL;
+	}
 }
 
 bool Can::initialise(CAN_RATE rate)
@@ -571,7 +582,7 @@ bool Can::initialise(CAN_RATE rate)
 	Can_reset();
 	
 	//clear all buffers
-	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+	for (uint8_t i=BUF_0; i<NB_BUF; i++)
 	{
 		Can_controller->buffer[i].set_mode(CAN_OBJ_DISABLE);
 		Can_controller->buffer[i].clear_status();	
@@ -843,7 +854,7 @@ CAN_BUF Can::get_interrrupted_buffer(void)
 	return interrupt_service_buffer;
 }
 
-bool clear_controller_interrupts(CAN_INT_NAME interrupt)
+bool Can::clear_controller_interrupts(CAN_INT_NAME interrupt)
 {
 	//writing logical one resets the flag
 	switch (interrupt)
@@ -858,6 +869,35 @@ bool clear_controller_interrupts(CAN_INT_NAME interrupt)
 	
 	return true;
 }
+
+void Can::vacate(void)
+{
+	Can_controller->TX_pin_s->vacate();
+	Can_controller->RX_pin_s->vacate();
+}
+
+Can::~Can(void)
+{
+	vacate();
+}
+}
+	 
+
+/**********************************************************************/
+void init_can(void)
+{
+	for (uint8_t i=0; i<NB_CTRL; i++)
+	{
+		switch(i)
+		{
+			case(0):
+				Can_tree_imps[i].RX_pin_s = &semaphores[CAN_PORT_IN][CAN_INPUT_PIN];
+				Can_tree_imps[i].TX_pin_s = &semaphores[CAN_PORT_OUT][CAN_OUTPUT_PIN];
+		}
+	}
+	can_initialised = true;
+}
+
 
 /**********************************************************************/
 //CAN Interrupt declarations
