@@ -41,54 +41,27 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-bool done_sem_init;
-
-semaphore semaphores[NUM_PORTS][NUM_PINS];
-semaphore pc_int_sem[NUM_BANKS];
-
 static bool int_flag;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-void init_hal(void)
-{
-    // Attach the gpio pin implementations to the semaphores which control the corresponding pins.
-	for (uint8_t i = 0; i < NUM_PORTS; i++)
-	{
-		for (uint8_t j = 0; j < NUM_PINS; j++)
-		{
-			semaphores[i][j] = semaphore();
-		}
-	}
-	
-	for (uint8_t i = 0; i < NUM_BANKS; i++)
-	{
-			pc_int_sem[i] = semaphore();
-	}
-	// We don't need to do this again.
-	done_sem_init = true;
-
-	// All done.
-	return;
-}
-
 void int_on(void)
 {
-	//turn on NVIC
+	// Turn on NVIC.
 	asm volatile ("cpsie i");
 }
 
 void int_off(void)
 {
-	//turn off NVIC
+	// Turn off NVIC.
 	asm volatile ("cpsid i");
 }
 
 void int_restore(void)
 {
-	//simply acts as a turn on interrupt at the moment
+	// TODO - At the moment, this just turns on interrupts.
 	asm volatile ("cpsie i");
 }
 

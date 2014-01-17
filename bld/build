@@ -185,14 +185,10 @@ get_hal()
 
 	# Copy in the common HAL files.
 	cp $TCPATH/$HAL_HEADER_PATH/hal.hpp $OUTPATH
-	cp $TCPATH/$HAL_HEADER_PATH/semaphore.hpp $OUTPATH
-	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.cpp $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
-	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.cpp $OUTPATH 2>/dev/null
-	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.s $OUTPATH 2>/dev/null
-	cp $TCPATH/$HAL_SOURCE_PATH/semaphore.o $OUTPATH 2>/dev/null
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 
 	# Only import each particular peripheral if it is enabled in the configuration.
 

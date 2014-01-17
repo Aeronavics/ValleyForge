@@ -41,100 +41,122 @@
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+
 #include <stdio.h>
+
+// We need definition for the new and delete operators so we can use the heap.
+#include "avr_magic/avr_magic.hpp"
 
 // DEFINE PRIVATE MACROS.
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
-volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
+/* Offset constants that facilitate access to the particular GPIO registers (DDRx, PORTx, PINx) */
+enum port_offset	{P_READ, P_MODE, P_WRITE};
 
 // DECLARE IMPORTED GLOBAL VARIABLES.
-extern semaphore semaphores[NUM_PORTS][NUM_PINS];
-extern semaphore pc_int_sem[NUM_BANKS];
+
+// DEFINE PRIVATE CLASSES.
 
 /**
- * A Class that implements the functions for gpio
- * One instance for each pin.
- * Reads, writes, and sets direction of pins
+ * A Class that provides device specific implementation for the functions for Gpio_pin.
+ *
  */
-class gpio_pin_imp
+class Gpio_pin_imp
 {
 	public:
 
-		// Functions.
-		/**
-		 * Sets the direction of the pin
-		 * by manipulating the data direction register
-		 * 
-		 * @param mode	the direction (INPUT=0,OUTPUT=1)
-		 * @return gpio_input_state error code
-		 */
-		int8_t set_mode(gpio_mode mode);
+		// Methods.
 
 		/**
-		 * Writes to the pin attached to the implementation
-		 * 
-		 * @param value	sets the pin to (O_LOW, O_HIGH, or O_TOGGLE)
-		 * @return int8_t error code
+		 * Creates a new instance of Gpio_pin_imp, abstracting the GPIO pin at the specified address.
+		 *
+		 * @param address The IO address of the pin to abstract.
+		 * @return Nothing.
 		 */
-		int8_t write (gpio_output_state value);
+		Gpio_pin_imp(IO_pin_address pin_address)
+		{
+			address = pin_address;
+		
+			// All done.
+			return;
+		}
 
 		/**
-		 * Reads the pin attached to the implementation
+		 * Gets run whenever the instance of class Gpio_pin_imp goes out of scope.
+		 *
+		 * @param Nothing.
+		 * @return Nothing.
+		 */
+		 ~Gpio_pin_imp(void);
+
+		/**
+		 * Sets the pin to an input or output.
+		 *
+		 * @param mode 	Set to INPUT or OUTPUT.
+		 * @return Zero for success, non-zero for failure.
+		 * 
+		 */
+		Gpio_io_status set_mode(Gpio_mode mode);
+
+		/**
+		 * Reads the value of the GPIO pin and returns it.
 		 * 
 		 * @param Nothing.
-		 * @return int8_t error code
+		 * @return The current state of the IO pin.
 		 */
-		gpio_input_state read (void);
+		Gpio_input_state read(void);
 		
 		/**
-		 * Attaches an interrupt to the pin and enables said interrupt.
+		 * Writes the value provided to the pin.
 		 * 
-		 * @param address	The gpio pin address in terms of port and pin
-		 * @param *userFunc	A pointer to the user's ISR
-		 * @param mode		What kind of interrupt (INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_EDGE) (only valid for the EXTINT pins)
-		 * @return inter_return_t return code
+		 * @param  value	The state to set the GPIO pin to.
+		 * @return Nothing.
 		 */
-		inter_return_t attach_interrupt(void (*userFunc)(void), interrupt_mode mode);
+		void write(Gpio_output_state value);
+		
+		/** 
+		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
+		 *
+		 * NOTE - Calling this function automatically sets the pin to an input.
+		 *
+		 * @param  mode		Type of GPIO interupt to enable.
+ 		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
+		 * @return Zero for success, non-zero for failure.
+		 */
+		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
-		 * Detaches the interrupt from the pin and disables said interrupt.
-		 * 
-		 * @param address	The gpio pin address in terms of port and pin
-		 * @return inter_return_t return code
+		 * Disable an interrupt for the pin.
+		 *
+		 * @param  Nothing.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		inter_return_t disable_interrupt(void);
+		Gpio_interrupt_status disable_interrupt(void);
 		
-	  // Fields.
-	  gpio_pin_address address;
-	  semaphore* s;	
+	  	// Fields.
+
+	 	IO_pin_address address;
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-// One implementation for each pin.
-gpio_pin_imp gpio_pin_imps[NUM_PORTS][NUM_PINS];
-
-// To show whether we have carrried out the initialisation yet.
-bool done_init;
+volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
-void gpio_init(void);
-
 // IMPLEMENT PUBLIC FUNCTIONS.
-// See gpio.h for descriptions of these functions.
-gpio_pin::~gpio_pin(void)
+
+Gpio_pin::~Gpio_pin(void)
 {
-	// Make sure we have vacated the semaphore before we go out of scope.
-	vacate();
+	// Delete the implementation.
+	delete imp;
 
 	// All done.
 	return;
 }
 
-gpio_pin::gpio_pin(gpio_pin_imp* implementation)
+Gpio_pin::Gpio_pin(Gpio_pin_imp* implementation)
 {
 	// Attach the implementation.
 	imp = implementation;
@@ -143,105 +165,50 @@ gpio_pin::gpio_pin(gpio_pin_imp* implementation)
 	return;
 }
 
-int8_t gpio_pin::set_mode(gpio_mode mode)
+Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 {
 	return (imp->set_mode(mode));
 }
 
-int8_t gpio_pin::write(gpio_output_state value)
+void Gpio_pin::write(Gpio_output_state value)
 {
 	return (imp->write(value));
 }
 
-gpio_input_state gpio_pin::read(void)
+Gpio_input_state Gpio_pin::read(void)
 {
 	return (imp->read());
 }
 
-bool gpio_pin::is_valid(void)
+Gpio_pin Gpio_pin::grab(IO_pin_address address)
 {
-	return (imp != NULL);
+	// Allocate an implementation for the address.
+	Gpio_pin_imp* imp = new Gpio_pin_imp(address);
+
+	// TODO - At the moment, we're just assuming this works.  If it doesn't, we're in major trouble.
+
+	// Create a new GPIO pin using this implementation.
+	return Gpio_pin(imp);
 }
 
-void gpio_pin::vacate(void)
+Gpio_interrupt_status Gpio_pin::enable_interrupt(Gpio_interrupt_mode mode, void (*user_ISR)(void))
 {
-	// Check if we're already vacated, since there shouldn't be an error if you vacate twice.
-	if (imp != NULL)
-	{		
-		// We haven't vacated yet, so vacate the semaphore.
-		imp->s->vacate();
-	}
-
-	// Break the link to the implementation.
-	imp = NULL;
-
-	// The gpio_pin is now useless.
-	
-	// All done.
-	return;
+      return imp->enable_interrupt(mode, user_ISR); 
 }
 
-gpio_pin gpio_pin::grab(gpio_pin_address address)
-{
-	// Check if the GPIO stuff has been initialized.
-	if (!done_init)
-	{
-		// Initialize the GPIO stuff.
-		gpio_init();
-	}
-
-	// Try to procure the semaphore.
-	if (gpio_pin_imps[address.port][address.pin].s->procure())
-	{
-		// We got the semaphore!
-		return gpio_pin(&gpio_pin_imps[address.port][address.pin]);
-	}
-	else
-	{
-		// Procuring the semaphore failed, so the pin is already in use.
-		return NULL;
-	}
-}
-
-
-inter_return_t gpio_pin::enable_interrupt(interrupt_mode mode, void (*user_ISR)(void))
-{
-      return imp->attach_interrupt(user_ISR,mode); 
-}
-
-inter_return_t gpio_pin::disable_interrupt(void)
+Gpio_interrupt_status Gpio_pin::disable_interrupt(void)
 {
       return imp->disable_interrupt();  
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
 
-void gpio_init(void)
-{
-	// Attach the gpio pin implementations to the semaphores which control the corresponding pins.
-	for (uint8_t i = 0; i < NUM_PORTS; i++)
-	{
-		for (uint8_t j = 0; j < NUM_PINS; j++)
-		{
-			// Attach the semaphores to those in the pin implementations.
-			gpio_pin_imps[i][j].s = &semaphores[i][j];
-			gpio_pin_imps[i][j].address.port = (port_t)i;
-			gpio_pin_imps[i][j].address.pin = (pin_t)j;
-		}
-	}
-
-	// We don't need to do this again.
-	done_init = true;
-
-	// All done.
-	return;
-}
-
-
 // DECLARE ISRs
 
 // Each ISR calls the user specified function, by invoking the function pointer in the array of function pointers.
+
 // This offset is here because the interrupts are enumerated, not in the same order as the function array. This is because the number of interrupts changes with architecture.
+
 SIGNAL(INT0_vect) {
   if(intFunc[EINT_0 - INT_DIFF_OFFSET]) 
     intFunc[EINT_0 - INT_DIFF_OFFSET]();
@@ -301,361 +268,282 @@ SIGNAL(PCINT2_vect) {
 }
 #endif
 
+Gpio_pin_imp::~Gpio_pin_imp(void)
+{
+	// All done.
+	return;
+}
 
-int8_t gpio_pin_imp::set_mode(gpio_mode mode)
+Gpio_io_status Gpio_pin_imp::set_mode(Gpio_mode mode)
+{			
+	if ( address.port >= PORT_H )
+	{
+		_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
+	}
+	else
+	{
+		// Set/clear data direction register pin.
+		_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
+	}
+	
+	// All done.		
+	return GPIO_SUCCESS;
+}
+		
+void Gpio_pin_imp::write (Gpio_output_state value)
+{
+	/* Set/clear port register register pin */
+	if (value == GPIO_O_TOGGLE)
+	{		
+		if ( address.port >= PORT_H )
 		{
-				/* Check to see if parameters are right size */
-				if (address.port >= NUM_PORTS) 
-				{
-					/* Parameter is wrong size*/
-					return -1;
-				}
-				
-				if ( address.port >= PORT_H )
-					_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
-				else
-					/* Set/clear data direction register pin */
-					_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (mode?(1 << address.pin):0);
-				
-				return 0;
+			// Toggle value.
+			_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE));
 		}
-
-		
-int8_t gpio_pin_imp::write (gpio_output_state value)
-
+		else
 		{
-				if (address.port >= NUM_PORTS)
-				{
-					/* Parameter is wrong size*/
-					return O_ERROR;
-				}
-//#if defined (__AVR_ATmega2560__)
-//				if (address.port == PORT_I) // There is no PORT_I
-//				{
-//				    return O_ERROR;
-//				}
-//#endif
-				/* Set/clear port register register pin */
-				if (value == O_TOGGLE)
-				{		
-				    if ( address.port >= PORT_H )
-					    /*Toggle value*/
-					    _SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE));
-				    else
-					    /*Toggle value*/
-					    _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
-				}
-				else
-				{
-					    if ( address.port >= PORT_H )
-						/* Set or Clear pin on port*/
-						_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | (value?(1 << address.pin):(pin_t)O_LOW);
-					    else
-						/* Set or Clear pin on port*/
-						_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value?(1 << address.pin):(pin_t)O_LOW);
-				}
-				return 0;
+			// Toggle value.
+			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
 		}
-		
-gpio_input_state gpio_pin_imp::read (void)
-
+	}
+	else
+	{
+		if ( address.port >= PORT_H )
 		{
-			
-				if (address.port >= NUM_PORTS) 
-				{
-					/* Parameter is wrong size*/
-					return I_ERROR;
-				}
+			// Set or Clear pin on port.
+			_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = (_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) & ~(1 << address.pin) ) | (value ? (1 << address.pin) : (pin_t) GPIO_O_LOW);
+		}
+		else
+		{
+			// Set or Clear pin on port.
+			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value ? (1 << address.pin) : (pin_t) GPIO_O_LOW);
+		}
+	}
+
+	// All done.
+	return;
+}
+		
+Gpio_input_state Gpio_pin_imp::read(void)
+{		
+	if ( address.port >= PORT_H )
+	{
+		// Read and return pin.
+		return ((_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_READ) & (1 << address.pin)) ? GPIO_I_LOW : GPIO_I_HIGH);
+	}
+	else
+	{
+		// Read and return pin.
+		return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? GPIO_I_LOW : GPIO_I_HIGH);
+	}
+}
 				
-				if ( address.port >= PORT_H )
-						/* Read and return pin */
-						return ((_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
-				else
-						/* Read and return pin */
-						return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? I_LOW : I_HIGH);
-		}
-		
-		
-		
-		
-inter_return_t gpio_pin_imp::attach_interrupt(void (*userFunc)(void), interrupt_mode mode) 
+Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, void (*userFunc)(void))
+{
+	// Check to see if pin is a on a PCINT bank
+	if( ( PC_INT[address.port][address.pin] >= PCINT_0 )  && ( PC_INT[address.port][address.pin] < NUM_BANKS ) ) 
+	{
+		// Change the value in the function pointer array to that given by the user.
+		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc;
+
+		// Check which PCINT bank it is on, and set interrupt accordingly.
+		switch ((uint8_t)PC_INT[address.port][address.pin]) 
 		{
-		    // Check to see if pin is a on a pcint bank
-		    if( ( PC_INT[address.port][address.pin] >= PCINT_0 )  && ( PC_INT[address.port][address.pin] < NUM_BANKS ) ) 
-		    {
-			// Check to see if semaphore is free
-			if( pc_int_sem[PC_INT[address.port][address.pin]].procure() )
-			{
-			    // Change the value in the function pointer array to that given by the user.
-			    intFunc[PC_INT[address.port][address.pin]] = userFunc;
-			    // if semaphore is free, check which pcint bank it is on, and set interrupt accordingly.
-			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
-			    {
 #if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
-			      case PCINT_0:
+			case PCINT_0:
 				PCICR |= (1 << PCINT_0);
 				PCMSK0 = (1 << address.pin);
 				break;
-			      case PCINT_1:
+			case PCINT_1:
 				PCICR |= (1 << PCINT_1);
 				// Mostly the pins' position on the interrupt bank matches their position on their port, however pins PORTJ(0-6) match mask bits PCIE1(1-7).
 				PCMSK1 = (address.port == PORT_J) ? (1 << (address.pin - 1)) : (1 << address.pin);
 				break;
-			      case PCINT_2:
+			case PCINT_2:
 				PCICR |= (1 << PCINT_2);
 				PCMSK0 = (1 << address.pin);
 				break;
 #elif defined(__AVR_AT90CAN128__)
-				//do nothing, no PCINT on AT90CAN128
+			// Do nothing, no PCINT on AT90CAN128.
 #else
-	#error not yet implemented for this cpu
+	#error "GPIO interrupts not implemented for this configuration."
 #endif
-			    }
-			}
-			else
-			  return GP_ALREADY_TAKEN;
-		    }
-			  
-		  
-		    // Check to see if the pin is one of the special EINT pins
-		    else if (( PC_INT[address.port][address.pin] >= EINT_0)  && ( PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE ) ) )
-		    { 
-		      // Configure the interrupt mode (trigger on low input, any change, rising
-			// edge, or falling edge).  The mode constants were chosen to correspond
-			// to the configuration bits in the hardware register, so we simply shift
-			// the mode into place.
-			  
-			// Enable the interrupt.
-			intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = userFunc;  
-			switch ((uint8_t)PC_INT[address.port][address.pin]) 
-			{
-#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
-			  case EINT_0:
-			    // Set the mode of interrupt.
-			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-			    // Enable the interrupt.
-			    EIMSK |= (1 << INT0);
-			    break;
-			  case EINT_1:
-			    EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
-			    EIMSK |= (1 << INT1);
-			    break;
-			  case EINT_2:
-			    EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
-			    EIMSK |= (1 << INT2);
-			    break;
-			  case EINT_3:
-			    EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
-			    EIMSK |= (1 << INT3);
-			    break;
-			  case EINT_4:
-			    EICRB = (EICRB & ~((1 << ISC40) | (1 << ISC41))) | (mode << ISC40);
-			    EIMSK |= (1 << INT4);
-			    break;
-			  case EINT_5:
-			    EICRB = (EICRB & ~((1 << ISC50) | (1 << ISC51))) | (mode << ISC50);
-			    EIMSK |= (1 << INT5);
-			    break;
-			  case EINT_6:
-			    EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
-			    EIMSK |= (1 << INT6);
-			    break;
-			  case EINT_7:
-			    EICRB = (EICRB & ~((1 << ISC70) | (1 << ISC71))) | (mode << ISC70);
-			    EIMSK |= (1 << INT7);
-			    break;
-#elif defined(__AVR_ATmega64M1__)
-			  case EINT_0:
-			    // Set the mode of interrupt.
-			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-			    // Enable the interrupt.
-			    EIMSK |= (1 << INT0);
-			    break;
-			  case EINT_1:
-			    EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
-			    EIMSK |= (1 << INT1);
-			    break;
-			  case EINT_2:
-			    EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
-			    EIMSK |= (1 << INT2);
-			    break;
-			  case EINT_3:
-			    EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
-			    EIMSK |= (1 << INT3);
-			    break;	
-#else
-	#error attachInterrupt not yet implemented for this cpu (case 1)
-			/*
-			  case 0:
-			  #if defined(EICRA) && defined(ISC00) && defined(EIMSK)
-			    EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-			    EIMSK |= (1 << INT0);
-			  #elif defined(MCUCR) && defined(ISC00) && defined(GICR)
-			    MCUCR = (MCUCR & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-			    GICR |= (1 << INT0);
-			  #elif defined(MCUCR) && defined(ISC00) && defined(GIMSK)
-			    MCUCR = (MCUCR & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-			    GIMSK |= (1 << INT0);
-			  #else
-			    #error attachInterrupt not finished for this CPU (case 0)
-			  #endif
-			    break;
-
-			  case 1:
-			  #if defined(EICRA) && defined(ISC10) && defined(ISC11) && defined(EIMSK)
-			    EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
-			    EIMSK |= (1 << INT1);
-			  #elif defined(MCUCR) && defined(ISC10) && defined(ISC11) && defined(GICR)
-			    MCUCR = (MCUCR & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
-			    GICR |= (1 << INT1);
-			  #elif defined(MCUCR) && defined(ISC10) && defined(GIMSK) && defined(GIMSK)
-			    MCUCR = (MCUCR & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
-			    GIMSK |= (1 << INT1);
-			  #else
-			    #warning attachInterrupt may need some more work for this cpu (case 1)
-			  #endif
-			    break;
-			    */
-#endif
-		      }
-		    
-		    
-		  }
-		  
-		  else
-		  {
-		      // The Given pin does not have an interrupt available to it.
-		      return GP_OUT_OF_RANGE;
-		  }
-		      // All went according to plan, well done, pat on the back, all that sort of thing.
-		      return GP_SUCCESS;
-		  
 		}
-		
-		
-		
-		
-inter_return_t gpio_pin_imp::disable_interrupt(void) 
+	}
+ 
+	// Check to see if the pin is one of the special EINT pins
+	else if (( PC_INT[address.port][address.pin] >= EINT_0)  && ( PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE ) ) )
+	{ 
+		// Configure the interrupt mode (trigger on low input, any change, rising  edge, or falling edge).  The mode constants were chosen to correspond
+		// to the configuration bits in the hardware register, so we simply shift the mode into place.
+			  
+		// Enable the interrupt.
+		intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = (voidFuncPtr) userFunc;  
+		switch ((uint8_t)PC_INT[address.port][address.pin]) 
 		{
-		    // If it is a pin change interrupt, then we have to check the semaphore
-		    if( ( PC_INT[address.port][address.pin] >= PCINT_0 )  && ( PC_INT[address.port][address.pin] < NUM_BANKS ) ) 
-		    {
-			// Check to see if semaphore is free
-			if( !pc_int_sem[PC_INT[address.port][address.pin]].procure() )
-			{
-			    // if semaphore is taken
-			    switch ((uint8_t)PC_INT[address.port][address.pin]) 
-			    {
+#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
+			case EINT_0:
+				// Set the mode of interrupt.
+				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
+				// Enable the interrupt.
+				EIMSK |= (1 << INT0);
+				break;
+			case EINT_1:
+				EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
+				EIMSK |= (1 << INT1);
+				break;
+			case EINT_2:
+				EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+				EIMSK |= (1 << INT2);
+				break;
+			case EINT_3:
+				EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
+				EIMSK |= (1 << INT3);
+				break;
+			case EINT_4:
+				EICRB = (EICRB & ~((1 << ISC40) | (1 << ISC41))) | (mode << ISC40);
+				EIMSK |= (1 << INT4);
+				break;
+			case EINT_5:
+				EICRB = (EICRB & ~((1 << ISC50) | (1 << ISC51))) | (mode << ISC50);
+				EIMSK |= (1 << INT5);
+				break;
+			case EINT_6:
+				EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
+				EIMSK |= (1 << INT6);
+				break;
+			case EINT_7:
+				EICRB = (EICRB & ~((1 << ISC70) | (1 << ISC71))) | (mode << ISC70);
+				EIMSK |= (1 << INT7);
+				break;
+#elif defined(__AVR_ATmega64M1__)
+			case EINT_0:
+				// Set the mode of interrupt.
+				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
+				// Enable the interrupt.
+				EIMSK |= (1 << INT0);
+				break;
+			case EINT_1:
+				EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
+				EIMSK |= (1 << INT1);
+				break;
+			case EINT_2:
+				EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+				EIMSK |= (1 << INT2);
+				break;
+			case EINT_3:
+				EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
+				EIMSK |= (1 << INT3);
+				break;	
+#else
+	#error "GPIO interrupts not implemented for this configuration."
+#endif
+		}     
+	}	  
+	else
+	{
+		// The Given pin does not have an interrupt available to it.
+		return GPIO_INT_OUT_OF_RANGE;
+	}
+	
+	// All done.
+	return GPIO_INT_SUCCESS;		  
+}
+
+Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void) 
+{
+	// If it is a pin change interrupt, then we have to check the semaphore
+	if ((PC_INT[address.port][address.pin] >= PCINT_0)  && (PC_INT[address.port][address.pin] < NUM_BANKS)) 
+	{
+		// If semaphore is taken.
+		switch ((uint8_t) PC_INT[address.port][address.pin]) 
+		{
 #if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
-			      case PCINT_0:
+			case PCINT_0:
 				// Disable the interrupt.
 				PCICR &= ~(1 << PCINT_0);
 				// Clear the mask register so that all pins are disabled.
 				PCMSK0 = 0;
 				break;
-			      case PCINT_1:
+			case PCINT_1:
 				PCICR &= ~(1 << PCINT_1);
 				PCMSK0 = 0;
 				break;
-			      case PCINT_2:
+		      	case PCINT_2:
 				PCICR &= ~(1 << PCINT_2);
 				PCMSK0 = 0;
 				break;
 #elif defined(__AVR_AT90CAN128__)
-				//do nothing, no PCINT on AT90CAN128
+			// Do nothing; no PCINT on AT90CAN128.
 #else
-	#error not for this cpu yet
+	#error "GPIO interrupts not implemented for this configuration."
 #endif
-			    }
-			    // Vacate the semaphore
-			    pc_int_sem[PC_INT[address.port][address.pin]].vacate();
-			}
-			else
-			{  
-			    // The semaphore was never taken. This could be useful for debugging.
-			    return GP_ALREADY_DONE;
-			}
-			
-			intFunc[PC_INT[address.port][address.pin]] = 0;
-		    }
-		    // If it is an external interrupt (i.e specific pin) then we can disable it easily.
-		    else if (( PC_INT[address.port][address.pin] >= EINT_0)  && ( PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE ) ) )
-		    {
-			switch ((uint8_t)PC_INT[address.port][address.pin]) 
-			{
+		}
+		
+		// Detach user's callback from the actual ISR.			
+		intFunc[PC_INT[address.port][address.pin]] = 0;
+	}
+	
+	// If it is an external interrupt (i.e specific pin) then we can disable it easily.
+	else if ((PC_INT[address.port][address.pin] >= EINT_0)  && (PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE )))
+	{
+		switch ((uint8_t)PC_INT[address.port][address.pin]) 
+		{
 #if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
-			      case EINT_0:
+			case EINT_0:
 				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
 				EIMSK &= ~(1 << INT0);
 				break;
-			      case EINT_1:
+			case EINT_1:
 				EIMSK &= ~(1 << INT1);
 				break;
-			      case EINT_2:
+			case EINT_2:
 				EIMSK &= ~(1 << INT2);
 				break;
-			      case EINT_3:
+			case EINT_3:
 				EIMSK &= ~(1 << INT3);
 				break;
-			      case EINT_4:
+			case EINT_4:
 				EIMSK &= ~(1 << INT4);
 				break;
-			      case EINT_5:
+			case EINT_5:
 				EIMSK &= ~(1 << INT5);
 				break;
-			      case EINT_6:
+			case EINT_6:
 				EIMSK &= ~(1 << INT6);
 				break;
-			      case EINT_7:
+			case EINT_7:
 				EIMSK &= ~(1 << INT7);
 				break;
 #elif defined (__AVR_ATmega64M1__)
+			case EINT_0:
 				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
 				EIMSK &= ~(1 << INT0);
 				break;
-			      case EINT_1:
+			case EINT_1:
 				EIMSK &= ~(1 << INT1);
 				break;
-			      case EINT_2:
+			case EINT_2:
 				EIMSK &= ~(1 << INT2);
 				break;
-			      case EINT_3:
+			case EINT_3:
 				EIMSK &= ~(1 << INT3);						
 #else
-	#error not implemented for this cpu
-				/*
-			      case 0:
-			      #if defined(EIMSK) && defined(INT0)
-				EIMSK &= ~(1 << INT0);
-			      #elif defined(GICR) && defined(ISC00)
-				GICR &= ~(1 << INT0); // atmega32
-			      #elif defined(GIMSK) && defined(INT0)
-				GIMSK &= ~(1 << INT0);
-			      #else
-				#error detachInterrupt not finished for this cpu
-			      #endif
-				break;
-
-			      case 1:
-			      #if defined(EIMSK) && defined(INT1)
-				EIMSK &= ~(1 << INT1);
-			      #elif defined(GICR) && defined(INT1)
-				GICR &= ~(1 << INT1); // atmega32
-			      #elif defined(GIMSK) && defined(INT1)
-				GIMSK &= ~(1 << INT1);
-			      #else
-				#warning detachInterrupt may need some more work for this cpu (case 1)
-			      #endif
-				break;
-				*/
+	#error "GPIO interrupts not implemented for this configuration."
 #endif
-			  }
-		    // detach user's ISR from actual ISR
-		    intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = 0;
-	      }
-	      else
-	      {
-			return GP_OUT_OF_RANGE;
-	      }
-	      return GP_SUCCESS;
-	  }
+		}
+
+		// Detach user's callback from the actual ISR.
+		intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = 0;
+	}
+	else
+	{
+		return GPIO_INT_OUT_OF_RANGE;
+	}
+
+	// All done.
+	return GPIO_INT_SUCCESS;
+}
+
+// ALL DONE.
+
