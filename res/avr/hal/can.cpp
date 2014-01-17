@@ -562,12 +562,19 @@ Can::Can(Can_tree* imp)
 //Method implementations
 Can Can::bind(CAN_CTRL controller)
 {
-	if (Can_tree_imps[controller].TX_pin_s->procure() && Can_tree_imps[controller].RX_pin_s->procure())
+	int_off();
+	if (Can_tree_imps[controller].TX_pin_s->check_free() && Can_tree_imps[controller].RX_pin_s->check_free())
 	{
+		//procure semaphores (will always be free here because interrupt off and state just checked)
+		Can_tree_imps[controller].TX_pin_s->procure();
+		Can_tree_imps[controller].RX_pin_s->procure();
+		
+		int_restore();
 		return Can(&Can_tree_imps[controller]);
 	} 
 	else
 	{
+		int_restore();
 		return NULL;
 	}
 }
