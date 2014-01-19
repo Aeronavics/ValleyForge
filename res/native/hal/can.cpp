@@ -147,7 +147,7 @@ bool Can::transmit(CAN_BUF buffer_name, Can_message msg)
 	
 	/* ************** Writing frame to buffer **************** */
 	int ret;
-	while ((ret = send(s, &frame, sizeof(frame), 0)) != sizeof(frame))
+	while ((ret = send(s, &frame, sizeof(frame), 0)) < sizeof(frame))
 	{
 		if (ret < 0)
 		{

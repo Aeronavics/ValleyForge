@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <util/delay.h>
 
-//#define F_CPU (<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000)	//Used for delaying
+// DEFINE PRIVATE MACROS
 #define ENABLE_TOUT_MS  500;									//Controller enable timeout
 
 //different interrupt vector names for different micros
@@ -52,7 +52,7 @@
 	#define OVR_TIM_IT_VECT CAN_TOVF_vect
 #endif
 
-/**********************************************************************/
+// DECLARE PRIVATE GLOBAL VARIABLES
 bool can_initialised = false;
 
 volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
@@ -61,11 +61,9 @@ volatile CAN_BUF interrupt_service_buffer;
 // DECLARE IMPORTED GLOBAL VARIABLES.
 extern semaphore semaphores[NUM_PORTS][NUM_PINS];
 
-/**********************************************************************/
 // FORWARD DECLARATION
 void init_can(void);
 
-/**********************************************************************/
 /**
  * Can buffer class
  */
@@ -264,7 +262,7 @@ bool Can_buffer::test_interrupt(CAN_INT_NAME interrupt)
 	}
 }
 
-/**********************************************************************/
+/* ****************************************************************** */
 /**
  * Can filter class
  */
@@ -321,7 +319,7 @@ void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 	filter_data = filter;	//store as field so registers don't need to be accessed again
 }
 
-/**********************************************************************/
+/* ****************************************************************** */
 /**
  * Can mask class
  */
@@ -351,7 +349,7 @@ void Can_mask::set_mask_val(uint32_t mask, bool RTR)
 	mask_data = mask;	//store as field so registers don't need to be accessed again
 }
 
-/**********************************************************************/
+/* ****************************************************************** */
 /**
  * Actual implementation of Can controller, all instances of Can controller
  * created will point to an instance of this class. There will be as many
@@ -425,12 +423,7 @@ class Can_tree
 };
 
 Can_tree::Can_tree(void)
-{
-	if (!can_initialised)
-	{
-		init_can();
-	}
-	
+{	
 	uint8_t num_buf = static_cast<uint8_t>(NB_BUF);
 	for (uint8_t i=0; i<num_buf; i++)
 	{
@@ -562,6 +555,11 @@ Can::Can(Can_tree* imp)
 //Method implementations
 Can Can::bind(CAN_CTRL controller)
 {
+	if (!can_initialised)
+	{
+		init_can();
+	}
+
 	int_off();
 	if (Can_tree_imps[controller].TX_pin_s->check_free() && Can_tree_imps[controller].RX_pin_s->check_free())
 	{

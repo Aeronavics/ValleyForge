@@ -103,7 +103,7 @@
 
 typedef void (*voidFuncPtr)(void);
 
-enum gpio_mode {INPUT, OUTPUT};
+enum gpio_mode {INPUT, OUTPUT, INPUT_PD, INPUT_PU, OUTPUT_OD, OUTPUT_PP};	//plain INPUT is floating
 
 enum gpio_output_state {O_LOW, O_HIGH, O_TOGGLE, O_ERROR=-1};
 

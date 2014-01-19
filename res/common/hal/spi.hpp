@@ -71,7 +71,13 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-enum spi_number {SPI_0};
+#if (defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__) || defined (__AVR_ATmega64M1__))
+	enum spi_number {SPI_0};
+#endif
+
+#if (defined (__STM32F103xx__))
+	enum spi_number {SPI_0, SPI_1};
+#endif
 
 enum spi_configuration {SPI_MASTER, SPI_SLAVE};
 
@@ -82,6 +88,14 @@ enum spi_mode {SPI_MODE_0, SPI_MODE_1, SPI_MODE_2, SPI_MODE_3};
 enum spi_clock_divider {SPI_DIV_2, SPI_DIV_4, SPI_DIV_8, SPI_DIV_16, SPI_DIV_32, SPI_DIV_64, SPI_DIV_128};
 
 enum spi_interrupt_types {SPI_STC};
+
+enum spi_frame_format {SPI_8BIT, SPI_16BIT};
+
+enum spi_slave_select_mode {SPI_HARDWARE_SS, SPI_SOFTWARE_SS};
+
+enum spi_data_direction {SPI_2LINE_FULL_DUPLEX, SPI_2LINE_RX, SPI_1LINE_RX, SPI_1LINE_TX};
+
+enum spi_status {SPI_BUSY, SPI_OVERRUN, SPI_MODEFAULT, SPI_CRCERR, SPI_UNDERRUN, SPI_CHSIDE, SPI_TXE, SPI_RXNE};
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -140,6 +154,14 @@ class spi
 		int8_t set_clock_divider(spi_clock_divider divider);
 		
 		/**
+		 * Sets how slave select works
+		 * 
+		 * @param mode			Hardware or software slave select from the enumerated options
+		 * @return 0 for success, -1 for error
+		 */
+		int8_t set_slave_select_mode(spi_slave_select_mode mode);
+		
+		/**
 		 * Enables an interrupt to be be associated with a SPI connection.
 		 *
 		 * @param interrupt		One of the possible interrupt types that are available.
@@ -175,6 +197,14 @@ class spi
 		 * @return Nothing.
 		 */
 		 void transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);	
+		 
+		 /**
+		 * Returns the status of the SPI buffer
+		 * 
+		 * @param Nothing
+		 * @return Status of SPI buffer
+		 */
+		 spi_status get_status(void);
 		 
 		 /**
 		 * Transfers a block of data and receives data via the SPI connection.
@@ -221,8 +251,7 @@ class spi
 
 		spi operator =(spi const&);	// Poisoned.
 
-		// Fields.
-
+		// Fields.	
 		/**
 		* Pointer to the machine specific implementation of the SPI.
 		*/
@@ -240,25 +269,17 @@ class spi_slave
 		 * Function to select the associated SPI Slave device and transfer data to/from it.
 		 *
 		 * @param  Nothing.
-		 * @return Nothing.
+		 * @return 0 for success, -1 for failure
 		 */
-		 void enable(void);
+		 int8_t enable(void);
 		
 		/**
 		 * Function to deselect the associated SPI Slave device.
 		 *
 		 * @param  Nothing.
-		 * @return Nothing.
+		 * @return 0 for success, -1 for failure
 		 */
-		 void disable(void);
-
-		/** 
-		 * Allows access to the SPI Slave to be relinquished and reused elsewhere.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		void vacate(void);
+		 int8_t disable(void);
 		
 		/**
 		 * Allows a process to request attachment of a SPI Slave and manages the semaphore
@@ -275,7 +296,7 @@ class spi_slave
 		 * @param  Nothing.
 		 * @return Nothing.
 		 */
-		 ~spi_slave(void);
+		 //~spi_slave(void); 
 		
 	private:
 		// Functions.
@@ -292,6 +313,7 @@ class spi_slave
 		* Pointer to the machine specific implementation of the SPI Slave.
 		*/
 		spi_slave_imp* imp;
+
 };
 	  
 

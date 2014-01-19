@@ -36,24 +36,6 @@
 #include <stdio.h>
 
 // DEFINE PRIVATE MACROS.
-typedef enum
-{ 
-	GPIO_Mode_AIN = 0x0,
-	GPIO_Mode_IN_FLOATING = 0x04,
-	GPIO_Mode_IPD = 0x28,
-	GPIO_Mode_IPU = 0x48,
-	GPIO_Mode_Out_OD = 0x14,
-	GPIO_Mode_Out_PP = 0x10,
-	GPIO_Mode_AF_OD = 0x1C,
-	GPIO_Mode_AF_PP = 0x18
-} GPIOMode_TypeDef;
-
-typedef enum
-{ 
-	GPIO_Speed_10MHz = 1,
-	GPIO_Speed_2MHz, 
-	GPIO_Speed_50MHz
-} GPIOSpeed_TypeDef;
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
@@ -171,6 +153,11 @@ gpio_input_state gpio_pin::read(void)
 	return (imp->read());
 }
 
+bool gpio_pin::is_valid(void)
+{
+	return (imp != NULL);
+}
+
 void gpio_pin::vacate(void)
 {
 	// Check if we're already vacated, since there shouldn't be an error if you vacate twice.
@@ -216,35 +203,17 @@ gpio_pin gpio_pin::grab(gpio_pin_address address)
 void gpio_init(void)
 {
 	// Attach the gpio pin implementations to the semaphores which control the corresponding pins.
-	for (uint8_t i = 0; i < NUM_PORTS; i++)
+	for (uint8_t i=0; i<NUM_PORTS; i++)
 	{
-		for (uint8_t j = 0; j < NUM_PINS; j++)
+		for (uint8_t j=0; j<NUM_PINS; j++)
 		{
 			// Attach the semaphores to those in the pin implementations.
 			gpio_pin_imps[i][j].s = &semaphores[i][j];
 			gpio_pin_imps[i][j].address.port = (port_t)i;
 			gpio_pin_imps[i][j].address.pin = (pin_t)j;
 			
-			switch (gpio_pin_imps[i][j].address.port)
-			{
-				case(PORT_A):
-					gpio_pin_imps[i][j].port_address = GPIOA;
-					break;
-				case(PORT_B):
-					gpio_pin_imps[i][j].port_address = GPIOB;
-					break;
-				case(PORT_C):
-					gpio_pin_imps[i][j].port_address = GPIOC;
-					break;
-				case(PORT_D):
-					gpio_pin_imps[i][j].port_address = GPIOD;
-					break;
-				case(PORT_E):
-					gpio_pin_imps[i][j].port_address = GPIOE;
-					break;
-				default:
-					break;	//extra enums were made due to the target global hal.hpp, STM32103x doesn't have this many ports
-			}
+			// Add a field representing the actual address of the register
+			gpio_pin_imps[i][j].port_address = (GPIO_TypeDef *) (GPIOA_BASE + 0x400*i);
 		}
 	}
 
@@ -306,17 +275,36 @@ int8_t gpio_pin_imp::set_mode(gpio_mode mode)
 	}
 
 	/* Write to control register */
-	uint8_t CR_offset = (address.pin % 8) * 4;	//CR has 4 bits for each pin
+	//copy value from selected register
+	uint32_t tempreg;
 	if (address.pin < 8)
 	{
-		port_address->CRL |= ((CNFy << (CR_offset+2)) | (MODEy << (CR_offset)));
+		tempreg = port_address->CRL;
 	}
 	else 
 	{
-		port_address->CRH |= ((CNFy << (CR_offset+2)) | (MODEy << (CR_offset)));
+		tempreg = port_address->CRH;
 	}
 	
-	/* if pull-up/down specified, write to BSRR register to set it */
+	uint8_t CR_offset = (address.pin % 8) * 4;	//CR has 4 bits for each pin
+	//make sure the bits that are going to be set are 0 before being set 
+	tempreg &= ~((uint32_t) (0b1111<<CR_offset));
+	
+	//create the final value for the whole register
+	tempreg |= ((CNFy << (CR_offset+2)) | (MODEy << (CR_offset)));
+	
+	//write to the selected register
+	if (address.pin < 8)
+	{
+		port_address->CRL = tempreg;
+	}
+	else 
+	{
+		port_address->CRH = tempreg;
+	}
+	
+	/* if pull-up/down specified, write to BSRR register to set it or BRR
+	 * register to reset accordingly */
 	if (mode == INPUT_PD)
 	{
 		port_address->BRR |= (1 << address.pin);		

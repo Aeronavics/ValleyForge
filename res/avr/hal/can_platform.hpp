@@ -57,7 +57,7 @@
 
 #include <stdint.h>
 
-/******************* Macros for AVR registers ************************/
+/* ***************** Macros for AVR registers ********************** */
 
 // Globals to hold register values that set the baud rate
 
