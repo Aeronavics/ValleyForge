@@ -59,10 +59,26 @@
 
 /* The constants that allow access to the Port registers in memory (DDRx, PORTx & PINx) */
 /* NB: ATmega 2560 particular */
-#define PORT_MULTIPLIER	3
-#define P_OFFSET		235
 
-enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
+
+#if defined (__AVR_ATmega2560__)
+	enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
+	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
+	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7}; 
+	
+#elif defined (__AVR_ATmega64M1__)
+	enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3};
+	enum port_t {PORT_B=1, PORT_C, PORT_D};
+	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
+	
+#elif defined (__AVR_AT90CAN128__)
+	enum int_bank_t {PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
+	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G};
+	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
+	
+#else
+	#error "No port/pin definitions for this configuration."
+#endif
 
 #if defined (__AVR_ATmega2560__)
 	#	define NUM_PORTS		12	
@@ -109,11 +125,14 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 	#	define T5_IC			1
 	#	define T5_AS			0
 	#	define T5_REV			0
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
 
 
 	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 	#	define EXT_INT_SIZE		8
-	#	define INT_DIFF_OFFSET		3
+	#	define INT_DIFF_OFFSET	3
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
@@ -128,18 +147,17 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 
 	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The ATmega2560 has only 
 	// 8 External Pin interrupts, and a range of Pin Change interrupts.
-	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
-								{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},				// B
+	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
+							   {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
+								{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},							// B
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
-								{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  			// D
-								{PCINT_1, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},				// E
+								{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  					// D
+								{PCINT_1, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},						// E
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// F
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// G
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// H
-								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// I 
-								// -- There is no port I but easier to leave this in.
-								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_NONE},		 		// J
-								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2},				// K
+								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_NONE},		 				// J
+								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2},							// K
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};	// L
 						     
 						         
@@ -161,15 +179,13 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 	#	define T1_IC			1
 	#	define T1_AS			0
 	#	define T1_REV			0
-
-	#	define T2_SIZE			0
-	#	define T3_SIZE			0
-	#	define T4_SIZE			0
-	#	define T5_SIZE			0
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
 							
 	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 	#	define EXT_INT_SIZE		4
-	#	define INT_DIFF_OFFSET		3
+	#	define INT_DIFF_OFFSET	3
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
@@ -183,13 +199,13 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 
 	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1 has 4 interrupt ports with 8 pins
 	// each. The external interrupt pins are shared with some of the PCINT pins: B2, B5, C0, D6
-	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
-								{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},				// B
-								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  	// C
-								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2}};  			// D
+	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
+							   {{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},							// B
+								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  							// C
+								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2}};  						// D
 
 #elif defined (__AVR_AT90CAN128__)
-	#	define NUM_PORTS		6
+	#	define NUM_PORTS		7
 	#	define NUM_PINS			8
 		
 	#	define T0_SIZE			8
@@ -219,13 +235,13 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 	#	define T3_IC			1
 	#	define T3_AS			0
 	#	define T3_REV			0
-
-	#	define T4_SIZE			0
-	#	define T5_SIZE			0
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
 
 	#	define NUM_BANKS		0	// No PCINT pins hence no PCINT ports
 	#	define EXT_INT_SIZE		8
-	#	define INT_DIFF_OFFSET		6
+	#	define INT_DIFF_OFFSET	6
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
@@ -239,17 +255,22 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_3, PCINT_4, PCINT_NONE, EINT_0
 
 		// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The AT90CAN128 has 6 ports each with 8 pins.
 		// It only has external interrupt pins and no pin-change interrupts.
-		static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},				// B
+		static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
+								   {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
+									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// B
 									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
-									{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  			// D
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},				// E
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  	// F
-
-
-	
+									{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  					// D
+									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},					// E
+									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// F
+									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  // G
+									
+#else
+	#error "No peripheral definition for this configuration"	
 #endif
 
-#define TOTAL_PINS			NUM_PORTS * PINS_PER_PORT
+#define TOTAL_PINS	NUM_PORTS * PINS_PER_PORT
+
+// GPIO pin mode.
+enum Gpio_mode {GPIO_INPUT_PU, GPIO_OUTPUT_PP, GPIO_INPUT_FL};
 
 #endif /*__TARGET_CONFIG_H__*/
