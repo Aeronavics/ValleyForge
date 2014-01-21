@@ -52,16 +52,13 @@ void int_on(void)
 	sei();
 }
 
-void int_off(void)
+bool int_off(void)
 {
 	int_flag = ((SREG & (1 << INT_BIT)) ? true : false);
 	cli();
+	return int_flag;
 }
 
-void int_restore(void)
-{
-	SREG = (int_flag ? (SREG | (1 << INT_BIT)) : (SREG & ~(1 << INT_BIT)));
-}
 // IMPLEMENT PRIVATE FUNCTIONS.
 
 // ALL DONE.

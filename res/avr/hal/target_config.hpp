@@ -132,7 +132,6 @@
 
 	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 	#	define EXT_INT_SIZE		8
-	#	define INT_DIFF_OFFSET	3
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
@@ -163,7 +162,7 @@
 						         
 
 #elif defined (__AVR_ATmega64M1__)
-	#	define NUM_PORTS		4
+	#	define NUM_PORTS		3
 	#	define NUM_PINS			8
 
 	#	define T0_SIZE			8
@@ -185,7 +184,6 @@
 							
 	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 	#	define EXT_INT_SIZE		4
-	#	define INT_DIFF_OFFSET	3
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  
@@ -197,12 +195,13 @@
 
 	#	define INT_BIT			7
 
-	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1 has 4 interrupt ports with 8 pins
-	// each. The external interrupt pins are shared with some of the PCINT pins: B2, B5, C0, D6
+	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1 has 3 interrupt ports with 8 pins
+	// each. Note that the EINT pins are also PCINT pins, but the EINT vector has priority over the PCINT.
 	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
-							   {{PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0, PCINT_0},							// B
-								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  							// C
-								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2}};  						// D
+							   {{PCINT_0, PCINT_0, EINT_1, PCINT_0, PCINT_0, EINT_2, PCINT_0, PCINT_0},		// B
+								{EINT_3, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  	// C
+								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, EINT_0, PCINT_2}};   // D
+								// Port E exists but only has three pins and is for special features only.
 
 #elif defined (__AVR_AT90CAN128__)
 	#	define NUM_PORTS		7
@@ -241,7 +240,6 @@
 
 	#	define NUM_BANKS		0	// No PCINT pins hence no PCINT ports
 	#	define EXT_INT_SIZE		8
-	#	define INT_DIFF_OFFSET	6
 
 	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
 									  

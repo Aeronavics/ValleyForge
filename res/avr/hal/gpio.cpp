@@ -203,61 +203,83 @@ Gpio_interrupt_status Gpio_pin::disable_interrupt(void)
 // This offset is here because the interrupts are enumerated, not in the same order as the function array. This is because the number of interrupts changes with architecture.
 
 SIGNAL(INT0_vect) {
-	if(intFunc[EINT_0 - INT_DIFF_OFFSET]) 
-		intFunc[EINT_0 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_0]) 
+	{
+		intFunc[EINT_0]();
+	}
 }
 
 SIGNAL(INT1_vect) {
-	if(intFunc[EINT_1 - INT_DIFF_OFFSET])
-		intFunc[EINT_1 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_1])
+	{
+		intFunc[EINT_1]();
+	}
 }
 
 SIGNAL(INT2_vect) {
-	if(intFunc[EINT_2 - INT_DIFF_OFFSET])
-		intFunc[EINT_2 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_2])
+	{
+		intFunc[EINT_2]();
+	}
 }
 
 SIGNAL(INT3_vect) {
-	if(intFunc[EINT_3 - INT_DIFF_OFFSET])
-		intFunc[EINT_3 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_3])
+	{
+		intFunc[EINT_3]();
+	}
 }
 
 #if (defined(__AVR_ATmega2560__)) || (defined(__AVR_AT90CAN128__))
 SIGNAL(INT4_vect) {
-	if(intFunc[EINT_4 - INT_DIFF_OFFSET])
-		intFunc[EINT_4 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_4])
+	{
+		intFunc[EINT_4]();
+	}
 }
 
 SIGNAL(INT5_vect) {
-	if(intFunc[EINT_5 - INT_DIFF_OFFSET])
-		intFunc[EINT_5 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_5])
+	{
+		intFunc[EINT_5]();
+	}
 }
 
 SIGNAL(INT6_vect) {
-	if(intFunc[EINT_6 - INT_DIFF_OFFSET])
-		intFunc[EINT_6 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_6])
+	{
+		intFunc[EINT_6]();
+	}
 }
 
 SIGNAL(INT7_vect) {
-	if(intFunc[EINT_7 - INT_DIFF_OFFSET])
-		intFunc[EINT_7 - INT_DIFF_OFFSET]();
+	if(intFunc[EINT_7])
+	{
+		intFunc[EINT_7]();
+	}
 }
 #endif
 
 #if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega2560__)
 SIGNAL(PCINT0_vect) {
 	if(intFunc[PCINT_0])
+	{
 		intFunc[PCINT_0]();
+	}
 }
 
 SIGNAL(PCINT1_vect) {
 	if(intFunc[PCINT_1])
+	{
 		intFunc[PCINT_1]();
+	}
 }
 
 SIGNAL(PCINT2_vect) {
 	if(intFunc[PCINT_2])
+	{
 		intFunc[PCINT_2]();
+	}
 }
 #endif
 
@@ -295,7 +317,7 @@ Gpio_io_status Gpio_pin_imp::set_mode(Gpio_mode mode)
 	
 	if (mode == GPIO_INPUT_FL)
 	{
-		write(GPIO_O_LOW);		//write to PORTx to enable pull up
+		write(GPIO_O_LOW);		//write low to PORTx to disable pull up
 	} 
 	
 	// All done.	
@@ -372,56 +394,28 @@ Gpio_input_state Gpio_pin_imp::read(void)
 				
 Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, void (*userFunc)(void))
 {
+	Gpio_interrupt_status ret_code;
 	
-	// If target has PCINT pins, check to see if pin is a on a PCINT bank
-	#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__)
-	if( ( PC_INT[address.port][address.pin] >= PCINT_0 )  && ( PC_INT[address.port][address.pin] < NUM_BANKS ) ) 
-	{
-		// Change the value in the function pointer array to that given by the user.
-		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc;
-
-		// Check which PCINT bank it is on, and set interrupt accordingly.
-		switch ((uint8_t)PC_INT[address.port][address.pin]) 
+	#if defined(__AVR_ATmega2560__)
+		/* Determine the type of interrupt this pin can use. EINT_x pins supports custom events as specified by the  
+		 * 'mode' argument whereas PCINT_x pins does not */
+		 
+		switch (PC_INT[address.port][address.pin])
 		{
 			case PCINT_0:
 				PCICR |= (1 << PCINT_0);
 				PCMSK0 = (1 << address.pin);
 				break;
-			
 			case PCINT_1:
 				PCICR |= (1 << PCINT_1);
-				#if defined(__AVR_ATmega2560__)
-				// Mostly the pins' position on the interrupt bank matches their position on their port, however pins PORTJ(0-6) match mask bits PCIE1(1-7).
 				PCMSK1 = (address.port == PORT_J) ? (1 << (address.pin - 1)) : (1 << address.pin);
-				#elif defined(__AVR_ATmega64M1__) || defined(__AVR_AT90CAN128__)
-				PCMSK1 = (1 << address.pin);
-				#else
-					#error "No PCINT1 defined for this configuration"
-				#endif
 				break;
 			case PCINT_2:
 				PCICR |= (1 << PCINT_2);
 				PCMSK0 = (1 << address.pin);
 				break;
-		}
-	}
-	#else
-		#warning "PCINT GPIO interrupts no implemented for this configuration"
-	#endif
- 
-	// All targets have EINT pins, check to see if the pin is one of the special EINT pins
-	if (( PC_INT[address.port][address.pin] >= EINT_0)  && ( PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE ) ) )
-	{ 
-		// Configure the interrupt mode (trigger on low input, any change, rising  edge, or falling edge).  The mode constants were chosen to correspond
-		// to the configuration bits in the hardware register, so we simply shift the mode into place.
-			  
-		// Enable the interrupt.
-		intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = (voidFuncPtr) userFunc;  
-		switch ((uint8_t)PC_INT[address.port][address.pin]) 
-		{
-		#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
 			case EINT_0:
-				// Set the mode of interrupt.
+				// Set the mode of interrupt, between falling edge, rising edge, any edge and low level.
 				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
 				// Enable the interrupt.
 				EIMSK |= (1 << INT0);
@@ -457,12 +451,44 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, v
 			default:
 				// The Given pin does not have an interrupt available to it.
 				return GPIO_INT_OUT_OF_RANGE;
-				
-		#elif defined(__AVR_ATmega64M1__)
+		}
+		
+		//determine appropriate return condition
+		if (intFunc[PC_INT[address.port][address.pin]] == userFunc)
+		{
+			ret_code = GPIO_INT_ALREADY_DONE;
+		}
+		else if (intFunc[PC_INT[address.port][address.pin]])
+		{
+			ret_code = GPIO_INT_ALREADY_TAKEN;
+		}
+		else
+		{
+			ret_code = GPIO_INT_SUCCESS;
+		}
+		
+		// Attach the callback.
+		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc;
+		
+	#elif defined(__AVR_ATmega64M1__)
+	// Provisions for ATmega64M1: Due to non-existence of port A, port_t types must be decremented by 1
+	
+		switch (PC_INT[address.port-1][address.pin])
+		{
+			case PCINT_0:
+				PCICR |= (1 << PCINT_0);
+				PCMSK0 = (1 << address.pin);
+				break;
+			case PCINT_1:
+				PCICR |= (1 << PCINT_1);
+				PCMSK1 = (1 << address.pin);
+				break;
+			case PCINT_2:
+				PCICR |= (1 << PCINT_2);
+				PCMSK0 = (1 << address.pin);
+				break;
 			case EINT_0:
-				// Set the mode of interrupt.
 				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
-				// Enable the interrupt.
 				EIMSK |= (1 << INT0);
 				break;
 			case EINT_1:
@@ -478,16 +504,84 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, v
 				EIMSK |= (1 << INT3);
 				break;	
 			default:
+				return GPIO_INT_OUT_OF_RANGE;	
+		}	
+		
+		if (intFunc[PC_INT[address.port-1][address.pin]] == userFunc)
+		{
+			ret_code = GPIO_INT_ALREADY_DONE;
+		}
+		else if (intFunc[PC_INT[address.port-1][address.pin]]) 
+		{
+			ret_code = GPIO_INT_ALREADY_TAKEN;
+		}
+		else
+		{
+			ret_code = GPIO_INT_SUCCESS;
+		}
+		intFunc[PC_INT[address.port-1][address.pin]] = (voidFuncPtr) userFunc;
+	
+	#elif defined(__AVR_AT90CAN128__)
+		// Provisions for AT90CAN128: No PCINT interrupts
+		
+		switch ((uint8_t)PC_INT[address.port][address.pin]) 
+		{
+			case EINT_0:
+				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
+				EIMSK |= (1 << INT0);
+				break;
+			case EINT_1:
+				EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC11))) | (mode << ISC10);
+				EIMSK |= (1 << INT1);
+				break;
+			case EINT_2:
+				EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+				EIMSK |= (1 << INT2);
+				break;
+			case EINT_3:
+				EICRA = (EICRA & ~((1 << ISC30) | (1 << ISC31))) | (mode << ISC30);
+				EIMSK |= (1 << INT3);
+				break;
+			case EINT_4:
+				EICRB = (EICRB & ~((1 << ISC40) | (1 << ISC41))) | (mode << ISC40);
+				EIMSK |= (1 << INT4);
+				break;
+			case EINT_5:
+				EICRB = (EICRB & ~((1 << ISC50) | (1 << ISC51))) | (mode << ISC50);
+				EIMSK |= (1 << INT5);
+				break;
+			case EINT_6:
+				EICRB = (EICRB & ~((1 << ISC60) | (1 << ISC61))) | (mode << ISC60);
+				EIMSK |= (1 << INT6);
+				break;
+			case EINT_7:
+				EICRB = (EICRB & ~((1 << ISC70) | (1 << ISC71))) | (mode << ISC70);
+				EIMSK |= (1 << INT7);
+				break;
+			default:
 				// The Given pin does not have an interrupt available to it.
 				return GPIO_INT_OUT_OF_RANGE;
-		#else
-			#error "EINT GPIO interrupts not implemented for this configuration."
-		#endif
 		}     
-	}	  
+		
+		if (intFunc[PC_INT[address.port][address.pin]] == userFunc)
+		{
+			ret_code = GPIO_INT_ALREADY_DONE
+		}
+		else if (intFunc[PC_INT[address.port][address.pin]])
+		{
+			ret_code = GPIO_INT_ALREADY_TAKEN;
+		}
+		else
+		{
+			ret_code = GPIO_INT_SUCCESS;
+		}
+		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc; 	  
+		
+	#else
+		#error "No GPIO interrupt enable implemented for this configuration"
+	#endif
 	
-	// All done.
-	return GPIO_INT_SUCCESS;		  
+	return ret_code;
 }
 
 Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void) 
@@ -496,8 +590,7 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void)
 	#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
 	if ((PC_INT[address.port][address.pin] >= PCINT_0)  && (PC_INT[address.port][address.pin] < NUM_BANKS)) 
 	{
-		// If semaphore is taken.
-		switch ((uint8_t) PC_INT[address.port][address.pin]) 
+		switch (PC_INT[address.port][address.pin]) 
 		{
 			case PCINT_0:
 				// Disable the interrupt.
@@ -509,11 +602,12 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void)
 				PCICR &= ~(1 << PCINT_1);
 				PCMSK0 = 0;
 				break;
-		      	case PCINT_2:
+		    case PCINT_2:
 				PCICR &= ~(1 << PCINT_2);
 				PCMSK0 = 0;
 				break;
-
+			default:
+				break;
 		}
 		
 		// Detach user's callback from the actual ISR.			
@@ -526,7 +620,7 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void)
 	// All targets have EINT pins, check to see if the pin is one of the special EINT pins which is easy to disable
 	if ((PC_INT[address.port][address.pin] >= EINT_0)  && (PC_INT[address.port][address.pin] < (EINT_0 + EXT_INT_SIZE )))
 	{
-		switch ((uint8_t)PC_INT[address.port][address.pin]) 
+		switch (PC_INT[address.port][address.pin]) 
 		{
 		#if defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
 			case EINT_0:
@@ -579,7 +673,7 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void)
 		}
 
 		// Detach user's callback from the actual ISR.
-		intFunc[PC_INT[address.port][address.pin] - INT_DIFF_OFFSET] = NULL;
+		intFunc[PC_INT[address.port][address.pin]] = NULL;
 	}
 
 	// All done.

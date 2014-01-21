@@ -94,9 +94,6 @@ typedef void (*voidFuncPtr)(void);
 
 // TODO - Probably need target specific options for settings such as open-drain.
 
-// GPIO pin mode.
-enum Gpio_mode {GPIO_INPUT, GPIO_OUTPUT};
-
 // GPIO IO pin state.
 enum Gpio_output_state {GPIO_O_LOW, GPIO_O_HIGH, GPIO_O_TOGGLE, GPIO_O_ERROR = -1};
 enum Gpio_input_state {GPIO_I_LOW, GPIO_I_HIGH, GPIO_I_ERROR = -1};
@@ -217,25 +214,6 @@ class Gpio_pin
 		 * @return Zero for success, non-zero for failure.
 		 */
 		Gpio_interrupt_status disable_interrupt(void);
-		
-		/**
-		 * Checks to see whether or not the GPIO pin implementation pointer is null or not. Use this after using gpio_pin_grab to see if the pin grab
-		 * was successful or not.
-		 * 
-		 * @subsection Example
-		 *
-		 * @code
-		 * Gpio_pin my_pin = Gpio_pin::grab(my_pin_address);
-		 * if (my_pin.is_valid())
-		 * {
-		 * 	my_pin.write(HIGH);
-		 * }
-		 * @endcode
-		 * 
-		 * @param Nothing.
-		 * @return True if this is a valid GPIO pin, false otherwise.
-		 */
-		bool is_valid(void);
 		
 		/**
 		 * Creates a Gpio_pin instance for a specific GPIO pin.
