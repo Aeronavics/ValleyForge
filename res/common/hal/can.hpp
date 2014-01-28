@@ -132,29 +132,10 @@ enum CAN_BUF_STAT {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX
 enum CAN_INT_NAME {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
 
 /************** ENUMERATIONS TO REPRESENT HARDWARE *********************/
-//AVRs only have 1 CAN controller
-#if (defined(__AVR_ATmega64M1__)) || (defined( __AVR_AT90CAN128__))
-enum CAN_CTRL {CAN_0, NB_CTRL};
-#endif
-
 //Linux has no well-defined controller definition but have one anyways to fit the interface
 #ifdef __linux__
 enum CAN_CTRL {CAN_0, NB_CTRL};
 #endif
-
-// The ATMega64M1 has 6 message objects
-#ifdef __AVR_ATmega64M1__
-enum CAN_BUF { BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, NB_BUF };
-enum CAN_FIL { FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, NB_FIL };
-enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, NB_MSK };
-#endif //__AVR_ATmega64M1__
-
-// The AT90CAN128 has 15 message objects
-#ifdef __AVR_AT90CAN128__
-enum CAN_BUF { BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, BUF_6, BUF_7, BUF_8, BUF_9, BUF_10, BUF_11, BUF_12, BUF_13, BUF_14, NB_BUF };
-enum CAN_FIL { FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, NB_FIL };
-enum CAN_MSK { MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, MSK_6, MSK_7, MSK_8, MSK_9, MSK_10, MSK_11, MSK_12, MSK_13, MSK_14, NB_MSK };
-#endif //__AVR_AT90CAN128__
 
 // The linux has no well-defined message objects but have as many as I can to fit the interface
 #ifdef __linux__
@@ -164,10 +145,6 @@ enum CAN_MSK { MSK_0 };
 #endif //__Native_Linux__
 
 typedef void (*Interrupt_fn)(Can_buffer&);
-
-CAN_BUF operator++(CAN_BUF& f, int);
-CAN_FIL operator++(CAN_FIL& f, int);
-CAN_MSK operator++(CAN_MSK& f, int);
 
 /********************* Struct definitions here ***********************/
 /**
@@ -195,7 +172,7 @@ class Can_buffer
 		 * @param   buf_num  The number to assign to this buffer.
 		 * @return  Nothing.
 		 */
-		void set_number(CAN_BUF buf_num);
+		void set_number(uint8_t buf_num);
 		
 		/** 
 		 * Get the arbitrary registry reference address of this buffer
@@ -203,7 +180,7 @@ class Can_buffer
 		 * @param    Nothing.
 		 * @return   Address of this buffer
 		 */
-		CAN_BUF get_number(void);
+		uint8_t get_number(void);
 		
 		/**
 		* Returns the mode of the object.
@@ -312,7 +289,7 @@ class Can_buffer
 
 		
 	// FIELDS
-		CAN_BUF buf_no;		//constructor needs this value
+		uint8_t buf_no;		//constructor needs this value
 		CAN_BUF_MODE mode;	//current mode of the buffer
 };
 
@@ -329,7 +306,7 @@ class Can_filter
 		 * @param   fil_num    The number to assign to this filter.
 		 * @return  Nothing.
 		 */
-		 void set_number(CAN_FIL fil_num);
+		 void set_number(uint8_t fil_num);
 		
 		/**
 		 * Returns buffer this filter is linked to.
@@ -399,7 +376,7 @@ class Can_filter
 
 	
 	//FIELDS
-		CAN_FIL fil_no;	//constructor needs this value
+		uint8_t fil_no;	//constructor needs this value
 		Can_buffer* buffer_link;
 		Can_mask* mask_link;
 		uint32_t filter_data;				
@@ -417,7 +394,7 @@ class Can_mask
 		 * @param    msk_num    The number to assign to this mask    
 		 * @return   Nothing
 		 */
-		void set_number(CAN_MSK msk_num);
+		void set_number(uint8_t msk_num);
 		
 		/**
 		 * Get the value this mask currently has
@@ -436,7 +413,7 @@ class Can_mask
 		void set_mask_val(uint32_t mask, bool RTR);
 		
 	private:
-		CAN_MSK msk_no;
+		uint8_t msk_no;
 		uint32_t mask_data;	
 };
 

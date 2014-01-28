@@ -40,8 +40,7 @@
 #include <stdio.h>
 #include <util/delay.h>
 
-#define F_CPU (<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000)	//Used for delaying
-#define ENABLE_TOUT_MS  500;									//Controller enable timeout
+#define ENABLE_TOUT_MS  1000;				//Controller enable timeout
 
 //different interrupt vector names for different micros
 #if defined(__AVR_AT90CAN128__)
@@ -57,35 +56,17 @@ volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
 volatile CAN_BUF interrupt_service_buffer;
 
 /**********************************************************************/
-// Allows object enums to be iterated, inelegantly, this must be defined for every implementation because it shouldn't be in in h file
-CAN_BUF operator++(CAN_BUF& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_BUF> (++temp);
-}
-
-CAN_FIL operator++(CAN_FIL& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_FIL> (++temp);
-}
-
-CAN_MSK operator++(CAN_MSK& f, int)
-{
-	int temp = f;
-	return f = static_cast<CAN_MSK>(++temp);
-}
 
 /**********************************************************************/
 /**
  * Can buffer class
  */
-void Can_buffer::set_number(CAN_BUF buf_num)
+void Can_buffer::set_number(uint8_t buf_num)
 {
 	buf_no = buf_num;
 }
 
-CAN_BUF Can_buffer::get_number(void)
+uint8_t Can_buffer::get_number(void)
 {
 	return buf_no;
 }
@@ -280,7 +261,7 @@ bool Can_buffer::test_interrupt(CAN_INT_NAME interrupt)
  * Can filter class
  */
 
-void Can_filter::set_number(CAN_FIL fil_num)
+void Can_filter::set_number(uint8_t fil_num)
 {
 	fil_no = fil_num;
 }
@@ -336,7 +317,7 @@ void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 /**
  * Can mask class
  */
-void Can_mask::set_number(CAN_MSK msk_num)
+void Can_mask::set_number(uint8_t msk_num)
 {
 	msk_no = msk_num;
 }
@@ -434,19 +415,19 @@ class Can_tree
 
 Can_tree::Can_tree(void)
 {
-	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_BUF); i++)
 	{
-		buffer[i].set_number(i);	//assign arbitrary index to buffer, CANPAGE access uses this number
+		buffer[i].set_number(static_cast<CAN_BUF>(i));	//assign arbitrary index to buffer, CANPAGE access uses this number
 	}
 	
-	for (CAN_FIL i=FIL_0; i<NB_FIL; i++)
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_FIL); i++)
 	{  
 		filter[i].set_number(i);	//assign arbitrary index to filter
 		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
 		filter[i].set_mask(&mask[i]);		//link mask to corresponding filter using index
 	}
 	
-	for (CAN_MSK i=MSK_0; i<NB_MSK; i++)
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_MSK); i++)
 	{
 		mask[i].set_number(i);
 	}
@@ -489,7 +470,7 @@ void Can_tree::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
 	if (interrupt_valid)	
 	{
 		//for channel based interrupts, must apply to ALL MOb vectors due to the way interrupt functions are addressed
-		for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+		for (uint8_t i=BUF_0; i<NB_BUF; i++)
 		{
 			intFunc[i][interrupt];	
 		}
@@ -571,7 +552,7 @@ bool Can::initialise(CAN_RATE rate)
 	Can_reset();
 	
 	//clear all buffers
-	for (CAN_BUF i=BUF_0; i<NB_BUF; i++)
+	for (uint8_t i=BUF_0; i<NB_BUF; i++)
 	{
 		Can_controller->buffer[i].set_mode(CAN_OBJ_DISABLE);
 		Can_controller->buffer[i].clear_status();	
@@ -696,7 +677,7 @@ bool Can::initialise(CAN_RATE rate)
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
 	    {
-			//doesn't work for both chips
+			//sparringly works for both chips, have to be careful about bus length and capacitance etc
 	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
@@ -710,7 +691,6 @@ bool Can::initialise(CAN_RATE rate)
 	uint16_t poll_t = ENABLE_TOUT_MS;
 	while (!(CANGSTA & (1<<ENFG)) && poll_t)
 	{
-		_delay_ms(1);
 		poll_t -= 1;			
 	}
 	

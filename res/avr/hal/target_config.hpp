@@ -20,7 +20,6 @@
  * @file		target_config.h
  * Provides definitions for to be used in implementations.
  * 
- * @todo This file should really be split up and put into the implementation folders, not the general ones.
  * 
  * @author 		Zac Frank
  *
@@ -71,13 +70,23 @@
 	enum port_t {PORT_B=1, PORT_C, PORT_D};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
+	enum CAN_CTRL {CAN_0, NB_CTRL};
+	enum CAN_BUF {BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, NB_BUF};
+	enum CAN_FIL {FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, NB_FIL};
+	enum CAN_MSK {MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, NB_MSK};
+	
 #elif defined (__AVR_AT90CAN128__)
 	enum int_bank_t {PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
 	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
+	enum CAN_CTRL {CAN_0, NB_CTRL};
+	enum CAN_BUF {BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, BUF_6, BUF_7, BUF_8, BUF_9, BUF_10, BUF_11, BUF_12, BUF_13, BUF_14, NB_BUF};
+	enum CAN_FIL {FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, NB_FIL};
+	enum CAN_MSK {MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, MSK_6, MSK_7, MSK_8, MSK_9, MSK_10, MSK_11, MSK_12, MSK_13, MSK_14, NB_MSK};
+	
 #else
-	#error "No port/pin definitions for this configuration."
+	#error "No peripheral definitions for this configuration."
 #endif
 
 #if defined (__AVR_ATmega2560__)
