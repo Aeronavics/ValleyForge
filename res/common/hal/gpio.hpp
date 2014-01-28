@@ -123,14 +123,6 @@ class Gpio_pin
 {
 	public:
 		// Functions.
-
-		/**
-		 * Gets run whenever the instance of class Gpio_pin goes out of scope.
-		 *
-		 * @param Nothing.
-		 * @return Nothing.
-		 */
-		 ~Gpio_pin(void);
 		
 		/**
 		 * Sets the pin to an input or output.
@@ -248,10 +240,15 @@ class Gpio_pin
 
 		// Fields.
 
-		/*
+		/**
 		* Pointer to the target specific implementation of the GPIO pin.
 		*/
 		Gpio_pin_imp* imp;
+		
+		/**
+		 * Address of the GPIO pin this instance interfaces
+		 */
+		IO_pin_address pin_address;
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.

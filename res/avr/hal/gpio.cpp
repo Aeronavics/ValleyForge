@@ -45,9 +45,6 @@
 
 #include <stdio.h>
 
-// We need definition for the new and delete operators so we can use the heap.
-#include "avr_magic/avr_magic.hpp"
-
 // DEFINE PRIVATE MACROS.
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
@@ -70,27 +67,13 @@ class Gpio_pin_imp
 		// Methods.
 
 		/**
-		 * Creates a new instance of Gpio_pin_imp, abstracting the GPIO pin at the specified address.
-		 *
-		 * @param address The IO address of the pin to abstract.
-		 * @return Nothing.
-		 */
-		Gpio_pin_imp(IO_pin_address pin_address)
-		{
-			address = pin_address;
-		
-			// All done.
-			return;
-		}
-
-		/**
 		 * Sets the pin to an input or output.
 		 *
 		 * @param mode 	Set to INPUT or OUTPUT.
 		 * @return Zero for success, non-zero for failure.
 		 * 
 		 */
-		Gpio_io_status set_mode(Gpio_mode mode);
+		Gpio_io_status set_mode(IO_pin_address address, Gpio_mode mode);
 
 		/**
 		 * Reads the value of the GPIO pin and returns it.
@@ -98,7 +81,7 @@ class Gpio_pin_imp
 		 * @param Nothing.
 		 * @return The current state of the IO pin.
 		 */
-		Gpio_input_state read(void);
+		Gpio_input_state read(IO_pin_address address);
 		
 		/**
 		 * Writes the value provided to the pin.
@@ -106,7 +89,7 @@ class Gpio_pin_imp
 		 * @param  value	The state to set the GPIO pin to.
 		 * @return Nothing.
 		 */
-		void write(Gpio_output_state value);
+		void write(IO_pin_address address, Gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
@@ -117,7 +100,7 @@ class Gpio_pin_imp
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return Zero for success, non-zero for failure.
 		 */
-		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
+		Gpio_interrupt_status enable_interrupt(IO_pin_address address, Gpio_interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
 		 * Disable an interrupt for the pin.
@@ -125,29 +108,18 @@ class Gpio_pin_imp
 		 * @param  Nothing.
 		 * @return Zero for success, non-zero for failure.
 		 */
-		Gpio_interrupt_status disable_interrupt(void);
-		
-	  	// Fields.
-
-	 	IO_pin_address address;
+		Gpio_interrupt_status disable_interrupt(IO_pin_address address);
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
 
+Gpio_pin_imp gpio_pin_imp;
+
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 // IMPLEMENT PUBLIC FUNCTIONS.
-
-Gpio_pin::~Gpio_pin(void)
-{
-	// Delete the implementation.
-	delete imp;
-
-	// All done.
-	return;
-}
 
 Gpio_pin::Gpio_pin(Gpio_pin_imp* implementation)
 {
@@ -160,38 +132,35 @@ Gpio_pin::Gpio_pin(Gpio_pin_imp* implementation)
 
 Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 {
-	return (imp->set_mode(mode));
+	return (imp->set_mode(pin_address, mode));
 }
 
 void Gpio_pin::write(Gpio_output_state value)
 {
-	return (imp->write(value));
+	return (imp->write(pin_address, value));
 }
 
 Gpio_input_state Gpio_pin::read(void)
 {
-	return (imp->read());
+	return (imp->read(pin_address));
 }
 
 Gpio_pin Gpio_pin::grab(IO_pin_address address)
 {
-	// Allocate an implementation for the address.
-	Gpio_pin_imp* imp = new Gpio_pin_imp(address);
-
-	// TODO - At the moment, we're just assuming this works.  If it doesn't, we're in major trouble.
-
-	// Create a new GPIO pin using this implementation.
-	return Gpio_pin(imp);
+	// Create interface instance and attach 
+	Gpio_pin new_pin = Gpio_pin(&gpio_pin_imp);
+	new_pin.pin_address = address;
+	return new_pin;
 }
 
 Gpio_interrupt_status Gpio_pin::enable_interrupt(Gpio_interrupt_mode mode, void (*user_ISR)(void))
 {
-      return imp->enable_interrupt(mode, user_ISR); 
+      return imp->enable_interrupt(pin_address, mode, user_ISR); 
 }
 
 Gpio_interrupt_status Gpio_pin::disable_interrupt(void)
 {
-      return imp->disable_interrupt();  
+      return imp->disable_interrupt(pin_address);  
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
@@ -285,7 +254,7 @@ SIGNAL(PCINT2_vect) {
 
 /* ********************** Gpio_pin_imp methods ********************** */ 
 
-Gpio_io_status Gpio_pin_imp::set_mode(Gpio_mode mode)
+Gpio_io_status Gpio_pin_imp::set_mode(IO_pin_address address, Gpio_mode mode)
 {	
 	uint8_t wmode;
 	if (mode == GPIO_INPUT_FL)
@@ -317,14 +286,14 @@ Gpio_io_status Gpio_pin_imp::set_mode(Gpio_mode mode)
 	
 	if (mode == GPIO_INPUT_FL)
 	{
-		write(GPIO_O_LOW);		//write low to PORTx to disable pull up
+		write(address, GPIO_O_LOW);		//write low to PORTx to disable pull up
 	} 
 	
 	// All done.	
 	return GPIO_SUCCESS;
 }
 		
-void Gpio_pin_imp::write (Gpio_output_state value)
+void Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state value)
 {
 	/* Set/clear port register register pin */
 	if (value == GPIO_O_TOGGLE)
@@ -372,7 +341,7 @@ void Gpio_pin_imp::write (Gpio_output_state value)
 	return;
 }
 		
-Gpio_input_state Gpio_pin_imp::read(void)
+Gpio_input_state Gpio_pin_imp::read(IO_pin_address address)
 {
 	#if defined(__AVR_ATmega2560__)		
 	if ( address.port >= PORT_H )
@@ -392,7 +361,7 @@ Gpio_input_state Gpio_pin_imp::read(void)
 	#endif 
 }
 				
-Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, void (*userFunc)(void))
+Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpio_interrupt_mode mode, void (*userFunc)(void))
 {
 	Gpio_interrupt_status ret_code;
 	
@@ -584,7 +553,7 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(Gpio_interrupt_mode mode, v
 	return ret_code;
 }
 
-Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(void) 
+Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(IO_pin_address address) 
 {
 	// If target has PCINT pins, check to see if pin is a on a PCINT bank
 	#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
