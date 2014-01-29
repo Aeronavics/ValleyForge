@@ -41,7 +41,8 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-static bool int_flag;
+static bool int_state = false;
+static bool int_prev_state;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -51,18 +52,16 @@ void int_on(void)
 {
 	// Turn on NVIC.
 	asm volatile ("cpsie i");
+	int_state = true;
 }
 
-void int_off(void)
+bool int_off(void)
 {
 	// Turn off NVIC.
 	asm volatile ("cpsid i");
-}
-
-void int_restore(void)
-{
-	// TODO - At the moment, this just turns on interrupts.
-	asm volatile ("cpsie i");
+	int_prev_state = int_state;
+	int_state = false;
+	return int_prev_state;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.

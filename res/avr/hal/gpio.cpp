@@ -89,7 +89,7 @@ class Gpio_pin_imp
 		 * @param  value	The state to set the GPIO pin to.
 		 * @return Nothing.
 		 */
-		void write(IO_pin_address address, Gpio_output_state value);
+		Gpio_io_status write(IO_pin_address address, Gpio_output_state value);
 		
 		/** 
 		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
@@ -109,6 +109,8 @@ class Gpio_pin_imp
 		 * @return Zero for success, non-zero for failure.
 		 */
 		Gpio_interrupt_status disable_interrupt(IO_pin_address address);
+		
+		Gpio_mode pin_modes[NUM_PORTS][NUM_PINS];
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -135,7 +137,7 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 	return (imp->set_mode(pin_address, mode));
 }
 
-void Gpio_pin::write(Gpio_output_state value)
+Gpio_io_status Gpio_pin::write(Gpio_output_state value)
 {
 	return (imp->write(pin_address, value));
 }
@@ -289,12 +291,19 @@ Gpio_io_status Gpio_pin_imp::set_mode(IO_pin_address address, Gpio_mode mode)
 		write(address, GPIO_O_LOW);		//write low to PORTx to disable pull up
 	} 
 	
+	pin_modes[address.port][address.pin] = mode;
+	
 	// All done.	
 	return GPIO_SUCCESS;
 }
 		
-void Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state value)
+Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state value)
 {
+	if (pin_modes[address.port][address.pin] == GPIO_INPUT_PU || pin_modes[address.port][address.pin] == GPIO_INPUT_FL)
+	{
+		return GPIO_ERROR;
+	}
+	
 	/* Set/clear port register register pin */
 	if (value == GPIO_O_TOGGLE)
 	{
@@ -338,7 +347,7 @@ void Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state value)
 	}
 
 	// All done.
-	return;
+	return GPIO_SUCCESS;
 }
 		
 Gpio_input_state Gpio_pin_imp::read(IO_pin_address address)
