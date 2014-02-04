@@ -92,7 +92,11 @@
 
 typedef void (*voidFuncPtr)(void);
 
-// TODO - Probably need target specific options for settings such as open-drain.
+/* Avaliable GPIO pin modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *	enum Gpio_mode {GPIO_INPUT, GPIO_INPUT_PU, GPIO_OUTPUT, GPIO_OUTPUT_OD};
+ *
+ */
 
 // GPIO IO pin state.
 enum Gpio_output_state {GPIO_O_LOW, GPIO_O_HIGH, GPIO_O_TOGGLE, GPIO_O_ERROR = -1};
