@@ -170,7 +170,7 @@ Gpio_io_status Gpio_pin_imp::set_mode(IO_pin_address address, Gpio_mode mode)
 			CNFy = 0b10;
 		}
 	}
-	else if (mode == GPIO_OUTPUT_OD || mode == GPIO_OUTPUT_PP)
+	else if (mode == GPIO_OUTPUT_OD || mode == GPIO_OUTPUT_PP || mode == GPIO_AF_PP)
 	{
 		MODEy = 0b11;	//output max speed 50MHz
 		if (mode == GPIO_OUTPUT_PP)
@@ -178,10 +178,15 @@ Gpio_io_status Gpio_pin_imp::set_mode(IO_pin_address address, Gpio_mode mode)
 			//push-pull
 			CNFy = 0b00;
 		}
-		else
+		else if (mode == GPIO_OUTPUT_OD)
 		{
 			//open drain
 			CNFy = 0b01;
+		}
+		else if (mode == GPIO_AF_PP)
+		{
+			//alternate function push pull
+			CNFy = 0b10;
 		}
 	}
 
@@ -267,6 +272,8 @@ Gpio_io_status Gpio_pin_imp::write(IO_pin_address address, Gpio_output_state val
 		case(GPIO_O_TOGGLE): 
 			port_address->ODR ^= (1<<address.pin);
 			break;
+		default:
+			return GPIO_ERROR;
 	}
 
 	return GPIO_SUCCESS;		
