@@ -94,9 +94,6 @@ typedef void (*voidFuncPtr)(void);
 
 // TODO - Probably need target specific options for settings such as open-drain.
 
-// GPIO pin mode.
-enum Gpio_mode {GPIO_INPUT, GPIO_OUTPUT};
-
 // GPIO IO pin state.
 enum Gpio_output_state {GPIO_O_LOW, GPIO_O_HIGH, GPIO_O_TOGGLE, GPIO_O_ERROR = -1};
 enum Gpio_input_state {GPIO_I_LOW, GPIO_I_HIGH, GPIO_I_ERROR = -1};
@@ -126,14 +123,6 @@ class Gpio_pin
 {
 	public:
 		// Functions.
-
-		/**
-		 * Gets run whenever the instance of class Gpio_pin goes out of scope.
-		 *
-		 * @param Nothing.
-		 * @return Nothing.
-		 */
-		 ~Gpio_pin(void);
 		
 		/**
 		 * Sets the pin to an input or output.
@@ -145,7 +134,7 @@ class Gpio_pin
 		 * @endcode
 		 *
 		 * @param  mode 	Set to INPUT or OUTPUT.
-		 * @return Zero for success, non-zero for failure.
+		 * @return Return code representing whether operation was successful
 		 * 
 		 */
 		Gpio_io_status set_mode(Gpio_mode mode);
@@ -173,16 +162,16 @@ class Gpio_pin
 		 * @subsection Example
 		 *
 		 * @code
-		 * if (my_pin.read() == HIGH)
+		 * if (my_pin.read() == GPIO_O_HIGH)
 		 * {
-		 * 	my_pin.write(LOW);
+		 * 	my_pin.write(GPIO_O_LOW);
 		 * } 
 		 * @endcode
 		 *
 		 * @param  value	The state to set the GPIO pin to.
-		 * @return Nothing.
+		 * @return Return code representing whether operation was successful
 		 */
-		void write(Gpio_output_state value);
+		Gpio_io_status write(Gpio_output_state value);
 		
 		// TODO - Is this true?  Does the pin automatically become an input?  If so, how do you configure pull-ups?
 
@@ -206,7 +195,7 @@ class Gpio_pin
 		 *
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
-		 * @return Zero for success, non-zero for failure.
+		 * @return Return code representing whether operation was successful
 		 */
 		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
 		
@@ -214,28 +203,9 @@ class Gpio_pin
 		 * Disable an interrupt for the pin.
 		 *
 		 * @param  Nothing.
-		 * @return Zero for success, non-zero for failure.
+		 * @return Return code representing whether operation was successful
 		 */
 		Gpio_interrupt_status disable_interrupt(void);
-		
-		/**
-		 * Checks to see whether or not the GPIO pin implementation pointer is null or not. Use this after using gpio_pin_grab to see if the pin grab
-		 * was successful or not.
-		 * 
-		 * @subsection Example
-		 *
-		 * @code
-		 * Gpio_pin my_pin = Gpio_pin::grab(my_pin_address);
-		 * if (my_pin.is_valid())
-		 * {
-		 * 	my_pin.write(HIGH);
-		 * }
-		 * @endcode
-		 * 
-		 * @param Nothing.
-		 * @return True if this is a valid GPIO pin, false otherwise.
-		 */
-		bool is_valid(void);
 		
 		/**
 		 * Creates a Gpio_pin instance for a specific GPIO pin.
@@ -243,15 +213,11 @@ class Gpio_pin
 		 * @subsection Example
 		 *
 		 * @code
-		 * gpio_pin_address my_pin_address;
+		 * IO_pin_address my_pin_address;
 		 * my_pin_address.port = PORT_B;
 		 * my_pin_address.pin = PIN_5;
 		 *
-		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
-		 * if (my_pin.is_valid())
-		 * {
-		 * 	my_pin.write(HIGH);
-		 * }
+		 * Gpio_pin my_pin = Gpio_pin::grab(my_pin_address);
 		 * @endcode
 		 *
 		 * @param  address	Address of the GPIO pin.
@@ -270,10 +236,15 @@ class Gpio_pin
 
 		// Fields.
 
-		/*
+		/**
 		* Pointer to the target specific implementation of the GPIO pin.
 		*/
 		Gpio_pin_imp* imp;
+		
+		/**
+		 * Address of the GPIO pin this instance interfaces
+		 */
+		IO_pin_address pin_address;
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
