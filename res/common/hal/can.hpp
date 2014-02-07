@@ -51,23 +51,7 @@
  * initialisation, transmission and receiving of data.
  */
 
-// Only include this header file once.
-#ifndef __CAN_H__
-#define __CAN_H__
-
-// INCLUDE REQUIRED HEADER FILES.
-
-// Include the required IO header file.
-#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
-
-// Include the standard C++ definitions.
-#include <stddef.h>
-
-// Include the hal library.
-#include "hal/hal.hpp"
-
-
-/*
+/**
  * CAN peripheral organisation on different hardware:
  * 
  * AVR
@@ -104,83 +88,304 @@
  *  the get_object_for_filter function will however work on all platforms.
  */
 
+// Only include this header file once.
+#ifndef __CAN_H__
+#define __CAN_H__
+
+// INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
+
+// Include the required IO header file.
+#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
+
+// Include the standard C++ definitions.
+#include <stddef.h>
+
+// Include the hal library.
+#include "hal/hal.hpp"
+
 // If we are offering support for the MCP2515, then we need GPIO and SPI functionality.
+
+// TODO - I presume HAL_CANSPI_ENABLE should be in target_config.hpp?
+
 #define HAL_CANSPI_ENABLE false
 #if HAL_CANSPI_ENABLE
 	#include "hal/gpio.hpp"
 	#include "hal/spi.hpp"
 #endif
 
-#include "can_platform.hpp"
+// DEFINE PUBLIC MACROS.
 
-#define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>	//Using the preprocessor template gets kind of ugly
+// SELECT NAMESPACES.
 
-typedef void (*voidFuncPtr)(void);
+// FORWARD DEFINE PRIVATE PROTOTYPES.
 
-/********************* Forward declaration **************************/
-class Can_tree;		//declared because otherwise the interface class cannot point to it
-class Can_buffer;	
+class Can_filter_imp;
+class Can_mask_imp;
+class Can_filter_bank_imp;
+class Can_buffer_imp;
+class Can_imp;
+
+// FORWARD DECLARE PUBLIC CLASSES AND TYPES.
+
 class Can_filter;
 class Can_mask;
+class Can_filmask;
+class Can_filter_bank;
+class Can_buffer;
+class Can;
 
-/************* Enumerations to represent CAN status ********************/
-enum CAN_RATE {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
-enum CAN_MODE {CAN_NORMAL, CAN_LISTEN};
-enum CAN_BUF_MODE {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
-enum CAN_BUF_STAT {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
+// DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-enum CAN_INT_NAME {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
-
-/************** ENUMERATIONS TO REPRESENT HARDWARE *********************/
-//Linux has no well-defined controller definition but have one anyways to fit the interface
-#ifdef __linux__
-enum CAN_CTRL {CAN_0, NB_CTRL};
-#endif
-
-// The linux has no well-defined message objects but have as many as I can to fit the interface
-#ifdef __linux__
-enum CAN_BUF { BUF_0 };
-enum CAN_FIL { FIL_0 };
-enum CAN_MSK { MSK_0 };
-#endif //__Native_Linux__
-
-typedef void (*Interrupt_fn)(Can_buffer&);
-
-/********************* Struct definitions here ***********************/
 /**
- * Struct to represent a Can frame
+ * Available CAN objects/buffers/filters are enumerated in the target specific configuration header.  These may be used for indexing into arrays of CAN peripheral components.
+ * These take the form of enums similar to those shown below.
+ *
+ *		enum Can_id_controller {CAN_0, NB_CTRL};
+ *		enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_NB_BUF};
+ *		enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_NB_FIL};
+ *		enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_BNK_2, CAN_BNK_3, CAN_BNK_4, CAN_BNK_5, CAN_NB_BNK};
+ *		enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_NB_MSK};
+ *
  */
-typedef struct 
+
+/**
+ * Available CAN bank modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Can_bank_mode {CAN_BANK_FM};
+ *
+ */
+
+// CANbus baudrates.
+enum Can_rate {CAN_100K, CAN_125K, CAN_200K, CAN_250K, CAN_500K, CAN_1000K};
+
+// CANbus controller modes.
+enum Can_mode {CAN_NORMAL, CAN_LISTEN};
+
+// CANbus buffer/object modes.
+enum Can_buffer_mode {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
+
+// CANbus configuration operation status.
+enum Can_config_status {CAN_CFG_SUCCESS = 0, CAN_CFG_IMMUTABLE = -1, CAN_CFG_FAILED = -2};
+
+// CANbus buffer/object status.
+enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
+
+// CANbus interrupt types.
+enum Can_interrupt_type {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
+
+// TODO - How do we handle messages with standard length IDs?
+
+// CAN message/frame.
+typedef struct
 {
-	uint32_t id;		///Up to 29 bits for extended identifier
-	uint8_t dlc;		///Data length identifier, uses 4 bits
-	uint8_t data[8];	///8 bytes of payload data
+	uint32_t id  : 29;	// Up to 29 bits for extended identifier.
+	uint32_t ext : 1;	// Flag indicating whether the message has a 29-bit extended (or 11-bit standard) ID.
+	uint32_t     : 2;	// Fill to 32 bits.
+	uint8_t dlc  : 4;	// Data length code, four bits indicating the number of bytes in the payload.
+	uint8_t	     : 4;	// Fill to 8 bits.
+	uint8_t data[8];	// 8 bytes of payload data.
 } Can_message;
 
-
-/********************* Class definitions here ************************/
-/**
- * Buffer class, this object can read buffer data, trasmit data by writing
- * to transmit buffer and attach buffer based interrupts */
-class Can_buffer
+// CAN filter/mask values.
+typedef struct
 {
+	uint32_t id  : 29;	// Up to 29 bits for extended identifier.
+	uint32_t ex  :  1;	// Flag indicating whether the filter/mask has a 29-bit extended (or 11-bit standard) ID.
+	uint32_t rtr :  1;	// Flag indicating whether the filter/mask is accepting messages with the RTR bit set or not.
+	uint32_t     :  1;	// Fill to 32 bits.
+} Can_filmask_value;
+
+/**
+ * Abstract base class which abstracts both CAN peripheral binary filters and binary masks (since some targets have hardware which may be configured as either).
+ */
+class Can_filmask
+{	
 	public:
-	// METHODS
+
+		virtual ~Can_filmask() = 0; // Making the destructor pure virtual makes the class abstract.
+};
+
+/**
+ * CAN filter class; abstracts a binary filter which selects which incoming CAN messages are accepted into an attached buffer.
+ */
+class Can_filter : Can_filmask
+{
+	friend class Can_filter_imp;
+	friend class Can_imp;
+	
+	public:
+		// Methods.
+		 
 		/**
-		 * Store an arbitrary address in its field so it can reference itself via registers.
-		 * 
-		 * @param   buf_num  The number to assign to this buffer.
-		 * @return  Nothing.
-		 */
-		void set_number(uint8_t buf_num);
+		* Gets the current filter value being used by the hardware filter.
+		*
+		* @param	Nothing.
+		* @return	The current filter value.
+		*/
+		 uint32_t get(void);
 		
-		/** 
-		 * Get the arbitrary registry reference address of this buffer
+		/**
+		* Sets the filter value being used by the hardware filter/mask.
+		*
+		* @param	value	The new value for the filter.
+		* @return	Nothing.
+		*/
+		 void set(Can_filmask_value value);
+		
+	private:
+	
+		// Methods.
+
+		Can_filter(void);	// Poisoned.
+
+		Can_filter(Can_filter*);	// Poisoned.
+
+		Can_filter(Can_filter_imp*);
+
+		Can_filter operator =(Can_filter const&);	// Poisoned.
+
+		//Fields.
+
+		Can_filter_imp* imp;			
+};
+
+/**
+ * CAN mask class; abstracts a binary mask which selects which bits of incoming CAN messages are filtered by an attached filter.
+ */
+class Can_mask : Can_filmask
+{
+	friend class Can_mask_imp;
+	friend class Can_imp;
+	
+	public:
+		
+		// Methods.
+		
+		/**
+		 * Gets the current mask value being used by the hardware filter/mask.
 		 * 
 		 * @param    Nothing.
-		 * @return   Address of this buffer
+		 * @return   The current mask value.
 		 */
-		uint8_t get_number(void);
+		uint32_t get(void);
+		
+		/**
+		 * Sets the filter value being used by the hardware filter/mask.
+		 * 
+		 * @param    value    New value for this mask.
+		 * @return   	      Nothing.
+		 */
+		void set(Can_filmask_value value);
+		
+	private:
+
+		// Methods.
+
+		Can_mask(void);	// Poisoned.
+
+		Can_mask(Can_mask*);	// Poisoned.
+
+		Can_mask(Can_mask_imp*);
+
+		Can_mask operator =(Can_mask const&);	// Poisoned.
+	
+		// Fields.	
+		
+		Can_mask_imp* imp;	
+};
+
+/**
+ * Filter bank class; abstracts a group of boolean filters and masks, which is connected to a single Can_buffer FIFO.
+ */
+class Can_filter_bank
+{
+	friend class Can_filter_bank_imp;
+	friend class Can_imp;
+	
+	public:
+
+		// Methods.
+
+		/**
+		 * Returns a pointer to the buffer which this bank of filters/masks is currently attached to.  If this bank is currently not attached to a buffer, then returns NULL.
+		 *
+		 * @param	Nothing.
+		 * @return	The buffer this bank is currently attached to.
+		 */
+		Can_buffer* get_buffer(void);
+
+		/**
+		 * Attaches the bank to a buffer.  This automatically detaches the bank for any buffer it was previously attached to (and may cause transitional effects such as
+		 * flushing the corresponding buffer).  Returns zero for success, or non-zero to indicate an error.  In the case that the target does not support mutable banks, returns
+		 * CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
+		 *
+		 * @param	buffer	The buffer which the bank should be attached to.
+		 * @return		Zero for success, or non-zero for failure.
+		 */
+		Can_config_status set_buffer(Can_buffer& buffer);
+
+		/**
+		 * Returns the mode the bank is currently set to.
+		 *
+		 * @param	Nothing.
+		 * @return	The mode the bank is set to.
+		 */
+		Can_bank_mode get_mode(void);
+
+		/**
+		 * Sets the bank to a different mode.  Depending on the target, this may change the filters/masks which the bank makes use of; accordingly, variables pointing at filters
+		 * and masks in this bank must be refreshed after changing mode.  Returns zero for success, or non-zero to indicate an error.  In the case that hte target does not
+		 * support mutable banks, returns CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
+		 *
+		 * @param	mode	The mode to change the buffer to.
+		 * @return		Zero for success, or non-zero for failure.
+		 */
+		Can_config_status set_mode(Can_bank_mode mode);
+
+		/**
+		 * Returns the number of filters/masks which are part of this bank.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of filters/masks in this bank.
+		 */
+		uint8_t get_num_filmasks(void);
+
+		/**
+		 * Returns an array of pointers to the filters/masks which are part of this bank.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of pointers to filters/masks in this bank.
+		 */
+		Can_filmask** get_filmasks(void);
+
+	private:
+
+		// Methods.
+		
+		Can_filter_bank(void);	// Poisoned.
+
+		Can_filter_bank(Can_filter_bank*);	// Poisoned.
+
+		Can_filter_bank(Can_filter_bank_imp*);
+
+		Can_filter_bank operator =(Can_filter_bank const&);	// Poisoned.
+
+		// Fields.
+
+		Can_filter_bank_imp* imp;
+};
+
+/**
+ * Buffer class; abstracts a buffer (FIFO) in a CAN peripheral which may be able to read or write messages.
+ */
+class Can_buffer
+{
+	friend class Can_buffer_imp;
+	friend class Can_imp;
+	
+	public:
+
+		// Methods.
 		
 		/**
 		* Returns the mode of the object.
@@ -188,7 +393,7 @@ class Can_buffer
 		* @param	Nothing.
 		* @return	The mode of the object.
 		*/
-		CAN_BUF_MODE get_mode(void);
+		Can_buffer_mode get_mode(void);
 		
 		/**
 		* Returns whether or not the object can change mode.
@@ -205,7 +410,7 @@ class Can_buffer
 		* @param	mode	The mode to set the object to.
 		* @return   Flag indicating whether operation was successful.
 		*/
-		bool set_mode(CAN_BUF_MODE mode);
+		bool set_mode(Can_buffer_mode mode);
 		
 		/**
 		* Returns the current status of the object.
@@ -213,7 +418,7 @@ class Can_buffer
 		* @param	Nothing.
 		* @return	The current status of the buffer (one of possible CAN_BUF_STATs).
 		*/
-		CAN_BUF_STAT get_status(void);
+		Can_buffer_status get_status(void);
 		
 		/**
 		 * Read what is in the buffer (moves it away from buffer and
@@ -224,12 +429,12 @@ class Can_buffer
 		 */
 		Can_message read(void);
 		 
-		 /**
-		  * Write message to buffer
-		  * 
-		  * @param   msg    Message to write to the buffer.
-		  * @return  Nothing.
-		  */
+		/**
+		 * Write message to buffer
+		 * 
+		 * @param   msg    Message to write to the buffer.
+		 * @return  Nothing.
+		 */
 		void write(Can_message msg);
 		
 		/**
@@ -262,9 +467,9 @@ class Can_buffer
 		* exists (use test interrupt to see what interrupt conditions are used).
 		*
 		* @param	interrupt	The interrupt condition to attach the handler for.
-		* @param	userFunc	The handler for this interrupt condition.
+		* @param	callback	The handler for this interrupt condition.
 		*/
-		void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
+		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
 		
 		/**
 		* Removes a handler for a specific object for a particular interrupt event.
@@ -272,7 +477,7 @@ class Can_buffer
 		* @param	interrupt	The interrupt condition to dettach the handler from.
 		* @return	Nothing.	
 		*/
-		void detach_interrupt(CAN_INT_NAME interrupt);
+		void detach_interrupt(Can_interrupt_type interrupt);
 		
 		/**
 		 * Boolean describing whether an interrupt handler is set for this condition
@@ -282,349 +487,150 @@ class Can_buffer
 		 * @return              Flag indicating whether an interrupt handler is set for this condition.
 		 *
 		 */
-		bool test_interrupt(CAN_INT_NAME interrupt);
+		bool test_interrupt(Can_interrupt_type interrupt);
 		
 	private:
-	// METHODS
-
 		
-	// FIELDS
-		uint8_t buf_no;		//constructor needs this value
-		CAN_BUF_MODE mode;	//current mode of the buffer
+		// Methods.
+		
+		Can_buffer(void);	// Poisoned.
+
+		Can_buffer(Can_buffer*);	// Poisoned.
+
+		Can_buffer(Can_buffer_imp*);
+
+		Can_buffer operator =(Can_buffer const&);	// Poisoned.
+
+		// Fields.
+
+		Can_buffer_imp* imp;
 };
 
 /**
- * Filter class, this object can program filter values
- */
-class Can_filter
-{
-	public:
-	//METHODS		 
-		/**
-		 * Store an arbitrary address in its field so it can reference itself via registers.
-		 * 
-		 * @param   fil_num    The number to assign to this filter.
-		 * @return  Nothing.
-		 */
-		 void set_number(uint8_t fil_num);
-		
-		/**
-		 * Returns buffer this filter is linked to.
-		 * 
-		 * @param   Nothing.
-		 * @return  Pointer to buffer linked to this filter.
-		 */
-		 Can_buffer* get_buffer(void);
-		 
-		/**
-		 * Returns whether filter can be re-assigned to a different 
-		 * buffer.
-		 * 
-		 * @param   Nothing.
-		 * @return  Nothing.
-		 */
-		 bool get_routable(void);
-		 
-		/**
-		 * Sets the buffer linked to this filter
-		 * 
-		 * @param   buffer   Buffer to link this filter to.
-		 * @return  Nothing.
-		 */
-		 void set_buffer(Can_buffer* buffer);
-		 
-		/**
-		 * Returns the mask this is linked to
-		 * 
-		 * @param	Nothing.
-		 * @return  Pointer to the mask linked to this filter
-		 */
-		 Can_mask* get_mask(void);
-		 
-		/**
-		 * Sets the mask linked to this buffer
-		 * 
-		 * @param    mask    The mask to link this filter to.
-		 * @return   Nothing.
-		 */
-		 void set_mask(Can_mask* mask);
-		 
-		/**
-		* Gets the current filter value being used by the hardware filter/mask.
-		*
-		* @param	Nothing.
-		* @return	The current filter value.
-		*/
-		 uint32_t get_filter_val(void);
-		
-		/**
-		* Sets the filter value being used by the hardware filter/mask.
-		*
-		* NOTE - Not all the bits of the filter may be used, since CAN IDs are typically only 11 or 29 bits long.  This is HW specific.
-		*
-		* @param	filter	The new value for the filter.
-		* @param    RTR		Setting of the RTR bit.
-		* 
-		* @return	Nothing.
-		*/
-		 void set_filter_val(uint32_t filter, bool RTR);
-		
-		 
-	
-	private:
-	//METHODS
-
-	
-	//FIELDS
-		uint8_t fil_no;	//constructor needs this value
-		Can_buffer* buffer_link;
-		Can_mask* mask_link;
-		uint32_t filter_data;				
-};
-
-/**
- * Filter class, this object can program mask values
- */
-class Can_mask
-{
-	public:
-		/**
-		 * Store an arbitrary address in its field so it can reference itself via registers.
-		 * 
-		 * @param    msk_num    The number to assign to this mask    
-		 * @return   Nothing
-		 */
-		void set_number(uint8_t msk_num);
-		
-		/**
-		 * Get the value this mask currently has
-		 * 
-		 * @param    Nothing
-		 * @return   The current mask value
-		 */
-		uint32_t get_mask_val(void);
-		
-		/**
-		 * Set the value of this mask
-		 * 
-		 * @param    mask    New value for this mask
-		 * @return   Nothing
-		 */
-		void set_mask_val(uint32_t mask, bool RTR);
-		
-	private:
-		uint8_t msk_no;
-		uint32_t mask_data;	
-};
-
-
-/**
- * Interface class for a CAN controller
+ * Interface class for a CAN controller.
  */
 class Can 
 {
-	public:
-	// METHODS
-		/**
-		 * Binds the interface with the hardware implementation.
-		 */
-		static Can bind(CAN_CTRL controller);
-		
-		/**
-		 * Initializes controller for first use. Sets the baud rate for
-		 * the controller.
-		 * 
-		 * @param    rate   Baud rate of bus to use.
-		 * @return 	 Whether bus was successfully initialized.
-		 */
-		bool initialise(CAN_RATE rate);
-		
-		/**
-		 * Set the buffer transfer direction e.g. receive, trasmit 
-		 * or disabled the buffer.
-		 * 
-		 * @param    buffer_name    Name of the buffer to set (use the enums)..
-		 * @param    mode           Mode to set buffer to.
-		 * @return   Nothing.
-		 */
-		void set_buffer_mode(CAN_BUF buffer_name, CAN_BUF_MODE mode);
-		
-	    /**
-	     * Reads message from buffer specified.
-	     * 
-	     * @param    buffer_name    Name of the buffer to be read (use the enums).
-	     * @return   The message inside the buffer.
-	     */
-	    Can_message read(CAN_BUF buffer_name);
-	    
-	    /**
-	     * Transmits message from the buffer specified. Note the tranmission flag 
-	     * is not cleared in this function. Uses extended identifier.
-	     * 
-	     * @param    buffer_name    Name of the buffer to be used for sending (use the enums).
-	     * @param    message		The message to send (struct with identifer and data length).
-	     * @return   Flag indicating whether operation was successful.
-	     */
-	    bool transmit(CAN_BUF buffer_name, Can_message msg);
-	   
-	   /**
-	    * Determine the status of a buffer.
-	    * 
-	    * @param     buffer_name	Name of the buffer to be asssessed (use the enums).
-	    * @return 	 Status of the buffer.
-	    */
-	    CAN_BUF_STAT get_buffer_status(CAN_BUF buffer_name);
-	    
-	   /**
-	    * Clear the status register of selected buffer.
-	    * 
-	    * @param     buffer_name    Name of the buffer to clear status (use the enums).
-	    * @return    Nothing.
-	    */
-	    void clear_buffer_status(CAN_BUF buffer_name);
-	    
-	   /**
-	    * Set the value of the selected filter.
-	    * 
-	    * @param     filter_name	Name of filter to be modified.
-	    * @param     filter_val		Value to be written to filter.
-	    * @param     RTR			Setting of the RTR filter bit.	
-	    */
-	    void set_filter_val(CAN_FIL filter_name, uint32_t filter_val, bool RTR);
-	    
-	   /**
-	    * Retrieve the value the selected filter has stored
-	    * 
-	    * @param	 filter_name    Name of filter retrieve value.
-	    * @return    The value stored in the filter.
-	    */
-	    uint32_t get_filter_val(CAN_FIL filter_name);
-	    
-	   /**
-	    * Set the value of the selected mask.
-	    * 
-	    * @param     mask_name  	Name of the mask to be modified.
-	    * @param     mask_val		Value to be written to the mask.
-	    * @param     RTR			Setting of the RTR mask bit.
-	    */
-	    void set_mask_val(CAN_MSK mask_name, uint32_t mask_val, bool RTR);
-	    
-	   /**
-	    * Retreive the value the selected mask has stored
-	    * 
-	    * @param     mask_name      Name of the mask to retrieve value.
-	    * @return    The value stored in the mask.
-	    */
-	    uint32_t get_mask_val(CAN_MSK mask_name);
-	    
-	   /**
-	    * Master interrupt enable.
-	    * 
-	    * @param	 Nothing.
-	    * @return    Nothing.
-	    */
-	    void enable_interrupts(void);
-	    
-	   /**
-	    * Master interrupt disable.
-	    * 
-	    * @param	 Nothing.
-	    * @return    Nothing.
-	    */
-	    void disable_interrupts(void);
-	    
-	   /**
-	    * Enable interrupts on selected buffer.
-	    * 
-	    * @param     buffer_name	Name of the buffer to have interrupt enabled.
-	    * @return	 Nothing.
-	    */
-	    void enable_buffer_interrupt(CAN_BUF buffer_name);
-	    
-	   /**
-	    * Disable interrupts on selected buffer.
-	    * 
-	    * @param     buffer_name    Name of the buffer to have interrupt disabled.
-	    * @return    Nothing.
-	    */
-	    void disable_buffer_interrupt(CAN_BUF buffer_name);
-	    
-	   /**
-	    * Attach interrupt handler to selected buffer based event.
-	    * 
-	    * @param     buffer_name	Name of buffer to attach interrupt to.
-	    * @param     interrupt		The interrupt event to attach the handler to.
-	    * @param     userFunc 		The handler for this interrupt condition.
-	    * @return    Nothing.
-	    */
-	    void attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void));
-	    
-	   /**
-	    * Attach interrupt handler to channel based event.
-	    * 
-	    * @param     interrupt		The interrupt event to attach the handler to.
-	    * @param     userFunc		The handler for this interrupt event.
-	    * @return    Nothing.
-	    */
-	    void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
-	    
-	   /**
-	    * Detach interrupt on selected buffer
-	    * 
-	    * @param     buffer_name	Name of buffer to detach interrupt from.
-	    * @param     interrupt		The interrupt event to detach the handler from.
-	    * @return    Nothing.
-	    */
-	    void detach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
-	    
-	   /**
-	    * Detach interrupt on CAN channel
-	    * 
-	    * @param     interrupt		The interrupt event to detach the handler from.
-	    * @return    Nothing.
-	    */
-	    void detach_interrupt(CAN_INT_NAME interrupt);
-	    
-	   /**
-	    * Test whether existing handler is attached to an event on this buffer
-	    * 
-	    * @param     buffer_name    The name of buffer to test interrupt.
-	    * @param     interrupt		The interrupt event to test.
-	    * @return    Flag indicating whether interrupt event has an existing handler.
-	    */
-	    bool test_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt);
-	    
-	   /**
-	    * Test whether existing handler is attached to an event on the channel
-	    * 
-	    * @param     interrupt		The interrupt event to test.
-	    * @return    Flag indicating whether interrupt event has an existing handler.
-	    */
-	    bool test_interrupt(CAN_INT_NAME interrupt);
-	    
-	   /**
-	    * Return the name of the buffer that triggered the current interrupt. 
-	    * Should only call inside handler function as return value may not be
-	    * valid outside of a handler
-	    * 
-	    * @param     Nothing.
-	    * @return    Name of the buffer that triggered the interrupt.
-	    */
-	    CAN_BUF get_interrrupted_buffer(void);
-	    
-	   /**
-	    * Clear interrupt flags of controller based interrupts.
-	    * 
-	    * @param	 interrupt      The interrupt event flag to clear.
-	    * @return    Nothing.
-	    */
-	    void clear_controller_interrupts(CAN_INT_NAME interrupt);
-    
+	friend class Can_imp;
 	
-	private:
-		Can(Can_tree* imp);	//called by link function
-		Can_tree* Can_controller;
+	public:
+
+		// Methods.
+
+		/**
+		 * Binds the interface with a CAN hardware peripheral.
+		 */
+		static Can bind(Can_id_controller controller);
 		
+		/**
+		 * Initializes controller for first use. Sets the baud rate for the controller.
+		 * 
+		 * @param    rate	Baud rate of bus to use.
+		 * @return		Whether bus was successfully initialized.
+		 */
+		bool initialise(Can_rate rate);
+
+		/**
+		 * Master interrupt enable; enable interrupts for all sources in this CAN peripheral.
+		 * 
+		 * @param	 Nothing.
+		 * @return    Nothing.
+		 */
+		void enable_interrupts(void);
+	    
+		/**
+		 * Master interrupt disable; disable interrupts for all sources in this CAN peripheral.
+		 * 
+		 * @param	 Nothing.
+		 * @return    Nothing.
+		 */
+		void disable_interrupts(void);
+	    
+		/**
+		 * Attach interrupt handler to channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to attach the handler to.
+		 * @param     callback		The handler for this interrupt event.
+		 * @return    Nothing.
+		 */
+		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
+	    
+		/**
+		 * Detach interrupt for channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to detach the handler from.
+		 * @return    Nothing.
+		 */
+		void detach_interrupt(Can_interrupt_type interrupt);
+	    
+		/**
+		 * Test whether an interrupt handler is attached to an channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to test.
+		 * @return    Flag indicating whether interrupt event has an existing handler.
+		 */
+		bool test_interrupt(Can_interrupt_type interrupt);
+	    
+		/**
+		 * Clear interrupt flag for channel based events.  If called outside an ISR, this probably doesn't do anything useful.
+		 * 
+		 * @param	 interrupt      The interrupt event flag to clear.
+		 * @return    Nothing.
+		 */
+		void clear_controller_interrupts(Can_interrupt_type interrupt);
+
+		/**
+		 * Returns the number of filter/mask banks which are part of this CAN controller.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of filter/mask banks which are part of this controller.
+		 */
+		uint8_t get_num_banks(void);
+
+		/**
+		 * Returns an array or pointers to the filters/mask banks which are part of this CAN controller.  This array may either be iterated over, 
+		 * or indexed into directly using the enumerated definitions provided by the target configuration for the peripheral.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of pointers to filters/mask banks in this controller.
+		 */
+		Can_filter_bank** get_banks(void);
+
+		/**
+		 * Returns the number of buffers which are part of this CAN controller.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of buffers which are part of this controller.
+		 */
+		uint8_t get_num_buffers(void);
+
+		/**
+		 * Returns an array of pointers to the buffers which are part of this CAN controller.  This array may either be iterated over, or indexed
+		 * into directly using the enumerated definitions provided by the target configuration for the peripheral.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of buffers in this controller.
+		 */
+		Can_buffer** get_buffers(void);
+    
+	private:
+	
+		// Methods.
+
+		Can(void);	// Poisoned.
+
+		Can(Can*);	// Poisoned.
+
+		Can(Can_imp*);
+
+		Can operator =(Can const&);	// Poisoned.
+
+		// Fields.
+
+		Can_imp* imp;
 };
 
-#endif
+#endif // __CAN_H__
+
+// ALL DONE.
+

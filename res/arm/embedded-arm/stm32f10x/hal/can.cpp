@@ -33,14 +33,19 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
+
+#include "can_platform.hpp"
+
 #include "hal/gpio.hpp"
 
 #define ENABLE_TOUT_MS  1000000;			//Controller enable timeout
 
 // DEFINE PRIVATE MACROS
+
 enum FM_BANK_MODE {BANK_NN, BANK_FF, BANK_FM};	//represents de-activated, filter list or filter-mask mode
 
 // DECLARE PRIVATE GLOBAL VARIABLES
+
 bool can_filter_init_mode = false;
 
 volatile static voidFuncPtr intFunc[NUM_BUF][NB_INT];
@@ -50,6 +55,7 @@ Can_filter filters[MAX_NUM_FIL];
 Can_mask masks[MAX_NUM_MSK];
 
 // IMPLEMENT PUBLIC FUNCTIONS
+
 /**
  * Can buffer class
  */

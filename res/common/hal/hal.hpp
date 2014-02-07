@@ -100,6 +100,9 @@ struct IO_pin_address
 	pin_t pin;
 };
 
+// Generic ISR callback.
+typedef void (*voidFuncPtr)(void);
+
 // INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
 
 // DECLARE PUBLIC GLOBAL VARIABLES.

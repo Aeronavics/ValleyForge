@@ -70,20 +70,24 @@
 	enum port_t {PORT_B=1, PORT_C, PORT_D};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
-	enum CAN_CTRL {CAN_0, NB_CTRL};
-	enum CAN_BUF {BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, NB_BUF};
-	enum CAN_FIL {FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, NB_FIL};
-	enum CAN_MSK {MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, NB_MSK};
+	enum Can_id_controller {CAN_0, NB_CTRL};
+	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_NUM_BUFFERS};
+	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_NUM_FILTERS};
+	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_NUM_MASKS};
+	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_NUM_BANKS};
+	enum Can_bank_mode {CAN_BNK_MODE_FM};
 	
 #elif defined (__AVR_AT90CAN128__)
 	enum int_bank_t {PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
 	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
-	enum CAN_CTRL {CAN_0, NB_CTRL};
-	enum CAN_BUF {BUF_0, BUF_1, BUF_2, BUF_3, BUF_4, BUF_5, BUF_6, BUF_7, BUF_8, BUF_9, BUF_10, BUF_11, BUF_12, BUF_13, BUF_14, NB_BUF};
-	enum CAN_FIL {FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, NB_FIL};
-	enum CAN_MSK {MSK_0, MSK_1, MSK_2, MSK_3, MSK_4, MSK_5, MSK_6, MSK_7, MSK_8, MSK_9, MSK_10, MSK_11, MSK_12, MSK_13, MSK_14, NB_MSK};
+	enum Can_id_controller {CAN_0, NB_CTRL};
+	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_BUF_6, CAN_BUF_7, CAN_BUF_8, CAN_BUF_9, CAN_BUF_10, CAN_BUF_11, CAN_BUF_12, CAN_BUF_13, CAN_BUF_14, CAN_NUM_BUFFERS};
+	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_FIL_6, CAN_FIL_7, CAN_FIL_8, CAN_FIL_9, CAN_FIL_10, CAN_FIL_11, CAN_FIL_12, CAN_FIL_13, CAN_FIL_14, CAN_NUM_FILTERS};
+	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_MSK_6, CAN_MSK_7, CAN_MSK_8, CAN_MSK_9, CAN_MSK_10, CAN_MSK_11, CAN_MSK_12, CAN_MSK_13, CAN_MSK_14, CAN_NUM_MASKS};
+	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_NUM_BANKS};
+	enum Can_bank_mode {CAN_BNK_MODE_FM};
 	
 #else
 	#error "No peripheral definitions for this configuration."
