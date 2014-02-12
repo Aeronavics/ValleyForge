@@ -119,16 +119,13 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-class Can_filter_imp;
-class Can_mask_imp;
+class Can_filmask_imp;
 class Can_filter_bank_imp;
 class Can_buffer_imp;
 class Can_imp;
 
 // FORWARD DECLARE PUBLIC CLASSES AND TYPES.
 
-class Can_filter;
-class Can_mask;
 class Can_filmask;
 class Can_filter_bank;
 class Can_buffer;
@@ -164,8 +161,14 @@ enum Can_mode {CAN_NORMAL, CAN_LISTEN};
 // CANbus buffer/object modes.
 enum Can_buffer_mode {CAN_OBJ_RX, CAN_OBJ_TX, CAN_OBJ_RXB, CAN_OBJ_DISABLE};
 
+// CANbus filter/mask modes.
+enum Can_filmask_mode {CAN_FM_FIL, CAN_FM_MSK};
+
 // CANbus configuration operation status.
 enum Can_config_status {CAN_CFG_SUCCESS = 0, CAN_CFG_IMMUTABLE = -1, CAN_CFG_FAILED = -2};
+
+// CANbus send operation status
+enum Can_send_status {CAN_SND_SUCCESS = 0, CAN_SND_MODERR = -1, CAN_SND_DLCERR = -2};
 
 // CANbus buffer/object status.
 enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
@@ -180,7 +183,8 @@ typedef struct
 {
 	uint32_t id  : 29;	// Up to 29 bits for extended identifier.
 	uint32_t ext : 1;	// Flag indicating whether the message has a 29-bit extended (or 11-bit standard) ID.
-	uint32_t     : 2;	// Fill to 32 bits.
+	uint32_t rtr : 1;	// Flag indicating whether the filter/mask is accepting messages with the RTR bit set or not.
+	uint32_t     : 1;	// Fill to 32 bits.
 	uint8_t dlc  : 4;	// Data length code, four bits indicating the number of bytes in the payload.
 	uint8_t	     : 4;	// Fill to 8 bits.
 	uint8_t data[8];	// 8 bytes of payload data.
@@ -190,25 +194,15 @@ typedef struct
 typedef struct
 {
 	uint32_t id  : 29;	// Up to 29 bits for extended identifier.
-	uint32_t ex  :  1;	// Flag indicating whether the filter/mask has a 29-bit extended (or 11-bit standard) ID.
+	uint32_t ext :  1;	// Flag indicating whether the filter/mask has a 29-bit extended (or 11-bit standard) ID.
 	uint32_t rtr :  1;	// Flag indicating whether the filter/mask is accepting messages with the RTR bit set or not.
 	uint32_t     :  1;	// Fill to 32 bits.
 } Can_filmask_value;
 
 /**
- * Abstract base class which abstracts both CAN peripheral binary filters and binary masks (since some targets have hardware which may be configured as either).
+ * CAN filter/mask class; abstracts either a binary filter or mask which selects which incoming CAN messages are accepted into an attached buffer.
  */
 class Can_filmask
-{	
-	public:
-
-		virtual ~Can_filmask() = 0; // Making the destructor pure virtual makes the class abstract.
-};
-
-/**
- * CAN filter class; abstracts a binary filter which selects which incoming CAN messages are accepted into an attached buffer.
- */
-class Can_filter : Can_filmask
 {
 	friend class Can_filter_imp;
 	friend class Can_imp;
@@ -217,15 +211,15 @@ class Can_filter : Can_filmask
 		// Methods.
 		 
 		/**
-		* Gets the current filter value being used by the hardware filter.
+		* Gets the current filter/mask value being used by the hardware filter.
 		*
 		* @param	Nothing.
 		* @return	The current filter value.
 		*/
-		 uint32_t get(void);
+		 Can_filmask_value get(void);
 		
 		/**
-		* Sets the filter value being used by the hardware filter/mask.
+		* Sets the filter/mask value being used by the hardware filter/mask.
 		*
 		* @param	value	The new value for the filter.
 		* @return	Nothing.
@@ -236,63 +230,19 @@ class Can_filter : Can_filmask
 	
 		// Methods.
 
-		Can_filter(void);	// Poisoned.
+		Can_filmask(void);	// Poisoned.
 
-		Can_filter(Can_filter*);	// Poisoned.
+		Can_filmask(Can_filmask*);	// Poisoned.
 
-		Can_filter(Can_filter_imp*);
+		Can_filmask(Can_filmask_imp*);
 
-		Can_filter operator =(Can_filter const&);	// Poisoned.
+		Can_filmask operator =(Can_filmask const&);	// Poisoned.
 
 		//Fields.
 
-		Can_filter_imp* imp;			
+		Can_filmask_imp* imp;			
 };
 
-/**
- * CAN mask class; abstracts a binary mask which selects which bits of incoming CAN messages are filtered by an attached filter.
- */
-class Can_mask : Can_filmask
-{
-	friend class Can_mask_imp;
-	friend class Can_imp;
-	
-	public:
-		
-		// Methods.
-		
-		/**
-		 * Gets the current mask value being used by the hardware filter/mask.
-		 * 
-		 * @param    Nothing.
-		 * @return   The current mask value.
-		 */
-		uint32_t get(void);
-		
-		/**
-		 * Sets the filter value being used by the hardware filter/mask.
-		 * 
-		 * @param    value    New value for this mask.
-		 * @return   	      Nothing.
-		 */
-		void set(Can_filmask_value value);
-		
-	private:
-
-		// Methods.
-
-		Can_mask(void);	// Poisoned.
-
-		Can_mask(Can_mask*);	// Poisoned.
-
-		Can_mask(Can_mask_imp*);
-
-		Can_mask operator =(Can_mask const&);	// Poisoned.
-	
-		// Fields.	
-		
-		Can_mask_imp* imp;	
-};
 
 /**
  * Filter bank class; abstracts a group of boolean filters and masks, which is connected to a single Can_buffer FIFO.
@@ -410,7 +360,7 @@ class Can_buffer
 		* @param	mode	The mode to set the object to.
 		* @return   Flag indicating whether operation was successful.
 		*/
-		bool set_mode(Can_buffer_mode mode);
+		Can_config_status set_mode(Can_buffer_mode mode);
 		
 		/**
 		* Returns the current status of the object.
@@ -421,13 +371,20 @@ class Can_buffer
 		Can_buffer_status get_status(void);
 		
 		/**
-		 * Read what is in the buffer (moves it away from buffer and
-		 * into memory).
+		* Get the message stored in the buffer
+		* 
+		* @param	Can_message struct to hold returned message
+		* @return 	Return code indicating whether operation was successful
+		*/
+		Can_config_status read(Can_message* message);
+		
+		/**
+		 * Returns the number of messages currently stored in this buffer
 		 * 
-		 * @param   Nothing.
-		 * @return  The message contained in buffer.
+		 * @param	Nothing.
+		 * @return	Number of pending messages in the buffer
 		 */
-		Can_message read(void);
+		uint8_t queue_length(void);
 		 
 		/**
 		 * Write message to buffer
@@ -435,7 +392,7 @@ class Can_buffer
 		 * @param   msg    Message to write to the buffer.
 		 * @return  Nothing.
 		 */
-		void write(Can_message msg);
+		Can_send_status write(Can_message msg);
 		
 		/**
 		 * Reset status register of buffer
@@ -528,7 +485,7 @@ class Can
 		 * @param    rate	Baud rate of bus to use.
 		 * @return		Whether bus was successfully initialized.
 		 */
-		bool initialise(Can_rate rate);
+		Can_config_status initialise(Can_rate rate);
 
 		/**
 		 * Master interrupt enable; enable interrupts for all sources in this CAN peripheral.
