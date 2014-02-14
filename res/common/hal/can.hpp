@@ -170,11 +170,12 @@ enum Can_config_status {CAN_CFG_SUCCESS = 0, CAN_CFG_IMMUTABLE = -1, CAN_CFG_FAI
 // CANbus send operation status
 enum Can_send_status {CAN_SND_SUCCESS = 0, CAN_SND_MODERR = -1, CAN_SND_DLCERR = -2};
 
-// CANbus buffer/object status.
-enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE};
+// CANbus interrupt status
+enum Can_int_status {CAN_INT_FENA, CAN_INT_EXISTS, CAN_INT_NOINT, CAN_INT_FAILED = -1};
 
-// CANbus interrupt types.
-enum Can_interrupt_type {CAN_BUS_OFF, CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR, CAN_TIME_OVERRUN, NB_INT};
+// CANbus buffer/object status.
+enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE, STAT_ERROR};
+
 
 // TODO - How do we handle messages with standard length IDs?
 
@@ -425,26 +426,35 @@ class Can_buffer
 		*
 		* @param	interrupt	The interrupt condition to attach the handler for.
 		* @param	callback	The handler for this interrupt condition.
+		* @return 				Return code indicating whether operation was successful
 		*/
-		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void));
 		
 		/**
 		* Removes a handler for a specific object for a particular interrupt event.
 		*
-		* @param	interrupt	The interrupt condition to dettach the handler from.
-		* @return	Nothing.	
+		* @param	interrupt	The interrupt event to dettach the handler from.
+		* @return				Return code indicating whether operation was successful
 		*/
-		void detach_interrupt(Can_interrupt_type interrupt);
+		Can_int_status detach_interrupt(Can_buffer_interrupt_type interrupt);
 		
 		/**
-		 * Boolean describing whether an interrupt handler is set for this condition
-		 * on this buffer.
-		 * 
-		 * @param   interrupt   The MOb interrupt condition to test if enabled.
-		 * @return              Flag indicating whether an interrupt handler is set for this condition.
-		 *
-		 */
-		bool test_interrupt(Can_interrupt_type interrupt);
+		* Boolean describing whether an interrupt handler is set for this condition
+		* on this buffer.
+		* 
+		* @param   interrupt   The MOb interrupt condition to test if enabled.
+		* @return              Flag indicating whether an interrupt handler is set for this condition.
+		*
+		*/
+		bool test_interrupt(Can_buffer_interrupt_type interrupt);
+		
+		/**
+		* Clear interrupt flags for buffer based interrupts to exit the routine
+		* 
+		* @param	interrupt	The interrupt event flag to clear.
+		* @return				Return code indiciating whether operation was successful.
+		*/
+		Can_int_status clear_interrupt_flags(Can_buffer_interrupt_type interrupt);
 		
 	private:
 		
@@ -490,7 +500,7 @@ class Can
 		/**
 		 * Master interrupt enable; enable interrupts for all sources in this CAN peripheral.
 		 * 
-		 * @param	 Nothing.
+	     * @param	 Nothing.
 		 * @return    Nothing.
 		 */
 		void enable_interrupts(void);
@@ -508,33 +518,33 @@ class Can
 		 * 
 		 * @param     interrupt		The interrupt event to attach the handler to.
 		 * @param     callback		The handler for this interrupt event.
-		 * @return    Nothing.
+		 * @return    				Return code indiciating whether operation was successful
 		 */
-		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void));
 	    
 		/**
 		 * Detach interrupt for channel based event.
 		 * 
 		 * @param     interrupt		The interrupt event to detach the handler from.
-		 * @return    Nothing.
+		 * @return    				Return code indicating whether operation was successful.
 		 */
-		void detach_interrupt(Can_interrupt_type interrupt);
+		Can_int_status detach_interrupt(Can_channel_interrupt_type interrupt);
 	    
 		/**
 		 * Test whether an interrupt handler is attached to an channel based event.
 		 * 
 		 * @param     interrupt		The interrupt event to test.
-		 * @return    Flag indicating whether interrupt event has an existing handler.
+		 * @return    				Flag indicating whether interrupt event has an existing handler.
 		 */
-		bool test_interrupt(Can_interrupt_type interrupt);
+		bool test_interrupt(Can_channel_interrupt_type interrupt);
 	    
 		/**
 		 * Clear interrupt flag for channel based events.  If called outside an ISR, this probably doesn't do anything useful.
 		 * 
 		 * @param	 interrupt      The interrupt event flag to clear.
-		 * @return    Nothing.
+		 * @return   				Return code indicating whether operation was successful
 		 */
-		void clear_controller_interrupts(Can_interrupt_type interrupt);
+		Can_int_status clear_interrupt_flags(Can_channel_interrupt_type interrupt);
 
 		/**
 		 * Returns the number of filter/mask banks which are part of this CAN controller.
