@@ -1036,11 +1036,13 @@ Can_config_status Can_buffer_imp::set_mode(Can_buffer_mode mode)
 		case (CAN_OBJ_TX):
 		{
 			Can_config_tx();
+			Can_clear_rplv();
 			break;
 		}
 		case (CAN_OBJ_RX):
 		{
 			Can_config_rx();
+			Can_clear_rplv();
 			break;
 		}
 		case (CAN_OBJ_RXB):
@@ -1050,7 +1052,7 @@ Can_config_status Can_buffer_imp::set_mode(Can_buffer_mode mode)
 		}
 		case (CAN_OBJ_DISABLE):
 		{
-			DISABLE_MOB;
+			Can_mob_abort();
 			break;
 		}
 	}
@@ -1097,6 +1099,9 @@ Can_buffer_status Can_buffer_imp::get_status(void)
 		case (MOB_BIT_ERROR):
 			status = BUF_BIT_ERROR;
 			break;
+		case (MOB_NOT_REACHED):
+			status = BUF_NOT_REACHED;
+			break;
 		case (0x00):					
 			status = BUF_NOT_COMPLETED;
 			break;
@@ -1133,6 +1138,8 @@ Can_config_status Can_buffer_imp::read(Can_message* msg)
 			msg->data[i] = CANMSG;	//CANMSG is auto-incremented
 		}
 		
+		Can_clear_mob();
+		
 		return CAN_CFG_SUCCESS;
 	}
 	else
@@ -1155,21 +1162,19 @@ uint8_t Can_buffer_imp::queue_length(void)
 
 Can_send_status Can_buffer_imp::write(Can_message msg)
 {
-	if (buf_mode == CAN_OBJ_DISABLE)
-	{
-		Can_set_mob(buf_no);	//select the corresponding MOb	
-		
+	Can_set_mob(buf_no);	//select the corresponding MOb	
+	
+	if (get_status() != BUF_TX_COMPLETED)
+	{	
 		/* reset filter/mask values */
-		Can_filmask_value tmp_filmask_val;
-		tmp_filmask_val.ext = 0;
-		tmp_filmask_val.id = 0;
-		tmp_filmask_val.rtr = 0;
-		// for AVR, it's always {Can_filter, Can_mask}
-		bank_link->get_filmasks()[0]->set(tmp_filmask_val);
-		bank_link->get_filmasks()[1]->set(tmp_filmask_val);
-		Can_clear_rplv();
+		Can_clear_rtr();
+		Can_clear_idemsk();
+		Can_clear_rtrmsk();
+		
+		Can_clear_mob();
 		
 		/* set arbitration */
+		Can_filmask_value tmp_filmask_val;
 		tmp_filmask_val.ext = msg.ext;
 		tmp_filmask_val.id = msg.id;
 		tmp_filmask_val.rtr = msg.rtr;
@@ -1188,7 +1193,7 @@ Can_send_status Can_buffer_imp::write(Can_message msg)
 		/* write to buffer */
 		for (uint8_t i=0; i<msg.dlc; i++)
 		{
-			CANMSG = msg.data[i];
+			CANMSG = msg.data[i];		// CANMAG  is auto-incremented
 		}
 		
 		set_mode(CAN_OBJ_TX);
@@ -1728,11 +1733,15 @@ Can_config_status Can_imp::initialise(Can_rate rate)
 	/* reset CAN peripheral */
 	Can_reset();
 	
+	
 	for (uint8_t i=0; i<CAN_NUM_BUFFERS; i++)
 	{
+		Can_full_abort();
+		Can_clear_mob();
+		Can_clear_mask_mob();
+		
 		buffers[i]->clear_status();
 		buffers[i]->set_mode(CAN_OBJ_DISABLE);
-		Can_clear_mob();
 	}
 	
 	/* baud rate pre-scaler settings */
