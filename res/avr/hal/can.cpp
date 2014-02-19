@@ -1209,11 +1209,12 @@ uint8_t Can_buffer_imp::queue_length(void)
 
 Can_config_status Can_buffer_imp::free_message(void)
 {
+	Can_set_mob(buf_no);
+	
 	Can_buffer_status status = get_status();
 	Can_config_status ret_code;
 	if (status == BUF_TX_COMPLETED || status == BUF_RX_COMPLETED || status == BUF_RX_COMPLETED_DLCW)
 	{
-		Can_clear_dlc();	// clear dlc flag on CANCDMOB register
 		clear_status();
 		
 		ret_code = CAN_CFG_SUCCESS;
@@ -1255,8 +1256,8 @@ Can_send_status Can_buffer_imp::write(Can_message msg)
 		}
 		else
 		{
-			Can_clear_dlc();
-			Can_set_dlc(msg.dlc);							//data length code is the only one not covered by corresponding filter
+			Can_clear_dlc();			// clear dlc flag on CANCDMOB register
+			Can_set_dlc(msg.dlc);		//data length code is the only one not covered by corresponding filter
 		}
 		
 		/* write to buffer */
@@ -1305,6 +1306,8 @@ void Can_buffer_imp::disable_interrupt(void)
 
 Can_int_status Can_buffer_imp::attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void))
 {
+	Can_set_mob(buf_no);
+	
 	Can_int_status ret_code;
 	
 	/* Check whether callback already exists and adjust return code accordingly */
@@ -1385,6 +1388,8 @@ bool Can_buffer_imp::test_interrupt(Can_buffer_interrupt_type interrupt)
 
 Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type interrupt)
 {
+	Can_set_mob(buf_no);
+	
 	Can_int_status ret_code = CAN_INT_NOINT;
 	Can_buffer_status status = get_status();
 	
@@ -1393,7 +1398,7 @@ Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type i
 		case (CAN_RX_COMPLETE):
 			if (status == BUF_RX_COMPLETED || status == BUF_RX_COMPLETED_DLCW)
 			{
-				clear_status();
+				free_message();
 				ret_code = CAN_INT_EXISTS;		// a receive interrupt actually occured
 			}
 			else
@@ -1404,7 +1409,7 @@ Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type i
 		case (CAN_TX_COMPLETE):
 			if (status == BUF_TX_COMPLETED)
 			{
-				clear_status();
+				free_message();
 				ret_code = CAN_INT_EXISTS;		// a transmit interrupt actually occured
 			}
 			else
