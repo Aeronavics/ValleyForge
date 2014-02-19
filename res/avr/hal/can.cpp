@@ -2109,8 +2109,6 @@ Can_buffer** Can_imp::get_buffers(void)
 // CAN transfer complete or error vector
 SIGNAL(GEN_CAN_IT_VECT)
 {	
-	PORTB &= ~(1<<0);
-	
 	/* find out whether a mob interrupt occured */
 	uint8_t canhpmob_copy = CANHPMOB;
 	
