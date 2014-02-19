@@ -69,8 +69,7 @@ volatile static voidFuncPtr bufIntFunc[CAN_NUM_BUFFERS][CAN_NUM_BUF_INT];
 volatile static voidFuncPtr chanIntFunc[CAN_NUM_CHAN_INT];
 
 volatile Can_id_buffer interrupt_service_buffer;
-volatile 
-bool in_interrupt = false;
+volatile bool in_buffer_interrupt = false;
 
 /**
  * Private, target specific implementation class for public Can_filmask class.
@@ -288,7 +287,7 @@ class Can_buffer_imp
 		 * @param   Can_message struct to store the incoming message.
 		 * @return  Return code indicating whether operation was successful.
 		 */
-		Can_config_status read(Can_message* msg);
+		Can_send_status read(Can_message& msg);
 		 
 		/**
 		 * Write message to buffer
@@ -305,6 +304,14 @@ class Can_buffer_imp
 		 * @return 	Number of messages in the buffer
 		 */
 		uint8_t queue_length(void);
+		
+		/**
+		 * Frees the first received message on the buffer
+		 * 
+		 * @param	Nothing.
+		 * @return	Return code indicating whether operation was successful
+		 */
+		Can_config_status free_message(void);
 		
 		/**
 		 * Reset status register of buffer
@@ -762,7 +769,7 @@ Can_buffer_status Can_buffer::get_status(void)
 	return imp->get_status();
 }
 
-Can_config_status Can_buffer::read(Can_message* message)
+Can_send_status Can_buffer::read(Can_message& message)
 {
 	return imp->read(message);
 }
@@ -770,6 +777,11 @@ Can_config_status Can_buffer::read(Can_message* message)
 Can_send_status Can_buffer::write(Can_message msg)
 {
 	return imp->write(msg);
+}
+
+Can_config_status Can_buffer::free_message(void)
+{
+	return imp->free_message();
 }
 
 uint8_t Can_buffer::queue_length(void)
@@ -805,6 +817,11 @@ Can_int_status Can_buffer::detach_interrupt(Can_buffer_interrupt_type interrupt)
 bool Can_buffer::test_interrupt(Can_buffer_interrupt_type interrupt)
 {
 	return imp->test_interrupt(interrupt);
+}
+
+Can_int_status Can_buffer::clear_interrupt_flags(Can_buffer_interrupt_type interrupt)
+{
+	return imp->clear_interrupt_flags(interrupt);
 }
 
 // Can.
@@ -871,6 +888,18 @@ Can_int_status Can::clear_interrupt_flags(Can_channel_interrupt_type interrupt)
 	return imp->clear_interrupt_flags(interrupt);
 }
 
+Can_buffer* Can::get_interrupted_buffer(void)
+{	
+	if (in_buffer_interrupt)
+	{
+		return get_buffers()[interrupt_service_buffer];
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
 uint8_t Can::get_num_banks(void)
 {
 	return imp->get_num_banks();
@@ -889,6 +918,12 @@ uint8_t Can::get_num_buffers(void)
 Can_buffer** Can::get_buffers(void)
 {
 	return imp->get_buffers();
+}
+
+Can::~Can(void)
+{
+	/* some targets need to make calls to imp when falling out of scope,
+	 * AVR doesn't, so do nothing */
 }
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
@@ -915,11 +950,11 @@ Can_filmask_value Can_filmask_imp::get(void)
 }
 
 void Can_filmask_imp::set(Can_filmask_value value)
-{
+{	
 	Can_set_mob(filmask_no);	//select the corresponding MOb
 	
 	if (filmask_mode == CAN_FM_FIL)
-	{
+	{		
 		//set the ID
 		uint32_t id = value.id;
 		switch(value.ext)
@@ -944,7 +979,7 @@ void Can_filmask_imp::set(Can_filmask_value value)
 		}
 	}
 	else if (filmask_mode == CAN_FM_MSK)
-	{
+	{	
 		//set the ID
 		uint32_t id = value.id;
 		switch(value.ext)
@@ -971,6 +1006,7 @@ void Can_filmask_imp::set(Can_filmask_value value)
 	
 	filmask_val = value;	//cache the set value
 }
+
 
 // Can_filter_bank.
 
@@ -1042,6 +1078,8 @@ Can_config_status Can_buffer_imp::set_mode(Can_buffer_mode mode)
 		case (CAN_OBJ_RX):
 		{
 			Can_config_rx();
+			CANGIT |= (1<<BXOK);
+			clear_status();
 			Can_clear_rplv();
 			break;
 		}
@@ -1066,7 +1104,7 @@ Can_buffer_status Can_buffer_imp::get_status(void)
 	
 	uint8_t canstmob_copy = CANSTMOB;	//copy for test integrity
 	
-	if ((canstmob_copy & CONMOB_MSK) == 0x00)
+	if ((CANCDMOB & CONMOB_MSK) == 0x00)
 	{
 		return BUF_DISABLE;
 	}
@@ -1110,41 +1148,50 @@ Can_buffer_status Can_buffer_imp::get_status(void)
 	return status;
 }
 
-Can_config_status Can_buffer_imp::read(Can_message* msg)
+Can_send_status Can_buffer_imp::read(Can_message& msg)
 {
 	Can_set_mob(buf_no);	//select the corresponding MOb
 	
-	if (get_status() == BUF_RX_COMPLETED || get_status() == BUF_RX_COMPLETED_DLCW)
-	{	
+	if (get_mode() != CAN_OBJ_RX)
+	{
+		return CAN_SND_MODERR;
+	}
+	else if (get_status() == BUF_NOT_COMPLETED)
+	{
+		return CAN_SND_BUSY;
+	}
+	else
+	{
 		/* read arbitration */
-		msg->dlc = Can_get_dlc();
+		msg.dlc = Can_get_dlc();
 		
 		uint32_t id;
 		if (Can_get_ide())
 		{
-			msg->ext = 1;
+			msg.ext = 1;
 			Can_get_ext_id(id);
 		}
 		else 
 		{
-			msg->ext = 0;
+			msg.ext = 0;
 			Can_get_std_id(id);
 		}
-		msg->id = id;
+		msg.id = id;
 		
 		/* read the payload */
-		for (uint8_t i=0; i<msg->dlc; i++)
+		for (uint8_t i=0; i<msg.dlc; i++)
 		{
-			msg->data[i] = CANMSG;	//CANMSG is auto-incremented
+			msg.data[i] = CANMSG;	//CANMSG is auto-incremented
 		}
 		
-		Can_clear_mob();
-		
-		return CAN_CFG_SUCCESS;
-	}
-	else
-	{
-		return CAN_CFG_FAILED;
+		if (msg.dlc > 8)
+		{
+			return CAN_SND_DLCERR;
+		}
+		else
+		{
+			return CAN_SND_SUCCESS;
+		}
 	}
 }
 
@@ -1160,21 +1207,43 @@ uint8_t Can_buffer_imp::queue_length(void)
 	}
 }
 
+Can_config_status Can_buffer_imp::free_message(void)
+{
+	Can_buffer_status status = get_status();
+	Can_config_status ret_code;
+	if (status == BUF_TX_COMPLETED || status == BUF_RX_COMPLETED || status == BUF_RX_COMPLETED_DLCW)
+	{
+		Can_clear_dlc();	// clear dlc flag on CANCDMOB register
+		clear_status();
+		
+		ret_code = CAN_CFG_SUCCESS;
+	}
+	else
+	{
+		ret_code = CAN_CFG_FAILED;
+	}
+	
+	return ret_code;
+}
+
 Can_send_status Can_buffer_imp::write(Can_message msg)
 {
 	Can_set_mob(buf_no);	//select the corresponding MOb	
 	
-	if (get_status() != BUF_TX_COMPLETED)
-	{	
+	if (get_status() == BUF_NOT_COMPLETED)
+	{
+		return CAN_SND_BUSY;		//still sending
+	}
+	else if (get_status() == BUF_TX_COMPLETED)
+	{
+		return CAN_SND_TXFULL;		//message hasn't been cleared
+	}
+	else
+	{
 		/* reset filter/mask values */
-		Can_clear_rtr();
-		Can_clear_idemsk();
-		Can_clear_rtrmsk();
-		
-		Can_clear_mob();
+		Can_filmask_value tmp_filmask_val;
 		
 		/* set arbitration */
-		Can_filmask_value tmp_filmask_val;
 		tmp_filmask_val.ext = msg.ext;
 		tmp_filmask_val.id = msg.id;
 		tmp_filmask_val.rtr = msg.rtr;
@@ -1197,14 +1266,10 @@ Can_send_status Can_buffer_imp::write(Can_message msg)
 		}
 		
 		set_mode(CAN_OBJ_TX);
-		return CAN_SND_SUCCESS;
 		
-		// once message transmission is complete, user must call clear_status()
-	}
-	else
-	{
-		return CAN_SND_MODERR;
+		// once message transmission is complete, user must call free_message()
 	}	
+	return CAN_SND_SUCCESS;
 }
 
 void Can_buffer_imp::clear_status(void)
@@ -1322,6 +1387,7 @@ Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type i
 {
 	Can_int_status ret_code = CAN_INT_NOINT;
 	Can_buffer_status status = get_status();
+	
 	switch (interrupt)
 	{
 		case (CAN_RX_COMPLETE):
@@ -1349,6 +1415,7 @@ Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type i
 		case (CAN_GEN_ERROR):
 			if (status == BUF_ACK_ERROR || status == BUF_FORM_ERROR || status == BUF_CRC_ERROR || status == BUF_STUFF_ERROR || status == BUF_BIT_ERROR)
 			{
+				clear_status();
 				ret_code = CAN_INT_EXISTS;		// an error interrupt actually occured
 			}
 			else
@@ -1356,9 +1423,11 @@ Can_int_status Can_buffer_imp::clear_interrupt_flags(Can_buffer_interrupt_type i
 				ret_code = CAN_INT_NOINT;		// an error interrupt never occured
 			}
 	}
+	CANGIT |= (1<<BXOK);
 	
 	return ret_code;
 }
+
 
 // Can.
 
@@ -1518,9 +1587,9 @@ Can_imp::Can_imp(Can_id_controller controller) :
 	msk_9i(CAN_MSK_9),
 	msk_10i(CAN_MSK_10),
 	msk_11i(CAN_MSK_11),
-	msk_11i(CAN_MSK_12),
-	msk_11i(CAN_MSK_13),
-	msk_11i(CAN_MSK_14),
+	msk_12i(CAN_MSK_12),
+	msk_13i(CAN_MSK_13),
+	msk_14i(CAN_MSK_14),
 	
 	//masks
 	msk_6((Can_filmask_imp*) NULL),
@@ -1649,9 +1718,9 @@ Can_imp::Can_imp(Can_id_controller controller) :
 	bnk_9.imp = &bnk_9i;
 	bnk_10.imp = &bnk_10i;
 	bnk_11.imp = &bnk_11i;
-	bnk_12.imp = &bnk_12i
-	bnk_13.imp = &bnk_13i
-	bnk_14.imp = &bnk_14i
+	bnk_12.imp = &bnk_12i;
+	bnk_13.imp = &bnk_13i;
+	bnk_14.imp = &bnk_14i;
 	
 	// put banks in an array
 	banks[6] = &bnk_6;
@@ -1722,6 +1791,8 @@ Can_imp::Can_imp(Can_id_controller controller) :
 		buffers[i]->imp->bank_link = banks[i];
 	}
 	
+	CANHPMOB = CANPAGE;		// align the last 3 bits of CANPAGE to CANHPMOB
+	
 	// *** TARGET AGNOSTIC.
 	
 	// All done.
@@ -1733,13 +1804,8 @@ Can_config_status Can_imp::initialise(Can_rate rate)
 	/* reset CAN peripheral */
 	Can_reset();
 	
-	
 	for (uint8_t i=0; i<CAN_NUM_BUFFERS; i++)
-	{
-		Can_full_abort();
-		Can_clear_mob();
-		Can_clear_mask_mob();
-		
+	{	
 		buffers[i]->clear_status();
 		buffers[i]->set_mode(CAN_OBJ_DISABLE);
 	}
@@ -2042,41 +2108,42 @@ Can_buffer** Can_imp::get_buffers(void)
  
 // CAN transfer complete or error vector
 SIGNAL(GEN_CAN_IT_VECT)
-{
-	in_interrupt = true;
+{	
+	PORTB &= ~(1<<0);
 	
 	/* find out whether a mob interrupt occured */
-	uint8_t canhpmob_copy_masked = CANHPMOB & 0b1111<<4;
-	if (canhpmob_copy_masked)
+	uint8_t canhpmob_copy = CANHPMOB;
+	
+	if (canhpmob_copy & (0b1111<<4))
 	{
-		CANPAGE &= ~(0b1111<<4);					//clear mob selection bits
-		CANPAGE |= canhpmob_copy_masked;	//select highest priority mob	
-		interrupt_service_buffer = static_cast<Can_id_buffer>(canhpmob_copy_masked>>4);
+		in_buffer_interrupt = true;
+
+		CANPAGE = CANHPMOB;
+		interrupt_service_buffer = static_cast<Can_id_buffer>(canhpmob_copy>>4);
 		
 		/* check MOb status and check whether the callback pointer valid before executing */
 		if ((CANSTMOB & MOB_RX_COMPLETED) && (bufIntFunc[interrupt_service_buffer][CAN_RX_COMPLETE]))
 		{
 			bufIntFunc[interrupt_service_buffer][CAN_RX_COMPLETE]();
 		}
-		else if ((CANSTMOB & MOB_TX_COMPLETED) && (bufIntFunc[interrupt_service_buffer][CAN_TX_COMPLETE]))
+		if ((CANSTMOB & MOB_TX_COMPLETED) && (bufIntFunc[interrupt_service_buffer][CAN_TX_COMPLETE]))
 		{
 			bufIntFunc[interrupt_service_buffer][CAN_TX_COMPLETE]();
 		}
-		else if ((CANSTMOB & ERR_MOB_MSK) && (bufIntFunc[interrupt_service_buffer][CAN_GEN_ERROR]))
+		if ((CANSTMOB & ERR_MOB_MSK) && (bufIntFunc[interrupt_service_buffer][CAN_GEN_ERROR]))
 		{
 			bufIntFunc[interrupt_service_buffer][CAN_GEN_ERROR]();
 		}
 		
 		// user must clear interrupt flag on their callback function
+		in_buffer_interrupt = false;
 	}
 	
-	// execute channel interrupt callback
+	/* execute channel interrupt callback */
 	if (CANGIT & (1<<6))
 	{
 		chanIntFunc[CAN_BUS_OFF]();
 	}
-	
-	in_interrupt = false;
 }
 
 // CAN timer overrun vector

@@ -94,11 +94,13 @@
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // General structure for handling IO pin addresses.
+#ifndef __linux__
 struct IO_pin_address
 {
 	port_t port;
 	pin_t pin;
 };
+#endif
 
 // Generic ISR callback.
 typedef void (*voidFuncPtr)(void);

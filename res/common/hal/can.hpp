@@ -99,6 +99,7 @@
 
 // Include the standard C++ definitions.
 #include <stddef.h>
+#include <stdint.h>
 
 // Include the hal library.
 #include "hal/hal.hpp"
@@ -167,14 +168,14 @@ enum Can_filmask_mode {CAN_FM_FIL, CAN_FM_MSK};
 // CANbus configuration operation status.
 enum Can_config_status {CAN_CFG_SUCCESS = 0, CAN_CFG_IMMUTABLE = -1, CAN_CFG_FAILED = -2};
 
-// CANbus send operation status
-enum Can_send_status {CAN_SND_SUCCESS = 0, CAN_SND_MODERR = -1, CAN_SND_DLCERR = -2};
+// CANbus transfer operation status
+enum Can_send_status {CAN_SND_SUCCESS = 0, CAN_SND_BUSY = -1, CAN_SND_TXFULL = -2, CAN_SND_MODERR = -3, CAN_SND_DLCERR = -4};
 
 // CANbus interrupt status
 enum Can_int_status {CAN_INT_FENA, CAN_INT_EXISTS, CAN_INT_NOINT, CAN_INT_FAILED = -1};
 
 // CANbus buffer/object status.
-enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_PENDING, BUF_NOT_REACHED, BUF_DISABLE, STAT_ERROR};
+enum Can_buffer_status {BUF_NOT_COMPLETED, BUF_TX_COMPLETED, BUF_RX_COMPLETED, BUF_RX_COMPLETED_DLCW, BUF_ACK_ERROR, BUF_FORM_ERROR, BUF_CRC_ERROR, BUF_STUFF_ERROR, BUF_BIT_ERROR, BUF_NOT_REACHED, BUF_DISABLE, STAT_ERROR};
 
 
 // TODO - How do we handle messages with standard length IDs?
@@ -377,7 +378,7 @@ class Can_buffer
 		* @param	Can_message struct to hold returned message
 		* @return 	Return code indicating whether operation was successful
 		*/
-		Can_config_status read(Can_message* message);
+		Can_send_status read(Can_message& message);
 		
 		/**
 		 * Returns the number of messages currently stored in this buffer
@@ -402,6 +403,14 @@ class Can_buffer
 		 * @return   Nothing.
 		 */
 		void clear_status(void);
+		
+		/**
+		 * Frees the first received message on the buffer
+		 * 
+		 * @param	 Nothing.
+		 * @return	 Return code indicating whether operation was successful
+		 */
+		Can_config_status free_message(void);
 		
 		/**
 		 * Enables interrupt on the buffer
@@ -490,6 +499,11 @@ class Can
 		static Can bind(Can_id_controller controller);
 		
 		/**
+		 * Called when Can instance goes out of scope
+		 */
+		~Can(void);
+		
+		/**
 		 * Initializes controller for first use. Sets the baud rate for the controller.
 		 * 
 		 * @param    rate	Baud rate of bus to use.
@@ -545,6 +559,15 @@ class Can
 		 * @return   				Return code indicating whether operation was successful
 		 */
 		Can_int_status clear_interrupt_flags(Can_channel_interrupt_type interrupt);
+		
+		/**
+		 * Call during buffer based interrupt callback routine to confirm
+		 * which buffer triggered the interrupt
+		 * 
+		 * @param	Nothing.
+		 * @return 	Pointer to the buffer that triggered the interrupt rotuine
+		 */
+		Can_buffer* get_interrupted_buffer(void);
 
 		/**
 		 * Returns the number of filter/mask banks which are part of this CAN controller.
