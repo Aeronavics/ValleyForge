@@ -50,6 +50,7 @@ gen_mavlink()
 	# DEFINE CONSTANTS.
 
 	GEN_CACHE=${TCPATH}/tmp/gen_cache
+	DEFINITIONS=${TCPATH}/var
 
 	# PRIVATE INTERNAL FUNCTIONS.
 
@@ -63,18 +64,32 @@ gen_mavlink()
 	fi
 	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
 
+	# Check if a mavlink definitions file to use has been specified.
+	if [ -z "${MAVLINK_DEFS}" ]; then
+		# No mavlink definitions file was specified.
+		echo -e "${RED}\tNo MAVlink definitions file was specified; cannot generate MAVlink library.\n${NO_COLOUR}"
+		return 1
+	fi
+	# Else, check if the specified file actually exists.
+	if [ -f "$1/mavlink/${MAVLINK_DEFS}" ]; then
+		# A matching XML is in the mavlink folder in the source tree.
+		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the source tree.\n${NO_COLOUR}"
+		DEFINITIONS="$1/mavlink/${MAVLINK_DEFS}"
+	elif [ -f "${DEFINITIONS}/${MAVLINK_DEFS}" ]; then
+		# A matching XML is in the common definitions folder.
+		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the common definitions folder.\n${NO_COLOUR}"
+		DEFINITIONS=${DEFINITIONS}/${MAVLINK_DEFS}
+	else
+		# The XML is nowhere to be found.
+		echo -e "${RED}\tCouldn't find the MAVlink definitions file ${MAVLINK_DEFS}.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Unpack the MAVlink source.
 	unpack_mavlink
 	if [ $? -ne 0 ]; then
 		# We couldn't unpack the MAVlink source, so we'll have to abort.
 		return 1
-	fi
-
-	# See if there is a message description XML file in var.
-	if [ ! -f ${TCPATH}/var/mavlink.xml ]; then
-		# There is no file, so we'll copy over the default one from the MAVlink source.
-		echo -e "${YELLOW}No custom MAVlink message definitions file found; using default definitions file.\n${NO_COLOUR}"
-		cp ${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/common.xml ${TCPATH}/var/mavlink.xml
 	fi
 
 	# Copy the relevant makefile into the cache.
@@ -84,12 +99,11 @@ gen_mavlink()
 
 	# Update the working makefile with the appropriate values for this component.
 	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
-	sed -ri "s^(MAVLINK_DEFINITIONS *= *)BUILD_INSERTS_MAVLINK_DEFINITIONS_HERE(\\s.*)?^\1${TCPATH}/var/mavlink.xml\2^" ${GEN_CACHE}/Makefile_mavlink
+	sed -ri "s^(MAVLINK_DEFINITIONS *= *)BUILD_INSERTS_MAVLINK_DEFINITIONS_HERE(\\s.*)?^\1${DEFINITIONS}\2^" ${GEN_CACHE}/Makefile_mavlink
 	sed -ri "s^(MAVLINK_SANDPIT *= *)BUILD_INSERTS_MAVLINK_SANDPIT_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}\2^" ${GEN_CACHE}/Makefile_mavlink
 
 	# Run the MAVlink code generator.
 	echo -e "${CYAN}\tBuilding MAVlink protocol files...\n${NO_COLOUR}"
-#	python ${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py --lang=C --output=$1/mavlink ${TCPATH}/var/mavlink.xml --wire-protocol=1.0
 	make -C ${GEN_CACHE} -f Makefile_mavlink all
 	echo -e ""
 
