@@ -284,10 +284,18 @@ class Can_buffer_imp
 		/**
 		 * Get the the message in the buffer
 		 * 
-		 * @param   Can_message struct to store the incoming message.
+		 * @param   msg		Can_message struct to store the incoming message.
 		 * @return  Return code indicating whether operation was successful.
 		 */
 		Can_send_status read(Can_message& msg);
+		
+		/**
+		 * Poll the buffer until message arrives before reading message
+		 * 
+		 * @param	msg		Can_message struct to strore the incoming message.
+		 * @return  Return code indicating whether operation was successful/
+		 */
+		Can_send_status blocking_read(Can_message& msg);
 		 
 		/**
 		 * Write message to buffer
@@ -774,6 +782,11 @@ Can_send_status Can_buffer::read(Can_message& message)
 	return imp->read(message);
 }
 
+Can_send_status Can_buffer::blocking_read(Can_message& message)
+{
+	return imp->blocking_read(message);
+}
+
 Can_send_status Can_buffer::write(Can_message msg)
 {
 	return imp->write(msg);
@@ -1195,6 +1208,12 @@ Can_send_status Can_buffer_imp::read(Can_message& msg)
 	}
 }
 
+Can_send_status Can_buffer_imp::blocking_read(Can_message& msg)
+{
+	while (get_status() == BUF_RX_COMPLETED || get_status() == BUF_RX_COMPLETED_DLCW);
+	return read(msg);
+}
+
 uint8_t Can_buffer_imp::queue_length(void)
 {
 	if (get_status() == BUF_RX_COMPLETED || get_status() == BUF_RX_COMPLETED_DLCW)
@@ -1243,9 +1262,12 @@ Can_send_status Can_buffer_imp::write(Can_message msg)
 	{
 		/* reset filter/mask values */
 		Can_filmask_value tmp_filmask_val;
+		tmp_filmask_val.id = 0x00000000;
+		tmp_filmask_val.ext = msg.ext;
+		tmp_filmask_val.rtr = msg.rtr;
+		bank_link->get_filmasks()[0]->set(tmp_filmask_val);
 		
 		/* set arbitration */
-		tmp_filmask_val.ext = msg.ext;
 		tmp_filmask_val.id = msg.id;
 		tmp_filmask_val.rtr = msg.rtr;
 		bank_link->get_filmasks()[0]->set(tmp_filmask_val);	//in AVRs, set the corresponding filter to set the message arbitration

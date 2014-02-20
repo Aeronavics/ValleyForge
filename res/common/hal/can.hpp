@@ -381,6 +381,14 @@ class Can_buffer
 		Can_send_status read(Can_message& message);
 		
 		/**
+		 * Polls until buffer has message before getting the message
+		 * 
+		 * @param	Can_message struct to hold returned message
+		 * @return 	Return code indicating whether operation was successful
+		 */
+		Can_send_status blocking_read(Can_message& message);
+		
+		/**
 		 * Returns the number of messages currently stored in this buffer
 		 * 
 		 * @param	Nothing.
