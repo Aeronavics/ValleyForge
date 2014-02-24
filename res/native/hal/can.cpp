@@ -712,6 +712,35 @@ Can Can::bind(Can_id_controller controller)
 	
 	// Create an interface class and attach the relevant implementation to it.
 	Can new_can = Can(&can_imp_0);
+
+	/* *** binding OS socket *** */
+	struct ifreq ifr; 
+	struct sockaddr_can addr; 
+	struct can_frame frame; 
+
+	memset(&ifr, 0x0, sizeof(ifr)); 
+	memset(&addr, 0x0, sizeof(addr)); 
+	memset(&frame, 0x0, sizeof(frame)); 
+
+	/* open CAN_RAW socket */ 
+	s = socket(PF_CAN, SOCK_RAW, CAN_RAW); 
+
+	/* create the interface name and convert to interface index */
+	char* interface_name; 
+	if (controller == CAN_0)
+	{
+		interface_name = "can0";
+		strcpy(ifr.ifr_name, interface_name);
+	}
+	ioctl(s, SIOCGIFINDEX, &ifr); 
+
+	/* setup address for bind */ 
+	addr.can_ifindex = ifr.ifr_ifindex; 
+	addr.can_family = PF_CAN; 
+
+	/* bind socket to the can0 interface */ 
+	::bind(s, (struct sockaddr *)&addr, sizeof(addr));
+	printf("Successfully binded socket to [%s] interface\n", interface_name);
 	
 	// *** TARGET AGNOSTIC.
 	
@@ -910,19 +939,19 @@ Can_send_status Can_buffer_imp::blocking_read(Can_message& msg)
 	/* wrap ValleyForge frame over SocketCAN frame */
 	msg.dlc = frame.can_dlc;
 	
-	if (msg.id & CAN_RTR_FLAG)		// if bit 30 == 1, then RTR
+	if (frame.can_id & CAN_RTR_FLAG)		// if bit 30 == 1, then RTR
 	{
 		msg.rtr = 1;
 	}
 	
-	if (msg.id & CAN_EFF_FLAG)		// if MSB == 1, then extended
+	if (frame.can_id & CAN_EFF_FLAG)		// if MSB == 1, then extended
 	{
 		msg.ext = 1;
-		msg.id = frame.can_id | CAN_EFF_MASK;
+		msg.id = frame.can_id & CAN_EFF_MASK;
 	}
 	else
 	{
-		msg.id = frame.can_id | CAN_SFF_MASK;
+		msg.id = frame.can_id & CAN_SFF_MASK;
 	}
 	
 	for (int i=0; i<msg.dlc; i++)
@@ -1090,36 +1119,7 @@ Can_imp::Can_imp(Can_id_controller controller):
 	{
 		banks[0]->imp->filmasks[2*i] = filters[i];	// even index is filter
 		banks[0]->imp->filmasks[2*i+1] = masks[i];	// odd index is mask
-	}
-	
-	/* ***** Creating the socket ***** */	
-	struct ifreq ifr; 
-	struct sockaddr_can addr; 
-	struct can_frame frame; 
-
-	memset(&ifr, 0x0, sizeof(ifr)); 
-	memset(&addr, 0x0, sizeof(addr)); 
-	memset(&frame, 0x0, sizeof(frame)); 
-
-	/* open CAN_RAW socket */ 
-	s = socket(PF_CAN, SOCK_RAW, CAN_RAW); 
-
-	/* create the interface name and convert to interface index */
-	char* interface_name; 
-	if (controller == CAN_0)
-	{
-		interface_name = "can0";
-		strcpy(ifr.ifr_name, interface_name);
-	}
-	ioctl(s, SIOCGIFINDEX, &ifr); 
-
-	/* setup address for bind */ 
-	addr.can_ifindex = ifr.ifr_ifindex; 
-	addr.can_family = PF_CAN; 
-
-	/* bind socket to the can0 interface */ 
-	::bind(s, (struct sockaddr *)&addr, sizeof(addr));
-	printf("Successfully binded socket to [%s] interface\n", interface_name);
+	}	
 }
 
 Can_config_status Can_imp::initialise(Can_rate rate)
