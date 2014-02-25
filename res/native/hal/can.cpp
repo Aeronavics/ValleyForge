@@ -49,6 +49,10 @@
 
 #include <string.h>
 
+// ADAM
+#include <iostream>
+#include <errno.h>
+
 // DEFINE PRIVATE MACROS.
 
 
@@ -406,6 +410,11 @@ class Can_imp
 		 Can_imp(Can_id_controller controller);
 		
 		/**
+		 * Called when Can_imp goes out of scope
+		 */
+		~Can_imp(void);
+		
+		/**
 		 * Initializes controller for first use. Sets the baud rate for the controller.
 		 * 
 		 * @param    rate	Baud rate of bus to use.
@@ -698,7 +707,8 @@ Can::Can(Can_imp* implementation)
 
 Can::~Can(void)
 {
-	imp->close();
+	// All done.
+	return;
 }
 
 Can Can::bind(Can_id_controller controller)
@@ -712,35 +722,6 @@ Can Can::bind(Can_id_controller controller)
 	
 	// Create an interface class and attach the relevant implementation to it.
 	Can new_can = Can(&can_imp_0);
-
-	/* *** binding OS socket *** */
-	struct ifreq ifr; 
-	struct sockaddr_can addr; 
-	struct can_frame frame; 
-
-	memset(&ifr, 0x0, sizeof(ifr)); 
-	memset(&addr, 0x0, sizeof(addr)); 
-	memset(&frame, 0x0, sizeof(frame)); 
-
-	/* open CAN_RAW socket */ 
-	s = socket(PF_CAN, SOCK_RAW, CAN_RAW); 
-
-	/* create the interface name and convert to interface index */
-	char* interface_name; 
-	if (controller == CAN_0)
-	{
-		interface_name = "can0";
-		strcpy(ifr.ifr_name, interface_name);
-	}
-	ioctl(s, SIOCGIFINDEX, &ifr); 
-
-	/* setup address for bind */ 
-	addr.can_ifindex = ifr.ifr_ifindex; 
-	addr.can_family = PF_CAN; 
-
-	/* bind socket to the can0 interface */ 
-	::bind(s, (struct sockaddr *)&addr, sizeof(addr));
-	printf("Successfully binded socket to [%s] interface\n", interface_name);
 	
 	// *** TARGET AGNOSTIC.
 	
@@ -802,7 +783,6 @@ void Can_filmask_imp::set(Can_filmask_value value)
 	// must use set_buffer() operation to apply this value onto socket	
 	filmask_val = value;	
 }
-
 
 // Can_filter_bank_imp
 
@@ -904,7 +884,6 @@ Can_config_status Can_filter_bank_imp::set_mode(Can_bank_mode mode)
 	return CAN_CFG_SUCCESS;
 }
 
-
 // Can_buffer_imp
 
 Can_buffer_imp::Can_buffer_imp(Can_id_buffer buffer)
@@ -929,6 +908,8 @@ Can_send_status Can_buffer_imp::blocking_read(Can_message& msg)
 	
 	/* read from CAN interface */
 	int nbytes = ::read(s, &frame, sizeof(struct can_frame));
+	
+	//std::cout << std::dec << "\t" <<  static_cast<int>(s) << " - " << static_cast<int>(errno) << std::endl;
 	
 	/* error checking */
 	if (nbytes < 0)
@@ -1053,7 +1034,6 @@ void Can_buffer_imp::clear_status(void)
 	// irrelevant for this target, do nothing
 }
 
-
 // Can_imp
 
 Can_imp::Can_imp(Can_id_controller controller):
@@ -1113,6 +1093,7 @@ Can_imp::Can_imp(Can_id_controller controller):
 	masks[3] = &msk_3;
 	
 	/* ***** Assembling tree ***** */
+	
 	banks[0]->imp->buffer_link = buffers[0];		// only one buffer and one bank
 	
 	for (uint8_t i=0; i<CAN_NUM_FILTERS; i++)
@@ -1120,6 +1101,46 @@ Can_imp::Can_imp(Can_id_controller controller):
 		banks[0]->imp->filmasks[2*i] = filters[i];	// even index is filter
 		banks[0]->imp->filmasks[2*i+1] = masks[i];	// odd index is mask
 	}	
+	
+	// Open up a socket to talk to the SocketCAN driver.
+	
+	struct ifreq ifr; 
+	struct sockaddr_can addr; 
+	struct can_frame frame; 
+	
+	// Zero the structures we just created (CPP local variables are not initialised by default, right?)
+	memset(&ifr, 0x0, sizeof(ifr));
+	memset(&addr, 0x0, sizeof(addr));
+	memset(&frame, 0x0, sizeof(frame));
+
+	// Open a CAN_RAW socket.
+	s = socket(PF_CAN, SOCK_RAW, CAN_RAW); 
+
+	// Create the interface name and convert it to interface index.
+	char* interface_name; 
+	if (controller == CAN_0)
+	{
+		interface_name = "can0";
+		strcpy(ifr.ifr_name, interface_name);
+	}
+	ioctl(s, SIOCGIFINDEX, &ifr); 
+
+	// Setup address for bind. 
+	addr.can_ifindex = ifr.ifr_ifindex; 
+	addr.can_family = PF_CAN; 
+
+	// Bind socket to the can0 interface.
+	::bind(s, (struct sockaddr *)&addr, sizeof(addr));
+	printf("Successfully bound socket to [%s] interface.\n", interface_name);
+}
+
+Can_imp::~Can_imp(void)
+{
+	// Close the socket.
+	::close(s);
+		
+	// All done.
+	return;
 }
 
 Can_config_status Can_imp::initialise(Can_rate rate)
@@ -1166,7 +1187,4 @@ Can_buffer** Can_imp::get_buffers(void)
 	return buffers;
 }
  
-void Can_imp::close(void)
-{
-	::close(s);
-}
+// ALL DONE.
