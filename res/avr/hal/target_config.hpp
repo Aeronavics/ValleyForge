@@ -71,11 +71,14 @@
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
 	enum Can_id_controller {CAN_0, NB_CTRL};
-	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_NUM_BUFFERS};
-	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_NUM_FILTERS};
-	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_NUM_MASKS};
-	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_NUM_BANKS};
+	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5};
+	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5};
+	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5};
+	enum Can_id_filmask {CAN_FM_0, CAN_FM_1, CAN_FM_2, CAN_FM_3, CAN_FM_4, CAN_FM_5, CAN_FM_6};
+	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_BNK_2, CAN_BNK_3, CAN_BNK_4, CAN_BNK_5}; 
 	enum Can_bank_mode {CAN_BNK_MODE_FM};
+	enum Can_buffer_interrupt_type {CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR};
+	enum Can_channel_interrupt_type {CAN_BUS_OFF, CAN_TIME_OVERRUN};
 	
 #elif defined (__AVR_AT90CAN128__)
 	enum int_bank_t {PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3, EINT_4, EINT_5, EINT_6, EINT_7};
@@ -83,20 +86,35 @@
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 	
 	enum Can_id_controller {CAN_0, NB_CTRL};
-	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_BUF_6, CAN_BUF_7, CAN_BUF_8, CAN_BUF_9, CAN_BUF_10, CAN_BUF_11, CAN_BUF_12, CAN_BUF_13, CAN_BUF_14, CAN_NUM_BUFFERS};
-	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_FIL_6, CAN_FIL_7, CAN_FIL_8, CAN_FIL_9, CAN_FIL_10, CAN_FIL_11, CAN_FIL_12, CAN_FIL_13, CAN_FIL_14, CAN_NUM_FILTERS};
-	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_MSK_6, CAN_MSK_7, CAN_MSK_8, CAN_MSK_9, CAN_MSK_10, CAN_MSK_11, CAN_MSK_12, CAN_MSK_13, CAN_MSK_14, CAN_NUM_MASKS};
-	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_NUM_BANKS};
+	enum Can_id_buffer {CAN_BUF_0, CAN_BUF_1, CAN_BUF_2, CAN_BUF_3, CAN_BUF_4, CAN_BUF_5, CAN_BUF_6, CAN_BUF_7, CAN_BUF_8, CAN_BUF_9, CAN_BUF_10, CAN_BUF_11, CAN_BUF_12, CAN_BUF_13, CAN_BUF_14};
+	enum Can_id_filter {CAN_FIL_0, CAN_FIL_1, CAN_FIL_2, CAN_FIL_3, CAN_FIL_4, CAN_FIL_5, CAN_FIL_6, CAN_FIL_7, CAN_FIL_8, CAN_FIL_9, CAN_FIL_10, CAN_FIL_11, CAN_FIL_12, CAN_FIL_13, CAN_FIL_14};
+	enum Can_id_mask {CAN_MSK_0, CAN_MSK_1, CAN_MSK_2, CAN_MSK_3, CAN_MSK_4, CAN_MSK_5, CAN_MSK_6, CAN_MSK_7, CAN_MSK_8, CAN_MSK_9, CAN_MSK_10, CAN_MSK_11, CAN_MSK_12, CAN_MSK_13, CAN_MSK_14};
+	enum Can_id_filmask {CAN_FM_0, CAN_FM_1, CAN_FM_2, CAN_FM_3, CAN_FM_4, CAN_FM_5, CAN_FM_6, CAN_FM_7, CAN_FM_8, CAN_FM_9, CAN_FM_10, CAN_FM_11, CAN_FM_12, CAN_FM_13, CAN_FM_14};
+	enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_BNK_2, CAN_BNK_3, CAN_BNK_4, CAN_BNK_5, CAN_BNK_6, CAN_BNK_7, CAN_BNK_8, CAN_BNK_9, CAN_BNK_10, CAN_BNK_11, CAN_BNK_12, CAN_BNK_13, CAN_BNK_14};
 	enum Can_bank_mode {CAN_BNK_MODE_FM};
+	enum Can_buffer_interrupt_type {CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR};
+	enum Can_channel_interrupt_type {CAN_BUS_OFF, CAN_TIME_OVERRUN};
 	
 #else
 	#error "No peripheral definitions for this configuration."
 #endif
 
 #if defined (__AVR_ATmega2560__)
+	/* GPIO */
 	#	define NUM_PORTS		12	
 	#	define NUM_PINS			8
+	
+	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
+	#	define EXT_INT_SIZE		8
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
 
+	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
+									  
+	#	define PC_INT_SIZE		24
+
+	/* Timer */
 	#	define T0_SIZE			8
 	#	define T0_PWM			1
 	#	define T0_OC			2
@@ -139,17 +157,6 @@
 	#	define T5_AS			0
 	#	define T5_REV			0
 	
-	#   define PORT_MULTIPLIER	3
-	#   define P_OFFSET			235
-
-
-	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
-	#	define EXT_INT_SIZE		8
-
-	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
-									  
-	#	define PC_INT_SIZE		24
-
 	#	define NUM_8_BIT_TIMERS		2
 	#	define NUM_16_BIT_TIMERS	4
 	# 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
@@ -175,9 +182,23 @@
 						         
 
 #elif defined (__AVR_ATmega64M1__)
+	/* GPIO */
 	#	define NUM_PORTS		3
 	#	define NUM_PINS			8
+	
+	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
+	#	define EXT_INT_SIZE		4
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
 
+	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
+									  
+	#	define PC_INT_SIZE		24
+
+	/* Timers */
+	#	define INT_BIT			7
+	
 	#	define T0_SIZE			8
 	#	define T0_PWM			1
 	#	define T0_OC			2
@@ -192,21 +213,17 @@
 	#	define T1_AS			0
 	#	define T1_REV			0
 	
-	#   define PORT_MULTIPLIER	3
-	#   define P_OFFSET			235
-							
-	#	define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
-	#	define EXT_INT_SIZE		4
-
-	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
-									  
-	#	define PC_INT_SIZE		24
-
 	#	define NUM_8_BIT_TIMERS		1
 	#	define NUM_16_BIT_TIMERS	1
 	# 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
-
-	#	define INT_BIT			7
+	
+	/* CAN */
+	#	define CAN_NUM_BUFFERS  6
+	#	define CAN_NUM_FILTERS  6
+	#	define CAN_NUM_MASKS 	6
+	#	define CAN_NUM_BANKS	6
+	#	define CAN_NUM_BUF_INT	3
+	#	define CAN_NUM_CHAN_INT 2
 
 	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1 has 3 interrupt ports with 8 pins
 	// each. Note that the EINT pins are also PCINT pins, but the EINT vector has priority over the PCINT.
@@ -217,9 +234,21 @@
 								// Port E exists but only has three pins and is for special features only.
 
 #elif defined (__AVR_AT90CAN128__)
+	/* GPIO */
 	#	define NUM_PORTS		7
 	#	define NUM_PINS			8
-		
+	
+	#	define NUM_BANKS		0	// No PCINT pins hence no PCINT ports
+	#	define EXT_INT_SIZE		8
+	
+	#   define PORT_MULTIPLIER	3
+	#   define P_OFFSET			235
+
+	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
+									  
+	#	define PC_INT_SIZE		0	//No PCINT pins
+	
+	/* Timers */	
 	#	define T0_SIZE			8
 	#	define T0_PWM			1
 	#	define T0_OC			2
@@ -247,33 +276,31 @@
 	#	define T3_IC			1
 	#	define T3_AS			0
 	#	define T3_REV			0
-	
-	#   define PORT_MULTIPLIER	3
-	#   define P_OFFSET			235
-
-	#	define NUM_BANKS		0	// No PCINT pins hence no PCINT ports
-	#	define EXT_INT_SIZE		8
-
-	#	define EXTERNAL_NUM_INTERRUPTS	NUM_BANKS + EXT_INT_SIZE
-									  
-	#	define PC_INT_SIZE		0	//No PCINT pins
 
 	#	define NUM_8_BIT_TIMERS		2
 	#	define NUM_16_BIT_TIMERS	2
 	# 	define NUM_TIMERS		NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS
 
 	#	define INT_BIT			7
+	
+	/* CAN */
+	#	define CAN_NUM_BUFFERS  15
+	#	define CAN_NUM_FILTERS  15
+	#	define CAN_NUM_MASKS 	15
+	#	define CAN_NUM_BANKS	15
+	#	define CAN_NUM_BUF_INT	3
+	#	define CAN_NUM_CHAN_INT 2
 
-		// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The AT90CAN128 has 6 ports each with 8 pins.
-		// It only has external interrupt pins and no pin-change interrupts.
-		static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
-								   {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// B
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
-									{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  					// D
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},					// E
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// F
-									{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  // G
+	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The AT90CAN128 has 6 ports each with 8 pins.
+	// It only has external interrupt pins and no pin-change interrupts.
+	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
+							   {{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// A
+								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// B
+								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  	// C
+								{EINT_0, EINT_1, EINT_2, EINT_3, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},  					// D
+								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},					// E
+								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// F
+								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  // G
 									
 #else
 	#error "No peripheral definition for this configuration"	

@@ -543,7 +543,7 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 		
 		if (intFunc[PC_INT[address.port][address.pin]] == userFunc)
 		{
-			ret_code = GPIO_INT_ALREADY_DONE
+			ret_code = GPIO_INT_ALREADY_DONE;
 		}
 		else if (intFunc[PC_INT[address.port][address.pin]])
 		{
