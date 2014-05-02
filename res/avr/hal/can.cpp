@@ -33,6 +33,9 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
+
+#include "can_platform.hpp"
+
 #include <avr/interrupt.h>
 #include <inttypes.h>
 #include <avr/io.h>
@@ -40,8 +43,7 @@
 #include <stdio.h>
 #include <util/delay.h>
 
-// DEFINE PRIVATE MACROS
-#define ENABLE_TOUT_MS  500;									//Controller enable timeout
+#define ENABLE_TOUT_MS  1000;				// Controller enable timeout.
 
 //different interrupt vector names for different micros
 #if defined(__AVR_AT90CAN128__)
@@ -52,27 +54,936 @@
 	#define OVR_TIM_IT_VECT CAN_TOVF_vect
 #endif
 
-// DECLARE PRIVATE GLOBAL VARIABLES
-bool can_initialised = false;
+// DEFINE PRIVATE MACROS.
 
-volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
-volatile CAN_BUF interrupt_service_buffer;
+#define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
 
-// DECLARE IMPORTED GLOBAL VARIABLES.
-extern semaphore semaphores[NUM_PORTS][NUM_PINS];
+// SELECT NAMESPACES.
 
-// FORWARD DECLARATION
-void init_can(void);
+// DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
 /**
- * Can buffer class
+ * Private, target specific implementation class for public Can_filter class.
  */
-void Can_buffer::set_number(CAN_BUF buf_num)
+class Can_filter_imp
+{
+	public:
+	
+		// Methods.
+
+		/**
+		 * Create a new Can_filer_imp which controls the specified CAN filter.
+		 * 
+		 * @param	filter	The id of the CAN filter for this driver to interface with.
+		 */
+		 Can_filter_imp(Can_id_filter filter);
+		 
+		/**
+		* Gets the current filter value being used by the hardware filter.
+		*
+		* @param	Nothing.
+		* @return	The current filter value.
+		*/
+		 uint32_t get(void);
+		
+		/**
+		* Sets the filter value being used by the hardware filter/mask.
+		*
+		* @param	value	The new value for the filter.
+		* @return	Nothing.
+		*/
+		 void set(Can_filmask_value value);
+		
+	private:
+	
+		// Methods.
+		
+		Can_filter_imp(void);	// Poisoned.
+
+		Can_filter_imp(Can_filter_imp*);	// Poisoned.
+
+		Can_filter_imp operator =(Can_filter_imp const&);	// Poisoned.
+
+		//Fields.		
+};
+
+/**
+ * Private, target specific implementation class for public Can_imp class.
+ */
+class Can_mask_imp
+{
+	public:
+		
+		// Methods.
+		
+		/**
+		 * Create a new Can_mask_imp which controls the specified CAN mask.
+		 * 
+		 * @param	mask	The id of the CAN mask for this driver to interface with.
+		 */
+		 Can_mask_imp(Can_id_mask mask);
+		
+		/**
+		 * Gets the current mask value being used by the hardware filter/mask.
+		 * 
+		 * @param    Nothing.
+		 * @return   The current mask value.
+		 */
+		uint32_t get(void);
+		
+		/**
+		 * Sets the filter value being used by the hardware filter/mask.
+		 * 
+		 * @param    value    New value for this mask.
+		 * @return   	      Nothing.
+		 */
+		void set(Can_filmask_value value);
+		
+	private:
+
+		// Methods.
+		
+		Can_mask_imp(void);	// Poisoned.
+
+		Can_mask_imp(Can_mask_imp*);	// Poisoned.
+
+		Can_mask_imp operator =(Can_mask_imp const&);	// Poisoned.
+	
+		// Fields.	
+};
+
+/**
+ * Private, target specific implementation class for public Can_filter_bank class.
+ */
+class Can_filter_bank_imp
+{
+	public:
+
+		// Methods.
+
+		/**
+		 * Create a new Can_filter_bank_imp which controls the specified CAN filter bank.
+		 * 
+		 * @param	bank	The id of the CAN bank for this driver to interface with.
+		 */
+		 Can_filter_bank_imp(Can_id_bank bank);
+
+		/**
+		 * Returns a pointer to the buffer which this bank of filters/masks is currently attached to.  If this bank is currently not attached to a buffer, then returns NULL.
+		 *
+		 * @param	Nothing.
+		 * @return	The buffer this bank is currently attached to.
+		 */
+		Can_buffer* get_buffer(void);
+
+		/**
+		 * Attaches the bank to a buffer.  This automatically detaches the bank for any buffer it was previously attached to (and may cause transitional effects such as
+		 * flushing the corresponding buffer).  Returns zero for success, or non-zero to indicate an error.  In the case that the target does not support mutable banks, returns
+		 * CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
+		 *
+		 * @param	buffer	The buffer which the bank should be attached to.
+		 * @return		Zero for success, or non-zero for failure.
+		 */
+		Can_config_status set_buffer(Can_buffer& buffer);
+
+		/**
+		 * Returns the mode the bank is currently set to.
+		 *
+		 * @param	Nothing.
+		 * @return	The mode the bank is set to.
+		 */
+		Can_bank_mode get_mode(void);
+
+		/**
+		 * Sets the bank to a different mode.  Depending on the target, this may change the filters/masks which the bank makes use of; accordingly, variables pointing at filters
+		 * and masks in this bank must be refreshed after changing mode.  Returns zero for success, or non-zero to indicate an error.  In the case that hte target does not
+		 * support mutable banks, returns CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
+		 *
+		 * @param	mode	The mode to change the buffer to.
+		 * @return		Zero for success, or non-zero for failure.
+		 */
+		Can_config_status set_mode(Can_bank_mode mode);
+
+		/**
+		 * Returns the number of filters/masks which are part of this bank.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of filters/masks in this bank.
+		 */
+		uint8_t get_num_filmasks(void);
+
+		/**
+		 * Returns an array of pointers to the filters/masks which are part of this bank.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of pointers to filters/masks in this bank.
+		 */
+		Can_filmask** get_filmasks(void);
+
+	private:
+
+		// Methods.
+		
+		Can_filter_bank_imp(void);	// Poisoned.
+
+		Can_filter_bank_imp(Can_filter_bank_imp*);	// Poisoned.
+
+		Can_filter_bank_imp operator =(Can_filter_bank_imp const&);	// Poisoned.
+
+		// Fields.
+};
+
+/**
+ * Private, target specific implementation class for public Can_buffer class.
+ */
+class Can_buffer_imp
+{
+	public:
+
+		// Methods.
+		
+		/**
+		 * Create a new Can_buffer_imp which controls the specified CAN buffer.
+		 * 
+		 * @param	buffer	The id of the CAN buffer for this driver to interface with.
+		 */
+		 Can_buffer_imp(Can_id_buffer buffer);
+		
+		/**
+		* Returns the mode of the object.
+		*
+		* @param	Nothing.
+		* @return	The mode of the object.
+		*/
+		Can_buffer_mode get_mode(void);
+		
+		/**
+		* Returns whether or not the object can change mode.
+		*
+		* @param	Nothing.
+		* @return	Flag indicating whether the object's mode can be modified.
+		*/
+		bool get_multimode(void);
+	
+		/**
+		* Sets the mode of the object.  This may not work, depending on 
+		* whether the CAN hardware offers support for multimode objects.
+		*
+		* @param	mode	The mode to set the object to.
+		* @return   Flag indicating whether operation was successful.
+		*/
+		bool set_mode(Can_buffer_mode mode);
+		
+		/**
+		* Returns the current status of the object.
+		*
+		* @param	Nothing.
+		* @return	The current status of the buffer (one of possible CAN_BUF_STATs).
+		*/
+		Can_buffer_status get_status(void);
+		
+		/**
+		 * Read what is in the buffer (moves it away from buffer and
+		 * into memory).
+		 * 
+		 * @param   Nothing.
+		 * @return  The message contained in buffer.
+		 */
+		Can_message read(void);
+		 
+		/**
+		 * Write message to buffer
+		 * 
+		 * @param   msg    Message to write to the buffer.
+		 * @return  Nothing.
+		 */
+		void write(Can_message msg);
+		
+		/**
+		 * Reset status register of buffer
+		 * 
+		 * @param    Nothing.
+		 * @return   Nothing.
+		 */
+		void clear_status(void);
+		
+		/**
+		 * Enables interrupt on the buffer
+		 * 
+		 * @param    Nothing.
+		 * @return   Nothing.
+		 */
+		void enable_interrupt(void);
+		
+		/**
+		 * Disables interrupt on the buffer
+		 * 
+		 * @param    Nothing
+		 * @return   Nothing
+		 */
+		void disable_interrupt(void);
+		
+		/**
+		* Attaches a handler to a particular interrupt event for object based
+		* interrupts. Original interrupt will be overwritten if a handler already
+		* exists (use test interrupt to see what interrupt conditions are used).
+		*
+		* @param	interrupt	The interrupt condition to attach the handler for.
+		* @param	callback	The handler for this interrupt condition.
+		*/
+		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
+		
+		/**
+		* Removes a handler for a specific object for a particular interrupt event.
+		*
+		* @param	interrupt	The interrupt condition to dettach the handler from.
+		* @return	Nothing.	
+		*/
+		void detach_interrupt(Can_interrupt_type interrupt);
+		
+		/**
+		 * Boolean describing whether an interrupt handler is set for this condition
+		 * on this buffer.
+		 * 
+		 * @param   interrupt   The MOb interrupt condition to test if enabled.
+		 * @return              Flag indicating whether an interrupt handler is set for this condition.
+		 *
+		 */
+		bool test_interrupt(Can_interrupt_type interrupt);
+		
+	private:
+		
+		// Methods.
+		
+		Can_buffer_imp(void);	// Poisoned.
+
+		Can_buffer_imp(Can_buffer_imp*);	// Poisoned.
+
+		Can_buffer_imp operator =(Can_buffer_imp const&);	// Poisoned.
+
+		// Fields.
+};
+
+/**
+ * Private, target specific implementation class for public Can class.
+ */
+class Can_imp
+{
+	public:
+
+		// Methods.
+	
+		/**
+		 * Create a new Can_imp which controls the specified CAN peripheral.
+		 * 
+		 * @param	controller	The id of the CAN peripheral/channel/controller for this driver to interface with.
+		 */
+		 Can_imp(Can_id_controller controller);
+		
+		/**
+		 * Initializes controller for first use. Sets the baud rate for the controller.
+		 * 
+		 * @param    rate	Baud rate of bus to use.
+		 * @return		Whether bus was successfully initialized.
+		 */
+		bool initialise(Can_rate rate);
+
+		/**
+		 * Master interrupt enable; enable interrupts for all sources in this CAN peripheral.
+		 * 
+		 * @param	 Nothing.
+		 * @return    Nothing.
+		 */
+		void enable_interrupts(void);
+	    
+		/**
+		 * Master interrupt disable; disable interrupts for all sources in this CAN peripheral.
+		 * 
+		 * @param	 Nothing.
+		 * @return    Nothing.
+		 */
+		void disable_interrupts(void);
+	    
+		/**
+		 * Attach interrupt handler to channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to attach the handler to.
+		 * @param     callback		The handler for this interrupt event.
+		 * @return    Nothing.
+		 */
+		void attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void));
+	    
+		/**
+		 * Detach interrupt for channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to detach the handler from.
+		 * @return    Nothing.
+		 */
+		void detach_interrupt(Can_interrupt_type interrupt);
+	    
+		/**
+		 * Test whether an interrupt handler is attached to an channel based event.
+		 * 
+		 * @param     interrupt		The interrupt event to test.
+		 * @return    Flag indicating whether interrupt event has an existing handler.
+		 */
+		bool test_interrupt(Can_interrupt_type interrupt);
+	    
+		/**
+		 * Clear interrupt flag for channel based events.  If called outside an ISR, this probably doesn't do anything useful.
+		 * 
+		 * @param	 interrupt      The interrupt event flag to clear.
+		 * @return    Nothing.
+		 */
+		void clear_controller_interrupts(Can_interrupt_type interrupt);
+
+		/**
+		 * Returns the number of filter/mask banks which are part of this CAN controller.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of filter/mask banks which are part of this controller.
+		 */
+		uint8_t get_num_banks(void);
+
+		/**
+		 * Returns an array of pointers to the filters/mask banks which are part of this CAN controller.  This array may either be iterated over,
+		 * or indexed into directly using the enumerated definitions provided by the target configuration for the peripheral.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of pointers to filters/mask banks in this controller.
+		 */
+		Can_filter_bank** get_banks(void);
+
+		/**
+		 * Returns the number of buffers which are part of this CAN controller.
+		 *
+		 * @param	Nothing.
+		 * @return	The number of buffers which are part of this controller.
+		 */
+		uint8_t get_num_buffers(void);
+
+		/**
+		 * Returns an array of pointers to the buffers which are part of this CAN controller.  This array may either be iterated over, or indexed
+		 * into directly using the enumerated definitions provided by the target configuration for the peripheral.
+		 *
+		 * @param	Nothing.
+		 * @return	Array of pointers to buffers in this controller.
+		 */
+		Can_buffer** get_buffers(void);
+    
+	private:
+
+		// Methods.
+		
+		Can_imp(void);	// Poisoned.
+
+		Can_imp(Can_imp*);	// Poisoned.
+
+		Can_imp operator =(Can_imp const&);	// Poisoned.
+
+		// Fields.
+		
+			// *** TARGET CONFIGURATION SPECIFIC.
+
+			// Objects for the CAN tree.
+			
+			// NOTE - Because the AVR has only one CAN controller/channel, these can be declared here.  If a target had multiple channels with
+			//		  a non-homogenous tree structure, then these would have to be moved to a separate struct and pointed to.
+			
+			Can_buffer* buffers[CAN_NUM_BUFFERS];
+			
+			Can_buffer_imp buf_0i;
+			Can_buffer buf_0;
+			
+			Can_buffer_imp buf_1i;
+			Can_buffer buf_1;
+			
+			Can_filter_bank* banks[CAN_NUM_BANKS];
+			
+			Can_filter_bank_imp bnk_0i;
+			Can_filter_bank bnk_0;
+			
+			Can_filter_bank_imp bnk_1i;
+			Can_filter_bank bnk_1;
+			
+			Can_filter* filters[CAN_NUM_FILTERS];
+			
+			Can_filter_imp fil_0i;
+			Can_filter fil_0;
+			
+			Can_filter_imp fil_1i;
+			Can_filter fil_1;
+			
+			Can_filter_imp fil_2i;
+			Can_filter fil_2;
+			
+			Can_mask* masks[CAN_NUM_MASKS];
+			
+			Can_mask_imp msk_0i;
+			Can_mask msk_0;
+			
+			Can_mask_imp msk_1i;
+			Can_mask msk_1;
+			
+			Can_mask_imp msk_2i;
+			Can_mask msk_2;
+			
+			// *** TARGET AGNOSTIC.
+};
+
+// DECLARE PRIVATE GLOBAL VARIABLES.
+
+// DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
+
+// IMPLEMENT PUBLIC STATIC FUNCTIONS.
+
+// IMPLEMENT PUBLIC CLASS FUNCTIONS (METHODS).
+
+// Can_filmask.
+
+Can_filmask::~Can_filmask(void)
+{
+	// This is a pure virtual destructor for an abstract base class.  It does not do anything.
+	return;
+}
+
+// Can_filter.
+
+Can_filter::Can_filter(Can_filter_imp* implementation)
+{
+	// Attach the implementation.
+	imp = implementation;
+	
+	// All done.
+	return;
+}
+
+uint32_t Can_filter::get(void)
+{
+	return imp->get();
+}
+
+void Can_filter::set(Can_filmask_value value)
+{
+	imp->set(value);
+}
+
+// Can_mask.
+
+Can_mask::Can_mask(Can_mask_imp* implementation)
+{
+	// Attach the implementation.
+	imp = implementation;
+	
+	// All done.
+	return;
+}
+
+uint32_t Can_mask::get(void)
+{
+	return imp->get();
+}
+
+void Can_mask::set(Can_filmask_value value)
+{
+	imp->set(value);
+}
+
+// Can_filter_bank.
+
+Can_filter_bank::Can_filter_bank(Can_filter_bank_imp* implementation)
+{
+	// Attach the implementation.
+	imp = implementation;
+	
+	// All done.
+	return;
+}
+
+Can_buffer* Can_filter_bank::get_buffer(void)
+{
+	return imp->get_buffer();
+}
+
+Can_config_status Can_filter_bank::set_buffer(Can_buffer& buffer)
+{
+	return imp->set_buffer(buffer);
+}
+
+Can_bank_mode Can_filter_bank::get_mode(void)
+{
+	return imp->get_mode();
+}
+
+Can_config_status Can_filter_bank::set_mode(Can_bank_mode mode)
+{
+	return imp->set_mode(mode);
+}
+
+uint8_t Can_filter_bank::get_num_filmasks(void)
+{
+	return imp->get_num_filmasks();
+}
+
+Can_filmask** Can_filter_bank::get_filmasks(void)
+{
+	return imp->get_filmasks();
+}
+
+// Can_buffer.
+
+Can_buffer::Can_buffer(Can_buffer_imp* implementation)
+{
+	// Attach the implementation.
+	imp = implementation;
+	
+	// All done.
+	return;
+}
+
+Can_buffer_mode Can_buffer::get_mode(void)
+{
+	return imp->get_mode();
+}
+
+bool Can_buffer::get_multimode(void)
+{
+	return imp->get_multimode();
+}
+
+bool Can_buffer::set_mode(Can_buffer_mode mode)
+{
+	return imp->set_mode(mode);
+}
+
+Can_buffer_status Can_buffer::get_status(void)
+{
+	return imp->get_status();
+}
+
+Can_message Can_buffer::read(void)
+{
+	return imp->read();
+}
+
+void Can_buffer::write(Can_message msg)
+{
+	imp->write(msg);
+}
+
+void Can_buffer::clear_status(void)
+{
+	imp->clear_status();
+}
+
+void Can_buffer::enable_interrupt(void)
+{
+	imp->enable_interrupt();
+}
+
+void Can_buffer::disable_interrupt(void)
+{
+	imp->disable_interrupt();
+}
+
+void Can_buffer::attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void))
+{
+	imp->attach_interrupt(interrupt, callback);
+}
+
+void Can_buffer::detach_interrupt(Can_interrupt_type interrupt)
+{
+	imp->detach_interrupt(interrupt);
+}
+
+bool Can_buffer::test_interrupt(Can_interrupt_type interrupt)
+{
+	return imp->test_interrupt(interrupt);
+}
+
+// Can.
+
+Can::Can(Can_imp* implementation)
+{
+	// Attach the implementation.
+	imp = implementation;
+	
+	// All done.
+	return;
+}
+
+Can Can::bind(Can_id_controller controller)
+{
+	// *** TARGET CONFIGURATION SPECIFIC.
+	
+	// There already exists a static instance of the implementation class for each of the CAN peripherals.
+	static Can_imp can_imp_0 = Can_imp(CAN_0);
+	
+	// NOTE - In the case of AVR devices, there is only one CAN peripheral, so we don't really have any logic here.
+	
+	// Create an interface class and attach the relevant implementation to it.
+	Can new_can = Can(&can_imp_0);
+	
+	// *** TARGET AGNOSTIC.
+	
+	// Return the newly created interface.
+	return new_can;
+}
+
+bool Can::initialise(Can_rate rate)
+{
+	return imp->initialise(rate);
+}
+
+void Can::enable_interrupts(void)
+{
+	imp->enable_interrupts();
+}
+
+void Can::disable_interrupts(void)
+{
+	imp->disable_interrupts();
+}
+
+void Can::attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void))
+{
+	imp->attach_interrupt(interrupt, callback);
+}
+
+void Can::detach_interrupt(Can_interrupt_type interrupt)
+{
+	imp->detach_interrupt(interrupt);
+}
+
+bool Can::test_interrupt(Can_interrupt_type interrupt)
+{
+	return imp->test_interrupt(interrupt);
+}
+
+void Can::clear_controller_interrupts(Can_interrupt_type interrupt)
+{
+	imp->clear_controller_interrupts(interrupt);
+}
+
+uint8_t Can::get_num_banks(void)
+{
+	return imp->get_num_banks();
+}
+
+Can_filter_bank** Can::get_banks(void)
+{
+	return imp->get_banks();
+}
+
+uint8_t Can::get_num_buffers(void)
+{
+	return imp->get_num_buffers();
+}
+
+Can_buffer** Can::get_buffers(void)
+{
+	return imp->get_buffers();
+}
+
+// IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+// IMPLEMENT PRIVATE CLASS FUNCTIONS (METHODS).
+
+// Can_filter.
+
+Can_filter_imp::Can_filter_imp(Can_id_filter filter){}
+
+uint32_t Can_filter_imp::get(void){return 0;}
+
+void Can_filter_imp::set(Can_filmask_value value){}
+
+// Can_mask.
+
+Can_mask_imp::Can_mask_imp(Can_id_mask mask){}
+
+uint32_t Can_mask_imp::get(void){return 0;}
+
+void Can_mask_imp::set(Can_filmask_value value){}
+
+// Can_filter_bank.
+
+Can_filter_bank_imp::Can_filter_bank_imp(Can_id_bank bank){}
+
+Can_buffer* Can_filter_bank_imp::get_buffer(void){}
+
+Can_config_status Can_filter_bank_imp::set_buffer(Can_buffer& buffer){}
+
+Can_bank_mode Can_filter_bank_imp::get_mode(void){}
+
+Can_config_status Can_filter_bank_imp::set_mode(Can_bank_mode mode){}
+
+uint8_t Can_filter_bank_imp::get_num_filmasks(void){}
+
+Can_filmask** Can_filter_bank_imp::get_filmasks(void){}
+
+// Can_buffer.
+
+Can_buffer_imp::Can_buffer_imp(Can_id_buffer buffer){}
+
+Can_buffer_mode Can_buffer_imp::get_mode(void){}
+
+bool Can_buffer_imp::get_multimode(void){}
+
+bool Can_buffer_imp::set_mode(Can_buffer_mode mode){}
+
+Can_buffer_status Can_buffer_imp::get_status(void){}
+
+Can_message Can_buffer_imp::read(void){}
+
+void Can_buffer_imp::write(Can_message msg){}
+
+void Can_buffer_imp::clear_status(void){}
+
+void Can_buffer_imp::enable_interrupt(void){}
+
+void Can_buffer_imp::disable_interrupt(void){}
+
+void Can_buffer_imp::attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void)){}
+
+void Can_buffer_imp::detach_interrupt(Can_interrupt_type interrupt){}
+
+bool Can_buffer_imp::test_interrupt(Can_interrupt_type interrupt){}
+
+// Can.
+
+Can_imp::Can_imp(Can_id_controller controller) :
+
+// *** TARGET CONFIGURATION SPECIFIC.
+
+// NOTE - We have to use an initialiser list here.
+
+buf_0i(CAN_BUF_0),
+buf_0((Can_buffer_imp*) NULL),
+buf_1i(CAN_BUF_1),
+buf_1((Can_buffer_imp*) NULL),
+bnk_0i(CAN_BNK_0),
+bnk_0((Can_filter_bank_imp*) NULL),
+bnk_1i(CAN_BNK_1),
+bnk_1((Can_filter_bank_imp*) NULL),
+fil_0i(CAN_FIL_0),
+fil_0((Can_filter_imp*) NULL),
+fil_1i(CAN_FIL_1),
+fil_1((Can_filter_imp*) NULL),
+fil_2i(CAN_FIL_2),
+fil_2((Can_filter_imp*) NULL),
+msk_0i(CAN_MSK_0),
+msk_0((Can_mask_imp*) NULL),
+msk_1i(CAN_MSK_1),
+msk_1((Can_mask_imp*) NULL),
+msk_2i(CAN_MSK_2),
+msk_2((Can_mask_imp*) NULL)
+
+// *** TARGET AGNOSTIC.
+{
+	// *** TARGET CONFIGURATION SPECIFIC.
+	
+	// NOTE - In the case of AVR devices, there is only one CAN peripheral, so we don't really have any logic here.
+	
+	// Complete the CAN tree.
+	
+	buf_0.imp = &buf_0i;
+	buffers[0] = &buf_0;
+	
+	buf_1.imp = &buf_1i;
+	buffers[1] = &buf_1;
+	
+	bnk_0.imp = &bnk_0i;
+	banks[0] = &bnk_0;
+	
+	bnk_1.imp = &bnk_1i;
+	banks[1] = &bnk_1;
+	
+	fil_0.imp = &fil_0i;
+	filters[0] = &fil_0;
+
+	fil_1.imp = &fil_1i;
+	filters[1] = &fil_1;
+	
+	fil_2.imp = &fil_2i;
+	filters[2] = &fil_2;
+
+	msk_0.imp = &msk_0i;
+	masks[0] = &msk_0;
+
+	msk_1.imp = &msk_1i;
+	masks[1] = &msk_1;
+	
+	msk_2.imp = &msk_2i;
+	masks[2] = &msk_2;
+	
+	// *** TARGET AGNOSTIC.
+	
+	// All done.
+	return;
+}
+
+bool Can_imp::initialise(Can_rate rate){}
+
+void Can_imp::enable_interrupts(void){}
+
+void Can_imp::disable_interrupts(void){}
+
+void Can_imp::attach_interrupt(Can_interrupt_type interrupt, void (*callback)(void)){}
+
+void Can_imp::detach_interrupt(Can_interrupt_type interrupt){}
+
+bool Can_imp::test_interrupt(Can_interrupt_type interrupt){}
+
+void Can_imp::clear_controller_interrupts(Can_interrupt_type interrupt){}
+
+uint8_t Can_imp::get_num_banks(void){}
+
+Can_filter_bank** Can_imp::get_banks(void){}
+
+uint8_t Can_imp::get_num_buffers(void){}
+
+Can_buffer** Can_imp::get_buffers(void){}
+
+// IMPLEMENT INTERRUPT SERVICE ROUTINES.
+
+// ALL DONE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+volatile static voidFuncPtr intFunc[NB_BUF][NB_INT];
+volatile CAN_BUF interrupt_service_buffer;
+*/
+
+/*void Can_buffer::set_number(uint8_t buf_num)
 {
 	buf_no = buf_num;
 }
 
-CAN_BUF Can_buffer::get_number(void)
+uint8_t Can_buffer::get_number(void)
 {
 	return buf_no;
 }
@@ -262,12 +1173,7 @@ bool Can_buffer::test_interrupt(CAN_INT_NAME interrupt)
 	}
 }
 
-/* ****************************************************************** */
-/**
- * Can filter class
- */
-
-void Can_filter::set_number(CAN_FIL fil_num)
+void Can_filter::set_number(uint8_t fil_num)
 {
 	fil_no = fil_num;
 }
@@ -319,11 +1225,7 @@ void Can_filter::set_filter_val(uint32_t filter, bool RTR)
 	filter_data = filter;	//store as field so registers don't need to be accessed again
 }
 
-/* ****************************************************************** */
-/**
- * Can mask class
- */
-void Can_mask::set_number(CAN_MSK msk_num)
+void Can_mask::set_number(uint8_t msk_num)
 {
 	msk_no = msk_num;
 }
@@ -349,7 +1251,8 @@ void Can_mask::set_mask_val(uint32_t mask, bool RTR)
 	mask_data = mask;	//store as field so registers don't need to be accessed again
 }
 
-/* ****************************************************************** */
+*/
+
 /**
  * Actual implementation of Can controller, all instances of Can controller
  * created will point to an instance of this class. There will be as many
@@ -361,87 +1264,81 @@ void Can_mask::set_mask_val(uint32_t mask, bool RTR)
  * public because it is not declared in header and thus is invisible 
  * outside this source.
  */
-class Can_tree
-{
-	public:
-	//Methods
-		/**
-		 * Constructor for AVR specific implementation:
-		 * Buffers and filters are created and assigned arbitrary indices,
-		 * each filter is then linked to its respective buffer by this index.
-		 */
-		Can_tree(void);
-		
-		/**
-		 * Enables the controller
-		 */
-		void enable(void);
-		
-		/**
-		 * Enable interrupts on the controller
-		 */
-		void enable_interrupts(void);
-		
-		/**
-		 * Disables interrupts on the controller
-		 */
-		void disable_interrupts(void);
-		
-		/**
-		 * Attach CAN channel interrupts, will overwrite existing interrupt
-		 * 
-		 * @param    interrupt   The interrupt condition to attach the handler to
-		 * @param    userFunc     The handler for this interrupt condition.
-		 * 
-		 */
-		void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
-		
-		/**
-		 * Detach interrupt to CAN channel
-		 * 
-		 * @param    interrupt   The interrupt condition to detach the handler from
-		 */
-		void detach_interrupt(CAN_INT_NAME interrupt);
-		
-		/**
-		 * Returns true if interrupt condition has handler attached
-		 * 
-		 * @param    interrupt   The bus interrupt condition to test if enabled 
-		 * @return   Boolean describing whether an interrupt handler is set for this condition
-		 * 
-		 */ 			 
-		bool test_interrupt(CAN_INT_NAME interrupt);
-		
-	
-	//Fields
-		Can_mask mask[NB_MSK];
-		Can_filter filter[NB_FIL];
-		Can_buffer buffer[NB_BUF];
-		
-		semaphore* RX_pin_s;
-		semaphore* TX_pin_s;
-};
 
+//class Can_tree
+//{
+//	public:
+//	//Methods
+//		/**
+//		 * Constructor for AVR specific implementation:
+//		 * Buffers and filters are created and assigned arbitrary indices,
+//		 * each filter is then linked to its respective buffer by this index.
+//		 */
+//		Can_tree(void);
+//		
+//		/**
+//		 * Enables the controller
+//		 */
+//		void enable(void);
+//		
+//		/**
+//		 * Enable interrupts on the controller
+//		 */
+//		void enable_interrupts(void);
+//		
+//		/**
+//		 * Disables interrupts on the controller
+//		 */
+//		void disable_interrupts(void);
+//		
+//		/**
+//		 * Attach CAN channel interrupts, will overwrite existing interrupt
+//		 * 
+//		 * @param    interrupt   The interrupt condition to attach the handler to
+//		 * @param    userFunc     The handler for this interrupt condition.
+//		 * 
+//		 */
+//		void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
+//		
+//		/**
+//		 * Detach interrupt to CAN channel
+//		 * 
+//		 * @param    interrupt   The interrupt condition to detach the handler from
+//		 */
+//		void detach_interrupt(CAN_INT_NAME interrupt);
+//		
+//		/**
+//		 * Returns true if interrupt condition has handler attached
+//		 * 
+//		 * @param    interrupt   The bus interrupt condition to test if enabled 
+//		 * @return   Boolean describing whether an interrupt handler is set for this condition
+//		 * 
+//		 */ 			 
+//		bool test_interrupt(CAN_INT_NAME interrupt);
+//		
+//	
+//	//Fields
+//		Can_mask mask[NB_MSK];
+//		Can_filter filter[NB_FIL];
+//		Can_buffer buffer[NB_BUF];
+//};
+
+/*
 Can_tree::Can_tree(void)
-{	
-	uint8_t num_buf = static_cast<uint8_t>(NB_BUF);
-	for (uint8_t i=0; i<num_buf; i++)
+{
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_BUF); i++)
 	{
-		CAN_BUF n = static_cast<CAN_BUF>(i);
-		buffer[n].set_number(static_cast<CAN_BUF>(n));	//assign arbitrary index to buffer, CANPAGE access uses this number
+		buffer[i].set_number(static_cast<CAN_BUF>(i));	//assign arbitrary index to buffer, CANPAGE access uses this number
 	}
 	
-	uint8_t num_fil = static_cast<uint8_t>(NB_FIL);
-	for (uint8_t i=FIL_0; i<num_fil; i++)
-	{
-		CAN_FIL n = static_cast<CAN_FIL>(i);
-		filter[n].set_number(n);			//assign arbitrary index to filter
-		filter[n].set_buffer(&buffer[n]);	//link filter to corresponding buffer using index
-		filter[n].set_mask(&mask[n]);		//link mask to corresponding filter using index
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_FIL); i++)
+	{  
+		filter[i].set_number(i);	//assign arbitrary index to filter
+		filter[i].set_buffer(&buffer[i]);	//link filter to corresponding buffer using index
+		filter[i].set_mask(&mask[i]);		//link mask to corresponding filter using index
 	}
 	
-	uint8_t num_msk = static_cast<uint8_t>(NB_MSK);
-	for (uint8_t i=MSK_0; i<num_msk; i++)
+	for (uint8_t i=0; i<static_cast<uint8_t>(NB_MSK); i++)
 	{
 		CAN_MSK n = static_cast<CAN_MSK>(i);
 		mask[n].set_number(n);
@@ -524,7 +1421,7 @@ bool Can_tree::test_interrupt(CAN_INT_NAME interrupt)
 
 static Can_tree Can_tree_imps[NB_CTRL];
 
-
+*/
 /**********************************************************************/
 
 /**
@@ -545,7 +1442,7 @@ static Can_tree Can_tree_imps[NB_CTRL];
  * my_msg.data = "01234567";		//note: this represents a message, its not a string literal
  * my_can.transmit(OBJ_0, my_msg);	//transmit message using buffer 0
  */
- 
+ /*
 Can::Can(Can_tree* imp)
 {
 	Can_controller = imp;	
@@ -712,7 +1609,7 @@ bool Can::initialise(CAN_RATE rate)
 		}
 	    else if (rate == CAN_1000K)      //!< -- 1 Mb/s, 8x Tscl, sampling at 75%
 	    {
-			//doesn't work for both chips
+			//sparringly works for both chips, have to be careful about bus length and capacitance etc
 	        CONF_CANBT1 = 0x00;       // Tscl  = 1x Tclkio = 125 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 3x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 2x Tscl, Tpsh2 = 2x Tscl, 3 sample points
@@ -726,7 +1623,6 @@ bool Can::initialise(CAN_RATE rate)
 	uint16_t poll_t = ENABLE_TOUT_MS;
 	while (!(CANGSTA & (1<<ENFG)) && poll_t)
 	{
-		_delay_ms(1);
 		poll_t -= 1;			
 	}
 	
@@ -875,35 +1771,7 @@ bool Can::clear_controller_interrupts(CAN_INT_NAME interrupt)
 	return true;
 }
 
-void Can::vacate(void)
-{
-	Can_controller->TX_pin_s->vacate();
-	Can_controller->RX_pin_s->vacate();
-}
 
-Can::~Can(void)
-{
-	vacate();
-}
-	 
-
-/**********************************************************************/
-void init_can(void)
-{
-	for (uint8_t i=0; i<NB_CTRL; i++)
-	{
-		switch(i)
-		{
-			case(0):
-				Can_tree_imps[i].RX_pin_s = &semaphores[CAN_PORT_IN][CAN_INPUT_PIN];
-				Can_tree_imps[i].TX_pin_s = &semaphores[CAN_PORT_OUT][CAN_OUTPUT_PIN];
-		}
-	}
-	can_initialised = true;
-}
-
-
-/**********************************************************************/
 //CAN Interrupt declarations
  //Note: These address registers at the low level rather than call 
  //API functions to reduce function call overhead
@@ -940,5 +1808,5 @@ SIGNAL(OVR_TIM_IT_VECT)	//CAN Timer overrun error interrupt
 	CANPAGE = canpage_save;
 	intFunc[(CANPAGE>>4)][CAN_TIME_OVERRUN]();
 }
- 
+ */
  

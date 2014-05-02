@@ -32,6 +32,9 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
+
+#include "can_platform.hpp"
+
 #include <stdio.h>		//probably used here for debug only
 #include <stdlib.h>
 #include <unistd.h>

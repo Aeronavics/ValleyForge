@@ -75,8 +75,8 @@
  * @mainpage
  * 
  * Welcome to the ValleyForge Doxygen Documentation.
- * This is a test.
- * A link to a class gpio_pin
+ *
+ * TODO - Fix me!
  */
 
 // Only include this header file once.
@@ -84,67 +84,46 @@
 #define __HAL_H__
 
 // INCLUDE REQUIRED HEADER FILES.
+#include "target_config.hpp"	// Include target specific configuration.
 
 // Include the STDINT fixed width types.
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
-
-// Include semaphores.
-#include "semaphore.hpp"
 
 // DEFINE PUBLIC MACROS.
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-// Port and pin enumerations, these should be used by the user when creating a new gpio_pin_address.
-enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
-enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14, PIN_15}; 
-
-/* Offset constants that facilitate access to the particular GPIO registers (DDRx, PORTx, PINx) */
-enum port_offset	{P_READ, P_MODE, P_WRITE};
-
-struct gpio_pin_address
+// General structure for handling IO pin addresses.
+struct IO_pin_address
 {
 	port_t port;
 	pin_t pin;
 };
 
-// INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
+// Generic ISR callback.
+typedef void (*voidFuncPtr)(void);
 
-// Include target specific configuration.
-#include "target_config.hpp"
+// INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
 
 /**
- * initialises the hal by creating semaphores and any other initialisation that is required.
- * @param Nothing
- * @return Nothing
- */
-void init_hal(void);
-
-/**
  * Enables global interrupts.
- * @param Nothing
- * @return Nothing
+ *
+ * @param Nothing.
+ * @return Nothing.
  */
 void int_on(void);
 
 /**
  * Disables global interrupts.
- * @param Nothing
- * @return Nothing
+ *
+ * @param Nothing.
+ * @return State of interrupts prior to disabling.
  */
-void int_off(void);
-
-/**
- * Restores interrupts to the state they were in before int_off was called.
- * 
- * @param Nothing
- * @return Nothing
- */
-void int_restore(void);
+bool int_off(void);
 
 #endif /*__HAL_H__*/
 

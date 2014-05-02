@@ -43,11 +43,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
- *  @section Description
- *  The watchdog timer is a timer that constantly runs in the background. If the watchdog timer is active, then if it reaches its top value (set
- *  by the user) it resets the micro. This is used to reset the micro when the code goes into an endless loop or some other error occurs that stops
- *  the execution of code.
- *  If a watchdog timer is active, the user must make sure to "pat" the dog (reset the timer) at regular intervals.
+ *  @class Watchdog
+ *  The watchdog timer is a hardware timer which automatically triggers a CPU reset if it overflows.  When active, the watchdog must be periodically 'pat' (resetting the timer) by
+ *  application code, to avoid a CPU reset.  Use of the watchdog allows an embedded system to reset automatically if it becomes trapped in an endless loop, or suffers some other
+ *  error which prevents it from reaching the part of the code which would normally pat the watchdog.
+ *
+ *  This is an abstract class which provides functionality for controlling the watchdog timer.  Since devices usually only have a single watchdog timer, operations on the timer are
+ *  accessed via static methods.
+ *
+ *  @section Example
+ *  The following example shows enabling the watchdog timer, the patting it to avoid a watchdog strike.
+ *
+ *  @code
+ *  #include "hal/watchdog.hpp"
+ *
+ *  int main(void)
+ *  {
+ *      Watchdog::enable(WDTO_1S);
+ *
+ *      while (1)
+ *      {
+ *          Watchdog::pat();
+ *      }
+ *
+ *      return 0;
+ *  }
+ *  @endcode
  * 
  */ 
 
@@ -68,25 +89,38 @@
 
 // DEFINE PUBLIC MACROS.
 
-/*WDTO Macro definitions*/
-#define WDTO_15MS	0
-#define WDTO_30MS	1
-#define WDTO_60MS	2
-#define WDTO_120MS	3
-#define WDTO_250MS	4
-#define WDTO_500MS	5
-#define WDTO_1S		6
-#define WDTO_2S		7
-
-/*WDTO_4S & WDTO_8S are only valid for the AVR ATmega 2560*/
-#if defined (__AVR_ATmega2560___)
-	#define WDTO_4S		8
-	#define WDTO_8S		9
-#endif
-
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-//enum wdt_timeout {WDTO_15MS, WDTO_30MS, WDTO_60MS, WDTO_120MS, WDTO_250MS, WDTO_500MS, WDTO_1S, WDTO_2S, WDTO_4S, WDTO_8S};	//NB: WDT0_4s & WDT_8S are not valid options on the AT90CANxx or the ATmega16/32/64 devices
+// Available watchdog timeout periods are hardware specific.
+#if defined (__AVR_ATmega2560___)
+	enum Watchdog_timeout
+	{
+		WDTO_15MS,
+		WDTO_30MS,
+		WDTO_60MS,
+		WDTO_120MS,
+		WDTO_250MS,
+		WDTO_500MS,
+		WDTO_1S,
+		WDTO_2S,
+		WDTO_4S,
+		WDTO_8S
+	};
+#elif defined (__AVR__)
+	enum Watchdog_timeout
+	{
+		WDTO_15MS,
+		WDTO_30MS,
+		WDTO_60MS,
+		WDTO_120MS,
+		WDTO_250MS,
+		WDTO_500MS,
+		WDTO_1S,
+		WDTO_2S
+	};
+#else
+	#error "No watchdog timeout definitions for this configuration."
+#endif
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
@@ -94,49 +128,49 @@
 
 // DEFINE PUBLIC CLASSES.
 
-class watchdog
+class Watchdog
 {
 	public:
 		// Functions.
 
 		/**
-		 * Gets run whenever the instance of class watchdog goes out of scope.
-		 * Does nothing, since the watchdog class cannot be instantiated.
-		 * @param Nothing
-		 * @return Nothing
+		 * Gets run whenever the instance of class Watchdog goes out of scope.  This is never called, since the Watchdog class cannot be instantiated.
+		 *
+		 * @param Nothing.
+		 * @return Nothing.
 		 */
-		 ~watchdog(void);
+		 ~Watchdog(void);
 		
 		/**
-		 * Resets the watchdog timer so it doesn't overflow and trigger a system reset.
-		 * @param Nothing
-		 * @return Nothing
+		 * Reset the watchdog timer, preventing a watchdog strike.
+		 *
+		 * @param Nothing.
+		 * @return Nothing.
 		 */
 		static void pat(void);
 				
 		/**
-		 * Sets the timeout of the watchdog timer and starts the watchdog running.
+		 * Set the timeout of the watchdog timer and start the watchdog running.
 		 * 
-		 * @param time_out	One of 10 possible different values for the timeout value of the watchdog
-		 * @return 0 for success, -1 for error.
-		 * @param Nothing
-		 * @return Nothing
+		 * @param timeout	The timeout period the watchdog timer should select.
+		 * @return Nothing.
 		 */
-		static int8_t enable(uint8_t time_out);
+		static void enable(Watchdog_timeout timeout);
 		
 		/** 
-		 * Disables the watchdog timer.
-		 * @param Nothing
-		 * @return Nothing
+		 * Disable the watchdog timer.
+		 *
+		 * @param Nothing.
+		 * @return Nothing.
 		 */
 		static void disable(void);
 		
 	private:
 		// Functions.
 		
-		watchdog(void);	// Poisoned.
+		Watchdog(void);	// Poisoned.
 
-		watchdog operator =(watchdog const&);	// Poisoned.
+		Watchdog operator =(Watchdog const&);	// Poisoned.
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.

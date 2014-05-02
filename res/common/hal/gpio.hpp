@@ -14,21 +14,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- *
  *  @addtogroup		hal Hardware Abstraction Library
  * 
- *  @file		gpio.h
- *  A header file for the GPIO module of the HAL. Contains functionality for writing to and reading from individual pins.
- *  Uses semaphores to prevent resource conflict. The implementation of the functions provided should be in a gpio.cpp
- *  file in the res/ARCHITECTURETYPE/hal folder.
- * 
- *  @brief 
- *  A class that handles GPIO. User grabs control of a GPIO pin which is an instance of this class,
- *  and uses it to manipulate the pin.
+ *  @file
+ *  Provides functionality for writing to and reading from individual GPIO pins.
  * 
  *  @author 		Edwin Hayes
  *
  *  @date		7-12-2011
+ *
+ *  @brief 
+ *  A class that abstracts GPIO peripherals. Each instance allows control of a single GPIO pin.
  * 
  *  @section 		Licence
  * 
@@ -47,38 +43,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  * 
- *  @section Description
+ *  @section Example
+ *  This code shows configuring a GPIO pin for both input and output, as well as configuring a edge triggered interrupt on a GPIO input.
  *
- * This is the header file which matches gpio.cpp.  
- * This class implements functions for general i/o. 
- * As many pins have multiple uses, semaphores are used to make sure that pins are only being used by one peripheral at once. 
- * In order to use a GPIO pin, one must call the static gpio_pin_grab function, which, if the pin is free, will
- * return a pointer to a gpio_pin_imp implementation of the GPIO. If this is a valid pointer, the program now has control 
- * of that pin until it relinquishes control using the vacate function. 
- * An instance of this class cannot be instantiated using a constructor, but must be created using the gpio_pin_grab function.
- * 
- * @section Example
- * @code
- * gpio_pin_address my_pin_address;
- * my_pin_address.port = PORT_B;
- * my_pin_address.pin = PIN_5;
- * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
- * if (my_pin.is_valid())
- * {
+ *  @code
+ *  #include "hal/gpio.hpp"
+ *
+ *  int main(void)
+ *  {
+ *      gpio_pin_address my_pin_address;
+ *      my_pin_address.port = PORT_B;
+ *      my_pin_address.pin = PIN_5;
+ *
+ *      gpio_pin my_pin = gpio_pin::grab(my_pin_address);
  * 	my_pin.set_mode(OUTPUT);
  * 	my_pin.write(HIGH);
  * 	my_pin.set_mode(INPUT);
  * 	if (my_pin.read() == HIGH)
  * 	{
- * 		my_pin.enable_interrupt(RISING_EDGE,&myISR);
+ *          my_pin.enable_interrupt(RISING_EDGE, &myISR);
  * 	}
- * }
+ *  }
  * 
- * void myISR()
- * {
- * 	do_something();
- * }
- * @endcode
+ *  void myISR()
+ *  {
+ *  	do_something();
+ *  }
+ *  @endcode
+ *
  */
 
 // Only include this header file once.
@@ -93,9 +85,6 @@
 // Include the standard C++ definitions.
 #include <stddef.h>
 
-// Include the semaphore library that someone is gonna create.
-#include "semaphore.hpp"
-
 // Include the hal library.
 #include "hal/hal.hpp"
 
@@ -103,101 +92,102 @@
 
 typedef void (*voidFuncPtr)(void);
 
-enum gpio_mode {INPUT, OUTPUT, INPUT_PD, INPUT_PU, OUTPUT_OD, OUTPUT_PP};	//plain INPUT is floating
+/* Available GPIO pin modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *	enum Gpio_mode {GPIO_INPUT, GPIO_INPUT_PU, GPIO_OUTPUT, GPIO_OUTPUT_OD};
+ *
+ */
 
-enum gpio_output_state {O_LOW, O_HIGH, O_TOGGLE, O_ERROR=-1};
+// GPIO IO pin state.
+enum Gpio_output_state {GPIO_O_LOW, GPIO_O_HIGH, GPIO_O_TOGGLE, GPIO_O_ERROR = -1};
+enum Gpio_input_state {GPIO_I_LOW, GPIO_I_HIGH, GPIO_I_ERROR = -1};
 
-enum gpio_input_state {I_LOW, I_HIGH, I_ERROR=-1};
+// GPIO IO operation status.
+enum Gpio_io_status {GPIO_SUCCESS, GPIO_ERROR};
 
-enum inter_return_t {GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2};
+// GPIO interrupt modes.
+enum Gpio_interrupt_mode {GPIO_INT_LOW_LEVEL, GPIO_INT_ANY_EDGE, GPIO_INT_FALLING_EDGE, GPIO_INT_RISING_EDGE};
 
-enum interrupt_mode {INT_LOW_LEVEL, INT_ANY_EDGE, INT_FALLING_EDGE, INT_RISING_EDGE};
+// GPIO interrupt configuration status.
+enum Gpio_interrupt_status {GPIO_INT_SUCCESS, GPIO_INT_ALREADY_DONE, GPIO_INT_ALREADY_TAKEN = -1, GPIO_INT_OUT_OF_RANGE = -2};
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-class gpio_pin_imp;
+class Gpio_pin_imp;
+
+// DEFINE PUBLIC CLASSES.
 
 /**
  * @class
- * This class implements functions for general i/o. 
- * As many pins have multiple uses, semaphores are used to make sure that pins are only being used by one peripheral at once. 
- * In order to use a GPIO pin, one must call the static gpio_pin_grab function, which, if the pin is free, will
- * return a pointer to a gpio_pin_imp implementation of the GPIO. If this is a valid pointer, the program now has control 
- * of that pin until it relinquishes control using the vacate function. 
- * An instance of this class cannot be instantiated using a constructor, but must be created using the gpio_pin_grab function.
+ * Abstracts a single GPIO pin, allowing control of IO functions.  GPIO pins can generally be configured as both input and output devices, and may support interrupt triggering,
+ * configurable pull-ups, or other more complicated functionality. 
  * 
  */
-// DEFINE PUBLIC CLASSES.
-class gpio_pin
+class Gpio_pin
 {
 	public:
 		// Functions.
-
-		/**
-		 * Gets run whenever the instance of class gpio_pin goes out of scope.
-		 * Vacates the semaphore, allowing the pin to be allocated elsewhere.
-		 * This is useful for vacating a pin automatically, without using the vacate function. However,
-		 * users are recommended to use the vacate function for consistency and safety.
-		 * @param Nothing
-		 * @return Nothing
-		 */
-		 ~gpio_pin(void);
 		
 		/**
-		 * Sets the pin to an input or output. Does not have any other options (such as Pull-up, Pull-Push, Open Drain), kept simple.
-		 * If you want to use these functions, circumvent the HAL.
+		 * Sets the pin to an input or output.
+		 *
 		 * @subsection	Example
+		 *
 		 * @code
 		 * set_mode(INPUT); 
 		 * @endcode
-		 * @param  mode	Set to INPUT or OUTPUT.
-		 * @return 0 for success, -1 for error. Errors occur mostly when the pin is out of scope for this Target.
+		 *
+		 * @param  mode 	Set to INPUT or OUTPUT.
+		 * @return Return code representing whether operation was successful
 		 * 
 		 */
-		int8_t set_mode(gpio_mode mode);
+		Gpio_io_status set_mode(Gpio_mode mode);
 				
 		/**
-		 * Reads the value of the gpio pin and returns it. To compare, use the specified types (LOW, HIGH).
+		 * Reads the value of the GPIO pin and returns it.
 		 * 
-		 * @subsection Example 
+		 * @subsection Example
+		 *
 		 * @code
-		 * if (my_pin.read() == HIGH)
+		 * if (my_pin.read() == GPIO_I_HIGH)
 		 * {
-		 * 	my_pin.write(LOW);
+		 * 	my_pin.write(GPIO_O_LOW);
 		 * }
 		 * @endcode
-		 * @return LOW (0), HIGH (1), or ERROR (-1).
 		 * 
-		 * @param Nothing
-		 * @return Nothing
+		 * @param Nothing.
+		 * @return The current state of the IO pin.
 		 */
-		gpio_input_state read(void);
+		Gpio_input_state read(void);
 		
 		/**
-		 * Writes the value provided to the pin. A value of TOGGLE will simply change it to what it currently isn't,
-		 * i.e if it is currently HIGH it will be set LOW and vice versa.
+		 * Writes the value provided to the pin.
 		 * 
 		 * @subsection Example
+		 *
 		 * @code
-		 * if (my_pin.read() == HIGH)
+		 * if (my_pin.read() == GPIO_O_HIGH)
 		 * {
-		 * 	my_pin.write(LOW);
+		 * 	my_pin.write(GPIO_O_LOW);
 		 * } 
 		 * @endcode
-		 * @param  value	HIGH(1), LOW(0) or TOGGLE(2).
-		 * @return Nothing
+		 *
+		 * @param  value	The state to set the GPIO pin to.
+		 * @return Return code representing whether operation was successful
 		 */
-		int8_t write(gpio_output_state value);
+		Gpio_io_status write(Gpio_output_state value);
 		
+		// TODO - Is this true?  Does the pin automatically become an input?  If so, how do you configure pull-ups?
+
 		/** 
-		 * Initialise an interrupt for the associated pin in the specified mode
-		 * and attach the ISR function pointer provided to the interrupt.
-		 * To use this, create a function that you will use as your ISR. Pass the
-		 * pointer to your ISR into this function.
+		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
+		 *
+		 * NOTE - Calling this function automatically sets the pin to an input.
 		 * 
 		 * @subsection Example
+		 *
 		 * @code
-		 * if (my_pin.enable_interrupt(RISING_EDGE, &myISR) == GP_SUCCESS)
+		 * if (my_pin.enable_interrupt(GPIO_INT_RISING_EDGE, &myISR) == GPIO_INT_SUCCESS)
 		 * {
 		 * 	runMyThings();
 		 * }
@@ -206,87 +196,59 @@ class gpio_pin
 		 * 	giveUp();
 		 * }
 		 * @endcode
+		 *
 		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
-		 * @return 		Whether it was successful. Shouldn't really need to be used.
-		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
+		 * @return Return code representing whether operation was successful
 		 */
-		inter_return_t enable_interrupt(interrupt_mode mode, void (*func_pt)(void));
+		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
 		
 		/**
-		 *
-		 * Disable an interrupt for the associated pin. The interrupt is still set up, but is simply masked at this stage.
+		 * Disable an interrupt for the pin.
 		 *
 		 * @param  Nothing.
-		 * @return inter_return_t 	(GP_SUCCESS, GP_ALREADY_DONE, GP_ALREADY_TAKEN=-1, GP_OUT_OF_RANGE=-2)
+		 * @return Return code representing whether operation was successful
 		 */
-		inter_return_t disable_interrupt(void);
+		Gpio_interrupt_status disable_interrupt(void);
 		
 		/**
-		 * Checks to see whether or not the GPIO pin implementation pointer is null or not. Use this after
-		 * using gpio_pin_grab to see if your pin grab was successful or not. If the pin grab was
-		 * unsuccessful then probably the pin was already being used by another peripheral.
-		 * 
-		 * @subsection Example
-		 * @code
-		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
-		 * if (my_pin.is_valid())
-		 * {
-		 * 	my_pin.write(HIGH);
-		 * }
-		 * @endcode
-		 * 
-		 * @param Nothing
-		 * @return True if the implementation pointer is not NULL, false otherwise.
-		 */
-		bool is_valid(void);
-		
-		/** 
-		 * Allows access to the GPIO pin to be relinquished and assumed elsewhere. Use this
-		 * when are process has finished with a pin and no longer needs control over it. This 
-		 * lets another process grab control of that pin.
+		 * Creates a Gpio_pin instance for a specific GPIO pin.
 		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		void vacate(void);
-		
-		/**
-		 * Allows a process to request access to a gpio pin and manages the semaphore
-		 * indicating whether access has been granted or not.
-		 * THIS IS THE ONLY WAY (using the hal) TO GET AN INSTANCE OF A GPIO PIN.
 		 * @subsection Example
+		 *
 		 * @code
-		 * gpio_pin_address my_pin_address;
+		 * IO_pin_address my_pin_address;
 		 * my_pin_address.port = PORT_B;
 		 * my_pin_address.pin = PIN_5;
-		 * gpio_pin my_pin = gpio_pin::grab(my_pin_address);
-		 * if (my_pin.is_valid())
-		 * {
-		 * 	my_pin.write(HIGH);
-		 * }
+		 *
+		 * Gpio_pin my_pin = Gpio_pin::grab(my_pin_address);
 		 * @endcode
 		 *
-		 * @param  gpio_pin_address	Address of the GPIO pin requested.
-		 * @return A gpio_pin instance.
+		 * @param  address	Address of the GPIO pin.
+		 * @return A Gpio_pin instance corresponding to the specified IO pin.
 		 */
-		static gpio_pin grab(gpio_pin_address);
+		static Gpio_pin grab(IO_pin_address address);
 
 	private:
 		// Functions.
 		
-		gpio_pin(void);	// Poisoned.
+		Gpio_pin(void);	// Poisoned.
 
-		gpio_pin(gpio_pin_imp*);
+		Gpio_pin(Gpio_pin_imp*);
 
-		gpio_pin operator =(gpio_pin const&);	// Poisoned.
+		Gpio_pin operator =(Gpio_pin const&);	// Poisoned.
 
 		// Fields.
 
-		/*
-		* Pointer to the machine specific implementation of the GPIO pin.
+		/**
+		* Pointer to the target specific implementation of the GPIO pin.
 		*/
-		gpio_pin_imp* imp;
+		Gpio_pin_imp* imp;
+		
+		/**
+		 * Address of the GPIO pin this instance interfaces
+		 */
+		IO_pin_address pin_address;
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
