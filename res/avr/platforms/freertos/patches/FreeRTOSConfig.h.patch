@@ -1,0 +1,26 @@
+--- FreeRTOSConfig.h	2013-06-27 16:59:01.987489000 +1200
++++ FreeRTOSConfig.h.new	2013-06-27 17:32:09.475518959 +1200
+@@ -75,7 +75,8 @@
+ #ifndef FREERTOS_CONFIG_H
+ #define FREERTOS_CONFIG_H
+ 
+-#include <avr/io.h>
++// Include the required IO header file.
++#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
+ 
+ /*-----------------------------------------------------------
+  * Application specific definitions.
+@@ -89,10 +90,12 @@
+  * See http://www.freertos.org/a00110.html.
+  *----------------------------------------------------------*/
+ 
++// TODO - The heap size should probably not just be whatever number happened to be there originally, and may be target specific.
++
+ #define configUSE_PREEMPTION		1
+ #define configUSE_IDLE_HOOK			1
+ #define configUSE_TICK_HOOK			0
+-#define configCPU_CLOCK_HZ			( ( unsigned long ) 8000000 )
++#define configCPU_CLOCK_HZ			( ( unsigned long ) <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000 )
+ #define configTICK_RATE_HZ			( ( portTickType ) 1000 )
+ #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 4 )
+ #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 85 )
