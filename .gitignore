@@ -12,4 +12,5 @@ res/avr32/avr32comp/*
 res/vendor/mavlink/*
 res/vendor/freertos/*
 res/vendor/stlink/*
+doc/zim/.zim/state.conf
 */*~
