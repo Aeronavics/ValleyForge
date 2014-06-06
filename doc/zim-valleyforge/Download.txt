@@ -4,8 +4,7 @@ Creation-Date: 2014-06-06T14:20:51+12:00
 
 ====== Downloading the ToolChain ======
 
-1. ===== Downloading via Git =====
-
+===== 1. Downloading via Git =====
 
 TODO - This.
 
@@ -13,8 +12,7 @@ TODO - This.
 
 TODO - This.
 
-3. ===== Using ValleyForge as a Vendor Remote =====
-
+===== 3. Using ValleyForge as a Vendor Remote =====
 
 As mentioned above, ValleyForge is primarily accessed by cloning a copy of the Git repository which hosts the toolchain. At this time, this is generally preferable to downloading a snapshot, because the toolchain is under active development, and bug fixes or other changes to the toolchain may be desired as soon as possible. By cloning the Git repository, a user has access to the complete development history of the toolchain.
 
