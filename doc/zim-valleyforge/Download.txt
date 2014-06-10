@@ -1,14 +1,18 @@
 Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
-Creation-Date: 2014-05-27T11:26:05+12:00
+Creation-Date: 2014-06-06T14:20:51+12:00
 
-====== Valley Forge Toolchain Documentation ======
+====== Downloading the ToolChain ======
 
+===== 1. Downloading via Git =====
 
+TODO - This.
 
-Created Tuesday 27 May 2014
+===== 2. Downloading a Snapshot via HTTP =====
 
-3. Using ValleyForge as a Vendor Remote
+TODO - This.
+
+===== 3. Using ValleyForge as a Vendor Remote =====
 
 As mentioned above, ValleyForge is primarily accessed by cloning a copy of the Git repository which hosts the toolchain. At this time, this is generally preferable to downloading a snapshot, because the toolchain is under active development, and bug fixes or other changes to the toolchain may be desired as soon as possible. By cloning the Git repository, a user has access to the complete development history of the toolchain.
 
@@ -17,41 +21,56 @@ However, the software which a user is developing may also be under version contr
 One approach to deal with this is through Git 'submodules'. However, a submodule consists of vendor code located within a single subdirectory of a working copy, whereas the toolchain consists of vendor files which contain user files. Instead, a preferable solution may be to add the ValleyForge Git repository as a remote. This method gets all the files from the ValleyForge repository, without affecting the history of the user repository:
 
 Create a new local Git repository (or clone another user repository):
-git init
-Add the ValleyForge git repository as a remote (here, we'll call the remote vendor):
-git remote add vendor http://ucunison1.canterbury.ac.nz/git/ValleyForge
-git fetch vendor
-Checkout all the files from the remote into the local working copy where development is to take place:
-git checkout vendor/master -- .
-Reset the working copy, to unstage the new files:
-git reset HEAD
-Modify the file .gitignore so that it masks off all the toolchain files:
-nano .gitignore
-Modify the .gitignore file to look something like this:
+''git init''
 
+Add the ValleyForge git repository as a remote (here, we'll call the remote vendor):
+''git remote add vendor http://ucunison1.canterbury.ac.nz/git/ValleyForge''
+''git fetch vendor''
+
+Checkout all the files from the remote into the local working copy where development is to take place:
+''git checkout vendor/master -- .''
+
+Reset the working copy, to unstage the new files:
+''git reset HEAD''
+
+Modify the file .gitignore so that it masks off all the toolchain files:
+''nano .gitignore''
+
+Modify the .gitignore file to look something like this:
+'''
 bin/*
 tmp/*
 bld/*
 res/*
 doc/*
 */*~
-Add the modified .gitignore file.
+'''
 
-git add .gitignore
+Add the modified .gitignore file.
+''git add .gitignore''
+
 Check that everything looks ok.
-git status
-The status report should indicate that the only staged change is to .gitignore. If so, you are all good to go. You can commit the staged change (along with any other local changes you may then make) when ready.
+''git status''
+
+The status report should indicate that the only staged change is to ''.gitignore''. If so, you are all good to go. You can commit the staged change (along with any other local changes you may then make) when ready.
 
 In future, when you want to update the toolchain to make use of newer functionality, use the following procedure:
 
 Fetch any changes to the toolchain remote.
-git fetch vendor
+''git fetch vendor''
+
 Make sure all your local changes have been committed (otherwise they may be lost in this step). Then checkout all the files from the remote into the local working copy:
-git checkout vendor/master -- .
+''git checkout vendor/master -- .''
+
 Reset the working copy, to unstage the new files:
-git reset HEAD
+''git reset HEAD''
+
 The only remaining file which has been modified is .gitignore, so check it out again to discard the version which comes with the toolchain:
-git checkout .gitignore
+''git checkout .gitignore''
+
 Check that everything looks ok.
-git status
+''git status''
+
 The status report should indicate there are no local changes. You can now continue development, making use of the updated toolchain.
+
+Created Friday 06 June 2014
