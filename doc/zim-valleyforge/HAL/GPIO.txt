@@ -2,23 +2,15 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2014-06-10T12:51:42+12:00
 
-====== gpio ======
-Created Tuesday 10 June 2014
+====== GPIO HAL Module ======
 
-(please configure the [header_logo] section in trac.ini)
-  
-LoginPreferencesHelp/GuideAbout Trac
-WikiTimelineRoadmapBrowse SourceView TicketsSearchDoxygen
-wiki:Libraries/HAL/GPIO
-UpStart PageIndexHistory
-Last modified 4 months ago
-GPIO HAL Module
 Goal
 
 Unify the programming interface for using GPIO functionality
 To create an object orientated interface that is stateless
 Make minimal compromises to the GPIO pin functionality and performance in the process of unification
 Allowing user source code to be portable to supported targets with minimal changes
+
 General Abstraction Model
 
 Main differences of the GPIO functionality between targets are:
@@ -208,8 +200,5 @@ ArduPilotMega - Native - No support.
 Linux
 
 Native - No support - No Support
-Download in other formats:
-Plain Text
-Trac PoweredPowered by Trac 0.12
-By Edgewall Software.Visit the Trac open source project at
-http://trac.edgewall.org/
+
+Created Tuesday 10 June 2014
