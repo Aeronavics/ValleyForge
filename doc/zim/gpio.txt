@@ -1,0 +1,215 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-06-10T12:51:42+12:00
+
+====== gpio ======
+Created Tuesday 10 June 2014
+
+(please configure the [header_logo] section in trac.ini)
+  
+LoginPreferencesHelp/GuideAbout Trac
+WikiTimelineRoadmapBrowse SourceView TicketsSearchDoxygen
+wiki:Libraries/HAL/GPIO
+UpStart PageIndexHistory
+Last modified 4 months ago
+GPIO HAL Module
+Goal
+
+Unify the programming interface for using GPIO functionality
+To create an object orientated interface that is stateless
+Make minimal compromises to the GPIO pin functionality and performance in the process of unification
+Allowing user source code to be portable to supported targets with minimal changes
+General Abstraction Model
+
+Main differences of the GPIO functionality between targets are:
+
+Number of ports
+Number of pins per port
+Availability of interrupts on particular pins
+Types of interrupt events (rising/falling edge, low level)
+Circuit logic of the pin (some targets have configurable internal pull up resistors, some can have configurable transistor logic)
+This has the unfortunate implication that portability may be impossible between certain targets for certain applications.
+
+The abstraction model uses two layers to abstract the GPIO functionality.
+
+An implementation class called Gpio_pin_imp which stores information specific to the target's GPIO architecture
+Private
+Instantiated at compile time
+Is a singleton, a single instances manages the configuration of all the GPIO pins.
+An interface class called Gpio_pin which stores abstract information about one particular GPIO pin which is applicable to all targets.
+Public
+Allocated at run-time by user
+User specifies which pin to bind this interface to by passing in the address descriptor which is abstracted by the IO_pin_address struct
+The IO_pin_address struct contains two fields to represent the port and the pin locations.
+
+Users access functionality to a GPIO pin by instantiating a Gpio_pin class and binding the address of the selected pin to it. The Gpio_pin class calls the methods of Gpio_pin_imp to perform hardware level addressing for operations. The Gpio_pin class processes only abstract information concerning GPIO. Note that the last hardware state of the pin persists even if the corresponding Gpio_pin instance has fallen out of scope.
+
+Usage
+
+Initialisation
+
+Users must instantiate a Gpio_pin class and bind the chosen GPIO pin address to this instance simultaneously as assignment of this class is prohibited. This is done by invoking the grab() method of the Gpio_pin class.
+
+The address descriptor must therefore be created first and then passed into the grab() method.
+
+Example
+
+IO_pin_address my_gpio_addr;    //creating the descriptor
+my_gpio_addr.port = PORT_B;     //setting the descriptor's port to port B
+my_gpio_addr.pin = PIN_5;       //setting the descriptor's pin to 5
+
+Gpio_pin my_gpio_pin = Gpio_pin::grab(my_gpio_addr);    //instantiating an interface and binding it to the pin specified by the address descriptor 'my_gpio_addr'
+Setting the mode
+
+In this operation, pin direction, circuit logic and pull up resistors can be configured. This is done by invoking the set_mode method of the Gpio_pin class. Note: This method returns a code representing whether any errors have occurred in the operation, however current implementation of all targets only return a success code.
+
+Mode availability varies significantly between targets, see the target's specific pages for what modes are available. If user attempts to set the pin to a mode unavailable on the chosen target, compiler errors will result.
+
+Even though the last hardware state on the pin will persist, it is recommended to always set the mode of the pin after instantiating an interface to it.
+
+Example
+
+my_gpio_pin.set_mode(GPIO_OUTPUT_PP);    //set pin to push-pull output generally available on all targets
+Writing to the pin
+
+This is invoked by the write() method of the Gpio_pin class. Use GPIO_O_LOW and GPIO_O_HIGH respectively to set the pin logic to low or high. This operation is only valid for pins set as one of the target's output modes, an error return code will result if it is performed on an input pin.
+
+Example
+
+Gpio_io_status ret_code = my_gpio_pin.write(GPIO_O_HIGH) == GPIO_SUCCESS;
+
+if (ret_code == GPIO_ERROR)
+{
+    //You just tried to write to an input pin!
+}
+Reading the state of the pin
+
+This is invoked by the read() method of the Gpio_pin class. This operation is only valid for pins set as one of the target's input mode, an error return code will result if it is performed on an output pin.
+
+Example
+
+Gpio_input_state state = my_gpio_pin.read();
+
+if (state == GPIO_I_HIGH)
+{
+    //pin was logic high
+}
+else if (state == GPIO_I_LOW)
+{
+    //pin was logic low
+}
+else if (state == GPIO_I_ERROR)
+{
+    //You just tried to write to an output pin!
+}
+Interrupts
+
+Different targets have varying availability of interrupt events on certain pins. This is one of the least portable aspects of the GPIO module. User must consult the target's datasheet to determine whether configuring a particular interrupt event on the chosen pin is possible. The error checking during this operation cannot reliably detect whether the user has configured an invalid interrupt event on the chosen pin and could corrupt the entire program in this operation.
+
+Attaching callbacks
+
+This operation configures:
+
+What interrupt event to configure on the pin corresponding to the Gpio_pin instance
+What callback function to attach to this event
+This operation is performed by invoking the enable_interrupt() method of the Gpio_pin class.
+
+Example:
+
+/* ** implementing custom callback function ** */
+void my_int_callback(void)
+{
+    //do stuff
+}
+
+/* ** attaching my_int_callback() to a falling edge event on the pin ** */
+Gpio_interrupt_status ret_code = my_gpio_pin.enable_interrupt(GPIO_INT_FALLING_EDGE, my_int_callback);
+
+if (ret_code == GPIO_INT_ALREADY_DONE)
+{
+    //operation successful, but event previously had the same handler attached to it
+}
+else if (ret_code == GPIO_INT_ALREADY_TAKEN)
+{
+    //operation successful, but event previously had a different handler attached to it
+}
+else if (ret_code == GPIO_INT_OUT_OF_RANGE)
+{
+    //operation failed, no interrupt available to this pin
+}
+Detaching callbacks
+
+This removes the callback from the pin and disables the event. This is invoked by the disable_interrupt() method of the Gpio_pin class.
+
+Gpio_interrupt_status ret_code = my_gpio_pin.disable_interrupt();
+
+if (ret_code == GPIO_INT_OUT_OF_RANGE)
+{
+    //operation failed, no interrupt available to this pin but there wasn't one to disable anyways
+}
+Sample Code
+
+Sample code below shows setting up a single button on PORTC-6 and LED on PORTC-4 and getting the LED to turn on whilst button is pressed and off when it is released.
+
+#include "hal/hal.hpp"
+#include "hal/gpio.hpp"
+
+int main(void)
+{   
+    int_on();     //enable interrupts
+
+    //setting up led pin
+    IO_pin_address led_address;
+    led_address.port = PORT_C;
+    led_address.pin = PIN_4;
+    Gpio_pin led_pin = Gpio_pin::grab(led_address);
+    led_pin.set_mode(GPIO_OUTPUT_PP);
+        
+    //setting up button pin
+    IO_pin_address but_address;
+    but_address.port = PORT_C;
+    but_address.pin = PIN_6;
+    Gpio_pin but_pin = Gpio_pin::grab(but_address);
+    but_pin.set_mode(GPIO_INPUT_PD);
+        
+    //loop
+    while(true)
+    {
+        if (but_pin.read() == GPIO_I_HIGH)
+        {
+            led_pin.write(GPIO_O_HIGH);
+        }
+        else
+        {
+            led_pin.write(GPIO_O_LOW);
+        }
+    } 
+}
+
+Implementation Status
+
+ValleyForge is a work in progress; some features are not yet complete. Accordingly, the list below summarises the degree to which the HAL's GPIO module supports individual targets.
+
+AVR
+
+ATmega2560 - Native - Implementation complete.
+AT90CAN128 - Native - Implementation partially completed.
+ATmega64M1 - Native - Implementation complete.
+AVR32
+
+AT32UC33C0512C - Native - No support.
+ARM
+
+LM3S1968 - Native - No support.
+STM32 - Native - Implementation partially completed
+Arduino
+
+ArduPilotMega - Native - No support.
+Linux
+
+Native - No support - No Support
+Download in other formats:
+Plain Text
+Trac PoweredPowered by Trac 0.12
+By Edgewall Software.Visit the Trac open source project at
+http://trac.edgewall.org/
