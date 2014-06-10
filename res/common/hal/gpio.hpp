@@ -229,6 +229,24 @@ class Gpio_pin
 		 */
 		static Gpio_pin grab(IO_pin_address address);
 
+		/**
+		 * Creates a Gpio_pin instance for a specific GPIO pin.
+		 *
+		 * @subsection Example
+		 *
+		 * @code
+		 * IO_pin_address my_pin_address;
+		 * my_pin_address.port = PORT_B;
+		 * my_pin_address.pin = PIN_5;
+		 *
+		 * Gpio_pin mypin = Gpio_pin(my_pin_address);
+		 * @endcode
+		 *
+		 * @param	address	Address of the GPIO pin.
+		 * @return	A Gpio_pin instance corresponding to the specified IO pin.
+		 */
+		 Gpio_pin(IO_pin_address address);
+
 	private:
 		// Functions.
 		

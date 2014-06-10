@@ -155,6 +155,16 @@ Gpio_pin Gpio_pin::grab(IO_pin_address address)
 	return new_pin;
 }
 
+Gpio_pin::Gpio_pin(IO_pin_address address)
+{
+	// Attach the implementation.
+	imp = &gpio_pin_imp;
+	pin_address = address;
+
+	// All done.
+	return;
+}
+
 Gpio_interrupt_status Gpio_pin::enable_interrupt(Gpio_interrupt_mode mode, void (*user_ISR)(void))
 {
       return imp->enable_interrupt(pin_address, mode, user_ISR); 
