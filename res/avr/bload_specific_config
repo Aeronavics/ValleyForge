@@ -52,7 +52,7 @@ push_key ${CONFIG_FILE} "BLINK_PORT" "PORT_${BLINK_PORT}"
 # 2. Prompt the user to select the pin to use for the blinkenlight.
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ -z "`pull_key ${CONFIG_FILE} \"BLINK_PINS\"`" ]; then		
+if [ -z "`pull_key ${CONFIG_FILE} \"BLINK_PIN\"`" ]; then		
 	echo -e "${GREEN}Please choose which pin your bootloader status LED is on:${NO_COLOUR}"
 else
 	echo -e "${GREEN}Please choose which pin your bootloader status LED is on: (Currently: ${NO_COLOUR}${BLINK_PIN}${GREEN})${NO_COLOUR}"
@@ -228,24 +228,24 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ] || [ "$ACTIVE_MODULE" == "
 	if [ -z "`pull_key ${CONFIG_FILE} \"CAN_BAUD_RATE\"`" ]; then
 		echo -e "${GREEN}Please select which CAN Baudrate to use: (In kbps)${NO_COLOUR}"
 	else
-		echo -e "${GREEN}Please select which CAN Baudrate to use: (In kbps) (Currently: ${NO_COLOUR}${CAN_BAUD_RATES}${GREEN})${NO_COLOUR}"
+		echo -e "${GREEN}Please select which CAN Baudrate to use: (In kbps) (Currently: ${NO_COLOUR}${CAN_BAUD_RATE}${GREEN})${NO_COLOUR}"
 	fi
 	# Create a menu of choices and have the user select one.
-	select CAN_BAUD_RATES in 1000 500 250 200 125 100
+	select CAN_BAUD_RATE in 1000 500 250 200 125 100
 	do
 		# Check if the selected component is actually valid.
-		CAN_BAUD_RATES=$(echo "1000 500 250 200 125 100" | grep -w -o "$CAN_BAUD_RATES")
-		if [ -z "$CAN_BAUD_RATES" ]; then
+		CAN_BAUD_RATE=$(echo "1000 500 250 200 125 100" | grep -w -o "$CAN_BAUD_RATE")
+		if [ -z "$CAN_BAUD_RATE" ]; then
 			# The selected component was not in the list of components, so the user is apparently a moron.
 			echo -e -n "${RED}Invalid choice.  Try again. ${NO_COLOUR}"
 		else
 			# A legitimate option was selected.
-			echo -e "${CYAN}Selected CAN Baudrate of ${CAN_BAUD_RATES}kbps.\n${NO_COLOUR}"
+			echo -e "${CYAN}Selected CAN Baudrate of ${CAN_BAUD_RATE}kbps.\n${NO_COLOUR}"
 			break
 		fi
 	done
 	# Write setting to the configuration file.
-	push_key ${CONFIG_FILE} "CAN_BAUD_RATES" "${CAN_BAUD_RATES}"
+	push_key ${CONFIG_FILE} "CAN_BAUD_RATE" "${CAN_BAUD_RATE}"
 
 	# 9. Prompt the user to enter the node identifier for their component.
 
