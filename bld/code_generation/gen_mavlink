@@ -104,6 +104,7 @@ gen_mavlink()
 
 	# Run the MAVlink code generator.
 	echo -e "${CYAN}\tBuilding MAVlink protocol files...\n${NO_COLOUR}"
+	export PYTHONPATH="${PYTHONPATH}:${VENDOR_MAVLINK_LOCAL}"
 	make -C ${GEN_CACHE} -f Makefile_mavlink all
 	echo -e ""
 
