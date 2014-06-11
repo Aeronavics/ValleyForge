@@ -71,7 +71,7 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-#if (defined (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__) || defined (__AVR_ATmega64M1__))
+#if (defined(__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)) || defined(__AVR_ATmega64C1__)
 	enum spi_number {SPI_0};
 #endif
 

@@ -55,7 +55,7 @@
 #if defined(__AVR_AT90CAN128__)
 	#define GEN_CAN_IT_VECT CANIT_vect
 	#define OVR_TIM_IT_VECT OVRIT_vect
-#elif defined (__AVR_ATmega64M1__)
+#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	#define GEN_CAN_IT_VECT CAN_INT_vect
 	#define OVR_TIM_IT_VECT CAN_TOVF_vect
 #endif
@@ -532,7 +532,7 @@ class Can_imp
 			Can_filmask* filters[CAN_NUM_FILTERS];
 			Can_filmask* masks[CAN_NUM_MASKS];
 			
-			#if (defined(__AVR_ATmega64M1__) || defined(__AVR_AT90CAN128__))
+			#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__) || defined(__AVR_AT90CAN128__)
 			Can_buffer_imp buf_0i;
 			Can_buffer_imp buf_1i;
 			Can_buffer_imp buf_2i;
@@ -1462,7 +1462,7 @@ Can_imp::Can_imp(Can_id_controller controller) :
 // *** TARGET CONFIGURATION SPECIFIC.
 
 // NOTE - We have to use an initialiser list here.
-	#if (defined (__AVR_ATmega64M1__) || defined(__AVR_AT90CAN128__))
+	#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__) || defined(__AVR_AT90CAN128__)
 	/* This target has MOb 0-6 */
 	
 	/* buffer types */
@@ -1638,7 +1638,7 @@ Can_imp::Can_imp(Can_id_controller controller) :
 	
 	// Complete the CAN tree.
 	
-	#if (defined (__AVR_ATmega64M1__) || defined(__AVR_AT90CAN128__))
+	#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__) || defined(__AVR_AT90CAN128__)
 	/* This target also has MOb 6-15 */
 	
 	/* ***** Linking to implemenation and adding to arrays ***** */
@@ -1924,14 +1924,14 @@ Can_config_status Can_imp::initialise(Can_rate rate)
 	{
 		if (rate == CAN_100K)       //< -- 100Kb/s, 16x Tscl, sampling at 75%
 	    {
-			//only works for ATMega64M1
+			//only works for ATMega64M1/C1
 	        CONF_CANBT1 = 0x08;       // Tscl  = 5x Tclkio = 625 ns
 	        CONF_CANBT2 = 0x0C;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x37;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
 		}
 	    else if (rate == CAN_125K)  //< -- 125Kb/s, 16x Tscl, sampling at 75%
 	    {
-			//only works for ATMega64M1
+			//only works for ATMega64M1/C1
 	        CONF_CANBT1 = 0x0E;       // Tscl  = 4x Tclkio = 500 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points
@@ -1946,7 +1946,7 @@ Can_config_status Can_imp::initialise(Can_rate rate)
 		}
 	    else if (rate == CAN_250K)  //< -- 250Kb/s, 16x Tscl, sampling at 75%
 	    {
-			//only works for ATMega64M1
+			//only works for ATMega64M1/C1
 	        CONF_CANBT1 = 0x06;       // Tscl  = 2x Tclkio = 250 ns
 	        CONF_CANBT2 = 0x04;       // Tsync = 1x Tscl, Tprs = 7x Tscl, Tsjw = 1x Tscl
 	        CONF_CANBT3 = 0x13;       // Tpsh1 = 4x Tscl, Tpsh2 = 4x Tscl, 3 sample points

@@ -25,8 +25,8 @@
  *
  *  DATE CREATED:	7-12-2011
  *
- *	This is the implementation for gpio for the atmega2560, atmega64M1 and AT90CAN128.
- *  All very similar except atmega64M1 is missing 4 external interrupt pins and AT90CAN128
+ *	This is the implementation for gpio for the ATmega2560, ATmega64M1/C1 and AT90CAN128.
+ *  All very similar except ATmega64M1/C1 is missing 4 external interrupt pins and AT90CAN128
  *  is missing the PCINT pins
  *
  ********************************************************************************************************************************/
@@ -241,7 +241,7 @@ SIGNAL(INT7_vect) {
 }
 #endif
 
-#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__) || defined(__AVR_ATmega2560__)
 SIGNAL(PCINT0_vect) {
 	if(intFunc[PCINT_0])
 	{
@@ -290,7 +290,7 @@ Gpio_io_status Gpio_pin_imp::set_mode(IO_pin_address address, Gpio_mode mode)
 		_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (wmode?(1 << address.pin):0);
 	}
 	
-	#elif defined (__AVR_AT90CAN128__) || (__AVR_ATmega64M1__)
+	#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 		_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_MODE) & ~(1 << address.pin) ) | (wmode?(1 << address.pin):0);
 	#else
 		#error "No GPIO mode set implemented for this configuration"
@@ -328,7 +328,7 @@ Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state va
 			// Toggle value.
 			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
 		}
-		#elif defined (__AVR_AT90CAN128__) || (__AVR_ATmega64M1__)
+		#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 			// Toggle value.
 			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = (_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | ~(_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE));
 		#else
@@ -348,7 +348,7 @@ Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state va
 			// Set or Clear pin on port.
 			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value ? (1 << address.pin) : (pin_t) GPIO_O_LOW);
 		}
-		#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+		#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 			// Set or Clear pin on port.
 			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = ( _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) & ~(1 << address.pin) ) | (value ? (1 << address.pin) : (pin_t) GPIO_O_LOW);
 		#else
@@ -373,7 +373,7 @@ Gpio_input_state Gpio_pin_imp::read(IO_pin_address address)
 		// Read and return pin.
 		return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? GPIO_I_LOW : GPIO_I_HIGH);
 	}
-	#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)
+	#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 		return ((_SFR_IO8((address.port * PORT_MULTIPLIER) + P_READ) & (1 << address.pin)) ? GPIO_I_LOW : GPIO_I_HIGH);
 	#else
 		#error "No GPIO read implemented for this configuration"
@@ -458,8 +458,8 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 		// Attach the callback.
 		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc;
 		
-	#elif defined(__AVR_ATmega64M1__)
-	// Provisions for ATmega64M1: Due to non-existence of port A, port_t types must be decremented by 1
+	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+	// Provisions for ATmega64M1/C1: Due to non-existence of port A, port_t types must be decremented by 1
 	
 		switch (PC_INT[address.port-1][address.pin])
 		{
@@ -575,7 +575,7 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(IO_pin_address address) 
 {
 	// If target has PCINT pins, check to see if pin is a on a PCINT bank
-	#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega64M1__)
+	#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	if ((PC_INT[address.port][address.pin] >= PCINT_0)  && (PC_INT[address.port][address.pin] < NUM_BANKS)) 
 	{
 		switch (PC_INT[address.port][address.pin]) 
@@ -639,7 +639,7 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(IO_pin_address address)
 			default:
 				return GPIO_INT_OUT_OF_RANGE;
 				
-		#elif defined (__AVR_ATmega64M1__)
+		#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 			case EINT_0:
 				// Mask the interrupt so it doesn't fire anymore, i.e put a zero in the mask register.
 				EIMSK &= ~(1 << INT0);

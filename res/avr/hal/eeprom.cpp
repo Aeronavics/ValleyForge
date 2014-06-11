@@ -40,11 +40,11 @@
 // DEFINE PRIVATE MACROS.
 
 // Maximum size of EEPROM on this device.
-#if defined (__AVR_ATmega2560__)
+#if defined(__AVR_ATmega2560__)
 	#define EEPROM_END_ADDRESS	0x0FFF
-#elif defined (__AVR_ATmega64M1__)
+#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	#define EEPROM_END_ADDRESS	0x07FF
-#elif defined (__AVR_AT90CAN128__)
+#elif defined(__AVR_AT90CAN128__)
 	#define EEPROM_END_ADDRESS	0x0FFF
 #else
 	#error "EEPROM address limits not configured."

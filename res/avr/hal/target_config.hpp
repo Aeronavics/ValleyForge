@@ -65,7 +65,7 @@
 	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7}; 
 	
-#elif defined (__AVR_ATmega64M1__)
+#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_NONE, EINT_0, EINT_1, EINT_2, EINT_3};
 	enum port_t {PORT_B=1, PORT_C, PORT_D};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
@@ -181,7 +181,7 @@
 						     
 						         
 
-#elif defined (__AVR_ATmega64M1__)
+#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	/* GPIO */
 	#	define NUM_PORTS		3
 	#	define NUM_PINS			8
@@ -225,7 +225,7 @@
 	#	define CAN_NUM_BUF_INT	3
 	#	define CAN_NUM_CHAN_INT 2
 
-	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1 has 3 interrupt ports with 8 pins
+	// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1/C1 has 3 interrupt ports with 8 pins
 	// each. Note that the EINT pins are also PCINT pins, but the EINT vector has priority over the PCINT.
 	static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =  
 							   {{PCINT_0, PCINT_0, EINT_1, PCINT_0, PCINT_0, EINT_2, PCINT_0, PCINT_0},		// B

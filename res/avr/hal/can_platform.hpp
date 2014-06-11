@@ -71,7 +71,7 @@
 	#define CAN_OUTPUT_PIN  PIN_5
 #endif
 
-#if defined (__AVR_ATmega64M1__)
+#if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	#define CAN_PORT_IN     PORT_C 
 	#define CAN_PORT_DIR    DDRC
 	#define CAN_PORT_OUT    PORT_C 
