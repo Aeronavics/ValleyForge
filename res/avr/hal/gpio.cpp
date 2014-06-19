@@ -66,48 +66,14 @@ class Gpio_pin_imp
 
 		// Methods.
 
-		/**
-		 * Sets the pin to an input or output.
-		 *
-		 * @param mode 	Set to INPUT or OUTPUT.
-		 * @return Zero for success, non-zero for failure.
-		 * 
-		 */
 		Gpio_io_status set_mode(IO_pin_address address, Gpio_mode mode);
 
-		/**
-		 * Reads the value of the GPIO pin and returns it.
-		 * 
-		 * @param Nothing.
-		 * @return The current state of the IO pin.
-		 */
 		Gpio_input_state read(IO_pin_address address);
 		
-		/**
-		 * Writes the value provided to the pin.
-		 * 
-		 * @param  value	The state to set the GPIO pin to.
-		 * @return Nothing.
-		 */
 		Gpio_io_status write(IO_pin_address address, Gpio_output_state value);
 		
-		/** 
-		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
-		 *
-		 * NOTE - Calling this function automatically sets the pin to an input.
-		 *
-		 * @param  mode		Type of GPIO interupt to enable.
- 		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
-		 * @return Zero for success, non-zero for failure.
-		 */
 		Gpio_interrupt_status enable_interrupt(IO_pin_address address, Gpio_interrupt_mode mode, void (*func_pt)(void));
 		
-		/**
-		 * Disable an interrupt for the pin.
-		 *
-		 * @param  Nothing.
-		 * @return Zero for success, non-zero for failure.
-		 */
 		Gpio_interrupt_status disable_interrupt(IO_pin_address address);
 		
 		Gpio_mode pin_modes[NUM_PORTS][NUM_PINS];
@@ -147,20 +113,18 @@ Gpio_input_state Gpio_pin::read(void)
 	return (imp->read(pin_address));
 }
 
-Gpio_pin Gpio_pin::grab(IO_pin_address address)
-{
-	// Create interface instance and attach 
-	Gpio_pin new_pin = Gpio_pin(&gpio_pin_imp);
-	new_pin.pin_address = address;
-	return new_pin;
-}
-
 Gpio_pin::Gpio_pin(IO_pin_address address)
 {
 	// Attach the implementation.
 	imp = &gpio_pin_imp;
 	pin_address = address;
 
+	// All done.
+	return;
+}
+
+Gpio_pin::~Gpio_pin()
+{
 	// All done.
 	return;
 }

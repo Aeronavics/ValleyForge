@@ -78,46 +78,16 @@ class Can_filmask_imp
 {
 	public:
 	
-		// Methods.
+		// Methods - These methods should generally correspond to methods of the public class Can_filmask.
 
-		/**
-		 * Create a new Can_filmask_imp which controls the specified CAN filter/mask.
-		 * This constructor sets it to filter mode.
-		 * 
-		 * @param	filter	The id of the CAN filter for this driver to interface with.
-		 */
 		 Can_filmask_imp(Can_id_filter filter);
 		 
-		/**
-		 * Create a new Can_filmask_imp which controls the specified CAN filter/mask.
-		 * This constructor sets it to filter mode.
-		 * 
-		 * @param	mask	The id of the CAN mask for thsi driver to interface with.
-		 */
 		 Can_filmask_imp(Can_id_mask mask);
 		 
-		/**
-		* Gets the current filter/mask value being used by the hardware filter/mask.
-		*
-		* @param	Nothing.
-		* @return	The current filter value.
-		*/
 		 Can_filmask_value get(void);
 		
-		/**
-		* Sets the filter/mask value being used by the hardware filter/mask.
-		*
-		* @param	value	The new value for the filter.
-		* @return	Nothing.
-		*/
 		 void set(Can_filmask_value value);
 		 
-		/**
-		 * Returns whether this object represents a filter or a mask
-		 * 
-		 * @param	Nothing.
-		 * @return	Nothing.
-		 */
 		 Can_filmask_mode get_mode(void);
 		
 	private:
@@ -148,65 +118,20 @@ class Can_filter_bank_imp
 	
 	public:
 
-		// Methods.
+		// Methods - These methods should generally correspond to methods of the public class Can_filter_bank.
 
-		/**
-		 * Create a new Can_filter_bank_imp which controls the specified CAN filter bank.
-		 * 
-		 * @param	bank	The id of the CAN bank for this driver to interface with.
-		 */
 		 Can_filter_bank_imp(Can_id_bank bank);
 
-		/**
-		 * Returns a pointer to the buffer which this bank of filters/masks is currently attached to.  If this bank is currently not attached to a buffer, then returns NULL.
-		 *
-		 * @param	Nothing.
-		 * @return	The buffer this bank is currently attached to.
-		 */
 		Can_buffer* get_buffer(void);
 
-		/**
-		 * Attaches the bank to a buffer.  This automatically detaches the bank for any buffer it was previously attached to (and may cause transitional effects such as
-		 * flushing the corresponding buffer).  Returns zero for success, or non-zero to indicate an error.  In the case that the target does not support mutable banks, returns
-		 * CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
-		 *
-		 * @param	buffer	The buffer which the bank should be attached to.
-		 * @return		Zero for success, or non-zero for failure.
-		 */
 		Can_config_status set_buffer(Can_buffer& buffer);
 
-		/**
-		 * Returns the mode the bank is currently set to.
-		 *
-		 * @param	Nothing.
-		 * @return	The mode the bank is set to.
-		 */
 		Can_bank_mode get_mode(void);
 
-		/**
-		 * Sets the bank to a different mode.  Depending on the target, this may change the filters/masks which the bank makes use of; accordingly, variables pointing at filters
-		 * and masks in this bank must be refreshed after changing mode.  Returns zero for success, or non-zero to indicate an error.  In the case that hte target does not
-		 * support mutable banks, returns CAN_CFG_IMMUTABLE to indicate that the operation is not supported on this target type.
-		 *
-		 * @param	mode	The mode to change the buffer to.
-		 * @return		Zero for success, or non-zero for failure.
-		 */
 		Can_config_status set_mode(Can_bank_mode mode);
 
-		/**
-		 * Returns the number of filters/masks which are part of this bank.
-		 *
-		 * @param	Nothing.
-		 * @return	The number of filters/masks in this bank.
-		 */
 		uint8_t get_num_filmasks(void);
 
-		/**
-		 * Returns an array of pointers to the filters/masks which are part of this bank.
-		 *
-		 * @param	Nothing.
-		 * @return	Array of pointers to filters/masks in this bank.
-		 */
 		Can_filmask** get_filmasks(void);
 
 	private:
@@ -239,147 +164,40 @@ class Can_buffer_imp
 	
 	public:
 
-		// Methods.
+		// Methods - These methods should generally correspond to methods of the public class Can_buffer.
 		
-		/**
-		 * Create a new Can_buffer_imp which controls the specified CAN buffer.
-		 * 
-		 * @param	buffer	The id of the CAN buffer for this driver to interface with.
-		 */
 		 Can_buffer_imp(Can_id_buffer buffer);
 		
-		/**
-		* Returns the mode of the object.
-		*
-		* @param	Nothing.
-		* @return	The mode of the object.
-		*/
 		Can_buffer_mode get_mode(void);
 		
-		/**
-		* Returns whether or not the object can change mode.
-		*
-		* @param	Nothing.
-		* @return	Flag indicating whether the object's mode can be modified.
-		*/
 		bool get_multimode(void);
 	
-		/**
-		* Sets the mode of the object.  This may not work, depending on 
-		* whether the CAN hardware offers support for multimode objects.
-		*
-		* @param	mode	The mode to set the object to.
-		* @return   Flag indicating whether operation was successful.
-		*/
 		Can_config_status set_mode(Can_buffer_mode mode);
 		
-		/**
-		* Returns the current status of the object.
-		*
-		* @param	Nothing.
-		* @return	The current status of the buffer (one of possible CAN_BUF_STATs).
-		*/
 		Can_buffer_status get_status(void);
 		
-		/**
-		 * Get the the message in the buffer
-		 * 
-		 * @param   msg		Can_message struct to store the incoming message.
-		 * @return  Return code indicating whether operation was successful.
-		 */
 		Can_send_status read(Can_message& msg);
 		
-		/**
-		 * Poll the buffer until message arrives before reading message
-		 * 
-		 * @param	msg		Can_message struct to strore the incoming message.
-		 * @return  Return code indicating whether operation was successful/
-		 */
 		Can_send_status blocking_read(Can_message& msg);
 		 
-		/**
-		 * Write message to buffer
-		 * 
-		 * @param   msg    Message to write to the buffer.
-		 * @return  Nothing.
-		 */
 		Can_send_status write(Can_message msg);
 		
-		/**
-		 * Get the number of message in the buffer
-		 * 
-		 * @param	Nothing.
-		 * @return 	Number of messages in the buffer
-		 */
 		uint8_t queue_length(void);
 		
-		/**
-		 * Frees the first received message on the buffer
-		 * 
-		 * @param	Nothing.
-		 * @return	Return code indicating whether operation was successful
-		 */
 		Can_config_status free_message(void);
-		
-		/**
-		 * Reset status register of buffer
-		 * 
-		 * @param    Nothing.
-		 * @return   Nothing.
-		 */
+
 		void clear_status(void);
-		
-		/**
-		 * Enables interrupt on the buffer
-		 * 
-		 * @param    Nothing.
-		 * @return   Nothing.
-		 */
+
 		void enable_interrupt(void);
-		
-		/**
-		 * Disables interrupt on the buffer
-		 * 
-		 * @param    Nothing
-		 * @return   Nothing
-		 */
+
 		void disable_interrupt(void);
-		
-		/**
-		* Attaches a handler to a particular interrupt event for object based
-		* interrupts. Original interrupt will be overwritten if a handler already
-		* exists (use test interrupt to see what interrupt conditions are used).
-		*
-		* @param	interrupt	The interrupt condition to attach the handler for.
-		* @param	callback	The handler for this interrupt condition.
-		*/
+
 		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void));
 		
-		/**
-		* Removes a handler for a specific object for a particular interrupt event.
-		*
-		* @param	interrupt	The interrupt condition to dettach the handler from.
-		* @return	Nothing.	
-		*/
 		Can_int_status detach_interrupt(Can_buffer_interrupt_type interrupt);
-		
-		/**
-		 * Boolean describing whether an interrupt handler is set for this condition
-		 * on this buffer.
-		 * 
-		 * @param   interrupt   The MOb interrupt condition to test if enabled.
-		 * @return              Flag indicating whether an interrupt handler is set for this condition.
-		 *
-		 */
+
 		bool test_interrupt(Can_buffer_interrupt_type interrupt);
-		
-		/**
-		 * Clears the interrupt flag for buffer based events. For AVRs, this clears the 
-		 * status of the buffer, so DO NOT call this outside an ISR
-		 * 
-		 * @param	interrupt	The MOb interrupt event flag of clear.
-		 * @return 				Return code indicating whether operation was successful
-		 */
+
 		Can_int_status clear_interrupt_flags(Can_buffer_interrupt_type interrupt);
 		
 	private:
@@ -408,104 +226,30 @@ class Can_imp
 {
 	public:
 
-		// Methods.
-	
-		/**
-		 * Create a new Can_imp which controls the specified CAN peripheral.
-		 * 
-		 * @param	controller	The id of the CAN peripheral/channel/controller for this driver to interface with.
-		 */
+		// Methods - These methods should generally correspond to methods of the public class Can.
+
 		 Can_imp(Can_id_controller controller);
-		
-		/**
-		 * Initializes controller for first use. Sets the baud rate for the controller.
-		 * 
-		 * @param    rate	Baud rate of bus to use.
-		 * @return		Whether bus was successfully initialized.
-		 */
+
 		Can_config_status initialise(Can_rate rate);
 
-		/**
-		 * Master interrupt enable; enable interrupts for all sources in this CAN peripheral.
-		 * 
-		 * @param	 Nothing.
-		 * @return    Nothing.class Can_filter_bank
-		 */
 		void enable_interrupts(void);
 	    
-		/**
-		 * Master interrupt disable; disable interrupts for all sources in this CAN peripheral.
-		 * 
-		 * @param	 Nothing.
-		 * @return    Nothing.
-		 */
 		void disable_interrupts(void);
 	    
-		/**
-		 * Attach interrupt handler to channel based event.
-		 * 
-		 * @param     interrupt		The interrupt event to attach the handler to.
-		 * @param     callback		The handler for this interrupt event.
-		 * @return    				Return code indicating whether operation was successful/
-		 */
 		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void));
-	    
-		/**
-		 * Detach interrupt for channel based event.
-		 * 
-		 * @param     interrupt		The interrupt event to detach the handler from.
-		 * @return    				Return code indicating whether operation was successful.
-		 */
+
 		Can_int_status detach_interrupt(Can_channel_interrupt_type interrupt);
-	    
-		/**
-		 * Test whether an interrupt handler is attached to an channel based event.
-		 * 
-		 * @param     interrupt		The interrupt event to test.
-		 * @return    Flag indicating whether interrupt event has an existing handler.
-		 */
+
 		bool test_interrupt(Can_channel_interrupt_type interrupt);
-	    
-		/**
-		 * Clear interrupt flag for channel based events.  If called outside an ISR, this probably doesn't do anything useful.
-		 * 
-		 * @param	 interrupt      The interrupt event flag to clear.
-		 * @return  				Return code indicating whether operation was successful.
-		 */
+
 		Can_int_status clear_interrupt_flags(Can_channel_interrupt_type interrupt);
 
-		/**
-		 * Returns the number of filter/mask banks which are part of this CAN controller.
-		 *
-		 * @param	Nothing.
-		 * @return	The number of filter/mask banks which are part of this controller.
-		 */
 		uint8_t get_num_banks(void);
 
-		/**
-		 * Returns an array of pointers to the filters/mask banks which are part of this CAN controller.  This array may either be iterated over,
-		 * or indexed into directly using the enumerated definitions provided by the target configuration for the peripheral.
-		 *
-		 * @param	Nothing.
-		 * @return	Array of pointers to filters/mask banks in this controller.
-		 */
 		Can_filter_bank** get_banks(void);
 
-		/**
-		 * Returns the number of buffers which are part of this CAN controller.
-		 *
-		 * @param	Nothing.
-		 * @return	The number of buffers which are part of this controller.
-		 */
 		uint8_t get_num_buffers(void);
 
-		/**
-		 * Returns an array of pointers to the buffers which are part of this CAN controller.  This array may either be iterated over, or indexed
-		 * into directly using the enumerated definitions provided by the target configuration for the peripheral.
-		 *
-		 * @param	Nothing.
-		 * @return	Array of pointers to buffers in this controller.
-		 */
 		Can_buffer** get_buffers(void);
     
 	private:
@@ -703,7 +447,6 @@ void Can_filmask::set(Can_filmask_value value)
 {
 	imp->set(value);
 }
-
 
 // Can_filter_bank.
 
@@ -935,8 +678,10 @@ Can_buffer** Can::get_buffers(void)
 
 Can::~Can(void)
 {
-	/* some targets need to make calls to imp when falling out of scope,
-	 * AVR doesn't, so do nothing */
+	// Some targets need to make calls to imp when falling out of scope, AVR doesn't, so do nothing.
+
+	// All done.
+	return;
 }
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
@@ -2128,8 +1873,8 @@ Can_buffer** Can_imp::get_buffers(void)
 }
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
-/* Note: HAL functions not used here because of speed and also 
- * because they cannot be accessed from here */
+
+/* NOTE - HAL functions not used here because of speed and also because they cannot be accessed from here. */
  
 // CAN transfer complete or error vector
 SIGNAL(GEN_CAN_IT_VECT)

@@ -127,6 +127,29 @@ class Gpio_pin
 {
 	public:
 		// Functions.
+
+		/**
+		 * Creates a Gpio_pin instance for a specific GPIO pin.
+		 *
+		 * @subsection Example
+		 *
+		 * @code
+		 * IO_pin_address my_pin_address;
+		 * my_pin_address.port = PORT_B;
+		 * my_pin_address.pin = PIN_5;
+		 *
+		 * Gpio_pin mypin = Gpio_pin(my_pin_address);
+		 * @endcode
+		 *
+		 * @param	address	Address of the GPIO pin.
+		 * @return	A Gpio_pin instance corresponding to the specified IO pin.
+		 */
+		 Gpio_pin(IO_pin_address address);
+
+		/**
+		 * Called when Gpio_pin instance goes out of scope
+		 */
+		~Gpio_pin(void);
 		
 		/**
 		 * Sets the pin to an input or output.
@@ -176,8 +199,6 @@ class Gpio_pin
 		 * @return Return code representing whether operation was successful
 		 */
 		Gpio_io_status write(Gpio_output_state value);
-		
-		// TODO - Is this true?  Does the pin automatically become an input?  If so, how do you configure pull-ups?
 
 		/** 
 		 * Initialise an interrupt for the pin in the specified mode and attach the specified function as the corresponding ISR.
@@ -210,42 +231,6 @@ class Gpio_pin
 		 * @return Return code representing whether operation was successful
 		 */
 		Gpio_interrupt_status disable_interrupt(void);
-		
-		/**
-		 * Creates a Gpio_pin instance for a specific GPIO pin.
-		 *
-		 * @subsection Example
-		 *
-		 * @code
-		 * IO_pin_address my_pin_address;
-		 * my_pin_address.port = PORT_B;
-		 * my_pin_address.pin = PIN_5;
-		 *
-		 * Gpio_pin my_pin = Gpio_pin::grab(my_pin_address);
-		 * @endcode
-		 *
-		 * @param  address	Address of the GPIO pin.
-		 * @return A Gpio_pin instance corresponding to the specified IO pin.
-		 */
-		static Gpio_pin grab(IO_pin_address address);
-
-		/**
-		 * Creates a Gpio_pin instance for a specific GPIO pin.
-		 *
-		 * @subsection Example
-		 *
-		 * @code
-		 * IO_pin_address my_pin_address;
-		 * my_pin_address.port = PORT_B;
-		 * my_pin_address.pin = PIN_5;
-		 *
-		 * Gpio_pin mypin = Gpio_pin(my_pin_address);
-		 * @endcode
-		 *
-		 * @param	address	Address of the GPIO pin.
-		 * @return	A Gpio_pin instance corresponding to the specified IO pin.
-		 */
-		 Gpio_pin(IO_pin_address address);
 
 	private:
 		// Functions.
@@ -258,14 +243,10 @@ class Gpio_pin
 
 		// Fields.
 
-		/**
-		* Pointer to the target specific implementation of the GPIO pin.
-		*/
+		// Pointer to the target specific implementation of the GPIO pin.
 		Gpio_pin_imp* imp;
 		
-		/**
-		 * Address of the GPIO pin this instance interfaces
-		 */
+		// Address of the GPIO pin this instance interfaces
 		IO_pin_address pin_address;
 };
 
