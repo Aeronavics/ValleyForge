@@ -17,7 +17,7 @@
  *
  * @addtogroup		hal	Hardware Abstraction Library
  * 
- * @file		target_config.h
+ * @file		target_config.hpp
  * Provides definitions for to be used in implementations.
  * 
  * @author 		George Xian
@@ -55,8 +55,19 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
+// DEFINITIONS WHICH ARE SPECIFIC TO INDIVIDUAL MCU TYPES. 
+
 #if defined (__STM32_F103xx__)
-	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E};
+	#define NUM_PORTS		5	
+	#define NUM_PINS		16
+	
+	#define NUM_BUF			5
+	
+	#define NUM_BANKS		14
+	#define MAX_NUM_FIL		28
+	#define MAX_NUM_MSK		14
+
+ 	enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E};
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14, PIN_15};
 	
 	enum CAN_CTRL {CAN_0, NB_CTRL};
@@ -64,23 +75,11 @@
 	
 	enum CAN_FIL {FIL_0, FIL_1, FIL_2, FIL_3, FIL_4, FIL_5, FIL_6, FIL_7, FIL_8, FIL_9, FIL_10, FIL_11, FIL_12, FIL_13, FIL_14, FIL_15, FIL_16, FIL_17, FIL_18, FIL_19, FIL_20, FIL_21, FIL_22, FIL_23, FIL_24, FIL_25, FIL_26, FIL_27};	
 	enum CAN_MSK {MSK_0, MSK_2, MSK_4, MSK_6, MSK_8, MSK_10, MSK_12, MSK_14, MSK_16, MSK_18, MSK_20, MSK_22, MSK_24, MSK_26};
-	
-#else
-	#error "No port/pin definitions for this configuration."
-#endif
-
-#if defined (__STM32_F103xx__)
-	#	define NUM_PORTS		5	
-	#	define NUM_PINS			16
-	
-	#   define NUM_BUF			5
-	
-	#   define NUM_BANKS		14
-	#	define MAX_NUM_FIL		28
-	#	defube MAX_NUM_MSK		14
 #else
 	#error "No peripheral definition for this configuration."	
 #endif
+
+// DEFINITIONS WHICH ARE COMMON TO ALL STM32F10x TARGETS.
 
 #define TOTAL_PINS	(NUM_PORTS * PINS_PER_PORT)
 

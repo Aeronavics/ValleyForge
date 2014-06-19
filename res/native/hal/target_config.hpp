@@ -17,7 +17,7 @@
  *
  * @addtogroup		hal	Hardware Abstraction Library
  * 
- * @file		target_config.h
+ * @file		target_config.hpp
  * Provides definitions for to be used in implementations.
  * 
  * 
@@ -56,10 +56,17 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
+// DEFINITIONS WHICH ARE SPECIFIC TO NATIVE OPERATING SYSTEM.
 
 #ifdef __linux__
-	/* **** peripheral enumerations **** */
-	enum Can_id_controller { CAN_0 };
+	
+	/* CAN */
+	#define CAN_NUM_BUFFERS  1
+	#define CAN_NUM_FILTERS  4
+	#define CAN_NUM_MASKS 	4
+	#define CAN_NUM_BANKS	1
+
+ 	enum Can_id_controller { CAN_0 };
 	
 	enum Can_id_buffer { CAN_BUF_0 };
 	enum Can_id_filmask{ CAN_FM_0, CAN_FM_1, CAN_FM_2, CAN_FM_3 };
@@ -70,16 +77,11 @@
 	
 	enum Can_buffer_interrupt_type {};
 	enum Can_channel_interrupt_type {};
-	
-	/* **** peripheral count **** */
-	/* CAN */
-	#	define CAN_NUM_BUFFERS  1
-	#	define CAN_NUM_FILTERS  4
-	#	define CAN_NUM_MASKS 	4
-	#	define CAN_NUM_BANKS	1
 
-	
-#endif //__Native_Linux__
-
+#else
+	#error "No HAL configuration for this target."
 #endif
 
+// DEFINITIONS WHICH ARE COMMON TO ALL NATIVE TARGETS.	
+
+#endif // __TARGET_CONFIG_H__
