@@ -57,7 +57,7 @@
 
 // DEFINITIONS WHICH ARE SPECIFIC TO INDIVIDUAL MCU TYPES.
 
-#if defined (__AVR_ATmega2560__)
+#if defined(__AVR_ATmega2560__)
 
 	/* GPIO */
 	#	define NUM_PORTS		12	
