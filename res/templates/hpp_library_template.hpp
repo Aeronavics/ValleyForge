@@ -1,14 +1,14 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE:               <<<TC_INSERTS_FILE_NAME_HERE>>>
  *
- *  LIBRARY:		<<<TC_INSERTS_LIBRARY_NAME_HERE>>>
+ *  LIBRARY:            <<<TC_INSERTS_LIBRARY_NAME_HERE>>>
  *
- *  BCONFS:		<<<TC_INSERTS_BUILD_LIST_HERE>>>
+ *  BCONFS:             <<<TC_INSERTS_BUILD_LIST_HERE>>>
  *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *  AUTHOR:             <<<TC_INSERTS_AUTHOR_NAME_HERE>>>
  *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
+ *  DATE CREATED:       <<<TC_INSERTS_DATE_HERE>>>
  *
  *	This is the header file which matches <<<TC_INSERTS_C_FILE_NAME_HERE>>>...
  * 

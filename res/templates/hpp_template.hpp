@@ -1,18 +1,18 @@
 /********************************************************************************************************************************
  *
- *  FILE: 		<<<TC_INSERTS_FILE_NAME_HERE>>>
+ *  FILE:               <<<TC_INSERTS_FILE_NAME_HERE>>>
  *
- *  SUB-SYSTEM:		<<<TC_INSERTS_SUBSYSTEM_HERE>>>
+ *  SUB-SYSTEM:         <<<TC_INSERTS_SUBSYSTEM_HERE>>>
  *
- *  COMPONENT:		<<<TC_INSERTS_COMPONENT_NAME_HERE>>>
+ *  COMPONENT:          <<<TC_INSERTS_COMPONENT_NAME_HERE>>>
  *
- *  TARGET:		<<<TC_INSERTS_TARGET_HERE>>>
+ *  TARGET:             <<<TC_INSERTS_TARGET_HERE>>>
  *
- *  PLATFORM:		<<<TC_INSERTS_PLATFORM_HERE>>>
+ *  PLATFORM:           <<<TC_INSERTS_PLATFORM_HERE>>>
  *
- *  AUTHOR: 		<<<TC_INSERTS_AUTHOR_NAME_HERE>>>
+ *  AUTHOR:             <<<TC_INSERTS_AUTHOR_NAME_HERE>>>
  *
- *  DATE CREATED:	<<<TC_INSERTS_DATE_HERE>>>
+ *  DATE CREATED:       <<<TC_INSERTS_DATE_HERE>>>
  *
  *	This is the header file which matches <<<TC_INSERTS_C_FILE_NAME_HERE>>>...
  * 
