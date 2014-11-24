@@ -59,6 +59,19 @@
 
 #if defined(__AVR_ATmega2560__)
 
+ 	/* Watchdog timer. */
+
+	enum Watchdog_timeout {WDTO_15MS,
+						   WDTO_30MS,
+						   WDTO_60MS,
+						   WDTO_120MS,
+						   WDTO_250MS,
+						   WDTO_500MS,
+						   WDTO_1S,
+						   WDTO_2S,
+						   WDTO_4S,
+						   WDTO_8S};
+
 	/* GPIO */
 	#	define NUM_PORTS		12	
 	#	define NUM_PINS			8
@@ -153,6 +166,17 @@
 						     
 #elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 
+ 	/* Watchdog timer. */
+
+	enum Watchdog_timeout {WDTO_15MS,
+						   WDTO_30MS,
+						   WDTO_60MS,
+						   WDTO_120MS,
+						   WDTO_250MS,
+						   WDTO_500MS,
+						   WDTO_1S,
+						   WDTO_2S};
+
 	/* GPIO */
 	#	define NUM_PORTS		3
 	#	define NUM_PINS			8
@@ -227,6 +251,17 @@
 								// Port E exists but only has three pins and is for special features only.
 
 #elif defined (__AVR_AT90CAN128__)
+
+ 	/* Watchdog timer. */
+
+	enum Watchdog_timeout {WDTO_15MS,
+						   WDTO_30MS,
+						   WDTO_60MS,
+						   WDTO_120MS,
+						   WDTO_250MS,
+						   WDTO_500MS,
+						   WDTO_1S,
+						   WDTO_2S};
 
 	/* GPIO */
 	#	define NUM_PORTS		7
@@ -324,10 +359,16 @@
 
 // DEFINITIONS WHICH ARE COMMON TO ALL AVR ARCHITECTURE TARGETS.
 
+/* General */
+
 #define TOTAL_PINS	(NUM_PORTS * PINS_PER_PORT)
+
+/* GPIO */
 
 // GPIO pin modes.  AVR devices have an optional pull-up on inputs, with all outputs operating push-pull.
 enum Gpio_mode {GPIO_INPUT_PU, GPIO_OUTPUT_PP, GPIO_INPUT_FL};
+
+/* EEPROM */
 
 // EEPROM address (width).
 typedef uint16_t Eeprom_address;
