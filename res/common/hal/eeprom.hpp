@@ -89,10 +89,16 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-// IO operation return values. 
-enum eeprom_return {EEPROM_SUCCESS, EEPROM_ERROR_OOB = 1, EEPROM_ERROR_PROCESS};
+enum Eeprom_command_status {EEPROM_SUCCESS, EEPROM_ERROR_OOB, EEPROM_ERROR_PROCESS};
 
-class eeprom
+/**
+ * EEPROM address type (Eeprom_address) is defined in the target specific configuration header.  This takes the form of a typedef similar to that shown below.
+ *
+ *		typedef uint16_t Eeprom_address;
+ *
+ */
+
+class Eeprom
 {
 
     public:
@@ -108,7 +114,7 @@ class eeprom
 		* @param  length	The number of bytes to be written.
 		* @return Result status; zero for success, or non-zero indicating an error.
 		*/
-		static eeprom_return write(uint16_t dst, uint8_t* data, uint16_t length);
+		static Eeprom_command_status write(Eeprom_address dst, uint8_t* data, uint16_t length);
 
 		/**
 		* Read data from an EEPROM address.
@@ -120,7 +126,7 @@ class eeprom
 		* @param  length	The number of bytes to be read.
 		* @return Result status; zero for success, or non-zero indicating an error.
 		*/
-		static eeprom_return read(uint16_t src, uint8_t* data, uint16_t length);
+		static Eeprom_command_status read(Eeprom_address src, uint8_t* data, uint16_t length);
 
 		/**
 		* Copy one block of EEPROM memory to another.
@@ -132,7 +138,7 @@ class eeprom
 		* @param  length	The number of bytes to be copied.
 		* @return Result status; zero for success, or non-zero indicating an error.
 		*/		
-		static eeprom_return copy(uint16_t src, uint16_t dst, uint16_t length);
+		static Eeprom_command_status copy(Eeprom_address src, Eeprom_address dst, uint16_t length);
 
 		/**
 		* Erase a section of EEPROM memory. This sets the specified bytes to 0xFF (since erasing an EEPROM bit generally results in a logical one).
@@ -143,15 +149,16 @@ class eeprom
 		* @param  length	The number of bytes to be erased.
 		* @return Result status; zero for success, or non-zero indicating an error.
 		*/		
-		static eeprom_return erase(uint16_t address, uint16_t length);
+		static Eeprom_command_status erase(Eeprom_address address, uint16_t length);
 
     private:
 		// Methods.
 		
-		eeprom(void);	// Poisoned.
+		Eeprom(void);	// Poisoned.
 
-		eeprom operator =(eeprom const&);	// Poisoned.
+		Eeprom operator =(Eeprom const&);	// Poisoned.
 };
+
 #endif /*__EEPROM_H__*/
 
 // ALL DONE.

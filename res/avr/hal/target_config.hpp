@@ -329,4 +329,7 @@
 // GPIO pin modes.  AVR devices have an optional pull-up on inputs, with all outputs operating push-pull.
 enum Gpio_mode {GPIO_INPUT_PU, GPIO_OUTPUT_PP, GPIO_INPUT_FL};
 
+// EEPROM address (width).
+typedef uint16_t Eeprom_address;
+
 #endif /*__TARGET_CONFIG_H__*/
