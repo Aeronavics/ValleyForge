@@ -73,6 +73,7 @@
 						   WDTO_8S};
 
 	/* GPIO */
+
 	#	define NUM_PORTS		12	
 	#	define NUM_PINS			8
 	
@@ -91,6 +92,7 @@
 	enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 
 	/* Timer/Counter */
+
 	#	define T0_SIZE			8
 	#	define T0_PWM			1
 	#	define T0_OC			2
@@ -163,7 +165,119 @@
 								{PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_NONE},		 				// J
 								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2},							// K
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};	// L
-						     
+
+	/* USART. */
+
+		// TODO - Are these not already defined in io.h?
+
+	    // Address locations of registers for USART0.
+	#define UDR0_ADDRESS			0xC6	//MEM8
+	#define UBRR0_ADDRESS			0xC4	//MEM16
+	#define UCSR0C_ADDRESS			0XC2	//MEM8
+	#define UCSR0B_ADDRESS			0xC1	//MEM8
+	#define UCSR0A_ADDRESS			0xC0	//MEM8
+
+    	// Address locations of registers for USART1.
+	#define UDR1_ADDRESS			0xCE	//MEM8
+	#define UBRR1_ADDRESS			0xCC	//MEM16
+	#define UCSR1C_ADDRESS			0xCA	//MEM8
+	#define UCSR1B_ADDRESS			0xC9	//MEM8
+	#define UCSR1A_ADDRESS			0xC8	//MEM8
+
+    	// Address locations of registers for USART2.
+	#define UDR2_ADDRESS			0xD6	//MEM8
+	#define UBRR2_ADDRESS			0xD4	//MEM26
+	#define UCSR2C_ADDRESS			0xD2	//MEM8
+	#define UCSR2B_ADDRESS			0xD1	//MEM8
+	#define UCSR2A_ADDRESS			0xD0	//MEM8
+
+    	// Address locations of registers for USART3.
+	#define UDR3_ADDRESS			0x136	//MEM8
+	#define UBRR3_ADDRESS			0x134	//MEM36
+	#define UCSR3C_ADDRESS			0x132	//MEM8
+	#define UCSR3B_ADDRESS			0x131	//MEM8
+	#define UCSR3A_ADDRESS			0x130	//MEM8
+
+    // Generic bit addresses for register manipulation.
+
+			// UCSRnA Register.
+	#define RXC_BIT				7
+	#define TXC_BIT				6
+	#define UDRE_BIT			5
+	#define FE_BIT				4
+	#define DOR_BIT				3
+	#define UPE_BIT				2
+	#define U2X_BIT				1
+	#define MPCM_BIT			0
+
+			// UCSRnB Register.
+	#define RXCIE_BIT			7
+	#define TXCIE_BIT			6
+	#define UDRIE_BIT			5
+	#define RXEN_BIT			4
+	#define TXEN_BIT			3
+	#define UCSZ2_BIT			2
+	#define RXB8_BIT			1
+	#define TXB8_BIT			0
+
+			// UCSRnC Register.
+	#define UMSEL1_BIT			7
+	#define UMSEL0_BIT			6
+	#define UPM1_BIT			5
+	#define UPM0_BIT			4
+	#define USBS_BIT			3
+	#define UCSZ1_BIT			2
+	#define UCSZ0_BIT			1
+	#define UCPOL_BIT			0
+
+    		// UCSRnC Register (when in Master SPI Mode).
+	#define UDORD_BIT			2
+	#define UCPHA_BIT			1
+
+   			// GPIO addresses of transmitter and receiver pins for each USART channel.
+	#define USART0_TX_PORT			PORT_E
+	#define USART0_TX_PIN			PIN_1
+	#define USART0_RX_PORT			PORT_E
+	#define USART0_RX_PIN			PIN_0
+	#define USART0_XCK_PORT			PORT_E
+	#define USART0_XCK_PIN			PIN_2
+
+	#define USART1_TX_PORT			PORT_D
+	#define USART1_TX_PIN			PIN_3
+	#define USART1_RX_PORT			PORT_D
+	#define USART1_RX_PIN			PIN_2
+	#define USART1_XCK_PORT			PORT_D
+	#define USART1_XCK_PIN			PIN_5
+
+	#define USART2_TX_PORT			PORT_H
+	#define USART2_TX_PIN			PIN_1
+	#define USART2_RX_PORT			PORT_H
+	#define USART2_RX_PIN			PIN_0
+	#define USART2_XCK_PORT			PORT_H
+	#define USART2_XCK_PIN			PIN_2
+
+	#define USART3_TX_PORT			PORT_J
+	#define USART3_TX_PIN			PIN_1
+	#define USART3_RX_PORT			PORT_J
+	#define USART3_RX_PIN			PIN_0
+	#define USART3_XCK_PORT			PORT_J
+	#define USART3_XCK_PIN			PIN_2
+
+		// General preprocessor macros for convenience.
+	#define NUM_USART_CHANNELS			4
+	#define NUM_CHANNEL_INTERRUPTS		3
+	#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
+		
+	// TODO - The enums below came from usart.hpp, which makes no sense.  So anyway, I have no idea whether this is the right number of UARTs etc?
+
+	enum Usart_channel {USART_0, USART_1, USART_2, USART_3};
+
+	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE, USART_MODE_SPI_MASTER};
+
+	enum Usart_mspim_bit_order {USART_MSPIM_MSB_FIRST, USART_MSPIM_LSB_FIRST};
+
+	enum Usart_mspim_mode {USART_MSPI_MODE_0, USART_MSPI_MODE_1, USART_MSPI_MODE_2, USART_MSPI_MODE_3};
+
 #elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 
  	/* Watchdog timer. */

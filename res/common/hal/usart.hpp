@@ -17,7 +17,7 @@
  *
  *  @addtogroup		hal Hardware Abstraction Library
  * 
- *  @file		usart.h
+ *  @file		Usart.h
  *  A header file for the USART Module of the HAL. USART communication.
  * 
  *  @brief 
@@ -56,10 +56,10 @@
  * int i = 100
  * 
  * // Get the chosen USART channel
- * usart my_usart = usart::grab(USART_0);
+ * Usart my_usart = Usart::grab(USART_0);
  * 
  * // Set the USART for Asynchronous mode
- * my_usart.set_mode(ASYNCHRONOUS_USART);
+ * my_usart.set_mode(USART_MODE_ASYNCHRONOUS);
  * 
  * // Set up USART for 9600 Baud, 8N1
  * my_usart.set_baud_rate(9600);
@@ -88,278 +88,296 @@
 // Include the standard C++ definitions.
 #include <stddef.h>
 
-// Include the semaphore library
-#include "semaphore.hpp"
-
 // Include the hal library.
 #include "hal/hal.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-enum usart_number {USART_0, USART_1, USART_2, USART_3};
+// USART configuration operation status.
+enum Usart_config_status {USART_CFG_SUCCESS = 0, USART_CFG_IMMUTABLE = -1, USART_CFG_FAILED = -2};
 
-enum usart_setup_mode {ASYNCHRONOUS_USART, SYNCHRONOUS_USART, MASTER_SPI};
+// USART IO operation status.
+enum Usart_io_status {USART_IO_SUCCESS = 0, USART_IO_FAILED = -1, USART_IO_NODMA = -2, USART_IO_DMABUSY = -3};
 
-enum mspim_bit_order {MSPIM_MSB_FIRST, MSPIM_LSB_FIRST};
+// USART interrupt configuration status
+enum Usart_int_status {USART_INT_SUCCESS = 0, USART_INT_EXISTS = -1, USART_INT_NOINT = -2, USART_INT_FAILED = -3};
 
-enum mspim_mode {MSPI_MODE_0, MSPI_MODE_1, MSPI_MODE_2, MSPI_MODE_3};
+/**
+ * Available USART channels are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Usart_channel {USART_0, USART_1};
+ *
+ */
 
-enum parity_option {N, E, O};
+/**
+ * Available USART modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_SYNCHRONOUS, USART_MODE_MASTERSPI};
+ *
+ */
 
-enum clock_polarity_option {OPTION_1, OPTION_2};
+/**
+ * Available Master SPI bit orders are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Usart_mspim_bit_order {USART_MSPIM_MSB_FIRST, USART_MSPIM_LSB_FIRST};
+ *
+ */
 
-enum usart_interrupt_types {USART_RX, USART_TX, USART_UDRE};
+/**
+ * Available Master SPI sub-modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Usart_mspim_mode {USART_MSPI_MODE_0, USART_MSPI_MODE_1, USART_MSPI_MODE_2, USART_MSPI_MODE_3};
+ *
+ */
 
-enum usart_error_types {NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR};
+// TODO - A bunch of these probably also need to be moved into the target specific configuration file.
 
-typedef uint16_t baud_rate;
+enum Usart_parity {USART_PARITY_USART_ERR_NONE, USART_PARITY_EVEN, USART_PARITY_ODD};
+
+enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
+
+enum Usart_interrupt_type {USART_INT_RX, USART_INT_TX, USART_INT_UDRE};
+
+enum Usart_error_type {USART_ERR_NONE, USART_ERR_FRAME, USART_ERR_DATA_OVERRUN, USART_ERR_PARITY};
+
+typedef uint16_t Usart_baud_rate;
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-class usart_imp;
+class Usart_imp;
 
 // DEFINE PUBLIC CLASSES.
 
 /**
  * @class
- * A class for the USART module of the HAL. Implements various functions relating to USART/UART 
- *  initialisation, transmission and receiving of data.
+ * A class for the USART module of the HAL. Implements various functions relating to USART/UART initialisation, transmission and receiving of data.
  */
-class usart
+class Usart
 {
+	friend class Usart_imp;
+
 	public:
-		// Functions.
+		// Methods.
 		
 		/**
-		 * Initialises and sets the mode of the USART according to the options provided to it.
+		 * Binds the interface with a USART hardware peripheral.
+		 */
+		static Usart bind(Usart_channel channel);
+		
+		/**
+		 * Called when USART instance goes out of scope
+		 */
+		~Usart(void);
+
+		/**
+		 * Initialises the USART and configures the operating mode as specfied.
 		 * 
-		 * @param  mode		USART setup mode to be applied during initialisation
-		 * One of {ASYNCHRONOUS_USART, SYNCHRONOUS_USART, MASTER_SPI}.
-		 * @return 0 for success, -1 for error.
+		 * @param  mode	 Operating mode to set the USART to.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		int8_t set_mode(usart_setup_mode mode);
+		Usart_config_status set_mode(Usart_setup_mode mode);
 		
 		/**
-		* Sets the mode of the connection when in Master SPI Mode
+		* Configures the (sub) mode of the connection when the USART is operating in Master SPI Mode.
 		* 
-		* @param  mode		SPI mode to apply to connection.
-		* One of {MSPI_MODE_0, MSPI_MODE_1, MSPI_MODE_2, MSPI_MODE_3}.
-		* @return 0 for success, -1 for error.
+		* @param  mode	SPI mode to apply to connection.
+		* @return Zero for success, non-zero for failure.
 		*/
-		int8_t set_spi_mode(mspim_mode mode);
-		
+		Usart_config_status set_spi_mode(Usart_mspim_mode mode);
+
 		/**
-		 * Configures the serial format to be used for the USART.
+		 * Configures the bit order (endian-ness) of the data frame when hardware is configured in Master SPI mode.
 		 *
-		 * @param size		Character size to be used in serial format
-		 * @param parityType	Type of parity to use for format ('DISABLED' for no parity)
-		 * One of {N, E, O}.
-		 * @param numberBits	Number of stop bits in frame
-		 * @return 0 for success, -1 for error.
+		 * @param order		Bit order option (endian-ness), either MSB or LSB first.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		int8_t set_frame(uint8_t size, parity_option parityType, uint8_t numberBits);
+		Usart_config_status set_spi_bit_order(Usart_mspim_bit_order order);
 		
 		/**
-		 * Function for setting the bit order of the data frame when hardware is configured in Master SPI mode.
+		 * Configures the serial data format to be used for the USART as specified.
 		 *
-		 * @param order		Bit order option, either MSB or LSB first.
-		 * Either 'MSPIM_MSB_FIRST' or 'MSPIM_LSB_FIRST'.
-		 * @return 0 for success, -1 for error.
+		 * @param size Character size to used.
+		 * @param parity Type of parity to use.
+		 * @param stop_bits	Number of stop bits in frame.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		int8_t set_bit_order(mspim_bit_order order);
+		Usart_config_status set_frame(uint8_t size, Usart_parity parity, uint8_t stop_bits);
 		
 		/**
-		 * Applies the desired Baud rate for USART communication.
+		 * Configures the desired Baud rate for USART communication.
 		 *
 		 * @param rate	Desired Baud rate to use for communication.
-		 * "baud_rate" type is a uint16_t.
-		 * @return 0 for success, -1 for error.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		 int8_t set_baud_rate(baud_rate rate);
-		 
-		 /**
-		 * Doubles the USART transmission speed. (only applies in Asynchronous mode!)
-		 *
-		 * @param value		Value to set the USART Double mode to. True to set it, false to clear it.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t double_usart_speed(bool value);
-		 
-		 /**
+		Usart_config_status set_baud_rate(Usart_baud_rate rate);
+		
+		// TODO - This seems target specific: on AVR, the RX and TX registers have the same address, but doubt others are all like this.
+
+		/**
 		 * Indicates whether or not the USART data buffer is available or not at the time of checking.
 		 *
 		 * @param void.
 		 * @return boolean variable that is true if buffer is available, false otherwise.
 		 */
-		 bool buffer_is_available(void);
+		bool buffer_is_available(void);
 		 
-		 /**
-		 * Transmits one byte via the configured USART connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
+		// TODO - Not sure about the truth to these statements about interrupts remaining enabled.
+
+		/**
+		 * Performs a blocking transmission of one byte via the configured USART connection.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
 		 *
 		 * @param data		Byte to be transmitted via the USART
-		 * @return 0 for success, -1 for error.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		 int8_t transmit_byte(uint8_t data);
-		 
-		 /**
-		 * Transmits a null terminated string of data via the configured USART connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t transmit_string(uint8_t *data);
-		 
-		 /**
-		 * Transmits an array of data via the configured USART connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
- 		 * @param elements	Number of elements within the array to transmit.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t transmit_array(uint8_t *data, int8_t elements);
-		 
-		 /**
-		 * Transfers one byte via the configured USART MSPIM connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param data		Byte to be transmitted via the USART
-		 * @return contents of receive buffer.
-		 */
-		 uint8_t spi_transfer_byte(uint8_t data);
-		 
-		 /**
-		 * Transfers an array via the configured USART MSPIM connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param TXdata		Pointer to the array to be transmitted via the USART.
-     		 * @param RXdata		Pointer to a place in memory where an array can be received via the USART.
-		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return Nothing.
-		 */
-		 void spi_transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
-		 
-		 /**
-		 * Transfers a block of data and receives data via the USART MSPIM connection.
-		 * Note, this function relies on using DMA or similar to achieve 'non-blocking' operation.
-		 *
-		 * @param TXdata		Pointer to the array that is to be transmitted.
-		 * @param RXdata		Pointer to an array where data may be received to.
-		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return Nothing.
-		 */
-		 void spi_dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
-		 
-		 /**
-		 * Indicates whether the transmission is complete, i.e no new data
-		 * exists in the transmit buffer.
-		 *
-		 * @param Nothing.
-		 * @return boolean variable that is true if transmission is complete, false otherwise.
-		 */
-		 bool transmission_complete(void);
-		 
-		 /**
-		 * Indicates whether the receive is complete, i.e unread data
-		 * exists in the receive buffer.
-		 *
-		 * @param Nothing.
-		 * @return boolean variable that is true if receive is complete, false otherwise.
-		 */
-		 bool receive_complete(void);
+		Usart_io_status transmit_byte(uint8_t data);
 		 
 		/**
-		* Returns the contents of the USART receive buffer.
-		* Note, this function 'blocks' until transfer has been completed. 
-		*
-		* @param Nothing.
-		* @return The received byte.
-		*/
+		 * Performs a blocking transmission of a null terminated string via the configured USART connection.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 *
+		 * @param data		Pointer to data that is to be transmitted via the USART.
+		 * @return Zero for success, non-zero for failure.
+		 */
+		Usart_io_status transmit_string(uint8_t *data);
+		 
+		/**
+		 * Transmits an array of data of fixed length via the configured USART connection.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 *
+		 * @param data		Pointer to data that is to be transmitted via the USART.
+ 		 * @param num_elements	Number of elements within the array to transmit.
+		 * @return Zero for success, non-zero for failure.
+		 */
+		Usart_io_status transmit_array(uint8_t* data, size_t num_elements);
+		 
+		/**
+		 * Transfers one byte via the configured USART connection, operating in SPI Master mode.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 *
+		 * NOTE - If the USART is not configured for SPI Master mode operation, the method returns zero.
+		 *
+		 * @param data		Byte to be transmitted via the USART
+		 * @return Contents of receive buffer after SPI transfer i.e the byte read in the MISO/RX line.
+		 */
+		uint8_t spi_transfer_byte(uint8_t data);
+		 
+		/**
+		 * Transfers an array via the configured USART connection, operating in SPI Master mode.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 *
+		 * NOTE - If the USART is not configured for SPI Master mode operation, the method does nothing.
+		 *
+		 * @param tx_data		Pointer to the array to be transmitted via the USART.
+     	 * @param rx_data		Pointer to a place in memory where an array can be received via the USART.
+		 * @param num_elements	Number of elements in the arrays (assumed to be the same).
+		 * @return Zero for success, non-zero for failure.
+		 */
+		Usart_io_status spi_transfer_array(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements);
+		 
+		/**
+		 * Transfers an array via the configured USART connection, operating in SPI Master mode, using DMA for non-blocking operation.
+		 *
+		 * NOTE - Just because this function returns success, doesn't mean the actual DMA transfer itself will then fail later on.
+		 *
+		 * @param tx_data		Pointer to the array that is to be transmitted.
+		 * @param rx_data		Pointer to an array where data is to be received into.
+		 * @param number_elements	Number of elements in the arrays (assumed to be the same).
+		 * @return Zero for success, non-zero for failure.
+		 */
+		Usart_io_status spi_dma_transfer(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements);
+		 
+		/**
+		 * Indicates whether the transmission is complete, i.e no unsent data remains in the transmit buffer.
+		 * 
+		 * NOTE - The only time this function will return true is while a DMA transfer is in progress.
+		 *
+		 * @return True if the transfer is complete, false otherwise.
+		 */
+		bool transmission_complete(void);
+		 
+		/**
+		 * Indicates whether the receive is complete, i.e unread data exists in the receive buffer.
+		 *
+		 * @return True if the receive is completed (i.e. there is no unread data), false otherwise.
+		 */
+		bool receive_complete(void);
+		 
+		/**
+		 * Read the content of the USART receive buffer.
+		 *
+		 * @param Nothing.
+		 * @return The received byte.
+		 */
 		uint8_t receive_byte(void);
 		
 		/**
-		* Receives an array of uint8_t values.
-		* Note, this function 'blocks' until transfer has been completed. 
-		*
-		* @param array		Pointer to the location in memory where the array can be returned to.
-		* @param elements	Number of elements to return.
-		* @return Nothing.
-		*/
-		void receive_array(uint8_t *array, int8_t elements);
+		 * Receives an array of uint8_t values.
+		 *
+		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 *
+		 * @param array		Pointer to the location in memory where the array can be returned to.
+		 * @param elements	Number of elements to return.
+		 * @return Nothing.
+		 */
+		void receive_array(uint8_t* array, size_t num_elements);
 		
-		 /**
+		/**
+		 * Enable interrupt generation by this USART channel.
+		 */
+		void enable_interrupts(void);
+
+		/**
+		 * Disable interrupt generation by this USART channel.
+		 */
+		void disable_interrupts(void);
+
+		/**
+		 * Attaches an interrupt handler to a particular interrupt event source associated with this USART channel.
 		 * Enables an interrupt to be be associated with a USART connection.
 		 *
-		 * @param interrupt		One of the possible interrupt types that are available.
-		 * One of {USART_RX, USART_TX, USART_UDRE}.
+		 * @param interrupt		One of the possible interrupt sources that are available.
 		 * @param ISRptr		Pointer to the user-defined ISR.
-		 * @return 0 for success, -1 for error.
+		 * @return Zero for success, non-zero for failure.
 		 */
-		 int8_t enable_interrupt(usart_interrupt_types interrupt, void (*ISRptr)(void));
-		 
-		 /**
-		 * Enables an interrupt to be be un-associated with a USART connection.
-		 *
-		 * @param interrupt		Which interrupt to disable.
-		 * One of {USART_RX, USART_TX, USART_UDRE}.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t disable_interrupt(usart_interrupt_types interrupt);
-		 
-		 /**
-		 * Function indicates whether an error has occured with the USART transfer.
-		 * This can include Frame Errors, Data OverRun incidents and Parity Erros.
-		 *
-		 * @param Nothing.
-		 * @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
-		 */
-		 usart_error_types usart_error(void);
-		 
-		/**
-		 * Function to free the USART instance when it goes out of scope.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		 ~usart(void);
+		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, void(*callback)(void));
 
-		/** 
-		 * Allows access to the USART to be relinquished and reused elsewhere.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		void vacate(void);
-		
 		/**
-		 * Allows a process to request access to a USART instance and manages the semaphore
-		 * indicating whether access has been granted or not.
+		 * Detaches an interrupt handler from a particular interrupt event source associated with this USART channel.
 		 *
-		 * @param  usartNumber	The number of a USART that is desired.
-		 * One of {USART_0, USART_1, USART_2, USART_3}.
-		 * @return A usart instance.
+		 * @param interrupt		One of the possible interrupt sources that are available.
+		 * @return 0 for success, -1 for error.
 		 */
-		static usart grab(usart_number usartNumber);
+		Usart_int_status detach_interrupt(Usart_interrupt_type interrupt);
+		 
+		/**
+		 * Returns whether an error has occured with the USART transfer.
+		 *
+		 * @return error The current USART error status i.e the status of the last USART transfer.
+		 */
+		Usart_error_type usart_error(void);
 
 	private:
-		// Functions.
+
+		// Methods.
 		
-		usart(void);	// Poisoned.
+		Usart(void);	// Poisoned.
 
-		usart(usart_imp*);
+		Usart(Usart*);	// Poisoned.
 
-		usart operator =(usart const&);	// Poisoned.
+		Usart(Usart_imp*);
+
+		Usart operator =(Usart const&);	// Poisoned.
 
 		// Fields.
 
-		/**
-		* Pointer to the machine specific implementation of the USART.
-		*/
-		usart_imp* imp;
+		Usart_imp* imp;
 };
-
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
