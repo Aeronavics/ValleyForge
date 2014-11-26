@@ -66,12 +66,6 @@
 
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
-volatile static voidFuncPtr bufIntFunc[CAN_NUM_BUFFERS][CAN_NUM_BUF_INT];
-volatile static voidFuncPtr chanIntFunc[CAN_NUM_CHAN_INT];
-
-volatile Can_id_buffer interrupt_service_buffer;
-volatile bool in_buffer_interrupt = false;
-
 /**
  * Private, target specific implementation class for public Can_filmask class.
  */
@@ -229,7 +223,7 @@ class Can_imp
 
 		// Methods - These methods should generally correspond to methods of the public class Can.
 
-		 Can_imp(Can_id_controller controller);
+		Can_imp(Can_id_controller controller);
 
 		Can_config_status initialise(Can_rate rate);
 
@@ -421,6 +415,12 @@ class Can_imp
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
+
+volatile static voidFuncPtr bufIntFunc[CAN_NUM_BUFFERS][CAN_NUM_BUF_INT];
+volatile static voidFuncPtr chanIntFunc[CAN_NUM_CHAN_INT];
+
+volatile Can_id_buffer interrupt_service_buffer;
+volatile bool in_buffer_interrupt = false;
 
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
 
