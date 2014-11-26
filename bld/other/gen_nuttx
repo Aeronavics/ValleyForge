@@ -1,0 +1,136 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###																														###
+### Name:		gen_nuttx																								###
+###																														###
+### Author:		Zane Barker																								###
+###																														###
+### Date Created:	26-11-2014																							###
+###																														###
+### Type:		Bash Script																								###
+###																														###
+### Purpose:		Provides functions which generate code which implements the NuttX platform.		 				###
+###																														###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###																						###
+### Name:		gen_nuttx																###
+###																						###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.		###
+###																						###
+### Purpose:		Generates files which implements the NuttX platform. The 			###
+###			generated files will still require the user to make required				###
+###			target specific modifications.												###
+###																						###
+###########################################################################################
+
+gen_nuttx()
+{
+	# DEFINE CONSTANTS.
+
+	GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actual legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Generating NuttX platform code...\n${NO_COLOUR}"
+
+	# Check to see if the required platform configuration settings are present.
+	if [ -z "${NUTTX_COMMON_SOURCE}" -o -z "${NUTTX_CONFIG_SOURCE}" ]; then
+		# Some of the required platform configuration settings are missing, so we must abort.
+		echo -e "${RED}NuttX platform configuration incomplete. Cannot generate NuttX files.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the Nuttx source files across to where they are needed.
+	unpack_nuttx
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the FreeRTOS source, so we'll have to abort.
+		return 1
+	fi
+
+	# First, we copy the original FreeRTOS source files across to where they are needed.
+	echo -e "${CYAN}\tCopying NuttX source files into place...\n${NO_COLOUR}"
+	mkdir -p $1/nuttx
+
+	# Copy the source files across into the source tree.
+	cp -r ${NUTTX_COMMON_SOURCE}/nuttx/ $1/nuttx/nuttx/
+	cp -r ${NUTTX_COMMON_SOURCE}/apps/ $1/nuttx/apps/
+	cp -f ${NUTTX_CONFIG_SOURCE}/Make.defs $1/nuttx/nuttx/Make.defs
+	cp -f ${NUTTX_CONFIG_SOURCE}/setenv.sh $1/nuttx/nuttx/setenv.sh
+	cp -f ${NUTTX_CONFIG_SOURCE}/defconfig $1/nuttx/nuttx/.config
+
+	# Check if we know of a folder containing patches we should apply.
+	if [ -z "${NUTTX_PATCHES}" ]; then
+		# No patches folder was specified, so presumably we don't need to patch anything.
+		echo-e "{YELLOW}\tNot applying any patches to NuttX files.\n${NO_COLOUR}"
+	elif [ ! -d "{NUTTX_PATCHES}" ]; then
+		# There is no patches folder, so presumably we don't need to patch anything.
+		echo -e "${YELLOW}\tNot applying any patches to NuttX files.\n${NO_COLOUR}"
+	else
+		# Check if there are actually any patches to apply.
+		if [ -z "`ls ${NUTTX_PATCHES}/*.patch`" ]; then
+			# There is nothing in the patches filder, so presumably we don't need to patch anything.
+			echo -e "${YELLOW}\tNot applying any patches to NuttX files.\n${NO_COLOUR}"
+		else
+			# Iterate over each of the patch files.
+			echo -e "${CYAN}\tPatching NuttX files.\n${NO_COLOUR}"
+			for PATCH_FILE in `ls ${NUTTX_PATCHES}/*.patch`; do
+				# Check if the corresponding file is available in the source tree.
+				PATCH_FILE="${PATCH_FILE##*/}"
+				if [ -f "$1/nuttx/${PATCH_FILE%.*}" ]; then
+					# Copy the patch in next to the original file.
+					cp ${NUTTX_PATCHES}/${PATCH_FILE} $1/nuttx/${PATCH_FILE}
+
+					# Apply the patch.
+					echo -e "${CYAN}\t\tPatching from '${PATCH_FILE}'.\n${NO_COLOUR}"
+					pushd $1/nuttx >/dev/null
+					patch --no-backup-if-mismatch -Nf -r - < ${PATCH_FILE}
+					popd >/dev/null
+					echo ""
+
+					# Delete the patch file again
+					rm $1/${PATCH_FILE}
+				else
+					# Else the file isn't there, so we just skip patching it.
+					echo -e "${YELLOW}\t\tNo file to patch from '{PATCH_FILE}'.\n${NO_COLOUR}"
+				fi
+			done
+			PATCH_FILE=
+		fi
+	fi
+
+
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
