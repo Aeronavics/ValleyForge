@@ -51,7 +51,9 @@
 
 #define ENABLE_TOUT_LOOP  1000000;						// Controller enable timeout.
 
-/* different interrupt vector names for different AVRs, stupid I know */
+// TODO - This needs to be moved into the target specific configuration file.
+
+// Different interrupt vector names for different AVRs, stupid I know.
 #if defined(__AVR_AT90CAN128__)
 	#define GEN_CAN_IT_VECT CANIT_vect
 	#define OVR_TIM_IT_VECT OVRIT_vect
@@ -59,7 +61,6 @@
 	#define GEN_CAN_IT_VECT CAN_INT_vect
 	#define OVR_TIM_IT_VECT CAN_TOVF_vect
 #endif
-
 
 // SELECT NAMESPACES.
 

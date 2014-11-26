@@ -91,37 +91,6 @@
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-// Available watchdog timeout periods are hardware specific.
-#if defined (__AVR_ATmega2560___)
-	enum Watchdog_timeout
-	{
-		WDTO_15MS,
-		WDTO_30MS,
-		WDTO_60MS,
-		WDTO_120MS,
-		WDTO_250MS,
-		WDTO_500MS,
-		WDTO_1S,
-		WDTO_2S,
-		WDTO_4S,
-		WDTO_8S
-	};
-#elif defined (__AVR__)
-	enum Watchdog_timeout
-	{
-		WDTO_15MS,
-		WDTO_30MS,
-		WDTO_60MS,
-		WDTO_120MS,
-		WDTO_250MS,
-		WDTO_500MS,
-		WDTO_1S,
-		WDTO_2S
-	};
-#else
-	#error "No watchdog timeout definitions for this configuration."
-#endif
-
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.

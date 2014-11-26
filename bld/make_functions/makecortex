@@ -52,7 +52,7 @@ makecortex()
 		return 1
 	fi
 
-	# Set up the AVR compiler.
+	# Set up the ARM compiler.
 	unpack_embeddedarmc
 
 	# Check if there is also a linker script to go with the makefile.
