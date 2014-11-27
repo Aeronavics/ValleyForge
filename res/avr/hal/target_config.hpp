@@ -168,36 +168,6 @@
 
 	/* USART. */
 
-		// TODO - Are these not already defined in io.h?
-
-	    // Address locations of registers for USART0.
-	#define UDR0_ADDRESS			0xC6	//MEM8
-	#define UBRR0_ADDRESS			0xC4	//MEM16
-	#define UCSR0C_ADDRESS			0XC2	//MEM8
-	#define UCSR0B_ADDRESS			0xC1	//MEM8
-	#define UCSR0A_ADDRESS			0xC0	//MEM8
-
-    	// Address locations of registers for USART1.
-	#define UDR1_ADDRESS			0xCE	//MEM8
-	#define UBRR1_ADDRESS			0xCC	//MEM16
-	#define UCSR1C_ADDRESS			0xCA	//MEM8
-	#define UCSR1B_ADDRESS			0xC9	//MEM8
-	#define UCSR1A_ADDRESS			0xC8	//MEM8
-
-    	// Address locations of registers for USART2.
-	#define UDR2_ADDRESS			0xD6	//MEM8
-	#define UBRR2_ADDRESS			0xD4	//MEM26
-	#define UCSR2C_ADDRESS			0xD2	//MEM8
-	#define UCSR2B_ADDRESS			0xD1	//MEM8
-	#define UCSR2A_ADDRESS			0xD0	//MEM8
-
-    	// Address locations of registers for USART3.
-	#define UDR3_ADDRESS			0x136	//MEM8
-	#define UBRR3_ADDRESS			0x134	//MEM36
-	#define UCSR3C_ADDRESS			0x132	//MEM8
-	#define UCSR3B_ADDRESS			0x131	//MEM8
-	#define UCSR3A_ADDRESS			0x130	//MEM8
-
     // Generic bit addresses for register manipulation.
 
 			// UCSRnA Register.
@@ -267,16 +237,13 @@
 	#define NUM_USART_CHANNELS			4
 	#define NUM_CHANNEL_INTERRUPTS		3
 	#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
-		
-	// TODO - The enums below came from usart.hpp, which makes no sense.  So anyway, I have no idea whether this is the right number of UARTs etc?
 
+	// NOTE - This chip supports additional SPI channels through the use of the USART modules.
+	//  If using a USARTSPI channel, the corresponding USART channel may not be used.
 	enum Usart_channel {USART_0, USART_1, USART_2, USART_3};
+	enum Spi_channel {SPI_0, USARTSPI_0, USARTSPI_1, USARTSPI_2, USARTSPI_3};
 
-	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE, USART_MODE_SPI_MASTER};
-
-	enum Usart_mspim_bit_order {USART_MSPIM_MSB_FIRST, USART_MSPIM_LSB_FIRST};
-
-	enum Usart_mspim_mode {USART_MSPI_MODE_0, USART_MSPI_MODE_1, USART_MSPI_MODE_2, USART_MSPI_MODE_3};
+	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
 
 #elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 
@@ -466,6 +433,12 @@
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, EINT_4, EINT_5, EINT_6, EINT_7},					// E
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// F
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  // G
+
+	enum Usart_channel {USART_0, USART_1};
+	enum Spi_channel {SPI_0};
+
+	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
+
 									
 #else
 	#error "No peripheral definition for this configuration."	

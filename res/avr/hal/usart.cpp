@@ -76,36 +76,42 @@ class Usart_imp
 		~Usart_imp(void);
 
 		Usart_config_status set_mode(Usart_setup_mode mode);
-		
-		Usart_config_status set_spi_mode(Usart_mspim_mode mode);
 
-		Usart_config_status set_spi_bit_order(Usart_mspim_bit_order order);
-
-		Usart_config_status set_frame(uint8_t size, Usart_parity parity, uint8_t stop_bits);
+		Usart_config_status set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits);
 		
 		Usart_config_status set_baud_rate(Usart_baud_rate rate);
+
 		
-		bool buffer_is_available(void);
-		 
+		bool transmitter_ready(void);
+
+		bool receiver_has_data(void);
+
+
 		Usart_io_status transmit_byte(uint8_t data);
+
+		Usart_io_status transmit_byte_blocking(uint8_t data);
+
+		Usart_io_status transmit_buffer(uint8_t* data, size_t num_elements, usarttx_callback_t cb_done = NULL);
+
+		Usart_io_status transmit_buffer_blocking(uint8_t* data, size_t num_elements);
+
+		Usart_io_status transmit_string(uint8_t *data, usarttx_callback_t cb_done = NULL);
+
+		Usart_io_status transmit_string_blocking(uint8_t *data);
+
 		 
-		Usart_io_status transmit_string(uint8_t *data);
-		 
-		Usart_io_status transmit_array(uint8_t* data, size_t num_elements);
-		 
-		uint8_t spi_transfer_byte(uint8_t data);
-		 
-		Usart_io_status spi_transfer_array(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements);
-		 
-		Usart_io_status spi_dma_transfer(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements);
-		 
-		bool transmission_complete(void);
-		 
-		bool receive_complete(void);
-		 
-		uint8_t receive_byte(void);
-		
-		void receive_array(uint8_t* array, size_t num_elements);
+		int16_t receive_byte(void);
+
+		int16_t receive_byte_blocking(void);
+
+		Usart_io_status receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t received);
+
+		Usart_io_status receive_buffer_blocking(uint8_t *buffer, size_t size);
+
+		Usart_io_status receive_string(char *string, size_t max_size, usartrx_callback_t received);
+
+		Usart_io_status receive_string_blocking(uint8_t *buffer, size_t size, size_t* actual_size = NULL);
+
 		
 		void enable_interrupts(void);
 
@@ -116,6 +122,8 @@ class Usart_imp
 		Usart_int_status detach_interrupt(Usart_interrupt_type interrupt);
 		 
 		Usart_error_type usart_error(void);
+
+		void usart_clear_errors(void);
 
  	private:
 
@@ -186,6 +194,9 @@ Usart Usart::bind(Usart_channel channel)
 				// Return a new interface class, attached to the corresponding implementation.
 				return Usart(&usart_imp_3);
 		}
+
+	#elif __AVR_AT90CAN128__
+
 	#else
 		#error "No HAL USART library implementation for this configuration."
 	#endif
@@ -209,20 +220,10 @@ Usart_config_status Usart::set_mode(Usart_setup_mode mode)
 {
 	return imp->set_mode(mode);
 }
-		
-Usart_config_status Usart::set_spi_mode(Usart_mspim_mode mode)
-{
-	return imp->set_spi_mode(mode);
-}
 
-Usart_config_status Usart::set_spi_bit_order(Usart_mspim_bit_order order)
+Usart_config_status Usart::set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits)
 {
-	return imp->set_spi_bit_order(order);
-}
-
-Usart_config_status Usart::set_frame(uint8_t size, Usart_parity parity, uint8_t stop_bits)
-{
-	return imp->set_frame(size, parity, stop_bits);
+	return imp->set_frame(data_bits, parity, start_bits, stop_bits);
 }
 		
 Usart_config_status Usart::set_baud_rate(Usart_baud_rate rate)
@@ -230,59 +231,69 @@ Usart_config_status Usart::set_baud_rate(Usart_baud_rate rate)
 	return imp->set_baud_rate(rate);
 }
 		
-bool Usart::buffer_is_available(void)
+bool Usart::transmitter_ready()
 {
-	return imp->buffer_is_available();
+	return imp->transmitter_ready();
 }
-		 
+
+bool Usart::receiver_has_data()
+{
+	return imp->receiver_has_data();
+}
+
 Usart_io_status Usart::transmit_byte(uint8_t data)
 {
 	return imp->transmit_byte(data);
 }
-		 
-Usart_io_status Usart::transmit_string(uint8_t *data)
+
+Usart_io_status Usart::transmit_byte_blocking(uint8_t data)
 {
-	return imp->transmit_string(data);
+	return imp->transmit_byte_blocking(data);
+}
+
+Usart_io_status Usart::transmit_buffer(uint8_t *data, size_t num_elements, usarttx_callback_t cb_done)
+{
+	return imp->transmit_buffer(data, num_elements, cb_done);
+}
+
+Usart_io_status Usart::transmit_buffer_blocking(uint8_t *data, size_t num_elements)
+{
+	return imp->transmit_buffer_blocking(data, num_elements);
 }
 		 
-Usart_io_status Usart::transmit_array(uint8_t* data, size_t num_elements)
+Usart_io_status Usart::transmit_string(uint8_t *data, usarttx_callback_t cb_done)
 {
-	return imp->transmit_array(data, num_elements);
+	return imp->transmit_string(data, cb_done);
+}
+
+Usart_io_status Usart::transmit_string_blocking(uint8_t *data)
+{
+	return imp->transmit_string_blocking(data);
 }
 		 
-uint8_t Usart::spi_transfer_byte(uint8_t data)
-{
-	return imp->spi_transfer_byte(data);
-}
-		 
-Usart_io_status Usart::spi_transfer_array(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements)
-{
-	return imp->spi_transfer_array(tx_data, rx_data, num_elements);
-}
-		 
-Usart_io_status Usart::spi_dma_transfer(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements)
-{
-	return imp->spi_dma_transfer(tx_data, rx_data, num_elements);
-}
-		 
-bool Usart::transmission_complete(void)
-{
-	return imp->transmission_complete();
-}
-		 
-bool Usart::receive_complete(void)
-{
-	return imp->receive_complete();
-}
-		 
-uint8_t Usart::receive_byte(void)
+int16_t Usart::receive_byte(void)
 {
 	return imp->receive_byte();
 }
-		
-void Usart::receive_array(uint8_t* array, size_t num_elements)
+
+int16_t Usart::receive_byte_blocking(void)
 {
-	return imp->receive_array(array, num_elements);
+	return imp->receive_byte_blocking();
+}
+
+Usart_io_status Usart::receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t cb_done)
+{
+	return imp->receive_buffer(buffer, size, cb_done);
+}
+
+Usart_io_status Usart::receive_buffer_blocking(uint8_t *buffer, size_t size)
+{
+	return imp->receive_buffer_blocking(buffer, size);
+}
+
+Usart_io_status Usart::receive_string(char *string, size_t max_size, usartrx_callback_t cb_done)
+{
+	return imp->receive_string(string, max_size, cb_done);
 }
 		
 void Usart::enable_interrupts()
@@ -310,6 +321,11 @@ Usart_error_type Usart::usart_error(void)
 	return imp->usart_error();
 }
 
+void Usart::usart_clear_errors()
+{
+	imp->usart_error();
+}
+
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
 // IMPLEMENT PRIVATE CLASS FUNCTIONS (METHODS).
@@ -333,20 +349,8 @@ Usart_config_status Usart_imp::set_mode(Usart_setup_mode mode)
 	// TODO - This.
 	return USART_CFG_FAILED;
 }
-		
-Usart_config_status Usart_imp::set_spi_mode(Usart_mspim_mode mode)
-{
-	// TODO - This.
-	return USART_CFG_FAILED;
-}
 
-Usart_config_status Usart_imp::set_spi_bit_order(Usart_mspim_bit_order order)
-{
-	// TODO - This.
-	return USART_CFG_FAILED;
-}
-
-Usart_config_status Usart_imp::set_frame(uint8_t size, Usart_parity parity, uint8_t stop_bits)
+Usart_config_status Usart_imp::set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits)
 {
 	// TODO - This.
 	return USART_CFG_FAILED;
@@ -357,71 +361,89 @@ Usart_config_status Usart_imp::set_baud_rate(Usart_baud_rate rate)
 	// TODO - This.
 	return USART_CFG_FAILED;
 }
-		
-bool Usart_imp::buffer_is_available(void)
+
+bool Usart_imp::transmitter_ready()
 {
 	// TODO - This.
-	return USART_CFG_FAILED;
+	return false;
 }
-		 
+
+bool Usart_imp::receiver_has_data()
+{
+	// TODO - This.
+	return false;
+}
+
 Usart_io_status Usart_imp::transmit_byte(uint8_t data)
 {
 	// TODO - This.
 	return USART_IO_FAILED;
 }
-		 
-Usart_io_status Usart_imp::transmit_string(uint8_t *data)
+
+Usart_io_status Usart_imp::transmit_byte_blocking(uint8_t data)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
+}
+
+Usart_io_status Usart_imp::transmit_buffer(uint8_t *data, size_t num_elements, usarttx_callback_t cb_done)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
+}
+
+Usart_io_status Usart_imp::transmit_buffer_blocking(uint8_t *data, size_t num_elements)
 {
 	// TODO - This.
 	return USART_IO_FAILED;
 }
 		 
-Usart_io_status Usart_imp::transmit_array(uint8_t* data, size_t num_elements)
+Usart_io_status Usart_imp::transmit_string(uint8_t *data, usarttx_callback_t cb_done)
 {
 	// TODO - This.
 	return USART_IO_FAILED;
 }
-		 
-uint8_t Usart_imp::spi_transfer_byte(uint8_t data)
+
+Usart_io_status Usart_imp::transmit_string_blocking(uint8_t *data)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
+}
+
+int16_t Usart_imp::receive_byte(void)
 {
 	// TODO - This.
 	return 0;
 }
-		 
-Usart_io_status Usart_imp::spi_transfer_array(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements)
-{
-	// TODO - This.
-	return USART_IO_FAILED;
-}
-		 
-Usart_io_status Usart_imp::spi_dma_transfer(uint8_t* tx_data, uint8_t* rx_data, size_t num_elements)
-{
-	// TODO - This.
-	return USART_IO_FAILED;
-}
-		 
-bool Usart_imp::transmission_complete(void)
-{
-	// TODO - This.
-	return false;
-}
-		 
-bool Usart_imp::receive_complete(void)
-{
-	// TODO - This.
-	return false;
-}
-		 
-uint8_t Usart_imp::receive_byte(void)
+
+int16_t Usart_imp::receive_byte_blocking()
 {
 	// TODO - This.
 	return 0;
 }
-		
-void Usart_imp::receive_array(uint8_t* array, size_t num_elements)
+
+Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t cb_done)
 {
 	// TODO - This.
-	return;
+	return USART_IO_FAILED;
+}
+
+Usart_io_status Usart_imp::receive_buffer_blocking(uint8_t *buffer, size_t size)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
+}
+
+Usart_io_status Usart_imp::receive_string(char *string, size_t max_size, usartrx_callback_t cb_done)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
+}
+
+Usart_io_status Usart_imp::receive_string_blocking(uint8_t *buffer, size_t size, size_t *actual_size)
+{
+	// TODO - This.
+	return USART_IO_FAILED;
 }
 		
 void Usart_imp::enable_interrupts(void)
@@ -436,7 +458,7 @@ void Usart_imp::disable_interrupts(void)
 	return;
 }
 
-Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type interrupt, void (*callback)(void))
+Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type interrupt, isr_callback_t callback)
 {
 	// TODO - This.
 	return USART_INT_FAILED;
@@ -454,6 +476,10 @@ Usart_error_type Usart_imp::usart_error(void)
 	return USART_ERR_NONE;
 }
 
+void Usart_imp::usart_clear_errors()
+{
+	// TODO - This.
+}
 
 
 
