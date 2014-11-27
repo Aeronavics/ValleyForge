@@ -438,17 +438,23 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 	
 		switch (PC_INT[address.port-1][address.pin])
 		{
+			// Note - Function below edited by Ben O'Brien at 17:06 on 27 November 2014
+			// May need to review other functions that use '=' instead of '|=' for the mask
 			case PCINT_0:
 				PCICR |= (1 << PCINT_0);
-				PCMSK0 = (1 << address.pin);
+				PCMSK0 |= (1 << address.pin);
 				break;
-			case PCINT_1:
+			// Note - Function below edited by Ben O'Brien at 17:02 on 27 November 2014
+			// May need to review other functions that use '=' instead of '|=' for the mask
+			case PCINT_1: 
 				PCICR |= (1 << PCINT_1);
-				PCMSK1 = (1 << address.pin);
+				PCMSK1 |= (1 << address.pin); //change made here -- added |=
 				break;
+			// Note - Function below edited by Ben O'Brien at 17:04 on 27 November 2014
+			// May need to review other functions that use '=' instead of '|=' for the mask
 			case PCINT_2:
 				PCICR |= (1 << PCINT_2);
-				PCMSK0 = (1 << address.pin);
+				PCMSK0 |= (1 << address.pin);
 				break;
 			case EINT_0:
 				EICRA = (EICRA & ~((1 << ISC00) | (1 << ISC01))) | (mode << ISC00);
@@ -556,18 +562,34 @@ Gpio_interrupt_status Gpio_pin_imp::disable_interrupt(IO_pin_address address)
 		switch (PC_INT[address.port][address.pin]) 
 		{
 			case PCINT_0:
-				// Disable the interrupt.
-				PCICR &= ~(1 << PCINT_0);
-				// Clear the mask register so that all pins are disabled.
-				PCMSK0 = 0;
+				// Disable the interrupt for the particular pin.
+				PCMSK0 &= ~(1 << address.pin);
+				
+				// If the mask register is clear, clear all interrupts for PCINT_0
+				if(PCMSK0 == 0)
+				{
+					PCICR &= ~(1 << PCINT_0);
+				}
 				break;
 			case PCINT_1:
-				PCICR &= ~(1 << PCINT_1);
-				PCMSK0 = 0;
+				// Disable the interrupt for the particular pin.
+				PCMSK0 &= ~(1 << address.pin);
+				
+				// If the mask register is clear, clear all interrupts for PCINT_0
+				if(PCMSK0 == 0)
+				{
+					PCICR &= ~(1 << PCINT_1);
+				}
 				break;
 		    case PCINT_2:
-				PCICR &= ~(1 << PCINT_2);
-				PCMSK0 = 0;
+				// Disable the interrupt for the particular pin.
+				PCMSK0 &= ~(1 << address.pin);
+				
+				// If the mask register is clear, clear all interrupts for PCINT_0
+				if(PCMSK0 == 0)
+				{
+					PCICR &= ~(1 << PCINT_2);
+				}
 				break;
 			default:
 				break;
