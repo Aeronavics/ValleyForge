@@ -245,6 +245,12 @@
 
 	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
 
+	// Specify which USART channels to support
+	#define USE_USART0 USART_0
+	#define USE_USART1 USART_1
+	#define USE_USART2 USART_2
+	#define USE_USART3 USART_3
+
 #elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 
  	/* Watchdog timer. */
@@ -330,6 +336,29 @@
 								{EINT_3, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  	// C
 								{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, EINT_0, PCINT_2}};   // D
 								// Port E exists but only has three pins and is for special features only.
+
+	/* USART */
+
+	// TODO - These are not the correct pin definitions!
+	#define USART0_TX_PORT			PORT_E
+	#define USART0_TX_PIN			PIN_1
+	#define USART0_RX_PORT			PORT_E
+	#define USART0_RX_PIN			PIN_0
+	#define USART0_XCK_PORT			PORT_E
+	#define USART0_XCK_PIN			PIN_2
+
+	// General preprocessor macros for convenience.
+	#define NUM_USART_CHANNELS			1
+	#define NUM_CHANNEL_INTERRUPTS		3 // TODO - Not sure how many interrupt channels the LIN module has
+	#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
+
+	enum Usart_channel {USART_0};
+	enum Spi_channel {SPI_0};
+
+	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
+
+	// Specify which USART channels to support
+	#define USE_USART_LIN USART_0
 
 #elif defined (__AVR_AT90CAN128__)
 
@@ -434,12 +463,36 @@
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE},	// F
 								{PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE, PCINT_NONE}};  // G
 
+	/* USART */
+
+	// TODO - These are not the correct pin definitions!
+	#define USART0_TX_PORT			PORT_E
+	#define USART0_TX_PIN			PIN_1
+	#define USART0_RX_PORT			PORT_E
+	#define USART0_RX_PIN			PIN_0
+	#define USART0_XCK_PORT			PORT_E
+	#define USART0_XCK_PIN			PIN_2
+
+	#define USART1_TX_PORT			PORT_D
+	#define USART1_TX_PIN			PIN_3
+	#define USART1_RX_PORT			PORT_D
+	#define USART1_RX_PIN			PIN_2
+	#define USART1_XCK_PORT			PORT_D
+	#define USART1_XCK_PIN			PIN_5
+
+	#define NUM_USART_CHANNELS			2
+	#define NUM_CHANNEL_INTERRUPTS		3
+	#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
+
 	enum Usart_channel {USART_0, USART_1};
 	enum Spi_channel {SPI_0};
 
 	enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
 
-									
+	// Specify which USART channels to support
+	#define USE_USART0 USART_0
+	#define USE_USART1 USART_1
+
 #else
 	#error "No peripheral definition for this configuration."	
 #endif
