@@ -289,7 +289,7 @@ Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state va
 			// NOTE - Possible erroneous boolean condition removed from the expression. [TO BE CHECKED]. Edit by Ben O'Brien, 15:08, 26.10.2014 		
 			
 			// Toggle value.
-			_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) = _SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) ^ (1 << address.pin);
+			_SFR_MEM8((address.port * PORT_MULTIPLIER) + P_OFFSET + P_WRITE) ^= (1 << address.pin);
 		}
 		else
 		{
@@ -297,7 +297,7 @@ Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state va
 			
 			// NOTE - Possible erroneous boolean condition removed from the expression. [TO BE CHECKED]. Edit by Ben O'Brien, 15:08, 26.10.2014 
 			
-			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) = _SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) ^ (1 << address.pin);
+			_SFR_IO8((address.port * PORT_MULTIPLIER) + P_WRITE) ^= (1 << address.pin);
 		}
 		#elif defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 			// Toggle value.
@@ -305,7 +305,7 @@ Gpio_io_status Gpio_pin_imp::write (IO_pin_address address, Gpio_output_state va
 			// NOTE - Removed an erroneous boolean condition from the expression. Edit by Ben O'Brien, 15:08, 26.10.2014 
 			// Tested by Ben O'Brien, 15.21, 26.10.2014.
 			
-			_SFR_IO8(address.port * PORT_MULTIPLIER + P_WRITE) = _SFR_IO8(address.port * PORT_MULTIPLIER + P_WRITE) ^ (1 << address.pin);
+			_SFR_IO8(address.port * PORT_MULTIPLIER + P_WRITE) ^= (1 << address.pin);
 		#else
 			#error "No GPIO toggle implemented for this configuration"
 		#endif
