@@ -1,5 +1,5 @@
-// Copyright (C) 2011  Unison Networks Ltd
-// 
+// Copyright (C) 2014  Unison Networks Ltd
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +16,19 @@
 /**
  *
  * @addtogroup		hal	Hardware Abstraction Library
- * 
- * @file		target_config.hpp
- * Provides definitions for to be used in implementations.
- * 
- * 
- * @author 		Zac Frank
  *
- * @date		15-12-2011
- *  
+ * @file		atmega64c1.hpp
+ * Provides common target configuration for all AVR chips
+ *
+ *
+ * @author 		Jared Sanson
+ *
+ * @date		28/11/2014
+ *
  * @section Licence
- * 
- * Copyright (C) 2011  Unison Networks Ltd
- * 
+ *
+ * Copyright (C) 2014  Unison Networks Ltd
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -41,39 +41,71 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * @brief
  * This contains device specific definitions for AVR architecture targets. Information such as timer size, interrupt specifications and so on are defined here.
  */
 
 // Only include this header file once.
-#ifndef __TARGET_CONFIG_H__
-#define __TARGET_CONFIG_H__
+#ifndef __TARGET_AVR_H__
+#define __TARGET_AVR_H__
 
-// INCLUDE REQUIRED HEADER FILES.
+/* Generic Types */
+typedef void(*callback_t)(void);
 
-// Include the required IO header file.
-#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
+/* General */
 
-// DEFINITIONS WHICH ARE SPECIFIC TO INDIVIDUAL MCU TYPES.
+#define TOTAL_PINS	(NUM_PORTS * PINS_PER_PORT)
 
-// NOTE - Headers are hard-coded into the build script!
+/* GPIO */
 
-#if defined(__AVR_ATmega2560__)
-	#include "targets/atmega2560.hpp"
+// GPIO pin modes.  AVR devices have an optional pull-up on inputs, with all outputs operating push-pull.
+enum Gpio_mode {GPIO_INPUT_PU, GPIO_OUTPUT_PP, GPIO_INPUT_FL};
 
-#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-	#include "targets/atmega64c1.hpp"
+/* EEPROM */
 
-#elif defined (__AVR_AT90CAN128__)
-	#include "targets/at90can.hpp"
+// EEPROM address (width).
+typedef uint16_t Eeprom_address;
 
-#else
-	#error "No peripheral definition for this configuration."	
-#endif
+/* USART */
 
-// DEFINITIONS WHICH ARE COMMON TO ALL AVR ARCHITECTURE TARGETS.
+// Generic bit addresses for register manipulation.
 
-#include "targets/avr.hpp"
+// UCSRnA Register.
+#define RXC_BIT				7
+#define TXC_BIT				6
+#define UDRE_BIT			5
+#define FE_BIT				4
+#define DOR_BIT				3
+#define UPE_BIT				2
+#define U2X_BIT				1
+#define MPCM_BIT			0
 
-#endif /*__TARGET_CONFIG_H__*/
+// UCSRnB Register.
+#define RXCIE_BIT			7
+#define TXCIE_BIT			6
+#define UDRIE_BIT			5
+#define RXEN_BIT			4
+#define TXEN_BIT			3
+#define UCSZ2_BIT			2
+#define RXB8_BIT			1
+#define TXB8_BIT			0
+
+// UCSRnC Register.
+#define UMSEL1_BIT			7
+#define UMSEL0_BIT			6
+#define UPM1_BIT			5
+#define UPM0_BIT			4
+#define USBS_BIT			3
+#define UCSZ1_BIT			2
+#define UCSZ0_BIT			1
+#define UCPOL_BIT			0
+
+// UCSRnC Register (when in Master SPI Mode).
+#define UDORD_BIT			2
+#define UCPHA_BIT			1
+
+
+
+#endif /*__TARGET_AVR_H__*/
+
