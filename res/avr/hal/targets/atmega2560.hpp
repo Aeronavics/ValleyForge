@@ -69,13 +69,13 @@ enum Watchdog_timeout
 
 /* GPIO */
 
-#define NUM_PORTS		12
+#define NUM_PORTS			12
 #define NUM_PINS			8
 
-#define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
+#define NUM_BANKS			3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 #define EXT_INT_SIZE		8
 
-#define PORT_MULTIPLIER	3
+#define PORT_MULTIPLIER		3
 #define P_OFFSET			235
 
 #define EXTERNAL_NUM_INTERRUPTS	(NUM_BANKS + EXT_INT_SIZE)
@@ -163,41 +163,6 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
 
 /* USART. */
 
-// Generic bit addresses for register manipulation.
-
-// UCSRnA Register.
-#define RXC_BIT				7
-#define TXC_BIT				6
-#define UDRE_BIT			5
-#define FE_BIT				4
-#define DOR_BIT				3
-#define UPE_BIT				2
-#define U2X_BIT				1
-#define MPCM_BIT			0
-
-// UCSRnB Register.
-#define RXCIE_BIT			7
-#define TXCIE_BIT			6
-#define UDRIE_BIT			5
-#define RXEN_BIT			4
-#define TXEN_BIT			3
-#define UCSZ2_BIT			2
-#define RXB8_BIT			1
-#define TXB8_BIT			0
-
-// UCSRnC Register.
-#define UMSEL1_BIT			7
-#define UMSEL0_BIT			6
-#define UPM1_BIT			5
-#define UPM0_BIT			4
-#define USBS_BIT			3
-#define UCSZ1_BIT			2
-#define UCSZ0_BIT			1
-#define UCPOL_BIT			0
-
-// UCSRnC Register (when in Master SPI Mode).
-#define UDORD_BIT			2
-#define UCPHA_BIT			1
 
 // GPIO addresses of transmitter and receiver pins for each USART channel.
 #define USART0_TX_PORT			PORT_E
@@ -245,6 +210,23 @@ enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESP
 #define USE_USART1 USART_1
 #define USE_USART2 USART_2
 #define USE_USART3 USART_3
+
+
+/* SPI */
+
+// Port addresses for GPIO pins required for SPI
+#define SPI0_MISO_PORT		PORT_B
+#define SPI0_MISO_PIN		PIN_3
+#define SPI0_MOSI_PORT		PORT_B
+#define SPI0_MOSI_PIN		PIN_2
+#define SPI0_SCK_PORT		PORT_B
+#define SPI0_SCK_PIN		PIN_1
+#define SPI0_SS_PORT		PORT_B
+#define SPI0_SS_PIN			PIN_0
+
+// General preprocessor macros for convenience
+#define NUM_SPI_CHANNELS		1
+#define NUM_SPI_INTERRUPTS		1
 
 
 #endif /*__TARGET_ATMEGA2560_H__*/

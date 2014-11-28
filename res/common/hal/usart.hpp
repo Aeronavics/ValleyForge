@@ -159,8 +159,6 @@ typedef uint16_t Usart_baud_rate;
 
 typedef void(*usartrx_callback_t)(Usart_io_status, uint8_t* /*buffer*/, size_t /*num_received_bytes*/);
 typedef void(*usarttx_callback_t)(Usart_io_status);
-typedef void(*isr_callback_t)(void);
-
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -386,7 +384,7 @@ class Usart
 		 * @param ISRptr		Pointer to the user-defined ISR.
 		 * @return Zero for success, non-zero for failure.
 		 */
-		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, isr_callback_t callback);
+		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback);
 
 		/**
 		 * Detaches an interrupt handler from a particular interrupt event source associated with this USART channel.

@@ -65,13 +65,13 @@ enum Watchdog_timeout
 };
 
 /* GPIO */
-#define NUM_PORTS		7
+#define NUM_PORTS			7
 #define NUM_PINS			8
 
-#define NUM_BANKS		0	// No PCINT pins hence no PCINT ports.
+#define NUM_BANKS			0	// No PCINT pins hence no PCINT ports.
 #define EXT_INT_SIZE		8
 
-#define PORT_MULTIPLIER	3
+#define PORT_MULTIPLIER		3
 #define P_OFFSET			235
 
 #define EXTERNAL_NUM_INTERRUPTS	(NUM_BANKS + EXT_INT_SIZE)
@@ -130,7 +130,7 @@ enum Tc_prescalar {TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_
 /* CAN */
 #define CAN_NUM_BUFFERS  15
 #define CAN_NUM_FILTERS  15
-#efine CAN_NUM_MASKS 	15
+#define CAN_NUM_MASKS 	15
 #define CAN_NUM_BANKS	15
 #define CAN_NUM_BUF_INT	3
 #define CAN_NUM_CHAN_INT 2
@@ -183,5 +183,22 @@ enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESP
 // Specify which USART channels to support
 #define USE_USART0 USART_0
 #define USE_USART1 USART_1
+
+/* SPI */
+
+// Port addresses for GPIO pins required for SPI
+#define SPI0_MISO_PORT		PORT_B
+#define SPI0_MISO_PIN		PIN_3
+#define SPI0_MOSI_PORT		PORT_B
+#define SPI0_MOSI_PIN		PIN_2
+#define SPI0_SCK_PORT		PORT_B
+#define SPI0_SCK_PIN		PIN_1
+#define SPI0_SS_PORT		PORT_B
+#define SPI0_SS_PIN			PIN_0
+
+// General preprocessor macros for convenience
+#define NUM_SPI_CHANNELS		1
+#define NUM_SPI_INTERRUPTS		1
+
 
 #endif /*__TARGET_AT90CAN_H__*/

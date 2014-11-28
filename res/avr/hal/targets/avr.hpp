@@ -106,6 +106,25 @@ typedef uint16_t Eeprom_address;
 #define UCPHA_BIT			1
 
 
+/* SPI */
+
+enum Spi_setup_mode {SPI_MASTER, SPI_SLAVE};
+
+// Specifies polarity of Clock/Data signals
+enum Spi_data_mode {SPI_MODE_0, SPI_MODE_1, SPI_MODE_2, SPI_MODE_3};
+
+// Specifies bit ordering
+enum Spi_bit_order {MSB_FIRST, LSB_FIRST};
+
+// Specifies how many bits to send per frame
+enum Spi_frame_format {SPI_8BIT, SPI_16BIT};
+
+enum Spi_clock_divider {SPI_DIV_2, SPI_DIV_4, SPI_DIV_8, SPI_DIV_16, SPI_DIV_32, SPI_DIV_64, SPI_DIV_128};
+
+enum Spi_interrupt_types {SPI_STC};
+
+enum Spi_slave_select_mode {SPI_SOFTWARE_SS, SPI_HARDWARE_SS};
+
 
 #endif /*__TARGET_AVR_H__*/
 

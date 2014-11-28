@@ -65,13 +65,13 @@ enum Watchdog_timeout
 };
 
 /* GPIO */
-#define NUM_PORTS		3
+#define NUM_PORTS			3
 #define NUM_PINS			8
 
-#define NUM_BANKS		3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
+#define NUM_BANKS			3	// Contains 3 PC_INT banks. Only one pin on each bank can be used at a time.
 #define EXT_INT_SIZE		4
 
-#define PORT_MULTIPLIER	3
+#define PORT_MULTIPLIER		3
 #define P_OFFSET			235
 
 #define EXTERNAL_NUM_INTERRUPTS	(NUM_BANKS + EXT_INT_SIZE)
@@ -157,5 +157,33 @@ enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESP
 
 // Specify which USART channels to support
 #define USE_USART_LIN USART_0
+
+/* SPI */
+
+// Port addresses for GPIO pins required for SPI
+#define SPI0_MISO_PORT		PORT_B
+#define SPI0_MISO_PIN		PIN_0
+#define SPI0_MOSI_PORT		PORT_B
+#define SPI0_MOSI_PIN		PIN_1
+#define SPI0_SCK_PORT		PORT_B
+#define SPI0_SCK_PIN		PIN_7
+#define SPI0_SS_PORT		PORT_D
+#define SPI0_SS_PIN			PIN_3
+
+//TODO - How do we allow alternate pins to be used?
+//  NB: They are selected through MCUCR<SPIPS>
+#define SPI0_ALT_MISO_PORT		PORT_D
+#define SPI0_ALT_MISO_PIN		PIN_2
+#define SPI0_ALT_MOSI_PORT		PORT_D
+#define SPI0_ALT_MOSI_PIN		PIN_3
+#define SPI0_ALT_SCK_PORT		PORT_D
+#define SPI0_ALT_SCK_PIN		PIN_4
+#define SPI0_ALT_SS_PORT		PORT_C
+#define SPI0_ALT_SS_PIN			PIN_1
+
+// General preprocessor macros for convenience
+#define NUM_SPI_CHANNELS		1
+#define NUM_SPI_INTERRUPTS		1
+
 
 #endif /*__TARGET_ATMEGA64C1_H__*/

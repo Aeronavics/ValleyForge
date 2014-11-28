@@ -67,79 +67,79 @@ typedef struct
  */
 class Usart_imp
 {
-	public:
+public:
 
-		// Methods - These methods should generally correspond to methods of the public class Usart.
+	// Methods - These methods should generally correspond to methods of the public class Usart.
 
-		Usart_imp(Usart_channel channel, Usart_pins pins, Usart_registers registers);
-		
-		~Usart_imp(void);
+	Usart_imp(Usart_channel channel, Usart_pins pins, Usart_registers registers);
 
-		Usart_config_status set_mode(Usart_setup_mode mode);
+	~Usart_imp(void);
 
-		Usart_config_status set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits);
-		
-		Usart_config_status set_baud_rate(Usart_baud_rate rate);
+	Usart_config_status set_mode(Usart_setup_mode mode);
 
-		
-		bool transmitter_ready(void);
+	Usart_config_status set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits);
 
-		bool receiver_has_data(void);
+	Usart_config_status set_baud_rate(Usart_baud_rate rate);
 
 
-		Usart_io_status transmit_byte(uint8_t data);
+	bool transmitter_ready(void);
 
-		Usart_io_status transmit_byte_blocking(uint8_t data);
+	bool receiver_has_data(void);
 
-		Usart_io_status transmit_buffer(uint8_t* data, size_t num_elements, usarttx_callback_t cb_done = NULL);
 
-		Usart_io_status transmit_buffer_blocking(uint8_t* data, size_t num_elements);
+	Usart_io_status transmit_byte(uint8_t data);
 
-		Usart_io_status transmit_string(uint8_t *data, usarttx_callback_t cb_done = NULL);
+	Usart_io_status transmit_byte_blocking(uint8_t data);
 
-		Usart_io_status transmit_string_blocking(uint8_t *data);
+	Usart_io_status transmit_buffer(uint8_t* data, size_t num_elements, usarttx_callback_t cb_done = NULL);
 
-		 
-		int16_t receive_byte(void);
+	Usart_io_status transmit_buffer_blocking(uint8_t* data, size_t num_elements);
 
-		int16_t receive_byte_blocking(void);
+	Usart_io_status transmit_string(uint8_t *data, usarttx_callback_t cb_done = NULL);
 
-		Usart_io_status receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t received);
+	Usart_io_status transmit_string_blocking(uint8_t *data);
 
-		Usart_io_status receive_buffer_blocking(uint8_t *buffer, size_t size);
 
-		Usart_io_status receive_string(char *string, size_t max_size, usartrx_callback_t received);
+	int16_t receive_byte(void);
 
-		Usart_io_status receive_string_blocking(uint8_t *buffer, size_t size, size_t* actual_size = NULL);
+	int16_t receive_byte_blocking(void);
 
-		
-		void enable_interrupts(void);
+	Usart_io_status receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t received);
 
-		void disable_interrupts(void);
+	Usart_io_status receive_buffer_blocking(uint8_t *buffer, size_t size);
 
-		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, void(*callback)(void));
+	Usart_io_status receive_string(char *string, size_t max_size, usartrx_callback_t received);
 
-		Usart_int_status detach_interrupt(Usart_interrupt_type interrupt);
-		 
-		Usart_error_type usart_error(void);
+	Usart_io_status receive_string_blocking(uint8_t *buffer, size_t size, size_t* actual_size = NULL);
 
-		void usart_clear_errors(void);
 
- 	private:
+	void enable_interrupts(void);
 
- 		// Methods.
+	void disable_interrupts(void);
 
- 		Usart_imp(void);	// Poisoned.
+	Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback);
 
- 		Usart_imp(Usart_imp*);	// Poisoned.
+	Usart_int_status detach_interrupt(Usart_interrupt_type interrupt);
 
- 		// Fields.
+	Usart_error_type usart_error(void);
 
- 		Usart_channel channel;
+	void usart_clear_errors(void);
 
-		Usart_pins pins;
+private:
 
-		Usart_registers registers;
+	// Methods.
+
+	Usart_imp(void);	// Poisoned.
+
+	Usart_imp(Usart_imp*);	// Poisoned.
+
+	// Fields.
+
+	Usart_channel channel;
+
+	Usart_pins pins;
+
+	Usart_registers registers;
 };
 
 // Generic register definitions
@@ -320,8 +320,7 @@ Usart Usart::bind(Usart_channel channel)
 		// Consider the bad life choices that have led us to this point.
 	}
 
-
-	// We''ll never get here.
+	// We'll never get here.
 	return Usart(static_cast<Usart_imp*>(NULL));
 }
 
@@ -571,7 +570,7 @@ void Usart_imp::disable_interrupts(void)
 	return;
 }
 
-Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type interrupt, isr_callback_t callback)
+Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type interrupt, callback_t callback)
 {
 	// TODO - This.
 	return USART_INT_FAILED;

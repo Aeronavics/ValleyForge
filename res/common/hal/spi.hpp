@@ -63,260 +63,210 @@
 // Include the standard C++ definitions.
 #include <stddef.h>
 
-// Include the semaphore library
-#include "semaphore.hpp"
-
 // Include the hal library.
 #include "hal/hal.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
-#if (defined(__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__) || defined(__AVR_ATmega64M1__)) || defined(__AVR_ATmega64C1__)
-	enum spi_number {SPI_0};
-#endif
+//enum Spi_data_direction {SPI_2LINE_FULL_DUPLEX, SPI_2LINE_RX, SPI_1LINE_RX, SPI_1LINE_TX};
+//enum Spi_status {SPI_BUSY, SPI_OVERRUN, SPI_MODEFAULT, SPI_CRCERR, SPI_UNDERRUN, SPI_CHSIDE, SPI_TXE, SPI_RXNE};
 
-#if (defined (__STM32F103xx__))
-	enum spi_number {SPI_0, SPI_1};
-#endif
+// SPI configuration operation status.
+enum Spi_config_status {SPI_CFG_SUCCESS = 0, SPI_CFG_IMMUTABLE = -1, SPI_CFG_FAILED = -2};
 
-enum spi_configuration {SPI_MASTER, SPI_SLAVE};
+// SPI IO operation status.
+enum Spi_io_status {SPI_IO_SUCCESS = 0, SPI_IO_FAILED = -1, SPI_IO_BUSY = -3, SPI_IO_OVERRUN = -4, SPI_IO_CRCERR = -5, SPI_IO_UNDERRUN = -6};
 
-enum spi_bit_order {MSB_FIRST, LSB_FIRST};
+// SPI interrupt configuration status
+enum Spi_int_status {SPI_INT_SUCCESS = 0, SPI_INT_EXISTS = -1, SPI_INT_NOINT = -2, SPI_INT_FAILED = -3};
 
-enum spi_mode {SPI_MODE_0, SPI_MODE_1, SPI_MODE_2, SPI_MODE_3};
+enum Spi_interrupt_type {SPI_INT_TODO}; // TODO - Interrupts. Should these be put into target_config.hpp?
 
-enum spi_clock_divider {SPI_DIV_2, SPI_DIV_4, SPI_DIV_8, SPI_DIV_16, SPI_DIV_32, SPI_DIV_64, SPI_DIV_128};
-
-enum spi_interrupt_types {SPI_STC};
-
-enum spi_frame_format {SPI_8BIT, SPI_16BIT};
-
-enum spi_slave_select_mode {SPI_HARDWARE_SS, SPI_SOFTWARE_SS};
-
-enum spi_data_direction {SPI_2LINE_FULL_DUPLEX, SPI_2LINE_RX, SPI_1LINE_RX, SPI_1LINE_TX};
-
-enum spi_status {SPI_BUSY, SPI_OVERRUN, SPI_MODEFAULT, SPI_CRCERR, SPI_UNDERRUN, SPI_CHSIDE, SPI_TXE, SPI_RXNE};
+typedef void (*spi_data_callback_t)(Spi_io_status status, uint8_t* buffer, size_t buffer_size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-class spi_imp;
-class spi_slave_imp;
+class Spi_imp;
 
 // DEFINE PUBLIC CLASSES.
 
 /**
- * @class spi
+ * @class Spi
  * 
- * Implements various functions relating to SPIinitialisation, transmission
+ * Implements various functions relating to SPI initialisation, transmission
  * and receiving of data.
  * 
  */
-class spi
+class Spi
 {
-	public:
-		// Functions.
-		
-		/**
-		 * Initialises the SPI interface with the desired Master/Slave parameters and configures the
-		 * relevant GPIO.
-		 * 
-		 * @param  configuration	Configuration for SPI interface (master/slave)
-		 * @return 0 for success, -1 for error.
-		 */
-		int8_t initialise(spi_configuration configuration);
-		
-		/**
-		 * Initialises the SPI interface with the desired data mode.
-		 * Options relate to the combinations of clock polarity & phase
-		 * settings.
-		 * 
-		 * @param  mode			SPI mode to apply to the interface
-		 * @return 0 for success, -1 for error.
-		 */		
-		int8_t set_data_mode(spi_mode mode);
-		
-		/**
-		 * Initialises the SPI interface with the desired bit order.
-		 * Interface can either move the Most-Significant-Bit (MSB) first, or else
-		 * the Least-Significant-Bit (LSB).
-		 * 
-		 * @param  order		Required data order (MSB first or LSB first)
-		 * @return 0 for success, -1 for error.
-		 */		
-		int8_t set_bit_order(spi_bit_order order);
-		
-		/**
-		 * Sets the clock divider to be used for the SPI interface.
-		 *
-		 * @param divider		A clock divider from one of the enumerated options.
-		 * @return 0 for success, -1 for error.
-		 */
-		int8_t set_clock_divider(spi_clock_divider divider);
-		
-		/**
-		 * Sets how slave select works
-		 * 
-		 * @param mode			Hardware or software slave select from the enumerated options
-		 * @return 0 for success, -1 for error
-		 */
-		int8_t set_slave_select_mode(spi_slave_select_mode mode);
-		
-		/**
-		 * Enables an interrupt to be be associated with a SPI connection.
-		 *
-		 * @param interrupt		One of the possible interrupt types that are available.
-		 * @param ISRptr		Pointer to the user-defined ISR.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t enable_interrupt(spi_interrupt_types interrupt, void (*ISRptr)(void));
-		 
-		/**
-		 * Enables an interrupt to be be un-associated with a SPI connection.
-		 *
-		 * @param interrupt		Which interrupt to disable.
-		 * @return 0 for success, -1 for error.
-		 */
-		 int8_t disable_interrupt(spi_interrupt_types interrupt);
-		 
-		 /**
-		 * Transfers a byte and receives a byte via the SPI connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param data		Byte to transfer via SPI.
-		 * @return Byte received.
-		 */
-		 uint8_t transfer(uint8_t data);
-		 
-		 /**
-		 * Transfers an array and receives an array of predetermined size via the SPI connection.
-		 * Note, this function 'blocks' until transfer has been completed. 
-		 *
-		 * @param TXdata		Pointer to the array that is to be transmitted.
-		 * @param RXdata		Pointer to an array where data may be received to.
-		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return Nothing.
-		 */
-		 void transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);	
-		 
-		 /**
-		 * Returns the status of the SPI buffer
-		 * 
-		 * @param Nothing
-		 * @return Status of SPI buffer
-		 */
-		 spi_status get_status(void);
-		 
-		 /**
-		 * Transfers a block of data and receives data via the SPI connection.
-		 * Note, this function relies on using DMA or similar to achieve 'non-blocking' operation.
-		 *
-		 * @param TXdata		Pointer to the array that is to be transmitted.
-		 * @param RXdata		Pointer to an array where data may be received to.
-		 * @param numberElements	Number of elements in the arrays (assumed to be the same).
-		 * @return Nothing.
-		 */
-		 void dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
-		
-		 /**
-		 * Function to free the SPI instance when it goes out of scope.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		 ~spi(void);
+public:
 
-		 /** 
-		 * Allows access to the SPI to be relinquished and reused elsewhere.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		 void disable(void);
-		
-		/**
-		 * Allows a process to request access to a SPI instance and manages the semaphore
-		 * indicating whether access has been granted or not.
-		 *
-		 * @param  spiNumber	The number of a SPI that is desired.
-		 * @return A SPI instance.
-		 */
-		static spi grab(spi_number spiNumber);
+	/**
+	 * Binds the interface with a SPI hardware peripheral.
+	 */
+	static Spi bind(Spi_channel channel);
 
-	private:
-		// Functions.
-		
-		spi(void);	// Poisoned.
+	/**
+	 * Destructor
+	 */
+	~Spi(void);
 
-		spi(spi_imp*);
+	/**
+	 * Configures the operating mode (master, slave)
+	 *
+	 * @param  mode	 		Operating mode to set the SPI to
+	 * @return 				The status of the operation
+	 */
+	Spi_config_status set_mode(Spi_setup_mode mode);
 
-		spi operator =(spi const&);	// Poisoned.
+	/**
+	 * Configures the data format and SPI data mode.
+	 *
+	 * @param  mode			The data operating mode (clock and data polarity)
+	 * @param  bit_order 	MSB or LSB first data frames
+	 * @param  frame_format The number of bits to transmit in each frame
+	 * @return 				The status of the operation
+	 */
+	Spi_config_status set_data_config(Spi_data_mode mode, Spi_bit_order bit_order, Spi_frame_format frame_format);
 
-		// Fields.	
-		/**
-		* Pointer to the machine specific implementation of the SPI.
-		*/
-		spi_imp* imp;
+	/**
+	 * Configures the speed of the SPI module
+	 *
+	 * @param  speed		TODO - How do we define speed?
+	 * @return 				The status of the operation
+	 */
+	Spi_config_status set_speed(int16_t speed);
+
+	/**
+	 * Configures slave select (SS) pin functionality,
+	 * if available on the chip.
+	 *
+	 * SPI must be configured for slave mode!
+	 *
+	 * @param  mode			The slave select operating mode
+	 * @return 				The status of the operation
+	 */
+	Spi_config_status set_slave_select(Spi_slave_select_mode mode);
+
+	/**
+	 * Shift one byte through the SPI, blocking until the transfer has completed.
+	 *
+	 * rx_data is optional. If NULL, received data will be discarded.
+	 *
+	 * @param tx_data 		Byte to be transmitted
+	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
+	 * @return 				The status of the operation
+	 */
+	Spi_io_status transfer(uint8_t tx_data, uint8_t *rx_data = NULL);
+
+	// Return immediately, transfer data in background. Optional callback
+	/**
+	 * Shift one byte through the SPI asynchronously in the background.
+	 * Ensure transfer_busy() is false before calling!
+	 * The function returns immediately.
+	 *
+	 * rx_data is optional. If NULL, received data will be discarded.
+	 * the done callback is also optional, and will be executed when the transfer is completed.
+	 *
+	 * @param tx_data 		Byte to be transmitted
+	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
+	 * @param done 			Optional callback to be executed when the transmission is completed
+	 * 						Callback must have the following signature:
+	 * 							void callback(Spi_io_status status, uint8_t *rx_block, size_t received_bytes);
+	 * @return 				The status of the operation
+	 */
+	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL);
+
+	/**
+	 * Shift a chunk of data through the SPI, blocking until the transfer has completed.
+	 * Both buffers must be the same size!
+	 *
+	 * rx_data is optional. If NULL, received data will be discarded.
+	 *
+	 * @param tx_data 		Buffer to be transmitted
+	 * @param rx_data 		Optional buffer to store received data to
+	 * @param size 			The number of bytes to transfer
+	 * @return 				The status of the operation
+	 */
+	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
+
+	/**
+	 * Shift a chunk of data through the SPI asynchronously in the background,
+	 * possibly using DMA transfers.
+	 * Both buffers must be the same size!
+	 * The function returns immediately.
+	 *
+	 * rx_data is optional. If NULL, received data will be discarded.
+	 * the done callback is also optional, and will be executed when the transfer is completed.
+	 *
+	 * @param tx_data 		Buffer to be transmitted
+	 * @param rx_data 		Optional buffer to store received data to
+	 * @param size 			The number of bytes to transfer
+	 * @param done 			Optional callback to be executed when the transmission is completed.
+	 * 						Callback must have the following signature:
+	 * 							void callback(Spi_io_status status, uint8_t *rx_block, size_t received_bytes);
+	 * @return 				The status of the operation
+	 */
+	Spi_io_status transfer_buffer_async(uint8_t *tx_block, uint8_t *rx_block, size_t size, spi_data_callback_t done = NULL);
+
+	/**
+	 * Indicates whether the SPI is currently transferring something
+	 *
+	 * @return boolean 		true if the SPI is busy and you shouldn't use any transfer() functions!
+	 */
+	bool transfer_busy(void);
+
+	/**
+	 * Returns the current status of the SPI buffer.
+	 * Also returned by transfer() operations
+	 *
+	 * @return 				status of the SPI module
+	 */
+	Spi_io_status get_status(void);
+
+	/**
+	 * Enable interrupt generation by this SPI channel.
+	 */
+	void enable_interrupts(void);
+
+	/**
+	 * Disable interrupt generation by this SPI channel.
+	 */
+	void disable_interrupts(void);
+
+	/**
+	 * Attaches an interrupt handler to a particular interrupt event source associated with this SPI channel.
+	 * Enables an interrupt to be be associated with a SPI connection.
+	 *
+	 * @param interrupt		One of the possible interrupt sources that are available.
+	 * @param ISRptr		Pointer to the user-defined ISR.
+	 * @return 				The status of the operation
+	 */
+	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback);
+
+	/**
+	 * Detaches an interrupt handler from a particular interrupt event source associated with this SPI channel.
+	 *
+	 * @param interrupt		One of the possible interrupt sources that are available.
+	 * @return 0 for success, -1 for error.
+	 */
+	Spi_int_status detach_interrupt(Spi_interrupt_type interrupt);
+
+private:
+	// Functions.
+
+	Spi(void);	// Poisoned.
+
+	Spi(Spi_imp*);
+
+	Spi operator =(Spi const&);	// Poisoned.
+
+	// Fields.
+	/**
+	* Pointer to the machine specific implementation of the SPI.
+	*/
+	Spi_imp* imp;
 };
-
-/* 
- * Class to represent a slave SPI device attached to the target.
- */
-class spi_slave 
-{
-	public:
-		// Functions
-		/**
-		 * Function to select the associated SPI Slave device and transfer data to/from it.
-		 *
-		 * @param  Nothing.
-		 * @return 0 for success, -1 for failure
-		 */
-		 int8_t enable(void);
-		
-		/**
-		 * Function to deselect the associated SPI Slave device.
-		 *
-		 * @param  Nothing.
-		 * @return 0 for success, -1 for failure
-		 */
-		 int8_t disable(void);
-		
-		/**
-		 * Allows a process to request attachment of a SPI Slave and manages the semaphore
-		 * indicating whether access has been granted or not.
-		 *
-		 * @param  slaveAddress		The GPIO address of the slave select (SS') pin that is to be attached.
-		 * @return A SPI slave instance.
-		 */
-		static spi_slave attach(gpio_pin_address slaveAddress);
-		
-		/**
-		 * Function to free the SPI slave instance when it goes out of scope.
-		 *
-		 * @param  Nothing.
-		 * @return Nothing.
-		 */
-		 //~spi_slave(void); 
-		
-	private:
-		// Functions.
-		
-		spi_slave(void);	// Poisoned.
-		
-		spi_slave(spi_slave_imp*);
-
-		spi_slave operator =(spi_slave const&);	// Poisoned.
-
-		// Fields.
-		
-		/**
-		* Pointer to the machine specific implementation of the SPI Slave.
-		*/
-		spi_slave_imp* imp;
-
-};
-	  
-
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
