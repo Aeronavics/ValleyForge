@@ -191,8 +191,7 @@ public:
 	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
 
 	/**
-	 * Shift a chunk of data through the SPI asynchronously in the background,
-	 * possibly using DMA transfers.
+	 * Shift a chunk of data through the SPI, asynchronously.
 	 * Both buffers must be the same size!
 	 * The function returns immediately.
 	 *
@@ -207,7 +206,7 @@ public:
 	 * 							void callback(Spi_io_status status, uint8_t *rx_block, size_t received_bytes);
 	 * @return 				The status of the operation
 	 */
-	Spi_io_status transfer_buffer_async(uint8_t *tx_block, uint8_t *rx_block, size_t size, spi_data_callback_t done = NULL);
+	Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL);
 
 	/**
 	 * Indicates whether the SPI is currently transferring something

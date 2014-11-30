@@ -157,7 +157,7 @@ enum Usart_error_type {
 
 typedef uint16_t Usart_baud_rate;
 
-typedef void(*usartrx_callback_t)(Usart_io_status, uint8_t* /*buffer*/, size_t /*num_received_bytes*/);
+typedef void(*usartrx_callback_t)(Usart_io_status, uint8_t* buffer, size_t received_bytes);
 typedef void(*usarttx_callback_t)(Usart_io_status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
@@ -190,181 +190,188 @@ class Usart
 		/**
 		 * Initialises the USART and configures the operating mode as specified.
 		 * 
-		 * @param  mode	 Operating mode to set the USART to.
-		 * @return Zero for success, non-zero for failure.
+		 * @param  mode			Operating mode to set the USART to.
+		 * @return 				The status of the operation
 		 */
 		Usart_config_status set_mode(Usart_setup_mode mode);
 		
 		/**
 		 * Configures the serial data format to be used for the USART as specified.
 		 *
-		 * @param data_bits Number of bits to be used for transmitting data (typically 8 bits)
-		 * @param parity Type of parity to use.
-		 * @param start_bits Number of start bits in frame.
-		 * @param stop_bits	Number of stop bits in frame.
-		 * @return Zero for success, non-zero for failure.
+		 * @param data_bits		Number of bits to be used for transmitting data (typically 8 bits)
+		 * @param parity		Type of parity to use.
+		 * @param start_bits 	Number of start bits in frame.
+		 * @param stop_bits		Number of stop bits in frame.
+		 * @return				The status of the operation
 		 */
 		Usart_config_status set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits);
 		
 		/**
 		 * Configures the desired Baud rate for USART communication.
 		 *
-		 * @param rate	Desired Baud rate to use for communication.
-		 * @return Zero for success, non-zero for failure.
+		 * @param rate			Desired Baud rate to use for communication.
+		 * @return 				The status of the operation
 		 */
 		Usart_config_status set_baud_rate(Usart_baud_rate rate);
 		
 		/**
 		 * Indicates whether the USART transmitter is ready to transmit data
 		 * (ie. not currently transmitting anything)
-		 *
-		 * @param void.
-		 * @return boolean variable that is true if buffer is available, false otherwise.
 		 */
 		bool transmitter_ready(void);
 
 		/**
-		 * Indicates whether the USART receiver has data available
-		 *
-		 * @param void.
-		 * @return boolean variable that is true if buffer is available, false otherwise.
+		 * Indicates whether the USART receiver has a byte available to read.
+		 * Only guarantees at least one byte is available, no more.
 		 */
 		bool receiver_has_data(void);
 
 		/**
-		 * Performs a non-blocking transmission of one byte via the configured USART connection.
+		 * Transmit a byte of data via the configured USART connection, blocking until the
+		 * transfer has completed.
 		 *
-		 * This method assumes the UART is ready, and returns immediately.
-		 * Use transmitter_ready() to determine when it is safe to call this method.
-		 *
-		 * @param data		Byte to be transmitted via the USART
-		 * @return Zero for success, non-zero for failure.
+		 * @param data			Byte to be transmitted via the USART
+		 * @return 				The status of the operation
 		 */
 		Usart_io_status transmit_byte(uint8_t data);
 
 		/**
-		 * Performs a blocking transmission of one byte via the configured USART connection.
-		 *
-		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
-		 *
-		 * @param data		Byte to be transmitted via the USART
-		 * @return Zero for success, non-zero for failure.
-		 */
-		Usart_io_status transmit_byte_blocking(uint8_t data);
-
-		/**
-		 * Performs a non-blocking transmission of one byte via the configured USART connection.
+		 * Transmit a byte of data asynchronously via the configured USART connection.
+		 * This method returns immediately.
 		 *
 		 * This method assumes the UART is ready, and returns immediately.
 		 * Use transmitter_ready() to determine when it is safe to call this method.
 		 *
-		 * TODO - This function could potentially use DMA
-		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
-		 * @param num_elements	Number of elements within the array to transmit.
-		 * @return Zero for success, non-zero for failure.
+		 * @param data			Byte to be transmitted via the USART
+		 * @return 				The status of the operation
 		 */
-		Usart_io_status transmit_buffer(uint8_t* data, size_t num_elements, usarttx_callback_t cb_done = NULL);
+		Usart_io_status transmit_byte_async(uint8_t data);
 
 		/**
-		 * Transmits an array of data of fixed length via the configured USART connection.
+		 * Transmits a block of data via the configured USART connection, blocking until the
+		 * transfer has completed.
 		 *
-		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 * NOTE - This method blocks while USART IO operations are performed.
 		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
- 		 * @param num_elements	Number of elements within the array to transmit.
-		 * @return Zero for success, non-zero for failure.
+		 * @param buffer		Pointer to the block of data to be transmitted
+		 * @param size			The size of the block of data, in bytes
+		 * @return				The status of the operation
 		 */
-		Usart_io_status transmit_buffer_blocking(uint8_t* data, size_t num_elements);
+		Usart_io_status transmit_buffer(uint8_t* data, size_t size);
 
 		/**
-		 * Performs a non-blocking transmission of one byte via the configured USART connection.
+		 * Transmits a block of data asynchronously via the configured USART connection.
+		 * This method returns immediately.
 		 *
 		 * This method assumes the UART is ready, and returns immediately.
 		 * Use transmitter_ready() to determine when it is safe to call this method.
 		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
-		 * @return Zero for success, non-zero for failure.
+		 * NOTE - This function could potentially use DMA or hardware FIFOs to increase speed.
+		 *
+		 * @param buffer		Pointer to the block of data to be transmitted
+		 * @param size			The size of the block of data, in bytes
+		 * @param cb_done		Optional callback to be executed when the buffer has been fully transmitted, or an error has occurred.
+		 * 						Callback must have the following signature:
+		 * 							void callback(Usart_io_status status);
+		 * @return 				The status of the operation
 		 */
-		Usart_io_status transmit_string(uint8_t *data, usarttx_callback_t cb_done = NULL);
+		Usart_io_status transmit_buffer_async(uint8_t* buffer, size_t size, usarttx_callback_t cb_done = NULL);
 
 		/**
-		 * Performs a blocking transmission of a null terminated string via the configured USART connection.
+		 * Transmits a null-terminated string of variable length up to max_len bytes, via the
+		 * configured USART connection, blocking until the transfer has completed.
 		 *
-		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
-		 *
-		 * @param data		Pointer to data that is to be transmitted via the USART.
-		 * @return Zero for success, non-zero for failure.
+		 * @param string		A null-terminated string
+		 * @param max_len		Maximum number of bytes to send
+		 * @return				The status of the operation
 		 */
-		Usart_io_status transmit_string_blocking(uint8_t *data);
+		Usart_io_status transmit_string(char *string, size_t max_len);
 
 		/**
-		 * Read a byte from the receive buffer if available.
-		 * Returns immediately, use receiver_has_data() to determine if data is available.
+		 * Transmits a null-terminated string of variable length up to max_len bytes, asynchronously via
+		 * the configured USART connection.
 		 *
-		 * @param Nothing.
-		 * @return The received byte, or an error status code.
+		 * This method assumes the UART is ready, and returns immediately.
+		 * Use transmitter_ready() to determine when it is safe to call this method.
+		 *
+		 * @param string		A null-terminated string
+		 * @param max_len		Maximum number of bytes to send
+		 * @param cb_done		Optional callback to be executed when the buffer has been fully transmitted, or an error has occurred.
+		 * 						Callback must have the following signature:
+		 * 							void callback(Usart_io_status status);
+		 * @return				The status of the operation
 		 */
-		int16_t receive_byte(void);
+		Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = NULL);
 
 		/**
 		 * Read a byte from the receive buffer, blocking if not yet available.
 		 *
 		 * Equivalent to
 		 * 	while (!usart.receiver_has_data()) { }
-		 * 	return usart.receive_byte();
+		 * 	return usart.receive_byte_async();
 		 *
-		 * @param Nothing.
 		 * @return The received byte, or an error status code.
 		 */
-		int16_t receive_byte_blocking(void);
+		int16_t receive_byte(void);
 
 		/**
-		 * Receives a buffer of bytes, calling the provided callback when all bytes have been received.
+		 * Read a byte from the receive buffer if available.
+		 * Returns immediately, use receiver_has_data() to determine if data is available.
+		 *
+		 * @return The received byte, or an error status code.
+		 */
+		int16_t receive_byte_async(void);
+
+		/**
+		 * Receives a block of data via the configured USART connection into the
+		 * provided buffer, blocking until all bytes have been received.
 		 * Ensure the provided buffer has enough bytes to avoid buffer overflows.
 		 *
-		 * TODO - This function could potentially use DMA
-		 * TODO - If the FIFO allows, the code could be simplified to just copy the entire FIFO buffer (eg. 16 byte FIFO)
-		 *
-		 * @param array		Pointer to the location in memory where the array can be returned to.
-		 * @param elements	Number of elements to return.
-		 * @return Nothing.
+		 * @param data			A pointer to a buffer to store the received data
+		 * @param size			The number of bytes to receive
+		 * @return 				The status of the operation
 		 */
-		Usart_io_status receive_buffer(uint8_t *buffer, size_t size, usartrx_callback_t cb_done);
+		Usart_io_status receive_buffer(uint8_t *data, size_t size);
 
 		/**
-		 * Receives a buffer of bytes, blocking until all bytes have been received.
-	 	 * Ensure the provided buffer has enough bytes to avoid buffer overflows.
+		 * Receives a block of data via the configured USART connection into the
+	 	 * provided buffer, blocking until all bytes have been received.
+		 * Ensure the provided buffer has enough bytes to avoid buffer overflows.
 		 *
-		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
+		 * NOTE - This function could potentially use DMA or hardware FIFOs to increase speed.
 		 *
-		 * @param array		Pointer to the location in memory where the array can be returned to.
-		 * @param elements	Number of elements to return.
-		 * @return Nothing.
+		 * @param data			A pointer to a buffer to store the received data
+		 * @param size			The number of bytes to receive
+		 * @param cb_done		Optional callback to be executed when the buffer has been fully received, or an error has occurred.
+		 * 						Callback must have the following signature:
+		 * 							void callback(Usart_io_status status, uint8_t *rx_data, size_t received_bytes);
+		 * @return 				The status of the operation
 		 */
-		Usart_io_status receive_buffer_blocking(uint8_t *buffer, size_t size);
+		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done);
+
+		/**
+		 * Receives a NULL-terminated string, up to max_len bytes, blocking until all bytes have been received.
+		 * Ensure the provided buffer has at least max_len bytes to avoid buffer overflows.
+		 *
+		 * @param string		A pointer to a buffer to store the null-terminated string
+		 * @param max_len		Maximum size of string to receive, in bytes (to prevent buffer overflows)
+		 * @param actual_size	Optional, updated with the number of actual bytes received (including the NULL char)
+		 * @return 				The status of the operation
+		 */
+		Usart_io_status receive_string(char *buffer, size_t max_len, size_t *actual_size = NULL);
 
 		/**
 		 * Receives a NULL-terminated string, up to max_size bytes, calling the provided callback when all bytes have been received.
 		 * Ensure the receiving buffer has enough bytes to avoid buffer overflows.
 		 *
-		 * @param array		Pointer to the location in memory where the array can be returned to.
-		 * @param elements	Number of elements to return.
-		 * @return Nothing.
+		 * @param string		A pointer to a buffer to store the null-terminated string
+		 * @param max_len		Maximum size of string to receive, in bytes (to prevent buffer overflows)
+		 * @param cb_done		Optional callback to be executed when a string has been fully received, or an error has occurred.
+		 * 						Callback must have the following signature:
+		 * 							void callback(Usart_io_status status, uint8_t *rx_data, size_t received_bytes);
+		 * @return				The status of the operation
 		 */
-		Usart_io_status receive_string(char *string, size_t max_size, usartrx_callback_t cb_done);
-
-		/**
-		 * Receives a NULL-terminated string, up to max_size bytes, blocking until all bytes have been received.
-		 * Ensure the provided buffer has enough bytes to avoid buffer overflows.
-		 *
-		 * NOTE - This method blocks while USART IO operations are performed.  Interrupts remain enabled.
-		 *
-		 * @param array		Pointer to the location in memory where the array can be returned to.
-		 * @param elements	Number of elements to return.
-		 * @return The number of bytes actually received, or an error status message.
-		 */
-		Usart_io_status receive_string_blocking(uint8_t *buffer, size_t size, size_t* actual_size = NULL);
+		Usart_io_status receive_string_async(char *buffer, size_t max_len, usartrx_callback_t cb_done);
 
 		/**
 		 * Enable interrupt generation by this USART channel.
