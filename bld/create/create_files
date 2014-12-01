@@ -300,9 +300,22 @@ fi
 echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 for FILENAME in $FILENAMES; do
 	# TODO - Check if there is already a file which the specified name in the source directory.
-	
+
 	# Check which kind of file we are creating.
-	if [ $TYPE == "C" ] && [ $PLATFORM != "freertos" ]; then
+	if [ $TYPE == "C" ] && [ ${PLATFORM,,} == "nuttx" ]; then
+		cp $TEMPLATE_C_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}_main.c
+		cp $TEMPLATE_H_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}_main.h
+
+		preprocess_template $TCPATH/src/$COMPONENT/${FILENAME}_main.c
+		preprocess_template $TCPATH/src/$COMPONENT/${FILENAME}_main.h
+	elif [ $TYPE == "CPP" ] && [ ${PLATFORM,,} == "nuttx" ]; then
+		echo -e "${RED}CPP is not currently supported for NuttX. Resorting to C...\n${NO_COLOUR}"
+		cp $TEMPLATE_C_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}_main.c
+		cp $TEMPLATE_H_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}_main.h
+
+		preprocess_template $TCPATH/src/$COMPONENT/${FILENAME}_main.c
+		preprocess_template $TCPATH/src/$COMPONENT/${FILENAME}_main.h
+	elif [ $TYPE == "C" ] && [ ${PLATFORM,,} != "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
 		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
@@ -310,7 +323,7 @@ for FILENAME in $FILENAMES; do
 		# Preprocess the two template files.
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
-	elif [ $TYPE == "C" ] && [ $PLATFORM == "freertos" ]; then
+	elif [ $TYPE == "C" ] && [ ${PLATFORM,,} == "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_RTOS_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
 		cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
@@ -318,7 +331,7 @@ for FILENAME in $FILENAMES; do
 		# Preprocess the two template files.
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
-	elif [ $TYPE == "CPP" ] && [ $PLATFORM != "freertos" ]; then
+	elif [ $TYPE == "CPP" ] && [ ${PLATFORM,,} != "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
 		cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.hpp
@@ -326,7 +339,7 @@ for FILENAME in $FILENAMES; do
 		# Preprocess the two template files.
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
 		preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.hpp
-	elif [ $TYPE == "CPP" ] && [ $PLATFORM == "freertos" ]; then
+	elif [ $TYPE == "CPP" ] && [ ${PLATFORM,,} == "freertos" ]; then
 		# Create the actual files by coping the templates into the source directory.
 		cp $TCPATH/$TEMPLATE_RTOS_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
 		cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.hpp
