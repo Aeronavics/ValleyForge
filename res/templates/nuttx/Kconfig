@@ -7,7 +7,7 @@ config VF_<APP_NAME>
 	bool "<APP_NAME>"
 	default n
 	---help---
-		Enable the \"<APP_NAME\" application.
+		Enable the \"<APP_NAME>\" application.
 
 if VF_<APP_NAME>
 
