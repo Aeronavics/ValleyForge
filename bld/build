@@ -326,6 +326,12 @@ fetch_source()
 	return 0
 }
 
+nuttx_compile()
+{
+	# Do nothing. Eventually will split off and do custom dependency detection followed by running the NuttX makefile.
+	:
+}
+
 # Do generic pre-compile tasks; fetching source and preprocessing.
 generic_precompile()
 {
@@ -342,13 +348,17 @@ generic_precompile()
 	# Perform any required code generation.
 	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
+	if [ ${PLATFORM,,} == "nuttx" ]; then
+		nuttx_compile
+	fi
+
 	# Perform any required preprocessing.
 	preprocess_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 	# TODO - This FreeRTOS bit will probably be deprecated shortly.
 
 	# Check to see if the platform is freertos.
-	if [ $PLATFORM == "freertos" ]; then
+	if [ ${PLATFORM,,} == "freertos" ]; then
 	    # Fetch the freertos files.
 	    get_rtos_files
 	fi
