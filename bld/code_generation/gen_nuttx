@@ -63,7 +63,7 @@ gen_nuttx()
 	echo -e "${CYAN}Generating NuttX platform code...\n${NO_COLOUR}"
 
 	# Check to see if the required platform configuration settings are present.
-	if [ -z "${NUTTX_COMMON_SOURCE}" -o -z "${NUTTX_CONFIG_SOURCE}" ]; then
+	if [ -z "${NUTTX_COMMON_SOURCE}" -o -z "${NUTTX_CONFIG_SOURCE}" -o -z "${NUTTX_TEMPLATE_SOURCE}" ]; then
 		# Some of the required platform configuration settings are missing, so we must abort.
 		echo -e "${RED}NuttX platform configuration incomplete. Cannot generate NuttX files.\n${NO_COLOUR}"
 		return 1
@@ -72,26 +72,32 @@ gen_nuttx()
 	# Unpack the Nuttx source files across to where they are needed.
 	unpack_nuttx
 	if [ $? -ne 0 ]; then
-		# We couldn't unpack the FreeRTOS source, so we'll have to abort.
+		# We couldn't unpack the NuttX source, so we'll have to abort.
 		return 1
 	fi
 
-	# First, we copy the original FreeRTOS source files across to where they are needed.
+	# First, we copy the original NuttX source files across to where they are needed.
 	echo -e "${CYAN}\tCopying NuttX source files into place...\n${NO_COLOUR}"
-	mkdir -p $1/nuttx
-
-	# Copy the source files across into the source tree.
-	cp -r ${NUTTX_COMMON_SOURCE}/nuttx/ $1/nuttx/nuttx/
-	cp -r ${NUTTX_COMMON_SOURCE}/apps/ $1/nuttx/apps/
-	cp -f ${NUTTX_CONFIG_SOURCE}/Make.defs $1/nuttx/nuttx/Make.defs
-	cp -f ${NUTTX_CONFIG_SOURCE}/setenv.sh $1/nuttx/nuttx/setenv.sh
-	cp -f ${NUTTX_CONFIG_SOURCE}/defconfig $1/nuttx/nuttx/.config
+	
+	# Only the necessary source files are copied across. The rest of NuttX is merged in just before compilation.
+	# The following three configuration files are for the entire project.
+	cp -f ${NUTTX_CONFIG_SOURCE}/Make.defs $1/Make.defs
+	cp -f ${NUTTX_CONFIG_SOURCE}/setenv.sh $1/setenv.sh
+	cp -f ${NUTTX_CONFIG_SOURCE}/defconfig $1/defconfig
+	# Create a folder for the automatically generated application code.
+	mkdir $1/${COMPONENT}_app
+	# The following two configuration files are required for the application.
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/${COMPONENT}_app/Kconfig
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/${COMPONENT}_app/Makefile
+	# Replace <APP_NAME> with the name of the component.
+	sed -i -e s/'<APP_NAME>'/${COMPONENT^^}/ $1/${COMPONENT}_app/Kconfig
+	sed -i -e s/'<APP_NAME>'/${COMPONENT}/ $1/${COMPONENT}_app/Makefile
 
 	# Check if we know of a folder containing patches we should apply.
 	if [ -z "${NUTTX_PATCHES}" ]; then
 		# No patches folder was specified, so presumably we don't need to patch anything.
 		echo-e "{YELLOW}\tNot applying any patches to NuttX files.\n${NO_COLOUR}"
-	elif [ ! -d "{NUTTX_PATCHES}" ]; then
+	elif [ ! -d "${NUTTX_PATCHES}" ]; then
 		# There is no patches folder, so presumably we don't need to patch anything.
 		echo -e "${YELLOW}\tNot applying any patches to NuttX files.\n${NO_COLOUR}"
 	else
