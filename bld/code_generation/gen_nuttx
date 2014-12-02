@@ -91,7 +91,6 @@ gen_nuttx()
 	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/${COMPONENT}_app/Makefile
 	# Replace <APP_NAME> with the name of the component.
 	sed -i -e s/'<APP_NAME>'/${COMPONENT^^}/ $1/${COMPONENT}_app/Kconfig
-	sed -i -e s/'<APP_NAME>'/${COMPONENT}/ $1/${COMPONENT}_app/Makefile
 
 	# Check if we know of a folder containing patches we should apply.
 	if [ -z "${NUTTX_PATCHES}" ]; then
