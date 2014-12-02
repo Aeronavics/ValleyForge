@@ -51,7 +51,7 @@ STACKSIZE = 2048
 
 ASRCS = <ASSEMBLY_SOURCE_FILES> 
 CSRCS = <C_SOURCE_FILES>
-MAINSRC = <APP_NAME>_main.c
+MAINSRC = <APP_MAIN_SOURCE>
 
 ############################
 #						   #
