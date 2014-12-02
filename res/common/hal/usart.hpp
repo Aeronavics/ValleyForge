@@ -94,13 +94,38 @@
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // USART configuration operation status.
-enum Usart_config_status {USART_CFG_SUCCESS = 0, USART_CFG_IMMUTABLE = -1, USART_CFG_FAILED = -2};
+enum Usart_config_status
+{
+	USART_CFG_SUCCESS = 0,
+	USART_CFG_FAILED = -1,
+	USART_CFG_IN_USE = -2,
+
+	USART_CFG_INVALID_ARGS = -8,		// One or more of the configuration arguments are invalid
+	USART_CFG_INVALID_MODE = -9,		// Invalid operating mode for this chip
+	USART_CFG_INVALID_DATA_BITS = -10,	// Invalid number of data bits
+	USART_CFG_INVALID_PARITY = -11,		// Invalid parity type
+	USART_CFG_INVALID_STOP_BITS = -12,	// Invalid number of stop bits
+	USART_CFG_INVALID_BAUD_RATE = -13,	// Invalid baud rate (out of range)
+};
 
 // USART IO operation status.
-enum Usart_io_status {USART_IO_SUCCESS = 0, USART_IO_FAILED = -1, USART_IO_NODMA = -2, USART_IO_DMABUSY = -3};
+enum Usart_io_status
+{
+	USART_IO_SUCCESS = 0,
+	USART_IO_FAILED = -1,	// Unknown failure
+	USART_IO_NODATA = -2,	// There was no data to read
+	USART_IO_BUSY = -3,		// The USART module is currently busy and cannot be used right now
+	USART_IO_STRING_TRUNCATED = -4, // The received/transmitted string was truncated (this can be safely ignored)
+};
 
 // USART interrupt configuration status
-enum Usart_int_status {USART_INT_SUCCESS = 0, USART_INT_EXISTS = -1, USART_INT_NOINT = -2, USART_INT_FAILED = -3};
+enum Usart_int_status
+{
+	USART_INT_SUCCESS = 0,
+	USART_INT_FAILED = -1,		// Invalid interrupt type
+	USART_INT_INUSE = -2,		// Interrupt already attached to something
+	//USART_INT_NOINT = -3,
+};
 
 /**
  * Available USART channels are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
@@ -112,21 +137,7 @@ enum Usart_int_status {USART_INT_SUCCESS = 0, USART_INT_EXISTS = -1, USART_INT_N
 /**
  * Available USART modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
  *
- *		enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_SYNCHRONOUS, USART_MODE_MASTERSPI};
- *
- */
-
-/**
- * Available Master SPI bit orders are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
- *
- *		enum Usart_mspim_bit_order {USART_MSPIM_MSB_FIRST, USART_MSPIM_LSB_FIRST};
- *
- */
-
-/**
- * Available Master SPI sub-modes are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
- *
- *		enum Usart_mspim_mode {USART_MSPI_MODE_0, USART_MSPI_MODE_1, USART_MSPI_MODE_2, USART_MSPI_MODE_3};
+ *		enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_SYNCHRONOUS};
  *
  */
 
@@ -139,20 +150,21 @@ enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 //enum Usart_interrupt_type {USART_INT_RX, USART_INT_TX, USART_INT_UDRE};
 
 // NOTE - Not all these interrupts may be supported by the target
-enum Usart_interrupt_type {
-	USART_INT_RX_COMPLETE,
-	//USART_INT_TX_COMPLETE, //AVR32
-	USART_INT_RX_OVERFLOW_ERROR,
-	USART_INT_RX_FRAMING_ERROR,
-	USART_INT_RX_PARITY_ERROR,
-};
+//enum Usart_interrupt_type {
+//	USART_INT_RX_COMPLETE,
+//	USART_INT_TX_COMPLETE, //AVR32
+//	USART_INT_TX_READY, // UDRE for AVR
+//	//USART_INT_RX_OVERFLOW_ERROR,
+//	//USART_INT_RX_FRAMING_ERROR,
+//	//USART_INT_RX_PARITY_ERROR,
+//};
 
 // NOTE - Not all these error codes may be supported by the target
 enum Usart_error_type {
 	USART_ERR_NONE,
-	USART_ERR_FRAME=-1,
-	USART_ERR_DATA_OVERRUN=-2,
-	USART_ERR_PARITY=-3
+	USART_ERR_FRAME = -1,			// Framing error (eg. corrupted start/stop bits)
+	USART_ERR_DATA_OVERRUN = -2,	// Data overrun (data received while rx buffer was still full)
+	USART_ERR_PARITY = -3			// Parity error (parity bit doesn't match received data)
 };
 
 typedef uint16_t Usart_baud_rate;
@@ -178,9 +190,16 @@ class Usart
 		// Methods.
 		
 		/**
-		 * Binds the interface with a USART hardware peripheral.
+		 * Binds the interface with a USART hardware peripheral,
+		 * locking it for exclusive access.
 		 */
 		static Usart bind(Usart_channel channel);
+
+		/**
+		 * Unbind the interface and relinquish access to the peripheral.
+		 * Called automatically by the destructor.
+		 */
+		void unbind(void);
 		
 		/**
 		 * Called when USART instance goes out of scope
@@ -188,31 +207,30 @@ class Usart
 		~Usart(void);
 
 		/**
-		 * Initialises the USART and configures the operating mode as specified.
-		 * 
-		 * @param  mode			Operating mode to set the USART to.
+		 * Enable transmitter/receiver hardware.
+		 * This must be called before any data transfers can occur!!
+		 */
+		void enable(void);
+
+		/**
+		 * Disable transmitter/receiver hardware.
+		 * Called automatically by unbind()
+		 */
+		void disable(void);
+
+		/**
+		 * Configures the USART with the specified configuration
+		 *
+		 * @param  mode			Operating mode to set the USART to
+		 * @param baud_rate		The speed of the USART, in bits per second (eg. 9600)
+		 * @param data_bits		The number of data bits to send for each byte (default 8 bits)
+		 * @param parity		What kind of parity to use (default no parity)
+		 * @param stop_bits		The number of stop bits to use (default 1 stop bit)
 		 * @return 				The status of the operation
 		 */
-		Usart_config_status set_mode(Usart_setup_mode mode);
-		
-		/**
-		 * Configures the serial data format to be used for the USART as specified.
-		 *
-		 * @param data_bits		Number of bits to be used for transmitting data (typically 8 bits)
-		 * @param parity		Type of parity to use.
-		 * @param start_bits 	Number of start bits in frame.
-		 * @param stop_bits		Number of stop bits in frame.
-		 * @return				The status of the operation
-		 */
-		Usart_config_status set_frame(uint8_t data_bits, Usart_parity parity, uint8_t start_bits, uint8_t stop_bits);
-		
-		/**
-		 * Configures the desired Baud rate for USART communication.
-		 *
-		 * @param rate			Desired Baud rate to use for communication.
-		 * @return 				The status of the operation
-		 */
-		Usart_config_status set_baud_rate(Usart_baud_rate rate);
+		Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
+
+		// TODO - Not sure if we need additional configs or not.
 		
 		/**
 		 * Indicates whether the USART transmitter is ready to transmit data

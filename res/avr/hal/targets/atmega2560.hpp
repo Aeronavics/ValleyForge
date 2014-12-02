@@ -193,19 +193,10 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
 #define USART3_XCK_PORT			PORT_J
 #define USART3_XCK_PIN			PIN_2
 
-// General preprocessor macros for convenience.
-#define NUM_USART_CHANNELS			4
-#define NUM_CHANNEL_INTERRUPTS		3
-#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
-
-// NOTE - This chip supports additional SPI channels through the use of the USART modules.
-//  If using a USARTSPI channel, the corresponding USART channel may not be used.
-enum Usart_channel {USART_0, USART_1, USART_2, USART_3};
-enum Spi_channel {SPI_0, USARTSPI_0, USARTSPI_1, USARTSPI_2, USARTSPI_3};
-
 enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
 
 // Specify which USART channels to support
+enum Usart_channel {USART_0, USART_1, USART_2, USART_3};
 #define USE_USART0 USART_0
 #define USE_USART1 USART_1
 #define USE_USART2 USART_2
@@ -227,6 +218,10 @@ enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESP
 // General preprocessor macros for convenience
 #define NUM_SPI_CHANNELS		1
 #define NUM_SPI_INTERRUPTS		1
+
+// NOTE - This chip supports additional SPI channels through the use of the USART modules.
+//  If using a USARTSPI channel, the corresponding USART channel may not be used.
+enum Spi_channel {SPI_0, USARTSPI_0, USARTSPI_1, USARTSPI_2, USARTSPI_3};
 
 
 #endif /*__TARGET_ATMEGA2560_H__*/

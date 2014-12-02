@@ -145,17 +145,11 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
 #define USARTLIN_RX_PORT		PORT_D
 #define USARTLIN_RX_PIN			PIN_4
 
-// General preprocessor macros for convenience.
-#define NUM_USART_CHANNELS			1
-#define NUM_CHANNEL_INTERRUPTS		3 // TODO - Not sure how many interrupt channels the LIN module has
-#define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
-
-enum Usart_channel {USART_0};
-enum Spi_channel {SPI_0};
-
+// TODO - What modes does LIN actually support?
 enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
 
 // Specify which USART channels to support
+enum Usart_channel {USART_0};
 #define USE_USART_LIN USART_0
 
 /* SPI */
@@ -185,5 +179,6 @@ enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESP
 #define NUM_SPI_CHANNELS		1
 #define NUM_SPI_INTERRUPTS		1
 
+enum Spi_channel {SPI_0};
 
 #endif /*__TARGET_ATMEGA64C1_H__*/

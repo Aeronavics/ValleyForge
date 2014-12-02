@@ -51,9 +51,9 @@
 #define __TARGET_AVR_H__
 
 /* Generic Types */
-typedef void(*callback_t)(void);
+typedef int(*callback_t)(void);
 
-/* General */
+/* Macros */
 
 #define TOTAL_PINS	(NUM_PORTS * PINS_PER_PORT)
 
@@ -70,6 +70,7 @@ typedef uint16_t Eeprom_address;
 /* USART */
 
 // Generic bit addresses for register manipulation.
+// NOTE - These are also defined in <avr/io.h>, but the naming varies slightly among chips
 
 // UCSRnA Register.
 #define RXC_BIT				7
@@ -92,7 +93,7 @@ typedef uint16_t Eeprom_address;
 #define TXB8_BIT			0
 
 // UCSRnC Register.
-#define UMSEL1_BIT			7
+#define UMSEL1_BIT			7  // Only relevant for chips that support SPI mode
 #define UMSEL0_BIT			6
 #define UPM1_BIT			5
 #define UPM0_BIT			4
@@ -101,10 +102,18 @@ typedef uint16_t Eeprom_address;
 #define UCSZ0_BIT			1
 #define UCPOL_BIT			0
 
+#define UMSEL_MASK (_BV(UMSEL1_BIT) | _BV(UMSEL0_BIT))
+
 // UCSRnC Register (when in Master SPI Mode).
 #define UDORD_BIT			2
 #define UCPHA_BIT			1
 
+enum Usart_interrupt_type
+{
+	USART_INT_TX_COMPLETE,	// The TX transmission is complete
+	USART_INT_RX_COMPLETE, 	// A byte of data has been received
+	USART_INT_TX_READY		// The TX is ready to send more data
+};
 
 /* SPI */
 
