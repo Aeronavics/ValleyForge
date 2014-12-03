@@ -169,8 +169,8 @@ enum Usart_error_type {
 
 typedef uint16_t Usart_baud_rate;
 
-typedef void(*usartrx_callback_t)(Usart_io_status, uint8_t* buffer, size_t received_bytes);
-typedef void(*usarttx_callback_t)(Usart_io_status);
+typedef void(*usartrx_callback_t)(Usart_error_type, uint8_t* buffer, size_t received_bytes);
+typedef void(*usarttx_callback_t)(Usart_error_type);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -194,12 +194,6 @@ class Usart
 		 * locking it for exclusive access.
 		 */
 		static Usart bind(Usart_channel channel);
-
-		/**
-		 * Unbind the interface and relinquish access to the peripheral.
-		 * Called automatically by the destructor.
-		 */
-		void unbind(void);
 		
 		/**
 		 * Called when USART instance goes out of scope
@@ -217,6 +211,11 @@ class Usart
 		 * Called automatically by unbind()
 		 */
 		void disable(void);
+
+		/*
+		 * Flush the receive buffer and clear any errors
+		 */
+		void flush(void);
 
 		/**
 		 * Configures the USART with the specified configuration
@@ -298,6 +297,7 @@ class Usart
 		/**
 		 * Transmits a null-terminated string of variable length up to max_len bytes, via the
 		 * configured USART connection, blocking until the transfer has completed.
+		 * Does not transmit the null character.
 		 *
 		 * @param string		A null-terminated string
 		 * @param max_len		Maximum number of bytes to send
@@ -308,6 +308,7 @@ class Usart
 		/**
 		 * Transmits a null-terminated string of variable length up to max_len bytes, asynchronously via
 		 * the configured USART connection.
+		 * Does not transmit the null character.
 		 *
 		 * This method assumes the UART is ready, and returns immediately.
 		 * Use transmitter_ready() to determine when it is safe to call this method.
@@ -366,30 +367,6 @@ class Usart
 		 * @return 				The status of the operation
 		 */
 		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done);
-
-		/**
-		 * Receives a NULL-terminated string, up to max_len bytes, blocking until all bytes have been received.
-		 * Ensure the provided buffer has at least max_len bytes to avoid buffer overflows.
-		 *
-		 * @param string		A pointer to a buffer to store the null-terminated string
-		 * @param max_len		Maximum size of string to receive, in bytes (to prevent buffer overflows)
-		 * @param actual_size	Optional, updated with the number of actual bytes received (including the NULL char)
-		 * @return 				The status of the operation
-		 */
-		Usart_io_status receive_string(char *buffer, size_t max_len, size_t *actual_size = NULL);
-
-		/**
-		 * Receives a NULL-terminated string, up to max_size bytes, calling the provided callback when all bytes have been received.
-		 * Ensure the receiving buffer has enough bytes to avoid buffer overflows.
-		 *
-		 * @param string		A pointer to a buffer to store the null-terminated string
-		 * @param max_len		Maximum size of string to receive, in bytes (to prevent buffer overflows)
-		 * @param cb_done		Optional callback to be executed when a string has been fully received, or an error has occurred.
-		 * 						Callback must have the following signature:
-		 * 							void callback(Usart_io_status status, uint8_t *rx_data, size_t received_bytes);
-		 * @return				The status of the operation
-		 */
-		Usart_io_status receive_string_async(char *buffer, size_t max_len, usartrx_callback_t cb_done);
 
 		/**
 		 * Enable interrupt generation by this USART channel.

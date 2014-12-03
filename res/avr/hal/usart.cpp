@@ -71,6 +71,8 @@ typedef struct
 	IO_pin_address xck_address;
 } Usart_pins;
 
+enum Usart_async_mode { ASYNC_BUFFER, ASYNC_STRING };
+
 /**
  * Private, target specific implementation class for public Usart class.
  */
@@ -95,6 +97,8 @@ public:
 	void enable(void);
 
 	void disable(void);
+
+	void flush(void);
 
 
 	Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
@@ -127,10 +131,6 @@ public:
 
 	Usart_io_status receive_buffer_async(uint8_t *buffer, size_t size, usartrx_callback_t received);
 
-	Usart_io_status receive_string(char *buffer, size_t max_len, size_t* actual_size = NULL);
-
-	Usart_io_status receive_string_async(char *buffer, size_t max_len, usartrx_callback_t received);
-
 
 	void enable_interrupts(void);
 
@@ -142,10 +142,8 @@ public:
 
 	Usart_error_type get_errors(void);
 
-	void usart_clear_errors(void);
 
-
-
+// Module private fields (should only be accessed within this module)
 
 
 	Usart_config_status set_mode(Usart_setup_mode mode);
@@ -153,6 +151,15 @@ public:
 	Usart_config_status set_framing(uint8_t data_bits, Usart_parity parity, uint8_t stop_bits);
 
 	Usart_config_status set_baud_rate(Usart_baud_rate baud_rate);
+
+	void set_udrie(bool enabled);
+
+
+	void isr_receive_byte(void);
+
+	void isr_transmit_complete(void);
+
+	void isr_transmit_ready(void);
 
 
 	// Fields
@@ -167,9 +174,48 @@ public:
 	Usart_registers registers;
 
 
+	// The TX isr is called whenever the transmitter has finished transmitting,
+	// and there is no more data to send.
 	callback_t tx_isr;
+
+	// The RX isr is called whenever something has been received.
+	// If an _async() call is active, this is called when it finishes.
 	callback_t rx_isr;
+
+	// The UDRE isr is called whenever the transmitter becomes free to transmit more data,
+	// but is only activated when _async() routines are used.
 	callback_t udre_isr;
+
+	bool tx_isr_enabled;
+	bool rx_isr_enabled;
+	bool udre_isr_enabled;
+
+	// State machines used for asynchronous communications
+	struct
+	{
+		bool active;
+
+		uint8_t *buffer;
+		size_t size;
+		size_t index;
+
+		Usart_async_mode mode;
+
+		usarttx_callback_t cb_done;
+	} async_tx;
+
+	struct
+	{
+		bool active;
+
+		uint8_t *buffer;
+		size_t size;
+		size_t index;
+
+		usartrx_callback_t cb_done;
+	} async_rx;
+
+
 
 private:
 
@@ -186,6 +232,7 @@ private:
 // NOTE - Because the ISRs need to access the usart implementation instances,
 //  we need to store pointers to them here.
 // These pointers are populated the first time Usart::bind() is called.
+// TODO - It might make more sense to just define the classes statically here.
 
 #ifdef USE_USART0
 static Usart_imp *usart0_imp = NULL;
@@ -220,6 +267,11 @@ Usart::Usart(Usart_imp* implementation)
 	// Attach the implementation.
 	imp = implementation;
 	imp->bind();
+}
+
+Usart::~Usart(void)
+{
+	imp->unbind();
 }
 
 Usart Usart::bind(Usart_channel channel)
@@ -375,17 +427,6 @@ Usart Usart::bind(Usart_channel channel)
 	return Usart(static_cast<Usart_imp*>(NULL));
 }
 
-Usart::~Usart(void)
-{
-	imp->unbind();
-}
-
-void Usart::unbind()
-{
-	// Relinquish access to the implemenation instance.
-	imp->unbind();
-}
-
 void Usart::enable()
 {
 	imp->enable();
@@ -394,6 +435,11 @@ void Usart::enable()
 void Usart::disable()
 {
 	imp->disable();
+}
+
+void Usart::flush()
+{
+	imp->flush();
 }
 
 Usart_config_status Usart::configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
@@ -461,16 +507,6 @@ Usart_io_status Usart::receive_buffer_async(uint8_t *data, size_t size, usartrx_
 	return imp->receive_buffer_async(data, size, cb_done);
 }
 
-Usart_io_status Usart::receive_string(char *buffer, size_t max_len, size_t *actual_size)
-{
-	return imp->receive_string(buffer, max_len, actual_size);
-}
-
-Usart_io_status Usart::receive_string_async(char *string, size_t max_len, usartrx_callback_t cb_done)
-{
-	return imp->receive_string_async(string, max_len, cb_done);
-}
-
 void Usart::enable_interrupts()
 {
 	imp->enable_interrupts();
@@ -515,6 +551,10 @@ void Usart_imp::bind(void)
 	// TODO - How can we dynamically bind GPIO pins??
 
 	disable(); // Start disabled, so the module can be configured safely
+
+	// Reset state machines
+	async_rx.active = false;
+	async_tx.active = false;
 }
 
 void Usart_imp::unbind(void)
@@ -529,17 +569,31 @@ void Usart_imp::enable(void)
 {
 	// Enable transceiver hardware
 	*registers.UCSRB |= _BV(RXEN_BIT) | _BV(TXEN_BIT);
+
+	// Enable interrupts
+	*registers.UCSRB |= _BV(TXCIE_BIT) | _BV(RXCIE_BIT);
 }
 
 void Usart_imp::disable(void)
 {
+	// Disable interrupts
+	*registers.UCSRB &= ~( _BV(TXCIE_BIT) | _BV(RXCIE_BIT) | _BV(UDRE_BIT) );
+
 	// Disable transceiver hardware
-	*registers.UCSRB &= ~(_BV(RXEN_BIT) | _BV(TXEN_BIT));
+	*registers.UCSRB &= ~( _BV(RXEN_BIT) | _BV(TXEN_BIT) );
 
 	// NOTE - Transmitter is not disabled instantly.
 	//  It will continue finishing any current transmission before disabling.
 
 	// Disabling the receiver also flushes the UDR receive buffer.
+}
+
+void Usart_imp::flush(void)
+{
+	while (*registers.UCSRA & _BV(RXC_BIT))
+	{
+		volatile uint8_t dummy __attribute__((unused)) = *registers.UDR;
+	}
 }
 
 
@@ -600,7 +654,6 @@ Usart_config_status Usart_imp::set_mode(Usart_setup_mode mode)
 			*registers.UCSRA &= ~_BV(U2X_BIT);
 
 			// Configure the GPIO
-			// TODO - Avoid having to instantiate the pin every time we want to use it!
 			Gpio_pin xck(pins.xck_address);
 
 			// Master/slave is defined by the direction of the XCK pin
@@ -717,10 +770,18 @@ Usart_config_status Usart_imp::set_baud_rate(Usart_baud_rate baud_rate)
 	return USART_CFG_SUCCESS;
 }
 
+void Usart_imp::set_udrie(bool enabled)
+{
+	if (enabled)
+		*registers.UCSRB |= _BV(UDRIE_BIT);
+	else
+		*registers.UCSRB &= ~_BV(UDRIE_BIT);
+}
+
 bool Usart_imp::transmitter_ready(void)
 {
 	// Check if we're ready to transmit more data
-	return ((*registers.UCSRA & _BV(UDRE_BIT)) != 0);
+	return ((*registers.UCSRA & _BV(UDRE_BIT)) != 0) && (!async_tx.active);
 }
 
 bool Usart_imp::receiver_has_data(void)
@@ -754,29 +815,31 @@ Usart_io_status Usart_imp::transmit_byte(uint8_t data)
 
 Usart_io_status Usart_imp::transmit_byte_async(uint8_t data)
 {
-	if (transmitter_ready())
-	{
-		// 9 bit mode
-		if (*registers.UCSRB & _BV(UCSZ2_BIT))
-		{
-			uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
-			*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
-		}
-
-		*registers.UDR = data;
-
-		return USART_IO_SUCCESS;
-	}
-	else
-	{
+	if (!transmitter_ready())
 		return USART_IO_BUSY;
+
+	// 9 bit mode
+	if (*registers.UCSRB & _BV(UCSZ2_BIT))
+	{
+		uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
+		*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
 	}
+
+	*registers.UDR = data;
+
+	// If the user wants to use the UDR ISR, enable it so it gets triggered.
+	if (udre_isr && udre_isr_enabled)
+		set_udrie(true);
+
+	return USART_IO_SUCCESS;
 }
 
 Usart_io_status Usart_imp::transmit_buffer(uint8_t *data, size_t size)
 {
-	if (!transmitter_ready())
-		return USART_IO_BUSY;
+	while (!transmitter_ready())
+	{
+		// Wait for transmitter
+	}
 
 	for (size_t i = 0; i < size; i++)
 	{
@@ -788,26 +851,36 @@ Usart_io_status Usart_imp::transmit_buffer(uint8_t *data, size_t size)
 
 Usart_io_status Usart_imp::transmit_buffer_async(uint8_t *data, size_t size, usarttx_callback_t cb_done)
 {
-	// TODO - This.
+	if (!transmitter_ready())
+		return USART_IO_BUSY;
 
-	// Store *data and size in the instance
-	// Store the callback
-	// Configure ISR state machine or DMA to start sending the data
+	// Reset the state machine
+	async_tx.mode = ASYNC_BUFFER;
+	async_tx.buffer = data;
+	async_tx.size = size;
+	async_tx.index = 0;
+	async_tx.cb_done = cb_done;
+	async_tx.active = true;
 
-	// If using DMA, configure interrupt?
-	// If using ISR state machine, it should call the callback when it is finished.
+	// The UDR ISR will be called as soon as this is enabled,
+	// and the state machine will take over from there.
+	set_udrie(true);
 
-	return USART_IO_FAILED;
+	return USART_IO_SUCCESS;
 }
 
 Usart_io_status Usart_imp::transmit_string(char *string, size_t max_len)
 {
-	if (!transmitter_ready())
-		return USART_IO_BUSY;
+	while (!transmitter_ready())
+	{
+		// Wait for transmitter
+	}
 
-	while (*string)
+	size_t i = 0;
+	while (*string && i < max_len)
 	{
 		transmit_byte((uint8_t)*string++);
+		i++;
 	}
 
 	return USART_IO_SUCCESS;
@@ -815,17 +888,22 @@ Usart_io_status Usart_imp::transmit_string(char *string, size_t max_len)
 
 Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done)
 {
-	// TODO - This.
+	if (!transmitter_ready())
+		return USART_IO_BUSY;
 
-	// Store *string and max_len in the instance
-	// Store the callback
+	// Reset the state machine
+	async_tx.mode = ASYNC_STRING;
+	async_tx.buffer = (uint8_t*)string;
+	async_tx.size = max_len;
+	async_tx.index = 0;
+	async_tx.cb_done = cb_done;
+	async_tx.active = true;
 
-	// If using DMA, we need to compute the actual length of the string
-	//size_t string_len = strlen(string);
-	// otherwise, the ISR state machine will just send bytes until it
-	// finds the null character or reaches max_len.
+	// The UDR ISR will be called as soon as this is enabled,
+	// and the state machine will take over from there.
+	set_udrie(true);
 
-	return USART_IO_FAILED;
+	return USART_IO_SUCCESS;
 }
 
 int16_t Usart_imp::receive_byte(void)
@@ -883,69 +961,35 @@ Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::receive_buffer_async(uint8_t *buffer, size_t size, usartrx_callback_t cb_done)
+Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
 {
-	// TODO - This.
-	return USART_IO_FAILED;
-}
+	if (async_rx.active)
+		return USART_IO_BUSY;
 
-Usart_io_status Usart_imp::receive_string(char *buffer, size_t max_len, size_t *actual_size)
-{
-	size_t i = 0;
-	char c;
+	// Reset the state machine
+	async_rx.buffer = data;
+	async_rx.size = size;
+	async_rx.index = 0;
+	async_rx.cb_done = cb_done;
+	async_rx.active = true;
 
-	// Provide room for a null terminator
-	max_len -= 1;
-
-	// Read characters until a null char is received or we reach max_len chars.
-	do
-	{
-		c = (char)receive_byte();
-		*buffer = c;
-		buffer++;
-		i++;
-	}
-	while ((i < max_len) && (c != '\0'));
-
-	// Check to see if we've reached the maximum allowable string length
-	if (i == max_len)
-	{
-		*buffer = '\0'; // Force null termination
-		return USART_IO_STRING_TRUNCATED;
-	}
+	// The RX interrupt will take over from here
 
 	return USART_IO_SUCCESS;
-};
-
-Usart_io_status Usart_imp::receive_string_async(char *string, size_t max_len, usartrx_callback_t cb_done)
-{
-	// TODO - This.
-	return USART_IO_FAILED;
 }
 		
 void Usart_imp::enable_interrupts(void)
 {
-	if (tx_isr != NULL)
-		*registers.UCSRB |= _BV(TXCIE_BIT);
-
-	if (rx_isr != NULL)
-		*registers.UCSRB |= _BV(RXCIE_BIT);
-
-	// TODO - Does it make sense to re-enable UDRIE?
-	if (udre_isr != NULL)
-		*registers.UCSRB |= _BV(UDRIE_BIT);
+	tx_isr_enabled = true;
+	rx_isr_enabled = true;
+	udre_isr_enabled = true;
 }
 
 void Usart_imp::disable_interrupts(void)
 {
-	if (tx_isr != NULL)
-		*registers.UCSRB &= ~_BV(TXCIE_BIT);
-
-	if (rx_isr != NULL)
-		*registers.UCSRB &= ~_BV(RXCIE_BIT);
-
-	if (udre_isr != NULL)
-		*registers.UCSRB &= ~_BV(UDRIE_BIT);
+	tx_isr_enabled = false;
+	rx_isr_enabled = false;
+	udre_isr_enabled = false;
 }
 
 Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback_t callback)
@@ -958,8 +1002,7 @@ Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback
 				return USART_INT_INUSE;
 
 			tx_isr = callback;
-			*registers.UCSRB |= _BV(TXCIE_BIT);
-
+			tx_isr_enabled = true;
 			break;
 		};
 
@@ -969,8 +1012,7 @@ Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback
 				return USART_INT_INUSE;
 
 			rx_isr = callback;
-			*registers.UCSRB |= _BV(RXCIE_BIT);
-
+			rx_isr_enabled = true;
 			break;
 		};
 
@@ -980,10 +1022,7 @@ Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback
 				return USART_INT_INUSE;
 
 			udre_isr = callback;
-			*registers.UCSRB |= _BV(UDRIE_BIT);
-			// TODO - Setting UDRIE actually triggers the interrupt according to the datasheet ??
-			//  so we should delay setting this until we actually require it.
-
+			udre_isr_enabled = true;
 			break;
 		};
 
@@ -1006,21 +1045,21 @@ Usart_int_status Usart_imp::detach_interrupt(Usart_interrupt_type type)
 		{
 			// NOTE - No need to check if it's already cleared.
 			tx_isr = NULL;
-			*registers.UCSRB &= ~_BV(TXCIE_BIT);
+			tx_isr_enabled = false;
 			break;
 		};
 
 		case USART_INT_RX_COMPLETE:
 		{
 			rx_isr = NULL;
-			*registers.UCSRB &= ~_BV(RXCIE_BIT);
+			rx_isr_enabled = false;
 			break;
 		};
 
 		case USART_INT_TX_READY:
 		{
 			udre_isr = NULL;
-			*registers.UCSRB &= ~_BV(UDRIE_BIT);
+			udre_isr_enabled = false;
 			break;
 		};
 
@@ -1038,6 +1077,7 @@ Usart_int_status Usart_imp::detach_interrupt(Usart_interrupt_type type)
 		 
 Usart_error_type Usart_imp::get_errors(void)
 {
+	// TODO - what if there are multiple errors?
 	if ((*registers.UCSRA & _BV(FE_BIT)) != 0)
 		return USART_ERR_FRAME;
 	if ((*registers.UCSRA & _BV(DOR_BIT)) != 0)
@@ -1048,9 +1088,122 @@ Usart_error_type Usart_imp::get_errors(void)
 	return USART_ERR_NONE;
 }
 
-void Usart_imp::usart_clear_errors()
+void Usart_imp::isr_receive_byte(void)
 {
-	// TODO - This.
+	// This interrupt is triggered when a byte has been received
+
+	if (async_rx.active)
+	{
+		// Check errors
+		Usart_error_type error_status = get_errors();
+
+		// Receive byte
+		uint8_t data = *registers.UDR;
+
+		async_rx.buffer[async_rx.index++] = data;
+
+		// Fully received the buffer
+		if (async_rx.index == async_rx.size)
+		{
+			async_rx.active = false;
+
+			// Inform the user the data has been received
+			if (async_rx.cb_done)
+				async_rx.cb_done(error_status, async_rx.buffer, async_rx.index);
+
+			// Call the user ISR to tell that data has finished being received
+			if (rx_isr && rx_isr_enabled)
+				rx_isr();
+		}
+	}
+	// Only process user ISR if no async operations are running
+	else
+	{
+		if (rx_isr && rx_isr_enabled)
+			rx_isr();
+	}
+}
+
+void Usart_imp::isr_transmit_complete(void)
+{
+	// This interrupt is triggered only when the transmission is complete
+	// and there is no new data to be sent
+
+	if (tx_isr && tx_isr_enabled)
+		tx_isr();
+}
+
+void Usart_imp::isr_transmit_ready(void)
+{
+	Gpio_pin led7(_IOADDR(PORT_C, PIN_7));
+	Gpio_pin led6(_IOADDR(PORT_C, PIN_6));
+	led7.write(GPIO_O_LOW);
+
+	// This interrupt is triggered when the transmitter is ready
+	// to send more data, and UDRIE is enabled.
+	//
+	// This interrupt must either load more data into UDR,
+	// or disable the ISR, otherwise it will keep getting called!
+
+	if (async_tx.active)
+	{
+		// Send the next byte
+		uint8_t data = async_tx.buffer[async_tx.index++];
+
+		// Don't send the null char
+		if (!(async_tx.mode == ASYNC_STRING && data == '\0'))
+		{
+			*registers.UDR = data;
+		}
+
+		// No more bytes to send!
+		if (async_tx.index == async_tx.size)
+		{
+			led6.write(GPIO_O_LOW);
+
+			// Stop async machine
+			async_tx.active = false;
+
+			// Disable the UDR interrupt
+			set_udrie(false);
+
+			//Usart_io_status status = USART_IO_SUCCESS;
+
+			// We reached max_len before finding a null char
+			//if (async_tx.mode == ASYNC_STRING && data != '\0')
+			//	status = USART_IO_STRING_TRUNCATED;
+
+			// Inform the user the data has been sent
+			if (async_tx.cb_done != NULL)
+				async_tx.cb_done(USART_ERR_NONE);
+
+			// Call the user ISR to indicate the transmitter is free to send more data
+			if (udre_isr && udre_isr_enabled)
+				udre_isr();
+		}
+	}
+	// Only process user ISR if no async operations are running
+	else
+	{
+		bool finished = true;
+
+		// Call the user ISR, which can be used to load more data into UDR.
+		// The callback should return a bool, which should be set to true
+		// when the user has no more data to send.
+		if (udre_isr && udre_isr_enabled)
+		{
+			finished = (bool)udre_isr();
+		}
+
+		// Disable the ISR when there is no more data to be sent,
+		// or there is no ISR to service.
+		if (finished)
+		{
+			set_udrie(false);
+		}
+	}
+
+	led7.write(GPIO_O_HIGH);
 }
 
 
@@ -1066,200 +1219,76 @@ void Usart_imp::usart_clear_errors()
 #ifdef USE_USART0
 ISR(USART0_RX_vect)
 {
-	// The RXC flag is automatically cleared when UDR is read
+	usart0_imp->isr_receive_byte();
 
-	// TODO - Process async RX data here
-
-	if (usart0_imp->rx_isr)
-		usart0_imp->rx_isr();
-	
-	// Clear the RXC flag in UCSRA as a safeguard
+	// NOTE - The RXC flag is automatically cleared when UDR is read,
+	// but clear the RXC flag anyway as a safeguard
 	UCSR0A &= _BV(RXC_BIT);
 }
 
 ISR(USART0_TX_vect)
 {
-	// This interrupt is triggered only when the transmission is complete
-	// and there is no new data to be sent
-
-	if (usart0_imp->tx_isr)
-		usart0_imp->tx_isr();
-
+	usart0_imp->isr_transmit_complete();
 	// TXC flag is cleared automatically
 }
 
 ISR(USART0_UDRE_vect)
 {
-	// This interrupt must either load more data into UDR,
-	// or disable the ISR, otherwise it will keep getting called!
-
-	bool finished = true;
-
-	// TODO - Process async TX data here
-
-	// Call the user ISR, which can be used to load more data into UDR.
-	// The callback should return a bool, which should be set to true
-	// when the user has no more data to send.
-	if (usart0_imp->udre_isr)
-	{
-		finished = (bool)usart0_imp->udre_isr();
-	}
-
-	// Disable the ISR when there is no more data to be sent
-	if (finished)
-	{
-		UCSR0B &= ~_BV(UDRIE_BIT);
-	}
+	usart0_imp->isr_transmit_ready();
 }
 #endif
 
 #ifdef USE_USART1
 ISR(USART1_RX_vect)
 {
-	// The RXC flag is automatically cleared when UDR is read
-
-	// TODO - Process async RX data here
-
-	if (usart1_imp->rx_isr)
-		usart1_imp->rx_isr();
-	
-	// Clear the RXC flag in UCSRA as a safeguard
+	usart1_imp->isr_receive_byte();
 	UCSR1A &= _BV(RXC_BIT);
 }
 
 ISR(USART1_TX_vect)
 {
-	// This interrupt is triggered only when the transmission is complete
-	// and there is no new data to be sent
-
-	if (usart1_imp->tx_isr)
-		usart1_imp->tx_isr();
-
-	// TXC flag is cleared automatically
+	usart1_imp->isr_transmit_complete();
 }
 
 ISR(USART1_UDRE_vect)
 {
-	// This interrupt must either load more data into UDR,
-	// or disable the ISR, otherwise it will keep getting called!
-
-	bool finished = true;
-
-	// TODO - Process async TX data here
-
-	// Call the user ISR, which can be used to load more data into UDR.
-	// The callback should return a bool, which should be set to true
-	// when the user has no more data to send.
-	if (usart1_imp->udre_isr)
-	{
-		finished = (bool)usart1_imp->udre_isr();
-	}
-
-	// Disable the ISR when there is no more data to be sent
-	if (finished)
-	{
-		UCSR1B &= ~_BV(UDRIE_BIT);
-	}
+	usart1_imp->isr_transmit_ready();
 }
 #endif
 
 #ifdef USE_USART2
 ISR(USART2_RX_vect)
 {
-	// The RXC flag is automatically cleared when UDR is read
-
-	// TODO - Process async RX data here
-
-	if (usart2_imp->rx_isr)
-		usart2_imp->rx_isr();
-	
-	// Clear the RXC flag in UCSRA as a safeguard
+	usart2_imp->isr_receive_byte();
 	UCSR2A &= _BV(RXC_BIT);
 }
 
 ISR(USART2_TX_vect)
 {
-	// This interrupt is triggered only when the transmission is complete
-	// and there is no new data to be sent
-
-	if (usart2_imp->tx_isr)
-		usart2_imp->tx_isr();
-
-	// TXC flag is cleared automatically
+	usart2_imp->isr_transmit_complete();
 }
 
 ISR(USART2_UDRE_vect)
 {
-	// This interrupt must either load more data into UDR,
-	// or disable the ISR, otherwise it will keep getting called!
-
-	bool finished = true;
-
-	// TODO - Process async TX data here
-
-	// Call the user ISR, which can be used to load more data into UDR.
-	// The callback should return a bool, which should be set to true
-	// when the user has no more data to send.
-	if (usart2_imp->udre_isr)
-	{
-		finished = (bool)usart2_imp->udre_isr();
-	}
-
-	// Disable the ISR when there is no more data to be sent
-	if (finished)
-	{
-		UCSR2B &= ~_BV(UDRIE_BIT);
-	}
+	usart2_imp->isr_transmit_ready();
 }
 #endif
 
 #ifdef USE_USART3
 ISR(USART3_RX_vect)
 {
-	// The RXC flag is automatically cleared when UDR is read
-
-	// TODO - Process async RX data here
-
-	if (usart3_imp->rx_isr)
-		usart3_imp->rx_isr();
-	
-	// Clear the RXC flag in UCSRA as a safeguard
+	usart3_imp->isr_receive_byte();
 	UCSR3A &= _BV(RXC_BIT);
 }
 
 ISR(USART3_TX_vect)
 {
-	// This interrupt is triggered only when the transmission is complete
-	// and there is no new data to be sent
-
-	if (usart3_imp->tx_isr)
-		usart3_imp->tx_isr();
-
-	// TXC flag is cleared automatically
+	usart3_imp->isr_transmit_complete();
 }
 
 ISR(USART3_UDRE_vect)
 {
-	// This interrupt must either load more data into UDR,
-	// or disable the ISR, otherwise it will keep getting called!
-
-	bool finished = true;
-
-	// TODO - Process async TX data here
-
-	// Call the user ISR, which can be used to load more data into UDR.
-	// The callback should return a bool, which should be set to true
-	// when the user has no more data to send.
-	if (usart3_imp->udre_isr)
-	{
-		finished = (bool)usart3_imp->udre_isr();
-	}
-
-	// Disable the ISR when there is no more data to be sent
-	if (finished)
-	{
-		UCSR3B &= ~_BV(UDRIE_BIT);
-	}
+	usart3_imp->isr_transmit_ready();
 }
 #endif
 
