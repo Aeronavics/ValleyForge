@@ -15,7 +15,7 @@
 
 /********************************************************************************************************************************
  *
- *  FILE: 		usart.cpp	
+ *  FILE: 		Usart.cpp	
  *
  *  SUB-SYSTEM:		hal
  *
@@ -37,1491 +37,1266 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "hal/hal.hpp"
+#include "hal/gpio.hpp"
+#include "hal/usart.hpp"
 
 // DEFINE PRIVATE MACROS.
 
-// DEFINE DEVICE PARTICULAR REGISTAR ADDRESSES
-#if defined (__AVR_ATmega2560__)
-
-    /* Address locations of registers for USART0 */
-#	define UDR0_ADDRESS			0xC6	//MEM8
-#	define UBRR0_ADDRESS			0xC4	//MEM16
-#	define UCSR0C_ADDRESS			0XC2	//MEM8
-#	define UCSR0B_ADDRESS			0xC1	//MEM8
-#	define UCSR0A_ADDRESS			0xC0	//MEM8
-
-    /* Address locations of registers for USART1 */
-#	define UDR1_ADDRESS			0xCE	//MEM8
-#	define UBRR1_ADDRESS			0xCC	//MEM16
-#	define UCSR1C_ADDRESS			0xCA	//MEM8
-#	define UCSR1B_ADDRESS			0xC9	//MEM8
-#	define UCSR1A_ADDRESS			0xC8	//MEM8
-
-    /* Address locations of registers for USART2 */
-#	define UDR2_ADDRESS			0xD6	//MEM8
-#	define UBRR2_ADDRESS			0xD4	//MEM26
-#	define UCSR2C_ADDRESS			0xD2	//MEM8
-#	define UCSR2B_ADDRESS			0xD1	//MEM8
-#	define UCSR2A_ADDRESS			0xD0	//MEM8
-
-    /* Address locations of registers for USART3 */
-#	define UDR3_ADDRESS			0x136	//MEM8
-#	define UBRR3_ADDRESS			0x134	//MEM36
-#	define UCSR3C_ADDRESS			0x132	//MEM8
-#	define UCSR3B_ADDRESS			0x131	//MEM8
-#	define UCSR3A_ADDRESS			0x130	//MEM8
-
-    /* Generic bit addresses for register manipulation */
-		  /* UCSRnA Register */
-#	define RXC_BIT				7
-#	define TXC_BIT				6
-#	define UDRE_BIT				5
-#	define FE_BIT				4
-#	define DOR_BIT				3
-#	define UPE_BIT				2
-#	define U2X_BIT				1
-#	define MPCM_BIT				0
-
-		  /* UCSRnB Register */
-#	define RXCIE_BIT			7
-#	define TXCIE_BIT			6
-#	define UDRIE_BIT			5
-#	define RXEN_BIT				4
-#	define TXEN_BIT				3
-#	define UCSZ2_BIT			2
-#	define RXB8_BIT				1
-#	define TXB8_BIT				0
-
-		  /* UCSRnC Register */
-#	define UMSEL1_BIT			7
-#	define UMSEL0_BIT			6
-#	define UPM1_BIT				5
-#	define UPM0_BIT				4
-#	define USBS_BIT				3
-#	define UCSZ1_BIT			2
-#	define UCSZ0_BIT			1
-#	define UCPOL_BIT			0
-
-    /* UCSRnC Register (when in Master SPI Mode)*/
-#	define UDORD_BIT			2
-#	define UCPHA_BIT			1
-
-   /* GPIO addresses of transmitter and receiver pins for each USART channel */
-#	define USART0_TX_PORT			PORT_E
-#	define USART0_TX_PIN			PIN_1
-#	define USART0_RX_PORT			PORT_E
-#	define USART0_RX_PIN			PIN_0
-#	define USART0_XCK_PORT			PORT_E
-#	define USART0_XCK_PIN			PIN_2
-
-#	define USART1_TX_PORT			PORT_D
-#	define USART1_TX_PIN			PIN_3
-#	define USART1_RX_PORT			PORT_D
-#	define USART1_RX_PIN			PIN_2
-#	define USART1_XCK_PORT			PORT_D
-#	define USART1_XCK_PIN			PIN_5
-
-#	define USART2_TX_PORT			PORT_H
-#	define USART2_TX_PIN			PIN_1
-#	define USART2_RX_PORT			PORT_H
-#	define USART2_RX_PIN			PIN_0
-#	define USART2_XCK_PORT			PORT_H
-#	define USART2_XCK_PIN			PIN_2
-
-#	define USART3_TX_PORT			PORT_J
-#	define USART3_TX_PIN			PIN_1
-#	define USART3_RX_PORT			PORT_J
-#	define USART3_RX_PIN			PIN_0
-#	define USART3_XCK_PORT			PORT_J
-#	define USART3_XCK_PIN			PIN_2
-
-    /* General preprocessor macros for convenience */
-#	define NUM_USART_CHANNELS		4
-#	define NUM_CHANNEL_INTERRUPTS		3
-#	define NUM_USART_INTERRUPTS		NUM_USART_CHANNELS * NUM_CHANNEL_INTERRUPTS
-
-    /* TODO Temporary - place elsewhere */
-#	define F_CPU				8000000L
-
+#if defined(USE_USART_LIN) && defined(USE_USART0)
+	// NOTE - The LIN-USART is defined as channel USART_0.
+	//  I don't think there are any chips that have both available.
+	#error "USART0 conflicts with LIN-USART peripheral"
 #endif
 
-/*
- * Structure to contain all the required register addresses that are needed for the Timer/Counter functionality
- */
-typedef struct REGISTER_ADDRESS_TABLE {
-  int16_t UDR_address;
-  int16_t UCSRA_address;
-  int16_t UCSRB_address;
-  int16_t UCSRC_address;
-  int16_t UBRR_address;
-} registerAddressTable_t;
+// SELECT NAMESPACES.
 
-/*
- * Structure to contain the GPIO pin addresses and associated semaphores that represent the peripheral pins for all the USART channels.
- */
-typedef struct USART_PINS {
-  semaphore *tx_s;
-  gpio_pin_address tx_address;
-  semaphore *rx_s;
-  gpio_pin_address rx_address;
-  semaphore *xck_s;
-  gpio_pin_address xck_address;
-} usartPins_t;
+// DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
-// DECLARE IMPORTED GLOBAL VARIABLES
-extern semaphore semaphores[NUM_PORTS][NUM_PINS];
-
-// DEFINE PRIVATE FUNCTION PROTOTYPES.
-
-/**
-* Initialises the USART implementation instances and codes the required
-* register addresses, semaphore addresses and GPIO locations.
-*
-* @param void.
-* @return void.
-*/
-void initialise_USARTs(void);
-
-// DEFINE PRIVATE TYPES AND STRUCTS.
-
-/**
- * Class to implement the functionality
- * required for the USART/UART.
- */
-class usart_imp
+// A structure containing the register definitions for a single USART channel.
+typedef struct
 {
-    public:
-      
-	// Functions
-	/**
-	* Initialises and sets the mode of the USART according to the options provided to it.
-	* 
-	* @param  mode		USART setup mode to be applied during initialisation
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_mode(usart_setup_mode mode);
-	
-	/**
-	* Sets the mode of the connection when in Master SPI Mode
-	* 
-	* @param  mode		SPI mode to apply to connection.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_spi_mode(mspim_mode mode);
-      
-	/**
-	* Configures the serial format to be used for the USART.
-	*
-	* @param size		Character size to be used in serial format
-	* @param parityType	Type of parity to use for format ('DISABLED' for no parity)
-	* @param numberBits	Number of stop bits in frame
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_frame(uint8_t size, parity_option parityType, uint8_t numberBits);
-	
-	/**
-	* Function for setting the bit order of the data frame when hardware is configured in Master SPI mode.
-	*
-	* @param order		Bit order option, either MSB or LSB first.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_bit_order(mspim_bit_order order);
-      
-	/**
-	* Applies the desired Baud rate for USART communication.
-	*
-	* @param rate	Desired Baud rate to use for communication.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t set_baud_rate(baud_rate rate);
-	
-	/**
-	* Doubles the USART transmission speed. (only applies in Asynchronous mode!)
-	*
-	* @param value		Value to set the USART Double mode to. True to set it, false to clear it.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t double_usart_speed(bool value);
-	
-	/**
-	* Indicates whether or not the USART data buffer is available or not at the time of checking.
-	*
-	* @param void.
-	* @return boolean variable that is true if buffer is available, false otherwise.
-	*/
-	bool buffer_is_available(void);
-	
-	/**
-	* Transmits one byte via the configured USART connection.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param data		Byte to be transmitted via the USART
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t transmit_byte(uint8_t data);
-	
-	/**
-	* Transmits a null terminated string of data via the configured USART connection.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param data		Pointer to data that is to be transmitted via the USART.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t transmit_string(uint8_t *data);
-	
-	/**
-	* Transmits an array of data via the configured USART connection.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param data		Pointer to data that is to be transmitted via the USART.
-	* @param elements	Number of elements within the array to transmit.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t transmit_array(uint8_t *data, int8_t elements);
-	
-	/**
-	* Transfers one byte via the configured USART MSPIM connection.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param data		Byte to be transmitted via the USART
-	* @return contents of receive buffer.
-	*/
-	uint8_t spi_transfer_byte(uint8_t data);
-	
-	/**
-	* Transfers an array via the configured USART MSPIM connection.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param TXdata		Pointer to the array to be transmitted via the USART.
-	* @param RXdata		Pointer to a place in memory where an array can be received via the USART.
-	* @param numberElements	Number of elements in the arrays (assumed to be the same).
-	* @return void.
-	*/
-	void spi_transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
-	
-	/**
-	* Transfers a block of data and receives data via the USART MSPIM connection.
-	* Note, this function relies on using DMA or similar to achieve 'non-blocking' operation.
-	*
-	* @param TXdata		Pointer to the array that is to be transmitted.
-	* @param RXdata		Pointer to an array where data may be received to.
-	* @param numberElements	Number of elements in the arrays (assumed to be the same).
-	* @return void.
-	*/
-	void spi_dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements);
-	
-	/**
-	* Indicates whether the transmission is complete, i.e no new data
-	* exists in the transmit buffer.
-	*
-	* @param void.
-	* @return boolean variable that is true if transmission is complete, false otherwise.
-	*/
-	bool transmission_complete(void);
-	
-	/**
-	* Indicates whether the receive is complete, i.e unread data
-	* exists in the receive buffer.
-	*
-	* @param void.
-	* @return boolean variable that is true if receive is complete, false otherwise.
-	*/
-	bool receive_complete(void);
-	
-	/**
-	* Returns the contents of the USART receive buffer.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param void.
-	* @return The received byte.
-	*/
-	uint8_t receive_byte(void);
-	
-	/**
-	* Receives an array of uint8_t values.
-	* Note, this function 'blocks' until transfer has been completed. 
-	*
-	* @param array		Pointer to the location in memory where the array can be returned to.
-	* @param elements	Number of elements to return.
-	* @return The received byte.
-	*/
-	void receive_array(uint8_t *array, int8_t elements);
-	
-	/**
-	* Enables an interrupt to be be associated with a USART connection.
-	*
-	* @param interrupt		One of the possible interrupt types that are available.
-	* @param ISRptr		Pointer to the user-defined ISR.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t enable_interrupt(usart_interrupt_types interrupt, void (*ISRptr)(void));
-	
-	/**
-	* Enables an interrupt to be be associated with a USART connection.
-	*
-	* @param interrupt		Which interrupt to disable.
-	* @return 0 for success, -1 for error.
-	*/
-	int8_t disable_interrupt(usart_interrupt_types interrupt);
-	
-	/**
-	* Function indicates whether an error as occured with the USART transfer.
-	* This can include Frame Errors, Data OverRun incidents and Parity Erros.
-	*
-	* @param void.
-	* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
-	*/
-	usart_error_types usart_error(void);
-	
-	// Public Fields
-	/**
-	 * Field to identify each implementation by its associated USART Number.
-	 */
-	usart_number usartNumber;
-	
-	/**
-	 * Register Address table to store the addresses of the particular USART 
-	 * registers when a USART is instantiated and initialised.
-	 */
-	registerAddressTable_t registerTable;
-	
-	/**
-	 * Collection to contain the GPIO addresses and semaphores associated with
-	 * each of the TX/RX GPIO pins which are to be attached to the USART isntance.
-	 */
-	usartPins_t usartPinCollection;
-	
-	//Private functions & Fields
-  private:
-	
-	/**
-	 * Field to contain the current USART mode that is set by the user
-	 */
-	usart_setup_mode setMode;
+	volatile uint8_t* UDR;
+	volatile uint8_t* UCSRA;
+	volatile uint8_t* UCSRB;
+	volatile uint8_t* UCSRC;
+	volatile uint16_t* UBRR;
+} Usart_registers;
+
+ // A structure to contain the IO pin addresses representing the peripheral pins for a single USART channel.
+typedef struct
+{
+	IO_pin_address tx_address;
+	IO_pin_address rx_address;
+	IO_pin_address xck_address;
+} Usart_pins;
+
+enum Usart_async_mode { ASYNC_BUFFER, ASYNC_STRING };
+
+/**
+ * Private, target specific implementation class for public Usart class.
+ */
+class Usart_imp
+{
+public:
+
+	// Methods - These methods should generally correspond to methods of the public class Usart.
+
+	Usart_imp(Usart_channel channel, Usart_pins pins, Usart_registers registers)
+		: channel(channel), pins(pins), registers(registers) { }
+
+	~Usart_imp(void) { }
+
+	// Called whenever someone binds to this instance
+	void bind(void);
+
+	// Called whenever someone is finished with this instance
+	void unbind(void);
+
+
+	void enable(void);
+
+	void disable(void);
+
+	void flush(void);
+
+
+	Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
+
+
+	bool transmitter_ready(void);
+
+	bool receiver_has_data(void);
+
+
+	Usart_io_status transmit_byte(uint8_t data);
+
+	Usart_io_status transmit_byte_async(uint8_t data);
+
+	Usart_io_status transmit_buffer(uint8_t* data, size_t size);
+
+	Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = NULL);
+
+	Usart_io_status transmit_string(char *data, size_t max_len);
+
+	Usart_io_status transmit_string_async(char *data, size_t max_len, usarttx_callback_t cb_done = NULL);
+
+
+	int16_t receive_byte(void);
+
+	int16_t receive_byte_async(void);
+
+
+	Usart_io_status receive_buffer(uint8_t *buffer, size_t size);
+
+	Usart_io_status receive_buffer_async(uint8_t *buffer, size_t size, usartrx_callback_t received);
+
+
+	void enable_interrupts(void);
+
+	void disable_interrupts(void);
+
+	Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback);
+
+	Usart_int_status detach_interrupt(Usart_interrupt_type interrupt);
+
+	Usart_error_type get_errors(void);
+
+
+// Module private fields (should only be accessed within this module)
+
+
+	Usart_config_status set_mode(Usart_setup_mode mode);
+
+	Usart_config_status set_framing(uint8_t data_bits, Usart_parity parity, uint8_t stop_bits);
+
+	Usart_config_status set_baud_rate(Usart_baud_rate baud_rate);
+
+	void set_udrie(bool enabled);
+
+
+	void isr_receive_byte(void);
+
+	void isr_transmit_complete(void);
+
+	void isr_transmit_ready(void);
+
+
+	// Fields
+
+	Usart_setup_mode mode;
+
+
+	Usart_channel channel;
+
+	Usart_pins pins;
+
+	Usart_registers registers;
+
+
+	// The TX isr is called whenever the transmitter has finished transmitting,
+	// and there is no more data to send.
+	callback_t tx_isr;
+
+	// The RX isr is called whenever something has been received.
+	// If an _async() call is active, this is called when it finishes.
+	callback_t rx_isr;
+
+	// The UDRE isr is called whenever the transmitter becomes free to transmit more data,
+	// but is only activated when _async() routines are used.
+	callback_t udre_isr;
+
+	bool tx_isr_enabled;
+	bool rx_isr_enabled;
+	bool udre_isr_enabled;
+
+	// State machines used for asynchronous communications
+	struct
+	{
+		bool active;
+
+		uint8_t *buffer;
+		size_t size;
+		size_t index;
+
+		Usart_async_mode mode;
+
+		usarttx_callback_t cb_done;
+	} async_tx;
+
+	struct
+	{
+		bool active;
+
+		uint8_t *buffer;
+		size_t size;
+		size_t index;
+
+		usartrx_callback_t cb_done;
+	} async_rx;
+
+
+
+private:
+
+	// Methods
+
+	Usart_imp(void);	// Poisoned.
+
+	Usart_imp(Usart_imp*);	// Poisoned.
+
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-/* Array of user ISRs for USART interrupts */
-void (*usartInterrupts[NUM_USART_INTERRUPTS])(void) = {NULL};
+// NOTE - Because the ISRs need to access the usart implementation instances,
+//  we need to store pointers to them here.
+// These pointers are populated the first time Usart::bind() is called.
+// TODO - It might make more sense to just define the classes statically here.
 
-/* Create an array of USART implementations */
-usart_imp usart_imps[NUM_USART_CHANNELS];
+#ifdef USE_USART0
+static Usart_imp *usart0_imp = NULL;
+#endif
 
-/* Variable to indicate whether usart_imps[] has been initialised yet */
-bool initialised_usart;
+#ifdef USE_USART1
+static Usart_imp *usart1_imp = NULL;
+#endif
 
-/* Enumerated list of usart interrupts for use in accessing the appropriate function pointer from the function pointer array */
-enum usart_interrupts {USART0_RX_int, USART0_TX_int, USART0_UDRE_int, USART1_RX_int, USART1_TX_int, USART1_UDRE_int, USART2_RX_int, USART2_TX_int, USART2_UDRE_int, USART3_RX_int, USART3_TX_int, USART3_UDRE_int};
+#ifdef USE_USART2
+static Usart_imp *usart2_imp = NULL;
+#endif
 
-// IMPLEMENT PUBLIC FUNCTIONS.
+#ifdef USE_USART3
+static Usart_imp *usart3_imp = NULL;
+#endif
 
-/**
-* Initialises and sets the mode of the USART according to the options provided to it.
-* 
-* @param  mode		USART setup mode to be applied during initialisation
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_mode(usart_setup_mode mode)
+#ifdef USE_USART_LIN
+// TODO
+#endif
+
+// DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
+
+// IMPLEMENT PUBLIC STATIC FUNCTIONS.
+
+// IMPLEMENT PUBLIC CLASS FUNCTIONS (METHODS).
+
+// Usart.
+
+Usart::Usart(Usart_imp* implementation)
 {
-  return (imp->set_mode(mode));
+	// Attach the implementation.
+	imp = implementation;
+	imp->bind();
 }
 
-/**
-* Sets the mode of the connection when in Master SPI Mode
-* 
-* @param  mode		SPI mode to apply to connection.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_spi_mode(mspim_mode mode)
+Usart::~Usart(void)
 {
-  return (imp->set_spi_mode(mode));
+	imp->unbind();
 }
 
-/**
-* Configures the serial format to be used for the USART.
-*
-* @param size		Character size to be used in serial format
-* @param parityType	Type of parity to use for format ('DISABLED' for no parity)
-* @param numberBits	Number of stop bits in frame
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_frame(uint8_t size, parity_option parityType, uint8_t numberBits)
+Usart Usart::bind(Usart_channel channel)
 {
-  return (imp->set_frame(size, parityType, numberBits));
+	// Acquire access to the implementation instance.
+	// TODO: What do we do if this fails, or if someone has already binded to the instance??
+
+
+	// NOTE - Instead of hard-coding specific AVR chips,
+	// we use constants defined in <target_config.hpp> to specify which
+	// peripherals are present, and which channel corresponds to each peripheral.
+
+	// NOTE - By defining static variables in here, the instances aren't
+	// instantiated until required, thus saving valuable memory.
+
+	// TODO - Check thread-safety of this. It is only guaranteed to be thread-safe under C++11??
+
+	switch (channel)
+	{
+
+#if defined(USE_USART0) // Most AVR chips have a USART 0
+		case USE_USART0:
+		{
+			static Usart_imp imp = Usart_imp(
+				USE_USART0, // Channel
+				(Usart_pins) {
+					// Pins are defined in <target_config.hpp>
+					.tx_address  = _IOADDR(USART0_TX_PORT, USART0_TX_PIN),
+					.rx_address  = _IOADDR(USART0_RX_PORT, USART0_RX_PIN),
+					.xck_address = _IOADDR(USART0_XCK_PORT, USART0_XCK_PIN)
+				},
+				(Usart_registers) {
+					// Registers are defined in <avr/io.h>
+					.UDR    = &UDR0,
+					.UCSRA  = &UCSR0A,
+					.UCSRB  = &UCSR0B,
+					.UCSRC  = &UCSR0C,
+					.UBRR   = &UBRR0
+				}
+			);
+			usart0_imp = &imp;
+			return Usart(&imp);
+		}
+#endif
+
+#if defined(USE_USART1) // Some AVR chips have multiple USARTs
+		case USE_USART1:
+		{
+			static Usart_imp imp = Usart_imp(
+				USE_USART1, // Channel
+				(Usart_pins) {
+					// Pins are defined in <target_config.hpp>
+					.tx_address  = _IOADDR(USART1_TX_PORT, USART1_TX_PIN),
+					.rx_address  = _IOADDR(USART1_RX_PORT, USART1_RX_PIN),
+					.xck_address = _IOADDR(USART1_XCK_PORT, USART1_XCK_PIN)
+				},
+				(Usart_registers) {
+					// Registers are defined in <avr/io.h>
+					.UDR    = &UDR1,
+					.UCSRA  = &UCSR1A,
+					.UCSRB  = &UCSR1B,
+					.UCSRC  = &UCSR1C,
+					.UBRR   = &UBRR1
+				}
+			);
+			usart1_imp = &imp;
+			return Usart(&imp);
+		}
+#endif
+
+#if defined(USE_USART2)
+		case USE_USART2:
+		{
+			static Usart_imp imp = Usart_imp(
+				USE_USART2, // Channel
+				(Usart_pins) {
+					// Pins are defined in <target_config.hpp>
+					.tx_address  = _IOADDR(USART2_TX_PORT, USART2_TX_PIN),
+					.rx_address  = _IOADDR(USART2_RX_PORT, USART2_RX_PIN),
+					.xck_address = _IOADDR(USART2_XCK_PORT, USART2_XCK_PIN)
+				},
+				(Usart_registers) {
+					// Registers are defined in <avr/io.h>
+					.UDR	= &UDR2,
+					.UCSRA	= &UCSR2A,
+					.UCSRB	= &UCSR2B,
+					.UCSRC	= &UCSR2C,
+					.UBRR	= &UBRR2
+				}
+			);
+			usart2_imp = &imp;
+			return Usart(&imp);
+		}
+#endif
+
+#if defined(USE_USART3)
+		case USE_USART3:
+		{
+			static Usart_imp imp = Usart_imp(
+				USE_USART3, // Channel
+				(Usart_pins) {
+					// Pins are defined in <target_config.hpp>
+					.tx_address  = _IOADDR(USART3_TX_PORT, USART3_TX_PIN),
+					.rx_address  = _IOADDR(USART3_RX_PORT, USART3_RX_PIN),
+					.xck_address = _IOADDR(USART3_XCK_PORT, USART3_XCK_PIN)
+				},
+				(Usart_registers) {
+					// Registers are defined in <avr/io.h>
+					.UDR	= &UDR3,
+					.UCSRA	= &UCSR3A,
+					.UCSRB	= &UCSR3B,
+					.UCSRC	= &UCSR3C,
+					.UBRR	= &UBRR3
+				}
+			);
+			usart3_imp = &imp;
+			return Usart(&imp);
+		}
+#endif
+
+#if defined(USE_USART_LIN) // ATmega32M1/C1 chips only have LIN
+		#error USART-LIN not yet implemented!
+
+		case USE_USART_LIN:
+		{
+			//TODO - Create Usart_lin_imp class descended from Usart_imp class
+			// NOTE the use of 'Usart_lin_imp' instead of 'Usart_imp' : It is a completely different implementation!
+			static Usart_lin_imp imp = Usart_lin_imp(
+				USE_USART_LIN, // Channel
+				(Usart_pins) {
+					// Pins are defined in <target_config.hpp>
+					.tx_address  = _IOADDR(USARTLIN_TX_PORT, USARTLIN_TX_PIN),
+					.rx_address  = _IOADDR(USARTLIN_RX_PORT, USARTLIN_RX_PIN),
+					.xck_address = _IOADDR(USARTLIN_XCK_PORT, USARTLIN_XCK_PIN)
+				}
+			);
+			usart_lin_imp = &imp;
+			return Usart(&imp);
+		}
+#endif
+
+	} // end-switch
+
+	// If we make it to here, then something has gone very wrong (like the user maliciously cast an invalid value into a channel number).
+
+	// Loop forever, which hopefully reboots the micro so we have a chance to recover.
+	while (true)
+	{
+		// Consider the bad life choices that have led us to this point.
+	}
+
+	// We'll never get here.
+	return Usart(static_cast<Usart_imp*>(NULL));
 }
 
-/**
-* Function for setting the bit order of the data frame when hardware is configured in Master SPI mode.
-*
-* @param order		Bit order option, either MSB or LSB first.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_bit_order(mspim_bit_order order)
+void Usart::enable()
 {
-  return (imp->set_bit_order(order));
+	imp->enable();
 }
 
-/**
-* Applies the desired Baud rate for USART communication.
-*
-* @param rate	Desired Baud rate to use for communication.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::set_baud_rate(baud_rate rate)
+void Usart::disable()
 {
-  return (imp->set_baud_rate(rate));
+	imp->disable();
 }
 
-/**
-* Doubles the USART transmission speed. (only applies in Asynchronous mode!)
-*
-* @param value		Value to set the USART Double mode to. True to set it, false to clear it.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::double_usart_speed(bool value)
+void Usart::flush()
 {
-  return (imp->double_usart_speed(value));
+	imp->flush();
 }
 
-/**
-* Indicates whether or not the USART data buffer is available or not at the time of checking.
-*
-* @param void.
-* @return boolean variable that is true if buffer is available, false otherwise.
-*/
-bool usart::buffer_is_available(void)
+Usart_config_status Usart::configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
 {
-  return (imp->buffer_is_available());
+	return imp->configure(mode, baud_rate, data_bits, parity, stop_bits);
 }
 
-/**
-* Transmits one byte via the configured USART connection.
-*
-* @param data		Byte to be transmitted via the USART
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::transmit_byte(uint8_t data)
+bool Usart::transmitter_ready()
 {
-  return (imp->transmit_byte(data));
+	return imp->transmitter_ready();
 }
 
-/**
-* Transmits a null terminated string of data via the configured USART connection.
-*
-* @param data		Pointer to data that is to be transmitted via the USART.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::transmit_string(uint8_t *data)
+bool Usart::receiver_has_data()
 {
-  return (imp->transmit_string(data));
+	return imp->receiver_has_data();
 }
 
-/**
-* Transmits an array of data via the configured USART connection.
-*
-* @param data		Pointer to data that is to be transmitted via the USART.
-* @param elements	Number of elements within the array to transmit.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::transmit_array(uint8_t *data, int8_t elements)
+Usart_io_status Usart::transmit_byte(uint8_t data)
 {
-  return (imp->transmit_array(data, elements));
+	return imp->transmit_byte(data);
 }
 
-/**
-* Transfers one byte via the configured USART MSPIM connection.
-*
-* @param data		Byte to be transmitted via the USART
-* @return contents of receive buffer.
-*/
-uint8_t usart::spi_transfer_byte(uint8_t data)
+Usart_io_status Usart::transmit_byte_async(uint8_t data)
 {
-  return (imp->spi_transfer_byte(data));
+	return imp->transmit_byte_async(data);
 }
 
-/**
-* Transfers an array via the configured USART MSPIM connection.
-*
-* @param TXdata		Pointer to the array to be transmitted via the USART.
-* @param RXdata		Pointer to a place in memory where an array can be received via the USART.
-* @param numberElements	Number of elements in the arrays (assumed to be the same).
-* @return void.
-*/
-void usart::spi_transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements)
+Usart_io_status Usart::transmit_buffer(uint8_t *data, size_t size)
 {
-  (imp->spi_transfer_array(TXdata, RXdata, numberElements));
+	return imp->transmit_buffer(data, size);
 }
 
-/**
-* Transfers a block of data and receives data via the USART MSPIM connection.
-* Note, this function relies on using DMA or similar to achieve 'non-blocking' operation.
-*
-* @param TXdata		Pointer to the array that is to be transmitted.
-* @param RXdata		Pointer to an array where data may be received to.
-* @param numberElements	Number of elements in the arrays (assumed to be the same).
-* @return void.
-*/
-void usart::spi_dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements)
+Usart_io_status Usart::transmit_buffer_async(uint8_t *data, size_t size, usarttx_callback_t cb_done)
 {
-  /* TODO Check to see if the target is capable of DMA/PDCA transfer */
-  //# if defined (__etc__)
-  (imp->spi_dma_transfer(TXdata, RXdata, numberElements));
+	return imp->transmit_buffer_async(data, size, cb_done);
+}
+
+Usart_io_status Usart::transmit_string(char *data, size_t max_len)
+{
+	return imp->transmit_string(data, max_len);
+}
+
+Usart_io_status Usart::transmit_string_async(char *data, size_t max_len, usarttx_callback_t cb_done)
+{
+	return imp->transmit_string_async(data, max_len, cb_done);
+}
+
+int16_t Usart::receive_byte(void)
+{
+	return imp->receive_byte();
+}
+
+int16_t Usart::receive_byte_async(void)
+{
+	return imp->receive_byte_async();
+}
+
+Usart_io_status Usart::receive_buffer(uint8_t *data, size_t size)
+{
+	return imp->receive_buffer(data, size);
+}
+
+Usart_io_status Usart::receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
+{
+	return imp->receive_buffer_async(data, size, cb_done);
+}
+
+void Usart::enable_interrupts()
+{
+	imp->enable_interrupts();
+}
+
+void Usart::disable_interrupts()
+{
+	imp->enable_interrupts();
+}
+
+Usart_int_status Usart::attach_interrupt(Usart_interrupt_type type, callback_t callback)
+{
+	return imp->attach_interrupt(type, callback);
+}
+
+Usart_int_status Usart::detach_interrupt(Usart_interrupt_type type)
+{
+	return imp->detach_interrupt(type);
+}
+
+Usart_error_type Usart::usart_error(void)
+{
+	return imp->get_errors();
+}
+
+void Usart::usart_clear_errors()
+{
+	imp->get_errors();
+}
+
+// IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+// IMPLEMENT PRIVATE CLASS FUNCTIONS (METHODS).
+
+// Usart.
+
+void Usart_imp::bind(void)
+{
+	// Enable the peripheral, if required
+
+	// Acquire access to the pins, and configure them as required.
+	// TODO - How can we dynamically bind GPIO pins??
+
+	disable(); // Start disabled, so the module can be configured safely
+
+	// Reset state machines
+	async_rx.active = false;
+	async_tx.active = false;
+}
+
+void Usart_imp::unbind(void)
+{
+	disable();
+
+	// Relinquish access to the GPIO pins
+	//pins.tx.unbind(); // TODO
+}
+
+void Usart_imp::enable(void)
+{
+	// Enable transceiver hardware
+	*registers.UCSRB |= _BV(RXEN_BIT) | _BV(TXEN_BIT);
+
+	// Enable interrupts
+	*registers.UCSRB |= _BV(TXCIE_BIT) | _BV(RXCIE_BIT);
+}
+
+void Usart_imp::disable(void)
+{
+	// Disable interrupts
+	*registers.UCSRB &= ~( _BV(TXCIE_BIT) | _BV(RXCIE_BIT) | _BV(UDRE_BIT) );
+
+	// Disable transceiver hardware
+	*registers.UCSRB &= ~( _BV(RXEN_BIT) | _BV(TXEN_BIT) );
+
+	// NOTE - Transmitter is not disabled instantly.
+	//  It will continue finishing any current transmission before disabling.
+
+	// Disabling the receiver also flushes the UDR receive buffer.
+}
+
+void Usart_imp::flush(void)
+{
+	while (*registers.UCSRA & _BV(RXC_BIT))
+	{
+		volatile uint8_t dummy __attribute__((unused)) = *registers.UDR;
+	}
 }
 
 
-/**
-* Indicates whether the transmission is complete, i.e no new data
-* exists in the transmit buffer.
-*
-* @param void.
-* @return boolean variable that is true if transmission is complete, false otherwise.
-*/
-bool usart::transmission_complete(void)
+Usart_config_status Usart_imp::configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
 {
-  return (imp->transmission_complete());
+	Usart_config_status result = USART_CFG_FAILED;
+
+	// Disable tx/rx before configuring
+	disable();
+
+	// Set the operating mode (Async/Sync)
+	result = set_mode(mode);
+	if (result != USART_CFG_SUCCESS)
+		return result;
+
+	// Configure the framing
+	result = set_framing(data_bits, parity, stop_bits);
+	if (result != USART_CFG_SUCCESS)
+		return result;
+
+	// Configure the baud rate
+	result = set_baud_rate(baud_rate);
+	if (result != USART_CFG_SUCCESS)
+		return result;
+
+	// Enable tx/rx
+	enable();
+
+	return USART_CFG_SUCCESS;
 }
 
-/**
-* Indicates whether the receive is complete, i.e unread data
-* exists in the receive buffer.
-*
-* @param void.
-* @return boolean variable that is true if receive is complete, false otherwise.
-*/
-bool usart::receive_complete(void)
+Usart_config_status Usart_imp::set_mode(Usart_setup_mode mode)
 {
-  return (imp->receive_complete());
+	switch (mode)
+	{
+		case USART_MODE_ASYNCHRONOUS:
+		case USART_MODE_ASYNCHRONOUS_DOUBLESPEED:
+		{
+			// UMSEL<1:0> = 0b00 (Asynchronous mode)
+			*registers.UCSRC =
+				(*registers.UCSRC & ~UMSEL_MASK) | (0b00 << UMSEL0_BIT);
+
+			// Enable double-speed mode
+			if (mode == USART_MODE_ASYNCHRONOUS_DOUBLESPEED)
+				*registers.UCSRA |= _BV(U2X_BIT);
+
+			break;
+		}
+
+		case USART_MODE_SYNCHRONOUS_MASTER:
+		case USART_MODE_SYNCHRONOUS_SLAVE:
+		{
+			// UMSEL<1:0> = 0b01 (Synchronous mode)
+			*registers.UCSRC =
+				(*registers.UCSRC & ~UMSEL_MASK) | (0b01 << UMSEL0_BIT);
+
+			// For synchronous mode, clear the double USART transmission speed bit
+			*registers.UCSRA &= ~_BV(U2X_BIT);
+
+			// Configure the GPIO
+			Gpio_pin xck(pins.xck_address);
+
+			// Master/slave is defined by the direction of the XCK pin
+			if (mode == USART_MODE_SYNCHRONOUS_MASTER)
+				xck.set_mode(GPIO_OUTPUT_PP);
+			else
+				xck.set_mode(GPIO_INPUT_FL);
+
+			break;
+		}
+
+		// Unsupported configuration
+		default:
+			return USART_CFG_INVALID_MODE;
+	}
+	Usart_imp::mode = mode;
+
+	return USART_CFG_SUCCESS;
 }
 
-/**
-* Returns the contents of the USART receive buffer.
-*
-* @param void.
-* @return The received byte.
-*/
-uint8_t usart::receive_byte(void)
+Usart_config_status Usart_imp::set_framing(uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
 {
-  return (imp->receive_byte());
+	// Data bits
+	if ((data_bits < 5) || (data_bits > 9))
+		return USART_CFG_INVALID_DATA_BITS;
+
+	if (data_bits == 9)
+	{
+		// UCSZ = 0b100
+		*registers.UCSRB |= _BV(UCSZ2_BIT);
+		*registers.UCSRC &= ~(_BV(UCSZ1_BIT) | _BV(UCSZ0_BIT));
+	}
+	else // (data_bits <= 8)
+	{
+		// UCSZ = 0b0xx
+		uint8_t ucsz = (data_bits - 5);
+
+		*registers.UCSRB &= ~_BV(UCSZ2_BIT); // regular mode
+		*registers.UCSRC =
+			(*registers.UCSRC & ~(_BV(UCSZ1_BIT) | _BV(UCSZ0_BIT)))
+			| (ucsz << UCSZ0_BIT);
+	}
+
+	// Parity
+	uint8_t upm;
+	switch (parity)
+	{
+		case USART_PARITY_EVEN:
+			upm = 0b10u;
+			break;
+
+		case USART_PARITY_ODD:
+			upm = 0b11u;
+			break;
+
+		case USART_PARITY_NONE:
+			upm = 0b00u;
+			break;
+
+		default: // Unsupported parity mode
+			return USART_CFG_INVALID_PARITY;
+	}
+	*registers.UCSRC =
+		(*registers.UCSRC & ~(_BV(UPM1_BIT) | _BV(UPM0_BIT)))
+		| (upm << UPM0_BIT);
+
+	// Stop bits
+	switch (stop_bits)
+	{
+		case 1:
+			*registers.UCSRC &= ~_BV(USBS_BIT);
+			break;
+
+		case 2:
+			*registers.UCSRC |= _BV(USBS_BIT);
+			break;
+
+		default: // Invalid number of stop bits
+			return USART_CFG_INVALID_STOP_BITS;
+	}
+
+	return USART_CFG_SUCCESS;
 }
 
-/**
-* Receives an array of uint8_t values.
-*
-* @param array		Pointer to the location in memory where the array can be returned to.
-* @param elements	Number of elements to return.
-* @return The received byte.
-*/
-void usart::receive_array(uint8_t *array, int8_t elements)
+Usart_config_status Usart_imp::set_baud_rate(Usart_baud_rate baud_rate)
 {
-  (imp->receive_array(array, elements));
-}
+	// Calculate the Baud value required for the user provided Baud rate
+	// Baud value = F_CPU			- 1
+	// 		     --------------------
+	// 		     (User_Baud_rate * K)
+	//
+	// Where K varies depending on which mode the USART is set to.
+	//
+	// Asynchronous mode (U2Xn = 0)	K = 16
+	// Asynchronous mode (U2Xn = 1)	K = 8
+	// Synchronous Master mode		K = 2
 
-/**
-* Enables an interrupt to be be associated with a USART connection.
-*
-* @param interrupt		One of the possible interrupt types that are available.
-* @param ISRptr		Pointer to the user-defined ISR.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::enable_interrupt(usart_interrupt_types interrupt, void (*ISRptr)(void))
-{
-  return (imp->enable_interrupt(interrupt, ISRptr));
-}
+	uint32_t K;
 
-/**
-* Enables an interrupt to be be associated with a USART connection.
-*
-* @param interrupt		Which interrupt to disable.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart::disable_interrupt(usart_interrupt_types interrupt)
-{
-  return (imp->disable_interrupt(interrupt));
-}
-
-/**
-* Function indicates whether an error as occured with the USART transfer.
-* This can include Frame Errors, Data OverRun incidents and Parity Erros.
-*
-* @param void.
-* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
-*/
-usart_error_types usart::usart_error(void)
-{
-  return (imp->usart_error());
-}
-
-/**
-* Function to free the USART instance when it goes out of scope.
-*
-* @param  Nothing.
-* @return Nothing.
-*/
-usart::~usart(void)
-{
-  vacate();
-}
-
-/** 
-* Allows access to the USART to be relinquished and reused elsewhere.
-*
-* @param  Nothing.
-* @return Nothing.
-*/
-void usart::vacate(void)
-{
-  /* No need to vacate if implementation pointer is NULL */
-  if (imp != NULL)
-  {
-    /* Vacate the sempahores to detatch the USART GPIO */
-    imp->usartPinCollection.tx_s->vacate();
-    imp->usartPinCollection.rx_s->vacate();
-    imp->usartPinCollection.xck_s->vacate();
-    
-    /* Clear the appropriate elements in the function pointer array */
-    for (uint8_t i = (NUM_CHANNEL_INTERRUPTS * imp->usartNumber); i < (NUM_CHANNEL_INTERRUPTS * (imp->usartNumber + 1)); i++)
-      usartInterrupts[i] = NULL; 
-    
-    /* Turn off the transmission and reception hardware circuitry */
-    _SFR_MEM8(imp->registerTable.UCSRB_address) &= (~(1 << RXEN_BIT) & ~(1 <<TXEN_BIT));
-    
-    /* Reset the implementation pointer to NULL */
-    imp = NULL;
-  }
-}
-
-/**
-* Allows a process to request access to a USART instance and manages the semaphore
-* indicating whether access has been granted or not.
-*
-* @param  usartNumber	The number of a USART that is desired.
-* @return A usart instance.
-*/
-usart usart::grab(usart_number usartNumber)
-{
-  /* Add possible semaphore functionality here */
-  
-  /* Initialise USART if it is not already initialised */
-  if (!initialised_usart)
-  {
-    //Initialise USART
-    initialise_USARTs();
-  }
-  
-  /* Set the local field 'imp' pointer to point to the specific
-   * implementation of usart_imp. Check that all the semaphores of the required GPIO are available */
-  if (usart_imps[(int8_t)usartNumber].usartPinCollection.tx_s->procure() && usart_imps[(int8_t)usartNumber].usartPinCollection.rx_s->procure())
-    return usart(&usart_imps[(int8_t)usartNumber]);
-  else
-    return NULL;
-}
-
-// IMPLEMENT PRIVATE FUNCTIONS.
-
-usart::usart(usart_imp* implementation)
-{
-  /*attach the USART implementation*/
-  imp = implementation;
-}
-
-// IMPLEMENT USART IMPLEMENTATION FUNCTIONS
-
-/**
-* Initialises and sets the mode of the USART according to the options provided to it.
-* 
-* @param  mode		USART setup mode to be applied during initialisation
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_mode(usart_setup_mode mode)
-{
-  /* Temporarily disable global interrupts during initialisation of USART */
-  cli();
-  
-  /* 
-   * Switch which mode to set the USART up for, depending on what is provided 
-   */
-  switch (mode)
-  {
-    case ASYNCHRONOUS_USART:
-    {
-      /* Set UMSELn1:0 bits to 0x00 */
-      _SFR_MEM8(registerTable.UCSRC_address) &= (~(1 << UMSEL1_BIT) & ~(1 << UMSEL0_BIT));
-      
-      break;
-    }
-    case SYNCHRONOUS_USART:
-    {
-      /* Set UMSELn1:0 bits to 0x01 */
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UMSEL1_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << UMSEL0_BIT);
-      
-      /* For compatibility with future devices, clear the UDREn bit in the UCSRAn register whenever UCSRAn is being written to (source: datasheet) */
-      _SFR_MEM8(registerTable.UCSRA_address) &= ~(1 << UDRE_BIT);
-      /* For synchronous mode, write the Double USART transmission speed bit to zero */
-      _SFR_MEM8(registerTable.UCSRA_address) &= ~(1 << U2X_BIT);
-      
-      break;
-    }
-    case MASTER_SPI:
-    {
-      /* Check to make sure that the semaphore of the required XCKn pin is available in order to facilitate MSPIM */
-      if (usart_imps[(int8_t)usartNumber].usartPinCollection.xck_s->procure())
-      {
-	/* Set UMSELn1:0 bits to 0x03 */
-	_SFR_MEM8(registerTable.UCSRC_address) |= ((1 << UMSEL1_BIT) | (1 << UMSEL0_BIT));
-	
-	/* Set the XCKn pin to an output for Master mode */
-	if (usart_imps[(int8_t)usartNumber].usartPinCollection.xck_address.port >= PORT_H)
-	  _SFR_MEM8((usart_imps[(int8_t)usartNumber].usartPinCollection.xck_address.port * PORT_MULTIPLIER) + P_OFFSET + P_MODE) |= (1 << usart_imps[(int8_t)usartNumber].usartPinCollection.xck_address.pin);
+	if (mode == USART_MODE_ASYNCHRONOUS)
+		K = 16UL;
+	else if (mode == USART_MODE_ASYNCHRONOUS_DOUBLESPEED)
+		K = 8UL;
+	else if (mode == USART_MODE_SYNCHRONOUS_MASTER || mode == USART_MODE_SYNCHRONOUS_SLAVE)
+		K = 2UL;
 	else
-	  _SFR_IO8((usart_imps[(int8_t)usartNumber].usartPinCollection.xck_address.port * PORT_MULTIPLIER) + P_MODE) |= (1 << usart_imps[(int8_t)usartNumber].usartPinCollection.xck_address.pin);
-      }
-      else
-      {
-	/* Re-enable global interrupts */
+		return USART_CFG_INVALID_MODE;
+
+	// Set the UBBR value according to the equation above
+	*registers.UBRR = (((F_CPU / (baud_rate * K))) - 1); // TODO - Possible overflow here
+
+	// TODO - Range checking of baud rate values
+
+	return USART_CFG_SUCCESS;
+}
+
+void Usart_imp::set_udrie(bool enabled)
+{
+	if (enabled)
+		*registers.UCSRB |= _BV(UDRIE_BIT);
+	else
+		*registers.UCSRB &= ~_BV(UDRIE_BIT);
+}
+
+bool Usart_imp::transmitter_ready(void)
+{
+	// Check if we're ready to transmit more data
+	return ((*registers.UCSRA & _BV(UDRE_BIT)) != 0) && (!async_tx.active);
+}
+
+bool Usart_imp::receiver_has_data(void)
+{
+	return ((*registers.UCSRA & _BV(RXC_BIT)) != 0) && (!async_rx.active);
+}
+
+Usart_io_status Usart_imp::transmit_byte(uint8_t data)
+{
+	while (!transmitter_ready())
+	{
+		// Wait for transmit buffer to be empty
+	}
+
+	// 9 bit mode
+	if (*registers.UCSRB & _BV(UCSZ2_BIT))
+	{
+		uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
+		*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
+	}
+
+	*registers.UDR = data;
+
+	// We don't need to wait for it to finish, since the next time
+	// this function is called it will wait until the TX buffer is free again.
+
+	//while (((*registers.UCSRA & _BV(TXC_BIT)) == 0)) {}
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::transmit_byte_async(uint8_t data)
+{
+	if (!transmitter_ready())
+		return USART_IO_BUSY;
+
+	// 9 bit mode
+	if (*registers.UCSRB & _BV(UCSZ2_BIT))
+	{
+		uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
+		*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
+	}
+
+	*registers.UDR = data;
+
+	// If the user wants to use the UDR ISR, enable it so it gets triggered.
+	if (udre_isr && udre_isr_enabled)
+		set_udrie(true);
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::transmit_buffer(uint8_t *data, size_t size)
+{
+	while (!transmitter_ready())
+	{
+		// Wait for transmitter
+	}
+
+	for (size_t i = 0; i < size; i++)
+	{
+		transmit_byte(*data++);
+	}
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::transmit_buffer_async(uint8_t *data, size_t size, usarttx_callback_t cb_done)
+{
+	if (!transmitter_ready())
+		return USART_IO_BUSY;
+
+	// Reset the state machine
+	async_tx.mode = ASYNC_BUFFER;
+	async_tx.buffer = data;
+	async_tx.size = size;
+	async_tx.index = 0;
+	async_tx.cb_done = cb_done;
+	async_tx.active = true;
+
+	// The UDR ISR will be called as soon as this is enabled,
+	// and the state machine will take over from there.
+	set_udrie(true);
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::transmit_string(char *string, size_t max_len)
+{
+	while (!transmitter_ready())
+	{
+		// Wait for transmitter
+	}
+
+	size_t i = 0;
+	while (*string && i < max_len)
+	{
+		transmit_byte((uint8_t)*string++);
+		i++;
+	}
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done)
+{
+	if (!transmitter_ready())
+		return USART_IO_BUSY;
+
+	// Reset the state machine
+	async_tx.mode = ASYNC_STRING;
+	async_tx.buffer = (uint8_t*)string;
+	async_tx.size = max_len;
+	async_tx.index = 0;
+	async_tx.cb_done = cb_done;
+	async_tx.active = true;
+
+	// The UDR ISR will be called as soon as this is enabled,
+	// and the state machine will take over from there.
+	set_udrie(true);
+
+	return USART_IO_SUCCESS;
+}
+
+int16_t Usart_imp::receive_byte(void)
+{
+	while (!receiver_has_data())
+	{
+		// Wait for data
+	}
+
+	// Errors must be read before UDR
+	Usart_error_type error = get_errors();
+	if (error != USART_ERR_NONE)
+		return error;
+
+	// 9 bit mode
+	if (*registers.UCSRB & _BV(UCSZ2_BIT))
+	{
+		uint8_t bit8 = (*registers.UCSRB & _BV(RXB8_BIT)) >> RXB8_BIT;
+		return (bit8 << 8) | (*registers.UDR);
+	}
+
+	return *registers.UDR;
+}
+
+int16_t Usart_imp::receive_byte_async(void)
+{
+	if (receiver_has_data())
+	{
+		// Errors must be read before UDR
+		Usart_error_type error = get_errors();
+		if (error != USART_ERR_NONE)
+			return error;
+
+		// 9 bit mode
+		if (*registers.UCSRB & _BV(UCSZ2_BIT))
+		{
+			uint8_t bit8 = (*registers.UCSRB & _BV(RXB8_BIT)) >> RXB8_BIT;
+			return (bit8 << 8) | (*registers.UDR);
+		}
+
+		return *registers.UDR;
+	}
+	else
+		return USART_IO_NODATA;
+}
+
+Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size)
+{
+	// No need to wait for data here, since receive_byte() will wait anyway.
+
+	for (size_t i = 0; i < size; i++)
+	{
+		*buffer = (uint8_t)receive_byte();
+		buffer++;
+	}
+
+	return USART_IO_SUCCESS;
+}
+
+Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
+{
+	if (async_rx.active)
+		return USART_IO_BUSY;
+
+	// Reset the state machine
+	async_rx.buffer = data;
+	async_rx.size = size;
+	async_rx.index = 0;
+	async_rx.cb_done = cb_done;
+	async_rx.active = true;
+
+	// The RX interrupt will take over from here
+
+	return USART_IO_SUCCESS;
+}
+		
+void Usart_imp::enable_interrupts(void)
+{
+	tx_isr_enabled = true;
+	rx_isr_enabled = true;
+	udre_isr_enabled = true;
+}
+
+void Usart_imp::disable_interrupts(void)
+{
+	tx_isr_enabled = false;
+	rx_isr_enabled = false;
+	udre_isr_enabled = false;
+}
+
+Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback_t callback)
+{
+	switch (type)
+	{
+		case USART_INT_TX_COMPLETE:
+		{
+			if (tx_isr != NULL)
+				return USART_INT_INUSE;
+
+			tx_isr = callback;
+			tx_isr_enabled = true;
+			break;
+		};
+
+		case USART_INT_RX_COMPLETE:
+		{
+			if (rx_isr != NULL)
+				return USART_INT_INUSE;
+
+			rx_isr = callback;
+			rx_isr_enabled = true;
+			break;
+		};
+
+		case USART_INT_TX_READY:
+		{
+			if (udre_isr != NULL)
+				return USART_INT_INUSE;
+
+			udre_isr = callback;
+			udre_isr_enabled = true;
+			break;
+		};
+
+		// Unsupported interrupt type
+		default:
+			return USART_INT_FAILED;
+	}
+
+	return USART_INT_SUCCESS;
+}
+
+Usart_int_status Usart_imp::detach_interrupt(Usart_interrupt_type type)
+{
+	// Make sure to disable interrupts before we go modifying the ISR pointers!
+	cli();
+
+	switch (type)
+	{
+		case USART_INT_TX_COMPLETE:
+		{
+			// NOTE - No need to check if it's already cleared.
+			tx_isr = NULL;
+			tx_isr_enabled = false;
+			break;
+		};
+
+		case USART_INT_RX_COMPLETE:
+		{
+			rx_isr = NULL;
+			rx_isr_enabled = false;
+			break;
+		};
+
+		case USART_INT_TX_READY:
+		{
+			udre_isr = NULL;
+			udre_isr_enabled = false;
+			break;
+		};
+
+		// Unsupported interrupt type
+		default:
+		{
+			sei();
+			return USART_INT_FAILED;
+		}
+	}
+
 	sei();
-	return -1; /* XCKn pin not available */
-      }
-      
-      break;
-    }
-    default:	/* return -1 for all other invalid settings */
-    {
-      /* Re-enable global interrupts */
-      sei();
-      return -1; 
-    }
-  }
-  
-  /* Turn on the transmission and reception hardware circuitry */
-  _SFR_MEM8(registerTable.UCSRB_address) |= ((1 << RXEN_BIT) | (1 <<TXEN_BIT));
-  
-  /* Save the set mode within the implementation */
-  setMode = mode;
-  
-  /* Re-enable global interrupts */
-  sei();
-  
-  return 0;
+	return USART_INT_SUCCESS;
 }
-
-/**
-* Sets the mode of the connection when in Master SPI Mode
-* 
-* @param  mode		SPI mode to apply to connection.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_spi_mode(mspim_mode mode)
+		 
+Usart_error_type Usart_imp::get_errors(void)
 {
-  /* Safeguard check to ensure the USART connection has been initialised in MSPIM */
-  if (setMode == MASTER_SPI)
-  {
-    /* Manipulate the appropriate registers based on which mode is given to function */
-    switch (mode)
-    {
-      case MSPI_MODE_0:
-      {
-	/* Set the UCPOLn and UCPHAn bits to 0 in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) &= ~((1 << UCPOL_BIT) & ~(1 << UCPHA_BIT));
-	
-	break;
-      }
-      case MSPI_MODE_1:
-      {
-	/* Set the UCPOLn and UCPHAn bits to 0 and 1 (respectively) in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UCPOL_BIT);
-	_SFR_MEM8(registerTable.UCSRC_address) |= (1 << UCPHA_BIT);
-	
-	break;
-      }
-      case MSPI_MODE_2:
-      {
-	/* Set the UCPOLn and UCPHAn bits to 1 and 0 (respectively) in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UCPHA_BIT);
-	_SFR_MEM8(registerTable.UCSRC_address) |= (1 << UCPOL_BIT);
-	
-	break;
-      }
-      case MSPI_MODE_3:
-      {
-	/* Set the UCPOLn and UCPHAn bits to 1 in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) |= ((1 << UCPOL_BIT) | (1 << UCPHA_BIT));
-	
-	break;
-      }
-    }
-    
-    return 0;
-  }
-  else
-    return -1; /* USART not set to MSPIM */
+	// TODO - what if there are multiple errors?
+	if ((*registers.UCSRA & _BV(FE_BIT)) != 0)
+		return USART_ERR_FRAME;
+	if ((*registers.UCSRA & _BV(DOR_BIT)) != 0)
+		return USART_ERR_DATA_OVERRUN;
+	if ((*registers.UCSRA & _BV(UPE_BIT)) != 0)
+		return USART_ERR_PARITY;
+
+	return USART_ERR_NONE;
 }
 
-
-/**
-* Configures the serial format to be used for the USART.
-*
-* @param size		Character size to be used in serial format
-* @param parityType	Type of parity to use for format ('DISABLED' for no parity)
-* @param numberBits	Number of stop bits in frame
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_frame(uint8_t size, parity_option parityType, uint8_t numberBits)
+void Usart_imp::isr_receive_byte(void)
 {
-  /*
-   * Switch which frame size to choose depending on which value is provided
-   */
-  switch (size)
-  {
-    case 5:
-    {
-      /* Set the UCSZn2:0 bits to 0x00 */
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << UCSZ2_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) &= (~(1 << UCSZ1_BIT) & ~(1 << UCSZ0_BIT));
-      
-      break;
-    }
-    case 6:
-    {
-      /* Set the UCSZn2:0 bits to 0x01 */
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << UCSZ2_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UCSZ1_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << UCSZ0_BIT);
-      
-      break;
-    }
-    case 7:
-    {
-      /* Set the UCSZn2:0 bits to 0x02 */
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << UCSZ2_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UCSZ0_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << UCSZ1_BIT);
-      
-      break;
-    }
-    case 8:
-    {
-      /* Set the UCSZn2:0 bits to 0x03 */
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << UCSZ2_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) |= ((1 << UCSZ1_BIT) | (1 << UCSZ0_BIT));
-      
-      break;
-    }
-    default:	/* All other invalid cases return -1 */
-      return -1;
-  }
-  
-  /*
-   * Switch which parity option to apply depending on what is provided.
-   */
-  switch (parityType)
-  {
-    case N:
-    {
-      /* Set the UPMn bits to 0x00 */
-      _SFR_MEM8(registerTable.UCSRC_address) &= (~(1 << UPM1_BIT) & ~(1 << UPM0_BIT));
-      
-      break;
-    }
-    case E:
-    {
-      /* Set the UPMn bits to 0x02 */
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UPM0_BIT);
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << UPM1_BIT);
-      
-      break;
-    }
-    case O:
-    {
-      /* Set the UPMn bits to 0x03 */
-      _SFR_MEM8(registerTable.UCSRC_address) |= ((1 << UPM0_BIT) | (1 << UPM1_BIT));
-      
-      break;
-    }
-    default:	/* All other invalid options */
-      return -1;
-  }
-  
-  /*
-   * Switch which stop bit option to use depending on what is provided
-   */
-  switch (numberBits)
-  {
-    case 1:
-    {
-      /* Set the USBSn bit to 0x00 */
-      _SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << USBS_BIT);
-      
-      break;
-    }
-    case 2:
-    {
-      /* Set the USBSn bit to 0x01 */
-      _SFR_MEM8(registerTable.UCSRC_address) |= (1 << USBS_BIT);
-      
-      break;
-    }
-    default:	/* All other invalid options */
-      return -1;
-  } 
-  
-  return 0;
-    
+	// This interrupt is triggered when a byte has been received
+
+	if (async_rx.active)
+	{
+		// Check errors
+		Usart_error_type error_status = get_errors();
+
+		// Receive byte
+		uint8_t data = *registers.UDR;
+
+		async_rx.buffer[async_rx.index++] = data;
+
+		// Fully received the buffer
+		if (async_rx.index == async_rx.size)
+		{
+			async_rx.active = false;
+
+			// Inform the user the data has been received
+			if (async_rx.cb_done)
+				async_rx.cb_done(error_status, async_rx.buffer, async_rx.index);
+
+			// Call the user ISR to tell that data has finished being received
+			if (rx_isr && rx_isr_enabled)
+				rx_isr();
+		}
+	}
+
+	// Only process user ISR if no async operations are running
+	else
+	{
+		if (rx_isr && rx_isr_enabled)
+			rx_isr();
+
+		// Make sure the byte is read to clear the interrupt flag!
+		// If this is not done, it affects the UDRE interrupt ???
+		if (receiver_has_data())
+		{
+			volatile uint8_t data __attribute__((unused)) = *registers.UDR;
+		}
+	}
 }
 
-/**
-* Function for setting the bit order of the data frame when hardware is configured in Master SPI mode.
-*
-* @param order		Bit order option, either MSB or LSB first.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_bit_order(mspim_bit_order order)
+void Usart_imp::isr_transmit_complete(void)
 {
-  /* Safeguard check to ensure the USART connection has been initialised in MSPIM */
-  if (setMode == MASTER_SPI)
-  {
-    /* Manipulate the appropriate registers based on which mode is given to function */
-    switch (order)
-    {
-      case MSPIM_MSB_FIRST:
-      {
-	/* Set the UCDORDn bit to 0 in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) &= ~(1 << UDORD_BIT);
-	
-	break;
-      }
-      case MSPIM_LSB_FIRST:
-      {
-	/* Set the UCDORDn bit to 1 in the UCSRnC register */
-	_SFR_MEM8(registerTable.UCSRC_address) |= (1 << UDORD_BIT);
-	
-	break;
-      }
-    }    
-    return 0;
-  }
-  else
-    return -1; /* USART not set to MSPIM */
+	// This interrupt is triggered only when the transmission is complete
+	// and there is no new data to be sent
+
+	if (tx_isr && tx_isr_enabled)
+		tx_isr();
 }
 
-/**
-* Applies the desired Baud rate for USART communication.
-*
-* @param rate	Desired Baud rate to use for communication.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::set_baud_rate(baud_rate rate)
+void Usart_imp::isr_transmit_ready(void)
 {
-  /* Calculate the Baud value required for the user provided Baud rate 
-   *	Baud value = F_CPU			- 1
-   * 		     --------------------
-   * 		     (User_Baud_rate * K)
-   * 
-   * Where K varies depending on which mode the USART is set to.
-   * 
-   * Asynchronous mode (U2Xn = 0)	K = 16
-   * Asynchronous mode (U2Xn = 1)	K = 8
-   * Synchronous Master mode		K = 2
-   */
-  
-  uint32_t K;
-  
-  /* Check to see if Asynchronus mode (U2Xn set) is applied */
-  if ((setMode == ASYNCHRONOUS_USART) && ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << U2X_BIT)) == 0))
-    K = 16UL;
-  /* Check to see if if Asynchronus mode (U2Xn cleared) is applied */
-  else if ((setMode == ASYNCHRONOUS_USART) && ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << U2X_BIT)) == 1))
-    K = 8UL;
-  /* Check to see if Synchronous Master mode is applied */
-  else
-    K = 2UL;
-  
-  /* Set the UBBR value according to the equation above */
-  _SFR_MEM16(registerTable.UBRR_address) = (((F_CPU / (rate * K))) - 1);
-  
-  return 0;
-}
+	// This interrupt is triggered when the transmitter is ready
+	// to send more data, and UDRIE is enabled.
+	//
+	// This interrupt must either load more data into UDR,
+	// or disable the ISR, otherwise it will keep getting called!
 
-/**
-* Doubles the USART transmission speed. (only applies in Asynchronous mode!)
-*
-* @param value		Value to set the USART Double mode to. True to set it, false to clear it.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::double_usart_speed(bool value)
-{
-  /* For compatibility with future devices, clear the UDREn bit in the UCSRAn register whenever UCSRAn is being written to (source: datasheet) */
-  _SFR_MEM8(registerTable.UCSRA_address) &= ~(1 << UDRE_BIT);
-  
-  if (value)	/* Enable U2X mode */
-    _SFR_MEM8(registerTable.UCSRA_address) |= (1 << U2X_BIT);
-  else		/* Disable U2X mode */
-    _SFR_MEM8(registerTable.UCSRA_address) &= ~(1 << U2X_BIT);
+	if (async_tx.active)
+	{
+		// Send the next byte
+		uint8_t data = async_tx.buffer[async_tx.index++];
+		bool null_char = (async_tx.mode == ASYNC_STRING && data == '\0');
 
-  return 0;
-}
+		// Don't send the null char
+		if (!null_char)
+		{
+			*registers.UDR = data;
+		}
 
-/**
-* Indicates whether or not the USART data buffer is available or not at the time of checking.
-*
-* @param void.
-* @return boolean variable that is true if buffer is available, false otherwise.
-*/
-bool usart_imp::buffer_is_available(void)
-{
-  if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UDRE_BIT)) == 1)
-    return true;
-  else
-    return false;
-}
+		// No more bytes to send!
+		if ((async_tx.index == async_tx.size) || null_char)
+		{
+			// Stop async machine
+			async_tx.active = false;
 
-/**
-* Transmits one byte via the configured USART connection.
-*
-* @param data		Byte to be transmitted via the USART
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::transmit_byte(uint8_t data)
-{
-   /* Wait for the UDRn register to be free */
-  while ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UDRE_BIT)) == 0) {};
-  
-  /* Copy the the data byte to transmit into the USART buffer */
-  _SFR_MEM8(registerTable.UDR_address) = data;
-  
-  return 0;
-}
+			// Disable the UDR interrupt
+			set_udrie(false);
 
-/**
-* Transmits a null terminated string of data via the configured USART connection.
-*
-* @param data		Pointer to data that is to be transmitted via the USART.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::transmit_string(uint8_t *data)
-{
-  while (*data)
-  {
-    transmit_byte(*data++);
-  }
-  
-  return 0;
-}
+			//Usart_io_status status = USART_IO_SUCCESS;
 
-/**
-* Transmits an array of data via the configured USART connection.
-*
-* @param data		Pointer to data that is to be transmitted via the USART.
-* @param elements	Number of elements within the array to transmit.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::transmit_array(uint8_t *data, int8_t elements)
-{
-  for (int8_t i = 0; i < elements; i++)
-  {
-    transmit_byte(*data++);
-  }
-  
-  return 0;
-}
+			// We reached max_len before finding a null char
+			//if (async_tx.mode == ASYNC_STRING && data != '\0')
+			//	status = USART_IO_STRING_TRUNCATED;
 
-/**
-* Transfers one byte via the configured USART MSPIM connection.
-*
-* @param data		Byte to be transmitted via the USART
-* @return contents of receive buffer.
-*/
-uint8_t usart_imp::spi_transfer_byte(uint8_t data)
-{
-  /* Safeguard check to ensure instance is configured in MSPIM */
-  if (setMode == MASTER_SPI)
-  {
-    /* Wait for the UDRn register to be free */
-    while ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UDRE_BIT)) == 0) {};
-  
-    /* Copy the the data byte to transmit into the USART buffer */
-    _SFR_MEM8(registerTable.UDR_address) = data;
-    
-    /* Wait for the data to be received */
-    while ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << RXC_BIT)) == 0) {};
-    
-    /* return the data from the buffer */
-    return (_SFR_MEM8(registerTable.UDR_address));
-  }
-  else
-    return 0;	/* Not configured in MSPIM */
-}
+			// Inform the user the data has been sent
+			if (async_tx.cb_done != NULL)
+				async_tx.cb_done(USART_ERR_NONE);
 
-/**
-* Transfers an array via the configured USART MSPIM connection.
-*
-* @param TXdata		Pointer to the array to be transmitted via the USART.
-* @param RXdata		Pointer to a place in memory where an array can be received via the USART.
-* @param numberElements	Number of elements in the arrays (assumed to be the same).
-* @return void.
-*/
-void usart_imp::spi_transfer_array(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements)
-{
-  for (int8_t i = 0; i < numberElements; i++)
-  {
-    *RXdata = spi_transfer_byte(*TXdata);
-    
-    TXdata++;
-    RXdata++;
-  }
-}
+			// Call the user ISR to indicate the transmitter is free to send more data
+			if (udre_isr && udre_isr_enabled)
+				udre_isr();
+		}
+	}
+	// Only process user ISR if no async operations are running
+	else
+	{
+		bool finished = true;
 
-/**
-* Transfers a block of data and receives data via the SPI connection.
-* Note, this function relies on using DMA or similar to achieve 'non-blocking' operation.
-*
-* @param TXdata		Pointer to the array that is to be transmitted.
-* @param RXdata		Pointer to an array where data may be received to.
-* @param numberElements	Number of elements in the arrays (assumed to be the same).
-* @return void.
-*/
-void usart_imp::spi_dma_transfer(uint8_t *TXdata, uint8_t *RXdata, int8_t numberElements)
-{
-  /* TODO Initialise the DMA controller for SPI */
-  
-  /* TODO Provide the data to transmit ad the location of the received byte */
-  
-}
+		// Call the user ISR, which can be used to load more data into UDR.
+		// The callback should return a bool, which should be set to true
+		// when the user has no more data to send.
+		if (udre_isr && udre_isr_enabled)
+		{
+			finished = (bool)udre_isr();
+		}
 
-/**
-* Indicates whether the transmission is complete, i.e no new data
-* exists in the transmit buffer.
-*
-* @param void.
-* @return boolean variable that is true if transmission is complete, false otherwise.
-*/
-bool usart_imp::transmission_complete(void)
-{
-  if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << TXC_BIT)) > 0)
-    return true;
-  else
-    return false;
-}
-
-/**
-* Indicates whether the receive is complete, i.e unread data
-* exists in the receive buffer.
-*
-* @param void.
-* @return boolean variable that is true if receive is complete, false otherwise.
-*/
-bool usart_imp::receive_complete(void)
-{
-  if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << RXC_BIT)) > 0)
-    return true;
-  else
-    return false;
-}
-
-/**
-* Returns the contents of the USART receive buffer.
-*
-* @param void.
-* @return The received byte.
-*/
-uint8_t usart_imp::receive_byte(void)
-{
-  /* Check to make sure there is new unread data in the receive buffer */
-  while ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << RXC_BIT)) == 0) {};
-	
-  /* Return the contents of the receive buffer */
-  return (_SFR_MEM8(registerTable.UDR_address));
-}
-
-/**
-* Receives an array of uint8_t values.
-*
-* @param array		Pointer to the location in memory where the array can be returned to.
-* @param elements	Number of elements to return.
-* @return The received byte.
-*/
-void usart_imp::receive_array(uint8_t *array, int8_t elements)
-{
-  for (int8_t i = 0; i < elements; i++)
-  {
-    *array = receive_byte();
-    array++;
-  }
-}
-
-/**
-* Enables an interrupt to be be associated with a USART connection.
-*
-* @param interrupt		One of the possible interrupt types that are available.
-* @param ISRptr		Pointer to the user-defined ISR.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::enable_interrupt(usart_interrupt_types interrupt, void (*ISRptr)(void))
-{  
-  /* Place the user interrupt function pointer into the appropriate element of the function pointer array */
-  usartInterrupts[(NUM_USART_CHANNELS * (int8_t)usartNumber) + (int8_t)interrupt] = ISRptr;  
-  
-  /* Set the interrupt bit in the UCSRnB register */
-  switch (interrupt)
-  {
-    case USART_RX:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) |= (1 << RXCIE_BIT);
-      
-      break;
-    }
-    case USART_TX:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) |= (1 << TXCIE_BIT);
-      
-      break;
-    }
-    case USART_UDRE:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) |= (1 << UDRIE_BIT);
-      
-      break;
-    }
-  }
-  
-  return 0;
-}
-
-/**
-* Enables an interrupt to be be associated with a USART connection.
-*
-* @param interrupt		Which interrupt to disable.
-* @return 0 for success, -1 for error.
-*/
-int8_t usart_imp::disable_interrupt(usart_interrupt_types interrupt)
-{
-  /* Clear the user interrupt function pointer in the appropriate element of the function pointer array */
-  usartInterrupts[(NUM_USART_CHANNELS * (int8_t)usartNumber) + (int8_t)interrupt] = NULL; 
-  
-  /* Set the interrupt bit in the UCSRnB register */
-  switch (interrupt)
-  {
-    case USART_RX:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << RXCIE_BIT);
-      
-      break;
-    }
-    case USART_TX:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << TXCIE_BIT);
-      
-      break;
-    }
-    case USART_UDRE:
-    {
-      _SFR_MEM8(registerTable.UCSRB_address) &= ~(1 << UDRIE_BIT);
-      
-      break;
-    }
-  }
-  
-  return 0;
-}
-
-/**
-* Function indicates whether an error as occured with the USART transfer.
-* This can include Frame Errors, Data OverRun incidents and Parity Erros.
-*
-* @param void.
-* @return error type. This can be one of NONE, FRAME_ERR, DATA_OVERRUN, PARITY_ERR
-*/
-usart_error_types usart_imp::usart_error(void)
-{
-  if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << FE_BIT)) == 16)
-    return FRAME_ERR;
-  else if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << DOR_BIT)) == 8)
-    return DATA_OVERRUN;
-  else if ((_SFR_MEM8(registerTable.UCSRA_address) & (1 << UPE_BIT)) == 4)
-    return PARITY_ERR;
-  else
-  return NONE;
-}
-
-// IMPLEMENT EXTRANEOUS FUNCTIONS
-/**
-* Initialises the USART implementation instances and codes the required
-* register addresses, semaphore addresses and GPIO locations.
-*
-* @param void.
-* @return void.
-*/
-void initialise_USARTs(void)
-{
-  /* Initialise each USART with its particular USART number */
-  for (uint8_t i = 0; i < NUM_USART_CHANNELS; i++)
-  {
-    usart_imps[i].usartNumber = (usart_number)i;
-  }
-  
-  /* Assign the addresses of the register locations */
-  usart_imps[(int8_t)USART_0].registerTable.UDR_address = UDR0_ADDRESS;
-  usart_imps[(int8_t)USART_0].registerTable.UCSRA_address = UCSR0A_ADDRESS;
-  usart_imps[(int8_t)USART_0].registerTable.UCSRB_address = UCSR0B_ADDRESS;
-  usart_imps[(int8_t)USART_0].registerTable.UBRR_address = UBRR0_ADDRESS;
-  
-  usart_imps[(int8_t)USART_1].registerTable.UDR_address = UDR1_ADDRESS;
-  usart_imps[(int8_t)USART_1].registerTable.UCSRA_address = UCSR1A_ADDRESS;
-  usart_imps[(int8_t)USART_1].registerTable.UCSRB_address = UCSR1B_ADDRESS;
-  usart_imps[(int8_t)USART_1].registerTable.UBRR_address = UBRR1_ADDRESS;
-  
-  usart_imps[(int8_t)USART_2].registerTable.UDR_address = UDR2_ADDRESS;
-  usart_imps[(int8_t)USART_2].registerTable.UCSRA_address = UCSR2A_ADDRESS;
-  usart_imps[(int8_t)USART_2].registerTable.UCSRB_address = UCSR2B_ADDRESS;
-  usart_imps[(int8_t)USART_2].registerTable.UBRR_address = UBRR2_ADDRESS;
-  
-  usart_imps[(int8_t)USART_3].registerTable.UDR_address = UDR3_ADDRESS;
-  usart_imps[(int8_t)USART_3].registerTable.UCSRA_address = UCSR3A_ADDRESS;
-  usart_imps[(int8_t)USART_3].registerTable.UCSRB_address = UCSR3B_ADDRESS;
-  usart_imps[(int8_t)USART_3].registerTable.UBRR_address = UBRR3_ADDRESS;
-  
-  /* Assign the GPIO addresses and semaphore addresses for each USART instance */
-  usart_imps[(int8_t)USART_0].usartPinCollection.tx_address.port = USART0_TX_PORT;
-  usart_imps[(int8_t)USART_0].usartPinCollection.tx_address.pin = USART0_TX_PIN;
-  usart_imps[(int8_t)USART_0].usartPinCollection.tx_s = &semaphores[(int8_t)USART0_TX_PORT][(int8_t)USART0_TX_PIN];
-  
-  usart_imps[(int8_t)USART_0].usartPinCollection.rx_address.port = USART0_RX_PORT;
-  usart_imps[(int8_t)USART_0].usartPinCollection.rx_address.pin = USART0_RX_PIN;
-  usart_imps[(int8_t)USART_0].usartPinCollection.rx_s = &semaphores[(int8_t)USART0_RX_PORT][(int8_t)USART0_RX_PIN];
-  
-  usart_imps[(int8_t)USART_0].usartPinCollection.xck_address.port = USART0_XCK_PORT;
-  usart_imps[(int8_t)USART_0].usartPinCollection.xck_address.pin = USART0_XCK_PIN;
-  usart_imps[(int8_t)USART_0].usartPinCollection.xck_s = &semaphores[(int8_t)USART0_XCK_PORT][(int8_t)USART0_XCK_PIN];
-  
-  usart_imps[(int8_t)USART_1].usartPinCollection.tx_address.port = USART1_TX_PORT;
-  usart_imps[(int8_t)USART_1].usartPinCollection.tx_address.pin = USART1_TX_PIN;
-  usart_imps[(int8_t)USART_1].usartPinCollection.tx_s = &semaphores[(int8_t)USART1_TX_PORT][(int8_t)USART1_TX_PIN];
-  
-  usart_imps[(int8_t)USART_1].usartPinCollection.rx_address.port = USART1_RX_PORT;
-  usart_imps[(int8_t)USART_1].usartPinCollection.rx_address.pin = USART1_RX_PIN;
-  usart_imps[(int8_t)USART_1].usartPinCollection.rx_s = &semaphores[(int8_t)USART1_RX_PORT][(int8_t)USART1_RX_PIN];
-  
-  usart_imps[(int8_t)USART_1].usartPinCollection.xck_address.port = USART1_XCK_PORT;
-  usart_imps[(int8_t)USART_1].usartPinCollection.xck_address.pin = USART1_XCK_PIN;
-  usart_imps[(int8_t)USART_1].usartPinCollection.xck_s = &semaphores[(int8_t)USART1_XCK_PORT][(int8_t)USART1_XCK_PIN];
-  
-  usart_imps[(int8_t)USART_2].usartPinCollection.tx_address.port = USART2_TX_PORT;
-  usart_imps[(int8_t)USART_2].usartPinCollection.tx_address.pin = USART2_TX_PIN;
-  usart_imps[(int8_t)USART_2].usartPinCollection.tx_s = &semaphores[(int8_t)USART2_TX_PORT][(int8_t)USART2_TX_PIN];
-  
-  usart_imps[(int8_t)USART_2].usartPinCollection.rx_address.port = USART2_RX_PORT;
-  usart_imps[(int8_t)USART_2].usartPinCollection.rx_address.pin = USART2_RX_PIN;
-  usart_imps[(int8_t)USART_2].usartPinCollection.rx_s = &semaphores[(int8_t)USART2_RX_PORT][(int8_t)USART2_RX_PIN];
-  
-  usart_imps[(int8_t)USART_2].usartPinCollection.xck_address.port = USART2_XCK_PORT;
-  usart_imps[(int8_t)USART_2].usartPinCollection.xck_address.pin = USART2_XCK_PIN;
-  usart_imps[(int8_t)USART_2].usartPinCollection.xck_s = &semaphores[(int8_t)USART2_XCK_PORT][(int8_t)USART2_XCK_PIN];
-  
-  usart_imps[(int8_t)USART_3].usartPinCollection.tx_address.port = USART3_TX_PORT;
-  usart_imps[(int8_t)USART_3].usartPinCollection.tx_address.pin = USART3_TX_PIN;
-  usart_imps[(int8_t)USART_3].usartPinCollection.tx_s = &semaphores[(int8_t)USART3_TX_PORT][(int8_t)USART3_TX_PIN];
-  
-  usart_imps[(int8_t)USART_3].usartPinCollection.rx_address.port = USART3_RX_PORT;
-  usart_imps[(int8_t)USART_3].usartPinCollection.rx_address.pin = USART3_RX_PIN;
-  usart_imps[(int8_t)USART_3].usartPinCollection.rx_s = &semaphores[(int8_t)USART3_RX_PORT][(int8_t)USART3_RX_PIN];
-  
-  usart_imps[(int8_t)USART_3].usartPinCollection.xck_address.port = USART3_XCK_PORT;
-  usart_imps[(int8_t)USART_3].usartPinCollection.xck_address.pin = USART3_XCK_PIN;
-  usart_imps[(int8_t)USART_3].usartPinCollection.xck_s = &semaphores[(int8_t)USART3_XCK_PORT][(int8_t)USART3_XCK_PIN];
+		// Disable the ISR when there is no more data to be sent,
+		// or there is no ISR to service.
+		if (finished)
+		{
+			set_udrie(false);
+		}
+	}
 }
 
 
 /** Declare the ISRptrs
  * 
  * Each USART interrupt type is tied to a relevant interrupt vector. These are associated
- * with the user ISRs by way of the function pointer array usartInterrupts[]. Here the
- * ISRs are declared and the user ISR is called if the appropriate element of the function
- * pointer array is non NULL.
- */
+ * with the user ISRs which are contained within the specific USART implementation.
+ *
+ * Note that the usartX_imp pointers are guaranteed to be non-NULL because the ISRs
+ * are not enabled until after the pointer has been set. (see: Usart::bind() and Usart::attach_interrupt())
+ * */
 
+#ifdef USE_USART0
 ISR(USART0_RX_vect)
 {
-  /* Clear the RXCn flag in UCSRnA as a safeguard */
-  UCSR0A &= (1 << RXC0);
-    
-  if (usartInterrupts[USART0_RX_int])  
-    usartInterrupts[USART0_RX_int]();
+	usart0_imp->isr_receive_byte();
+
+	// NOTE - The RXC flag is automatically cleared when UDR is read,
+	// but clear the RXC flag anyway as a safeguard
+	UCSR0A &= _BV(RXC_BIT);
 }
 
 ISR(USART0_TX_vect)
 {
-  if (usartInterrupts[USART0_TX_int])
-    usartInterrupts[USART0_TX_int]();
+	usart0_imp->isr_transmit_complete();
+	// TXC flag is cleared automatically
 }
 
 ISR(USART0_UDRE_vect)
 {
-  if (usartInterrupts[USART0_UDRE_int])
-    usartInterrupts[USART0_UDRE_int]();
+	usart0_imp->isr_transmit_ready();
 }
+#endif
 
+#ifdef USE_USART1
 ISR(USART1_RX_vect)
 {
-  /* Clear the RXCn flag in UCSRnA as a safeguard */
-  UCSR1A &= (1 << RXC1);
-    
-  if (usartInterrupts[USART1_RX_int])  
-    usartInterrupts[USART1_RX_int]();
+	usart1_imp->isr_receive_byte();
+	UCSR1A &= _BV(RXC_BIT);
 }
 
 ISR(USART1_TX_vect)
 {
-  if (usartInterrupts[USART1_TX_int])
-    usartInterrupts[USART1_TX_int]();
+	usart1_imp->isr_transmit_complete();
 }
 
 ISR(USART1_UDRE_vect)
 {
-  if (usartInterrupts[USART1_UDRE_int])
-    usartInterrupts[USART1_UDRE_int]();
+	usart1_imp->isr_transmit_ready();
 }
+#endif
 
+#ifdef USE_USART2
 ISR(USART2_RX_vect)
 {
-  /* Clear the RXCn flag in UCSRnA as a safeguard */
-  UCSR2A &= (1 << RXC2);
-    
-  if (usartInterrupts[USART2_RX_int])  
-    usartInterrupts[USART2_RX_int]();
+	usart2_imp->isr_receive_byte();
+	UCSR2A &= _BV(RXC_BIT);
 }
 
 ISR(USART2_TX_vect)
 {
-  if (usartInterrupts[USART2_TX_int])
-    usartInterrupts[USART2_TX_int]();
+	usart2_imp->isr_transmit_complete();
 }
 
 ISR(USART2_UDRE_vect)
 {
-  if (usartInterrupts[USART2_UDRE_int])
-    usartInterrupts[USART2_UDRE_int]();
+	usart2_imp->isr_transmit_ready();
 }
+#endif
 
+#ifdef USE_USART3
 ISR(USART3_RX_vect)
 {
-  /* Clear the RXCn flag in UCSRnA as a safeguard */
-  UCSR3A &= (1 << RXC3);
-    
-  if (usartInterrupts[USART3_RX_int])  
-    usartInterrupts[USART3_RX_int]();
+	usart3_imp->isr_receive_byte();
+	UCSR3A &= _BV(RXC_BIT);
 }
 
 ISR(USART3_TX_vect)
 {
-  if (usartInterrupts[USART3_TX_int])
-    usartInterrupts[USART3_TX_int]();
+	usart3_imp->isr_transmit_complete();
 }
 
 ISR(USART3_UDRE_vect)
 {
-  if (usartInterrupts[USART3_UDRE_int])
-    usartInterrupts[USART3_UDRE_int]();
+	usart3_imp->isr_transmit_ready();
 }
+#endif
+
+#ifdef USE_USART_LIN
+// TODO - Which interrupts does the LIN module support?
+#endif
 
 // ALL DONE.

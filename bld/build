@@ -190,6 +190,11 @@ get_hal()
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 
+	# Copy chip-specific target headers required by target_config.hpp
+	# TODO - Would be nice to not have to do this (Maybe make the script automatically copy #included files?)
+	mkdir -p $OUTPATH/targets
+	cp $TCPATH/$HAL_SOURCE_PATH/targets/*.hpp $OUTPATH/targets/
+
 	# Only import each particular peripheral if it is enabled in the configuration.
 
 	# Iterate through the items in the enabled HAL peripherals list.

@@ -58,7 +58,7 @@
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
-eeprom_return eeprom::write(uint16_t dst, uint8_t* data, uint16_t length)
+Eeprom_command_status Eeprom::write(Eeprom_address dst, uint8_t* data, uint16_t length)
 {
 	// Check specified address is within range.
 	if (dst > EEPROM_END_ADDRESS)
@@ -81,7 +81,7 @@ eeprom_return eeprom::write(uint16_t dst, uint8_t* data, uint16_t length)
 	return EEPROM_SUCCESS;
 }
 
-eeprom_return eeprom::read(uint16_t src, uint8_t* data, uint16_t length)
+Eeprom_command_status Eeprom::read(Eeprom_address src, uint8_t* data, uint16_t length)
 {
 	// Check specified address is within range.
 	if (src > EEPROM_END_ADDRESS)
@@ -104,7 +104,7 @@ eeprom_return eeprom::read(uint16_t src, uint8_t* data, uint16_t length)
 	return EEPROM_SUCCESS;
 }
 	
-eeprom_return eeprom::copy(uint16_t src, uint16_t dst, uint16_t length)
+Eeprom_command_status Eeprom::copy(Eeprom_address src, Eeprom_address dst, uint16_t length)
 {
 	// Check specified address is within range.
 	if ((dst > EEPROM_END_ADDRESS) || (src > EEPROM_END_ADDRESS))
@@ -135,7 +135,7 @@ eeprom_return eeprom::copy(uint16_t src, uint16_t dst, uint16_t length)
 	return EEPROM_SUCCESS;
 }
 	
-eeprom_return eeprom::erase(uint16_t address, uint16_t length)
+Eeprom_command_status Eeprom::erase(Eeprom_address address, uint16_t length)
 {
 	// Check specified address is within range.
 	if (address > EEPROM_END_ADDRESS)
