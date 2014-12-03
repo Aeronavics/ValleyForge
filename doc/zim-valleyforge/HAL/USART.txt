@@ -1,0 +1,197 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-03T16:01:56+13:00
+
+====== USART ======
+Created Wednesday 03 December 2014
+
+The Universal Synchronous-Asynchronous Receive-Transmit (USART) module provides a portable interface for communicating with USART based devices, such as serial terminals and cellular modems.
+
+===== Configuration =====
+The modes that the USART library supports depends heavily on the capabilities of the chip. All chips will support USART_MODE_ASYNCHRONOUS which is just standard UART with RX/TX pins, and some chips will also support USART_MODE_SYNCHRONOUS which adds a clock pin as well, similar to SPI.
+
+In synchronous mode, the USART can be configured as either master (chip drives the clock output), or slave (chip uses the clock provided by a master).
+
+IMPORTANT - The USART module must be instantiated and configured before it can be used!
+By default, the USART module is disabled, and must be enabled before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
+
+Example configuration:
+'''
+Usart usart = Usart::bind(USART_0);
+usart.configure(USART_MODE_ASYNCHRONOUS, 9600, 8, USART_PARITY_NONE, 1);
+usart.enable();
+'''
+
+
+===== Blocking Communication =====
+The default communication functions are blocking, ie, they will not return until the data transfer is finished.
+This makes it easier to implement complex communications, but starves the CPU of valuable cycles when it could be doing something else.
+If CPU time is important, consider using the asynchronous communication functions below.
+
+See the examples at the bottom of this page to see how to implement blocking communication.
+
+**The following functions are provided:**
+''transmit_byte''/''receive_byte''
+	Sends/receives a single byte, waiting until the transfer is completed.
+
+''transmit_buffer''/''receive_buffer''
+	Sends/receives a block of data of fixed size, waiting until the transfer is completed.
+	
+''transmit_string''
+	Sends a null-terminated string of variable size, up to a maximum length. The null character is not transmitted.
+	
+These functions will block if the transmitter or receiver is not yet ready, but may return an error code if something goes wrong.
+Error codes should be respected when using receive functions, as it may indicate framing or parity errors. A simple way of checking for errors is as follows:
+
+'''
+int16_t result = usart.receive_byte();
+if (result < 0)
+{
+	Usart_error_type error = (Usart_error_type)result;
+	// The received byte had an error in it, you can check which error here...
+}
+else
+{
+	// The data is valid, and can be safely type-casted to a uint8 (unless you are using 9 bit data frames)
+	uint8_t data = (uint8_t)result;
+}
+'''
+
+
+===== Asynchronous Communication =====
+The USART library provides asynchronous communication functions, which return immediately and transfer data in the background using either interrupts or DMA. You must use callbacks to handle asynchronous data, since the data could appear at any time. Care must be taken when sharing global data in the callbacks to prevent concurrency issues, as the callback is executed directly from the interrupt service routine.
+
+**The following functions are provided:**
+''transmit_byte_async/receive_byte_async''
+	Sends/receives a single byte, returning immediately. Returns USART_IO_BUSY if the module is currently transmitting/receiving data.
+	Alternatively, you can check transmitter_ready() or receiver_has_data() before calling these functions.
+
+''transmit_buffer_async/receive_buffer_async''
+	Sends/receives a block of data of fixed size, returning immediately. The provided callback is called when the operation has completed.
+	Alternatively, you can check transmitter_ready() to see if the transmission has finished.
+	You should not use receiver_has_data() to check for asynchronous reception, as it will always return false in this case.
+
+''transmit_string_async''
+	Sends a null-terminated string of variable size, up to a maximum length, returning immediately. The provided callback is called when the operation has completed.
+
+Because asynchronous functions return immediately, you should always check the return type to see if it returned USART_IO_BUSY. Alternatively you should check the status flags ''transmitter_ready()'' or ''receiver_has_data()'' before calling the functions.
+
+===== Interrupts =====
+The USART library allows you to register interrupt service routines, which are called by the CPU when specific events happen.
+The exact interrupts provided will vary between devices, but generally it will support some form of interrupt which triggers when a byte of data is received, or when the transmitter becomes available to send more data.
+
+When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes.
+
+IMPORTANT - Only one callback can be registered for each interrupt type.
+
+===== Errors & Status Flags =====
+The USART library provides various error and status flags which should be checked to ensure proper operation.
+
+''transmitter_ready()''
+	Tells when the transmitter is ready to accept more data
+
+''receiver_has_data()''
+	Tells when the receiver has data to be read.
+	Only guarantees a minimum of one byte is in the chip's buffer.
+
+''get_errors()''
+	Returns any current errors. Not directly useful, since all receive_ functions will automatically check this, and the value of it is not valid after the buffer has been read.
+
+''flush()''
+	Flushes the receive buffer and any errors which may be present. Generally not needed, but provided for convenience.
+
+===== Examples =====
+**A simple echo demo**
+
+'''
+#include <hal/usart.hpp>
+
+int main(void)
+{
+	Usart usart = Usart::bind(USART_0);
+	if (usart.configure(USART_MODE_ASYNCHRONOUS, 9600) != USART_CFG_SUCCESS)
+	{
+		// Handle any config errors here
+		return -1;
+	}
+	usart.enable();
+
+	while (true)
+	{
+		// Wait until a byte is received
+		int16_t data = usart.receive_byte();
+		if (data < 0)
+		{
+			// An error occurred (Usart_error_type)
+			return -1;
+		}
+
+		// Transmit the byte back
+		usart.transmit_byte((uint8_t)data);
+	}
+}
+'''
+
+
+**Implementing asynchronous communications**
+
+'''
+#include <hal/usart.hpp>
+
+#define RX_LEN 16
+
+static uint8_t rx_buffer[RX_LEN];
+
+void data_received(Usart_error_type error, uint8_t* buffer, size_t size)
+{
+	// Do something with the data here...
+
+	// Start listening again
+	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	{
+		// An error occurred, do something about it here...
+	}
+}
+
+int main(void)
+{
+	Usart usart = Usart::bind(USART_0);
+	if (usart.configure(USART_MODE_ASYNCHRONOUS, 9600) != USART_CFG_SUCCESS)
+	{
+		// Handle any config errors here
+		return -1;
+	}
+	usart.enable();
+
+	// Start listening for 16 bytes of data
+	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	{
+		// An error occurred
+		return -1;
+	}
+
+	// Now we're free to do other stuff without touching the USART
+	while (true)
+	{
+		// Do stuff here...
+	}
+}
+'''
+
+
+===== Support =====
+To see overall hardware support, see Support
+
+[*] ATmega2560 family - TODO - Untested
+[*] AT90CAN128 family
+[ ] ATmega64M1/ATmega64C1 - These chips do not have USART, but instead provide LIN which is similar. TODO - Partially implemented
+
+[ ] AVR32UC33C0512C - No support
+
+[ ] LM3S1968 - No support
+[ ] STM32 - No support
+
+[ ] [[ArduPilotMega]] - No support
+[ ] Linux - No support
+
+

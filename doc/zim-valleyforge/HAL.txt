@@ -4,7 +4,22 @@ Creation-Date: 2014-06-10T14:40:10+12:00
 
 ====== HAL ======
 
-[[+GPIO|GPIO]]
+The Hardware Abstraction Library (HAL) provides a portable interface to various hardware peripherals for different supported [[Targets|targets]].
+
+===== Modules =====
+[[+GPIO|GPIO]] - General Purpose IO
+[[HAL:USART|USART]] - Asynchronous & Synchronous USART interface
+CAN - TODO
+I2C - TODO
+SPI - TODO
+Timer/Counter - TODO
+EEPROM - TODO
+Watchdog - TODO
+
+===== Support =====
+{{./diagram.png?type=diagram}}
+
+{{./diagram001.png?type=diagram}}
 
 Created Tuesday 10 June 2014
 
