@@ -367,15 +367,15 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 		{
 			case PCINT_0:
 				PCICR |= (1 << PCINT_0);
-				PCMSK0 = (1 << address.pin);
+				PCMSK0 |= (1 << address.pin);
 				break;
 			case PCINT_1:
 				PCICR |= (1 << PCINT_1);
-				PCMSK1 = (address.port == PORT_J) ? (1 << (address.pin - 1)) : (1 << address.pin);
+				PCMSK1 |= (address.port == PORT_J) ? (1 << (address.pin - 1)) : (1 << address.pin);
 				break;
 			case PCINT_2:
 				PCICR |= (1 << PCINT_2);
-				PCMSK0 = (1 << address.pin);
+				PCMSK0 |= (1 << address.pin);
 				break;
 			case EINT_0:
 				// Set the mode of interrupt, between falling edge, rising edge, any edge and low level.

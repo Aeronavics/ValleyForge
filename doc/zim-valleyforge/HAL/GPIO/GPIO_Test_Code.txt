@@ -20,21 +20,21 @@ test_hal_gpio_avr.hpp^{*}
 == Test ==
 ^{**}
 
-==  and add Support For  ==
+== and add Support For ==
 [ ] //AVR AT90CAN128//
 [ ] //AVR ATmega2560//
 [ ] //More error detection facilities//
 
 ===== How Do I Use this Module? =====
 
-1. Open a terminal and ValleyForge. 
-2. Modify the VForge settings to reflect the board that the program will be uploaded to.
-3. Build test_hal_gpio_avr .
-4. Connect and upload to the board, mounted on the AVR test apparatus.
-**5. **All of the LEDs should light up, or if an alternate setup is used, all of the outputs on Port B should be low. If this is not the case, there is a problem with the GPIO pin set-up. Either the port is incorrect, pin addresses used by the program are wrong, the program's port address is incorrect, or there is a problem with the LEDs. If almost all of the LEDs turn on, but some don't, there may be a problem with several of the LEDs.
-6. Push button 1. LED 1 should turn off. Release button 1 and the LED should turn on again. If the LED does not change, then there is likely a problem with the port connection, the buttons, or the port and/or pin addresses used by the program. It may be a good idea to check the connections, and to try step 7 to see if the problem is confined to button 1.
-7. Push button 2. LED 2 should toggle. Press it again to toggle LED2 on again.
-8. Push button 0. The light on LED 0 should turn off, indicating that the button presses will now be detected via interrupt. Repeat steps 6 and 7, ensuring that the behaviour is the same. If the behaviour is different, or does not occur, there is a problem with the interrupt registration on the board.
+	1. Open a terminal and ValleyForge. 
+	2. Modify the VForge settings to reflect the board that the program will be uploaded to.
+	3. Build test_hal_gpio_avr .
+	4. Connect and upload to the board, mounted on the AVR test apparatus.
+	5. All of the LEDs should light up, or if an alternate setup is used, all of the outputs on Port B should be low. If this is not the case, there is a problem with the GPIO pin set-up. Either the port is incorrect, pin addresses used by the program are wrong, the program's port address is incorrect, or there is a problem with the LEDs. If almost all of the LEDs turn on, but some don't, there may be a problem with several of the LEDs.
+	6. Push button 1. LED 1 should turn off. Release button 1 and the LED should turn on again. If the LED does not change, then there is likely a problem with the port connection, the buttons, or the port and/or pin addresses used by the program. It may be a good idea to check the connections, and to try step 7 to see if the problem is confined to button 1.
+	7. Push button 2. LED 2 should toggle. Press it again to toggle LED2 on again.
+	8. Push button 0. The light on LED 0 should turn off, indicating that the button presses will now be detected via interrupt. Repeat steps 6 and 7, ensuring that the behaviour is the same. If the behaviour is different, or does not occur, there is a problem with the interrupt registration on the board.
 
 ===== Description =====
 
@@ -43,10 +43,11 @@ __∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__		⇒		__∅__	__
 ↑	↑	↑	↑	↑	↑	↑	↑		⇒		↑	↑	↑	↑	↑	↑	↓	↑
 _{Figure 1:  	A representation of the test I/O setup. Button are arrows and LEDs are crossed circles. } 
 
-1. The test_hal_gpio_avr code uses the GPIO module two 8-bit ports. One of these ports (usually port B) is connected to a set of 8 active low LEDs, one for each bit. The other port is connected to 8 active high push buttons. A representation of this system is shown in Figure 1. 
-2. The system has two modes of operation.  In each loop, the state of the button (stored in a special array) is updated to reflect the current state, and appropriate actions (as summarised in Table 1) are carried out. 
-	a. //The first uses polling to determine the current states of the buttons. When the mode is POLLING, buttons 1 to 3 are polled.//
-	b. //If the mode is set to INTERRUPT, the buttons (except for button 0‡) are no longer polled. Instead, the state of the button is updated if an interrupt occurs on the port.// 
+	1. The test_hal_gpio_avr code uses the GPIO module two 8-bit ports. One of these ports (usually port B) is connected to a set of 8 active low LEDs, one for each bit. The other port is connected to 8 active high push buttons. A representation of this system is shown in Figure 1. 
+	2. The system has two modes of operation.  In each loop, the state of the button (stored in a special array) is updated to reflect the current state, and appropriate actions (as summarised in Table 1) are carried out. 
+		a. //The first uses polling to determine the current states of the buttons. When the mode is POLLING, buttons 1 to 3 are polled.//
+		b. //If the mode is set to INTERRUPT, the buttons (except for button 0‡) are no longer polled. Instead, the state of the button is updated if an interrupt occurs on the port.// 
+
 
 _{Table  1:  	Buttons and the action that results from their use}
 **Button	  Polled or Interrupts		  Action**
