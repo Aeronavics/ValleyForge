@@ -1,0 +1,67 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-11-28T15:25:52+13:00
+
+====== GPIO Test Code ======
+Created Friday 28 November 2014
+
+The following article details the operation of the GPIO test module.
+
+=== Required Files ===
+test_hal_gpio_avr.cpp
+test_hal_gpio_avr.hpp^{*}
+
+=== Currently Supported Boards ===
+//AVR ATmega64M1//
+//AVR ATmega64C1//
+
+=== Todo ===
+
+== Test ==
+^{**}
+
+== and add Support For ==
+[ ] //AVR AT90CAN128//
+[ ] //AVR ATmega2560//
+[ ] //More error detection facilities//
+
+===== How Do I Use this Module? =====
+
+	1. Open a terminal and ValleyForge. 
+	2. Modify the VForge settings to reflect the board that the program will be uploaded to.
+	3. Build test_hal_gpio_avr .
+	4. Connect and upload to the board, mounted on the AVR test apparatus.
+	5. All of the LEDs should light up, or if an alternate setup is used, all of the outputs on Port B should be low. If this is not the case, there is a problem with the GPIO pin set-up. Either the port is incorrect, pin addresses used by the program are wrong, the program's port address is incorrect, or there is a problem with the LEDs. If almost all of the LEDs turn on, but some don't, there may be a problem with several of the LEDs.
+	6. Push button 1. LED 1 should turn off. Release button 1 and the LED should turn on again. If the LED does not change, then there is likely a problem with the port connection, the buttons, or the port and/or pin addresses used by the program. It may be a good idea to check the connections, and to try step 7 to see if the problem is confined to button 1.
+	7. Push button 2. LED 2 should toggle. Press it again to toggle LED2 on again.
+	8. Push button 0. The light on LED 0 should turn off, indicating that the button presses will now be detected via interrupt. Repeat steps 6 and 7, ensuring that the behaviour is the same. If the behaviour is different, or does not occur, there is a problem with the interrupt registration on the board.
+
+===== Description =====
+
+7	6	5	4	3	2	1	 0		⇒		7	6	5	4	3	2	1	 0	
+__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__		⇒		__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	∅	__∅__
+↑	↑	↑	↑	↑	↑	↑	↑		⇒		↑	↑	↑	↑	↑	↑	↓	↑
+_{Figure 1:  	A representation of the test I/O setup. Button are arrows and LEDs are crossed circles. } 
+
+	1. The test_hal_gpio_avr code uses the GPIO module two 8-bit ports. One of these ports (usually port B) is connected to a set of 8 active low LEDs, one for each bit. The other port is connected to 8 active high push buttons. A representation of this system is shown in Figure 1. 
+	2. The system has two modes of operation.  In each loop, the state of the button (stored in a special array) is updated to reflect the current state, and appropriate actions (as summarised in Table 1) are carried out. 
+		a. //The first uses polling to determine the current states of the buttons. When the mode is POLLING, buttons 1 to 3 are polled.//
+		b. //If the mode is set to INTERRUPT, the buttons (except for button 0‡) are no longer polled. Instead, the state of the button is updated if an interrupt occurs on the port.// 
+
+
+_{Table  1:  	Buttons and the action that results from their use}
+**Button	  Polled or Interrupts		  Action**
+0			Always polled				 	If pressed, switches the button checking mode from polling to  interrupt-based.
+1			Mode-dependent				If button 1 is held down, LED 1 turns off, else, 
+2			Mode-dependent				If button 2 is pressed, LED2 toggles state.
+3			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
+4			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
+5			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
+6			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
+7			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
+
+
+_________________________________________________________________
+^{*} //Refer to test_hal_gpio_avr.hpp for a complete list//
+^{** }//The connector board for the  AT90CAN128 was broken, making it impossible to test the code properly. GPIO out pins were verified by enabling// and turning on// LEDs on port D, but the ability of the code to handle interrupts and input on this board is uncertain. The code has not been tested at all on the ATmega2560.//
+^{‡ }//Button 0 is always polled. This is a safeguard put in place in case the interrupt mode is dysfunctional, allowing the mode to be switched back to polling.//
