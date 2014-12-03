@@ -786,7 +786,7 @@ bool Usart_imp::transmitter_ready(void)
 
 bool Usart_imp::receiver_has_data(void)
 {
-	return (*registers.UCSRA & _BV(RXC_BIT)) != 0;
+	return ((*registers.UCSRA & _BV(RXC_BIT)) != 0) && (!async_rx.active);
 }
 
 Usart_io_status Usart_imp::transmit_byte(uint8_t data)
@@ -952,6 +952,8 @@ int16_t Usart_imp::receive_byte_async(void)
 
 Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size)
 {
+	// No need to wait for data here, since receive_byte() will wait anyway.
+
 	for (size_t i = 0; i < size; i++)
 	{
 		*buffer = (uint8_t)receive_byte();
@@ -1116,11 +1118,19 @@ void Usart_imp::isr_receive_byte(void)
 				rx_isr();
 		}
 	}
+
 	// Only process user ISR if no async operations are running
 	else
 	{
 		if (rx_isr && rx_isr_enabled)
 			rx_isr();
+
+		// Make sure the byte is read to clear the interrupt flag!
+		// If this is not done, it affects the UDRE interrupt ???
+		if (receiver_has_data())
+		{
+			volatile uint8_t data __attribute__((unused)) = *registers.UDR;
+		}
 	}
 }
 
@@ -1135,10 +1145,6 @@ void Usart_imp::isr_transmit_complete(void)
 
 void Usart_imp::isr_transmit_ready(void)
 {
-	Gpio_pin led7(_IOADDR(PORT_C, PIN_7));
-	Gpio_pin led6(_IOADDR(PORT_C, PIN_6));
-	led7.write(GPIO_O_LOW);
-
 	// This interrupt is triggered when the transmitter is ready
 	// to send more data, and UDRIE is enabled.
 	//
@@ -1149,18 +1155,17 @@ void Usart_imp::isr_transmit_ready(void)
 	{
 		// Send the next byte
 		uint8_t data = async_tx.buffer[async_tx.index++];
+		bool null_char = (async_tx.mode == ASYNC_STRING && data == '\0');
 
 		// Don't send the null char
-		if (!(async_tx.mode == ASYNC_STRING && data == '\0'))
+		if (!null_char)
 		{
 			*registers.UDR = data;
 		}
 
 		// No more bytes to send!
-		if (async_tx.index == async_tx.size)
+		if ((async_tx.index == async_tx.size) || null_char)
 		{
-			led6.write(GPIO_O_LOW);
-
 			// Stop async machine
 			async_tx.active = false;
 
@@ -1202,8 +1207,6 @@ void Usart_imp::isr_transmit_ready(void)
 			set_udrie(false);
 		}
 	}
-
-	led7.write(GPIO_O_HIGH);
 }
 
 
