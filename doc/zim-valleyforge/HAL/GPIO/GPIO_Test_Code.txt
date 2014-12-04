@@ -16,14 +16,7 @@ test_hal_gpio_avr.hpp^{*}
 //AVR ATmega64C1//
 
 === Todo ===
-
-== Test ==
-^{**}
-
-== and add Support For ==
-[ ] //AVR AT90CAN128//
-[ ] //AVR ATmega2560//
-[ ] //More error detection facilities//
+[ ] Debouncing †
 
 ===== How Do I Use this Module? =====
 
@@ -34,7 +27,9 @@ test_hal_gpio_avr.hpp^{*}
 	5. All of the LEDs should light up, or if an alternate setup is used, all of the outputs on Port B should be low. If this is not the case, there is a problem with the GPIO pin set-up. Either the port is incorrect, pin addresses used by the program are wrong, the program's port address is incorrect, or there is a problem with the LEDs. If almost all of the LEDs turn on, but some don't, there may be a problem with several of the LEDs.
 	6. Push button 1. LED 1 should turn off. Release button 1 and the LED should turn on again. If the LED does not change, then there is likely a problem with the port connection, the buttons, or the port and/or pin addresses used by the program. It may be a good idea to check the connections, and to try step 7 to see if the problem is confined to button 1.
 	7. Push button 2. LED 2 should toggle. Press it again to toggle LED2 on again.
-	8. Push button 0. The light on LED 0 should turn off, indicating that the button presses will now be detected via interrupt. Repeat steps 6 and 7, ensuring that the behaviour is the same. If the behaviour is different, or does not occur, there is a problem with the interrupt registration on the board.
+	8. Leave button 0 toggled such that LED 0 is on. Verify that the behaviour every odd numbered button is the same as button 1, and that every even numbered button (apart from 0) behaves the same as LED2.  
+	9. Push button 0. The light on LED 0 should turn off, indicating that the button presses will now be detected via interrupt. Repeat steps 6 and 7, ensuring that the behaviour is the same. If no response is given, refer to the **Errors** section of this guide. Press button zero again to return to polling mode.
+
 
 ===== Description =====
 
@@ -61,7 +56,22 @@ _{Table  1:  	Buttons and the action that results from their use}
 7			Mode-dependent				Always on — the LED is bright and its brightness is not dependent on button presses
 
 
+===== Error Messages =====
+7	6	5	4	3	2	1	 0		⇒		7	6	5	4	3	2	1	 0	
+__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	∅		⇒		__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	∅	∅
+↑	↑	↑	↑	↑	↑	↑	↑		⇒		↑	↑	↑	↑	↑	↑	↓	↑
+_{Figure 2:  	LED 0 is off if interrupts enabled, and is toggled by toggling button 0. The behaviour should otherwise be the same as in polling mode.}
+
+
+7	6	5	4	3	2	1	 0		⇒		7	6	5	4	3	2	1	 0	
+∅	∅	∅	∅	∅	∅	__∅__	∅		⇒		∅	∅	∅	∅	∅	__∅__	∅	∅
+↑	↑	↑	↑	↑	↑	↑	↑		⇒		↑	↑	↑	↑	↑	↑	↓	↑
+_{Figure 3:  	Possible error codes (not counting a combination of the two messages) are shown above. (Left) GPIO_INT_OUT_OF_RANGE (right) GPIO_INT_ALREADY_TAKEN.}
+
+
+When button 0 is toggled (such that LED0 is off), interrupt based checking of the button states is enabled (see Fig 2). Error messages are displayed if interrupt enabling fails. If an error has occurred in the interrupt enable function,  the error code is displayed on the LEDs array. As seen in Figure 3, there are two different error codes that can be displayed. The first is GPIO_INT_OUT_OF_RANGE, indicating that pin interrupts are not available on at least one of the pins. The second is GPIO_INT_ALREADY_TAKEN, which indicates that at least one of the pins is trying to initialise an interrupt on a pin whose interrupt is already taken.
+
 _________________________________________________________________
-^{*} //Refer to test_hal_gpio_avr.hpp for a complete list//
-^{** }//The connector board for the  AT90CAN128 was broken, making it impossible to test the code properly. GPIO out pins were verified by enabling// and turning on// LEDs on port D, but the ability of the code to handle interrupts and input on this board is uncertain. The code has not been tested at all on the ATmega2560.//
-^{‡ }//Button 0 is always polled. This is a safeguard put in place in case the interrupt mode is dysfunctional, allowing the mode to be switched back to polling.//
+* Refer to test_hal_gpio_avr.hpp for a complete list
+† Debouncing is not implemented in this test module. Some boards may have problems, particularly in interrupt based polling, due to button bouncing on the IO ports.
+‡ Button 0 is always polled. This is a safeguard put in place in case the interrupt mode is dysfunctional, allowing the mode to be switched back to polling.

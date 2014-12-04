@@ -78,7 +78,7 @@ enum Watchdog_timeout
 #define PORT_MULTIPLIER		3
 #define P_OFFSET			235
 
-#define EXTERNAL_NUM_INTERRUPTS	(NUM_BANKS + EXT_INT_SIZE)
+#define EXTERNAL_NUM_INTERRUPTS	(NUM_BANKS + EXT_INT_SIZE + 1) 	// NOTE - fixed overflow bug	[14:13,4 Dec 2014]
 
 #define PC_INT_SIZE		24
 
@@ -225,3 +225,4 @@ enum Spi_channel {SPI_0, USARTSPI_0, USARTSPI_1, USARTSPI_2, USARTSPI_3};
 
 
 #endif /*__TARGET_ATMEGA2560_H__*/
+

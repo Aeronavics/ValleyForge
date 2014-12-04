@@ -64,6 +64,9 @@
 #elif defined(__AVR_AT90CAN128__)
 	#define BUTTON_PORT PORT_C
 	#define LED_PORT PORT_B
+#elif defined(__AVR_ATmega2560__)
+	#define LED_PORT PORT_C
+	#define BUTTON_PORT PORT_B
 #endif
 
 
