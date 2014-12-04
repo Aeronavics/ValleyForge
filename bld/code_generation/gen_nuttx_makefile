@@ -1,0 +1,230 @@
+#!/bin/bash
+
+# The following variables are used for testing the script only. Eventually, the script will use the variables made available from other parts of the build process.
+################################
+# TESTING VARIABLES START HERE #
+################################
+NO_COLOUR="\033[0m"
+
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+
+BOLD_RED="\033[1;31m"
+BOLD_GREEN="\033[1;32m"
+BOLD_YELLOW="\033[1;33m"
+BOLD_BLUE="\033[1;34m"
+BOLD_CYAN="\033[1;36m"
+BOLD_WHITE="\033[1;37m"
+
+UNDERLINED="\033[4m"
+HIGHLIGHT_BLUE="\033[44m"
+
+TEST_APP_NAMES="app0 app1 app2"
+TEST_EXECUTABLES="exec0.c exec1.c exec2.c"
+TEST_APP_PRIORITIES="0 1 2"
+TEST_APP_STACKSIZE="0000 1000 2000"
+
+################################
+#  TESTING VARIABLES END HERE  #
+################################
+
+# The following variables contain the fragments of makefile that need to be replicated for each application and inserted into the makefile proper.
+APP_INFO_TEMPLATE='APP<APP_NUMBER>NAME = <APP_NAME>\nPRIORITY = <APP_PRIORITY>\nSTACKSIZE = <APP_STACKSIZE>\n'
+APP_SOURCE_TEMPLATE='APP<APP_NUMBER>SRC = <APP_EXEC_FILE>\n'
+MAIN_SOURCE_TEMPLATE='MAINSRC = <APPSRC>\n'
+APP_OBJS_TEMPLATE='APP<APP_NUMBER>OBJS = \$\(APP<APP_NUMBER>SRC:.c=\$\(OBJEXT\)\)\n'
+APP_CONFIG_APPNAME_TEMPLATE='APP_CONFIG_APP<APP_NUMBER> ?= APP<APP_NUMBER>\$\(EXEEXT\)\nAPP<APP_NUMBER> = \$\(APP_CONFIG_APP<APP_NUMBER>\)\n'
+APP_INSTALL_PART1_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\): \$\(OBJS\) \$\(APP<APP_NUMBER>OBJ\)\n\t@echo "LD: \$\(APP<APP_NUMBER>\)"\n\t\$\(Q\) \$\(LD\) \$\(LDELFFLAGS\) \$\(LDLIBPATH\) -o \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\) \$\(ARCHCRT0OBJ\) \$\(MAINOBJ\) \$\(LDLIBS\)\n\t\$\(Q\) \$\(NM\) -u \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)\n\n'
+APP_INSTALL_PART2_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)'
+APP_CONTEXT_PART1_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat: \$\(DEPCONFIG\) Makefile\n\t\$\(call REGISTER,\$\(APP<APP_NUMBER>NAME\),\$\(PRIORITY\),\$\(STACKSIZE\),\$\(APP<APP_NUMBER>NAME\)_main\)\n'
+APP_CONTEXT_PART2_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat'
+
+# Function to echo strings without half of the nonsense that has to be written each time.
+# Expects two positional arguments. If no colour is provided, it defaults to CYAN.
+# 1. The message to be echoed
+# 2. The message colour. If this parameter is empty, CYAN is used.
+shout() {
+	COLOUR=${2:-CYAN}
+	echo -e "${!COLOUR}${1}\n${NO_COLOUR}"
+}
+
+test_makefile_updater() {
+	# Stuff to look after the makefile.
+	MAKEFILE_LOCATION='./Makefile_backup'
+	cp -f ./Makefile $MAKEFILE_LOCATION
+	
+	# Converting all the strings into arrays.
+	APP_NAMES_ARRAY=($TEST_APP_NAMES)
+	APP_EXECUTABLES_ARRAY=($TEST_EXECUTABLES)
+	APP_PRIORITIES_ARRAY=($TEST_APP_PRIORITIES)
+	APP_STACKSIZE_ARRAY=($TEST_APP_STACKSIZE)
+
+	# Find the total number of applications being processed.
+	APP_COUNT_TOTAL=${#APP_NAMES_ARRAY[@]}
+
+	# Check the arrays have the same number of items in each.
+	if [ ${#APP_NAMES_ARRAY[@]} -ne ${#APP_PRIORITIES_ARRAY[@]} -o  ${#APP_PRIORITIES_ARRAY[@]} -ne ${#APP_STACKSIZE_ARRAY[@]} ]; then
+		echo -e "${RED}The number of app names, priorities and stacksizes provided do not match. Cannot continue script.\n${NO_COLOUR}"
+		exit 1
+	fi
+
+	# Create a variable for the number of times to repeat the for loop.
+	APP_LOOP_MAX=$((${APP_COUNT_TOTAL}-1))
+
+	for APP_COUNT_CURRENT in $(seq 0 $APP_LOOP_MAX)
+	do
+		update_app_info $APP_COUNT_CURRENT ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]} ${APP_PRIORITIES_ARRAY[$APP_COUNT_CURRENT]} ${APP_STACKSIZE_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
+		update_app_source $APP_COUNT_CURRENT ${APP_EXECUTABLES_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
+		update_main_source $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_objects $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_configs $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_install $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_context $APP_COUNT_CURRENT $APP_LOOP_MAX
+	done
+}
+
+# update_app_info takes five arguments: The number of the app, the app name, the app priority and the app stack size in that order,
+# 1. The number of the app
+# 2. The app name
+# 3. The app priority
+# 4. The app stacksize
+# 5. The total number of applications being included in the makefile
+update_app_info() {
+	# Copy the APP_INFO template so we don't corrupt the template for other iterations.
+	UPDATED_APP_INFO=${APP_INFO_TEMPLATE}
+	# Fill out the APP_INFO string with the various function parameters.
+	UPDATED_APP_INFO=$(echo ${UPDATED_APP_INFO} | sed s^"<APP_NUMBER>"^$1^)
+	UPDATED_APP_INFO=$(echo ${UPDATED_APP_INFO} | sed s^"<APP_NAME>"^$2^)
+	UPDATED_APP_INFO=$(echo ${UPDATED_APP_INFO} | sed s^"<APP_PRIORITY>"^$3^)
+	UPDATED_APP_INFO=$(echo ${UPDATED_APP_INFO} | sed s^"<APP_STACKSIZE>"^$4^)
+
+	# Add the completed UPDATED_APP_INFO string to the makefile.
+	if [ ${1} -lt ${5} ]; then
+		# If we're not in the last iteration, also append the <APP_INFO> flag for future iterations.
+		sed -i s^"<APP_INFO>"^"${UPDATED_APP_INFO}\n<APP_INFO>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${5} ]; then
+		# If we're in the last iteration, clean up the <APP_INFO> flag in the template makefile.
+		sed -i s^"<APP_INFO>"^"${UPDATED_APP_INFO}"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_app_source
+# 1. The number of the app
+# 2. The app exectuable name
+# 3. The total number of applications being included in the makefile
+update_app_source() {
+	# Copy the APP_SOURCE template so we don't corrupt the template for other iterations.
+	UPDATED_APP_SOURCE=${APP_SOURCE_TEMPLATE}
+	# Fill out the APP_SOURCE string with the various function parameters.
+	UPDATED_APP_SOURCE=$(echo ${UPDATED_APP_SOURCE} | sed s^"<APP_NUMBER>"^$1^)
+	UPDATED_APP_SOURCE=$(echo ${UPDATED_APP_SOURCE} | sed s^"<APP_EXEC_FILE>"^$2^)
+
+	# Add the completed UPDATED_APP_INFO string to the makefile.
+	if [ ${1} -lt ${3} ]; then
+		# If we're not in the last iteration, also append the <APP_SOURCE> flag for future iterations.
+		sed -i s^"<APP_SOURCE>"^"${UPDATED_APP_SOURCE}<APP_SOURCE>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${3} ]; then
+		# If we're in the last iteration, clean up the <APP_SOURCE> flag in the template makefile.
+		sed -i s^"<APP_SOURCE>"^"${UPDATED_APP_SOURCE}"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_main_source
+# 1. The number of the app
+# 2. The total number of applications being included in the makefile
+update_main_source() {
+	if [ ${1} -lt ${2} ]; then
+		# If we're not in the last iteration, also append the <MAIN_SOURCE> flag for future iterations.
+		sed -i s^"<MAIN_SOURCE>"^"\$\(APP${1}SRC\) <MAIN_SOURCE>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${2} ]; then
+		# If we're in the last iteration, clean up the <MAIN_SOURCE> flag in the template makefile.
+		sed -i s^"<MAIN_SOURCE>"^"\$\(APP${1}SRC\)"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_app_objects
+# 1. The number of the app
+# 2. The total number of applications being included in the makefile
+update_app_objects() {
+	# Copy the APP_OBJS template so we don't corrupt the template for other iterations.
+	UPDATED_APP_OBJS=${APP_OBJS_TEMPLATE}
+	# Fill out the APP_OBJS string with the various function parameters.
+	UPDATED_APP_OBJS=$(echo ${UPDATED_APP_OBJS} | sed s^"<APP_NUMBER>"^$1^g)
+
+	# Add the completed UPDATED_APP_OBJS string to the makefile.
+	if [ ${1} -lt ${2} ]; then
+		# If we're not in the last iteration, also append the <APP_OBJS> flag for future iterations.
+		sed -i s^"<APP_OBJS>"^"${UPDATED_APP_OBJS}<APP_OBJS>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${2} ]; then
+		# If we're in the last iteration, clean up the <APP_OBJS> flag in the template makefile.
+		sed -i s^"<APP_OBJS>"^"${UPDATED_APP_OBJS}"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_app_configs
+# 1. The number of the app
+# 2. The total number of applications being included in the makefile
+update_app_configs() {
+	# Copy the APP_CONFIG_APPNAME template so we don't corrupt the template for other iterations.
+	UPDATED_APP_CONFIG=${APP_CONFIG_APPNAME_TEMPLATE}
+	# Fill out the UPDATED_APP_CONFIG_APPNAME string with the various function parameters.
+	UPDATED_APP_CONFIG=$(echo ${UPDATED_APP_CONFIG} | sed s^"<APP_NUMBER>"^$1^g)
+
+	# Add the completed UPDATED_APP_OBJS string to the makefile.
+	if [ ${1} -lt ${2} ]; then
+		# If we're not in the last iteration, also append the <APP_OBJS> flag for future iterations.
+		sed -i s^"<APP_CONFIG_APPNAME>"^"${UPDATED_APP_CONFIG}\n<APP_CONFIG_APPNAME>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${2} ]; then
+		# If we're in the last iteration, clean up the <APP_OBJS> flag in the template makefile.
+		sed -i s^"<APP_CONFIG_APPNAME>"^"${UPDATED_APP_CONFIG}"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_app_install
+# 1. The number of the app
+# 2. The total number of applications being included in the makefile
+update_app_install() {
+	# Copy the APP_INSTALL template so we don't corrupt the template for other iterations.
+	UPDATED_APP_INSTALL_PART1=${APP_INSTALL_PART1_TEMPLATE}
+	UPDATED_APP_INSTALL_PART2=${APP_INSTALL_PART2_TEMPLATE}
+	# Fill out the UPDATED_APP_INSTALL string with the various function parameters.
+	UPDATED_APP_INSTALL_PART1=$(echo ${UPDATED_APP_INSTALL_PART1} | sed s^"<APP_NUMBER>"^$1^g)
+	UPDATED_APP_INSTALL_PART2=$(echo ${UPDATED_APP_INSTALL_PART2} | sed s^"<APP_NUMBER>"^$1^g)
+
+	# Add the completed UPDATED_APP_INSTALL strings to the makefile.
+	if [ ${1} -lt ${2} ]; then
+		# If we're not in the last iteration, also append the <APP_INSTALL> flags for future iterations.
+		sed -i s^"<APP_INSTALL_PART1>"^"${UPDATED_APP_INSTALL_PART1}\n<APP_INSTALL_PART1>"^ $MAKEFILE_LOCATION
+		sed -i s^"<APP_INSTALL_PART2>"^"${UPDATED_APP_INSTALL_PART2} <APP_INSTALL_PART2>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${2} ]; then
+		# If we're in the last iteration, clean up the <APP_INSTALL> flags in the template makefile.
+		sed -i s^"<APP_INSTALL_PART1>"^"${UPDATED_APP_INSTALL_PART1}"^ $MAKEFILE_LOCATION
+		sed -i s^"<APP_INSTALL_PART2>"^"${UPDATED_APP_INSTALL_PART2}"^ $MAKEFILE_LOCATION
+	fi
+}
+
+# update_app_context
+# 1. The number of the app
+# 2. The total number of applications being included in the makefile
+update_app_context() {
+	# Copy the APP_CONTEXT template so we don't corrupt the template for other iterations.
+	UPDATED_APP_CONTEXT_PART1=${APP_CONTEXT_PART1_TEMPLATE}
+	UPDATED_APP_CONTEXT_PART2=${APP_CONTEXT_PART2_TEMPLATE}
+	# Fill out the UPDATED_APP_CONTEXT string with the various function parameters.
+	UPDATED_APP_CONTEXT_PART1=$(echo ${UPDATED_APP_CONTEXT_PART1} | sed s^"<APP_NUMBER>"^$1^g)
+	UPDATED_APP_CONTEXT_PART2=$(echo ${UPDATED_APP_CONTEXT_PART2} | sed s^"<APP_NUMBER>"^$1^g)
+
+	# Add the completed UPDATED_APP_CONTEXT strings to the makefile.
+	if [ ${1} -lt ${2} ]; then
+		# If we're not in the last iteration, also append the <APP_CONTEXT> flags for future iterations.
+		sed -i s^"<APP_CONTEXT_PART1>"^"${UPDATED_APP_CONTEXT_PART1}<APP_CONTEXT_PART1>"^ $MAKEFILE_LOCATION
+		sed -i s^"<APP_CONTEXT_PART2>"^"${UPDATED_APP_CONTEXT_PART2} <APP_CONTEXT_PART2>"^ $MAKEFILE_LOCATION
+	elif [ ${1} -eq ${2} ]; then
+		# If we're in the last iteration, clean up the <APP_CONTEXT> flags in the template makefile.
+		sed -i s^"<APP_CONTEXT_PART1>"^"${UPDATED_APP_CONTEXT_PART1}"^ $MAKEFILE_LOCATION
+		sed -i s^"<APP_CONTEXT_PART2>"^"${UPDATED_APP_CONTEXT_PART2}"^ $MAKEFILE_LOCATION
+	fi
+}
