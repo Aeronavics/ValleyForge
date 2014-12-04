@@ -63,9 +63,9 @@ __∅__	__∅__	__∅__	__∅__	__∅__	__∅__	__∅__	∅		⇒		__∅__	__∅_
 _{Figure 2:  	LED 0 is off if interrupts enabled, and is toggled by toggling button 0. The behaviour should otherwise be the same as in polling mode.}
 
 
-7	6	5	4	3	2	1	 0		⇒		7	6	5	4	3	2	1	 0	
-∅	∅	∅	∅	∅	∅	__∅__	∅		⇒		∅	∅	∅	∅	∅	__∅__	∅	∅
-↑	↑	↑	↑	↑	↑	↑	↑		⇒		↑	↑	↑	↑	↑	↑	↓	↑
+7	6	5	4	3	2	1	 0				7	6	5	4	3	2	1	 0	
+∅	∅	∅	∅	∅	∅	__∅__	∅				∅	∅	∅	∅	∅	__∅__	∅	∅
+↑	↑	↑	↑	↑	↑	↑	↑				↑	↑	↑	↑	↑	↑	↓	↑
 _{Figure 3:  	Possible error codes (not counting a combination of the two messages) are shown above. (Left) GPIO_INT_OUT_OF_RANGE (right) GPIO_INT_ALREADY_TAKEN.}
 
 
