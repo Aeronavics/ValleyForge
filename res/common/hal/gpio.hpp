@@ -218,7 +218,7 @@ class Gpio_pin
 		 * }
 		 * @endcode
 		 *
-		 * @param  mode		Any number of interrupt types (RISING_EDGE, FALLING_EDGE, BLOCKING, NON_BLOCKING).
+		 * @param  mode		Any number of interrupt types (GPIO_INT_LOW_LEVEL, GPIO_INT_ANY_EDGE, GPIO_INT_FALLING_EDGE, GPIO_INT_RISING_EDGE).
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return Return code representing whether operation was successful
 		 */
