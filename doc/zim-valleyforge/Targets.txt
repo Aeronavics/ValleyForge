@@ -5,4 +5,37 @@ Creation-Date: 2014-12-03T17:33:11+13:00
 ====== Targets ======
 Created Wednesday 03 December 2014
 
-TODO
+[[ValleyForge]] supports a number of different microprocessor hardwares or 'targets'. Support for further targets can be added as demand dictates.
+Currently supported targets are listed below, grouped by architecture type.
+
+===== AVR =====
+	AVR is a ubiquitous 8-bit microcontroller architecture developed and used by Atmel.
+	* [[+ATmega2560|ATmega2560]]
+	* [[+ATmega64C1|ATmega64M1 / ATmega64C1]]
+	* [[+AT90CAN128|AT90CAN128]]
+
+===== Arduino =====
+	Arduino is a popular framework used widely amongst hobbyists, and uses a C++-like language which must be compiled in a non-standard way. See the [[Targets:Arduino|Arduino]] page for more information.
+	* [[+ArduPilotMega|ArduPilotMega]] - Based on the ATmega2560, but cannot be compiled using the ATmega2560 target.
+
+===== AVR32 =====
+	AVR32 is a 32-bit architecture developed by Ateml.
+	* [[+AT32UC3C0512C|AT32UC3C0512C]]
+
+
+===== ARM Cortex-M =====
+
+=== Stellaris ===
+	The Stellaris is a Cortex-M ARM microcontroller developed by Texas Instruments.
+	* [[+LM3S1968|LM3S1968]]	
+
+=== STM32 ===
+	The [[http://www.st.com/web/en/catalog/mmc/FM141/SC1169?sc=stm32|STM32]] is a Cortex-M ARM microcontroller developed by ST-Microelectronics
+	* [[+STM32F103|STM32F103]]
+
+=== LPC ===
+	No devices supported yet
+
+
+===== ARM Cortex-A (Linux) =====
+	* [[+PandaBoard|PandaBoard]] - A linux-powered embedded platform based on the OMAP processor

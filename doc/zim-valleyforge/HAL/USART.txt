@@ -199,4 +199,6 @@ To see full hardware support, see [[HAL|Support]]
 [*] AT90CAN128 family
 [ ] ATmega64M1/ATmega64C1 - These chips do not have USART, but instead provide LIN which is similar.
 
+The USART AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp
+
 

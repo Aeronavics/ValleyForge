@@ -1,0 +1,14 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T16:40:40+13:00
+
+====== Arduino ======
+Created Thursday 04 December 2014
+
+Properly speaking, the term Arduino does not describe a particular architecture, but a broader category of targets, which support being programmed using the 'Wiring'-based Arduino IDE. Arduino devices are typically based on AVR or ARM Cortrex-M micro-controllers. Software developed using the Arduino IDE is similar to C++, but not entirely interchangeable, which means that the normal build system provided by the toolchain is unable to compile this software, even if the toolchain nominally supports the target hardware.
+
+For instance, the ArduPilot?-Mega v2.5 is based upon the AVR ATmega2560, a target which the toolchain supports. However, the official ArduPilot software cannot be compiled using the [[ATmega2560|ATmega2560 target]] using the toolchain, because the software does not comply with the toolchain's dependency detection requirements, nor even constitute valid C++ code (without the Arduino build system's preprocessing).
+
+Because users of the toolchain may wish to make use of Arduino devices and software as part of a project, the toolchain provides a separate architecture class and targets for Arduino programming. Components using an Arduino based target configuration have different requirements for source files (see [[Programming Languages]]) and configuration settings, than for a component which selects the target configuration of the micro-controller on which the Arduino hardware is actually based. For example: the targets ArduPilotMega and ATmega2560 are not interchangeable.
+
+For supported Arduino targets, see [[Targets]]

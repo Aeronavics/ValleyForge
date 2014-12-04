@@ -85,6 +85,15 @@ struct1 [label=<
 	<td bgcolor="gray"></td>
 </tr>
 
+<tr><td>Timer</td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
 </TABLE></FONT>
 >];
 }

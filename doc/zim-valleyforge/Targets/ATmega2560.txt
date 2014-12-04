@@ -1,0 +1,22 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T15:57:28+13:00
+
+====== ATmega2560 ======
+Created Thursday 04 December 2014
+
+[[[http://www.atmel.com/Images/Atmel-2549-8-bit-AVR-Microcontroller-ATmega640-1280-1281-2560-2561_datasheet.pdf|Datasheet]]] [[[http://www.atmel.com/devices/ATMEGA2560.aspx|Product Page]]]
+The high-performance, low-power Atmel 8-bit AVR RISC-based microcontroller combines 256KB ISP flash memory, 8KB SRAM, 4KB EEPROM, 86 general purpose I/O lines, 32 general purpose working registers, real time counter, six flexible timer/counters with compare modes, PWM, 4 USARTs, byte oriented 2-wire serial interface, 16-channel 10-bit A/D converter, and a JTAG interface for on-chip debugging. The device achieves a throughput of 16 MIPS at 16 MHz and operates between 4.5-5.5 volts. 
+
+**Flash**		256 KiB
+**EEPROM**	4 KiB
+**SRAM**		8 KiB
+**Pin Count**	100
+**Frequency**	16 MHz
+
+**Timers**		6
+**USART**		4
+**SPI**			5
+**I2C**			1
+**CAN**		None
+**ADC**		16x 10-bit, 15 ksps

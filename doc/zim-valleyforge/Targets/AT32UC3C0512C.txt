@@ -1,0 +1,22 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T16:51:00+13:00
+
+====== AT32UC3C0512C ======
+Created Thursday 04 December 2014
+
+[[[http://www.atmel.com/Images/doc32117.pdf|Datasheet]]] [[[http://www.atmel.com/devices/at32uc3c0512c.aspx|Product Page]]]
+32-bit AVR flash microcontroller featuring 512KB Flash, 68KB SRAM is designed for industrial and automotive control applications, optimized for fast communication and motor control. The device family features a floating point unit, FlashVault code protection, single or dual CAN interfaces, dual LIN interfaces, USB with OTG, PWM with dead-time insertion, a 16 channel 12-bit ADC with dual sample-and-hold circuit for simultaneous sampling of 2 signals, a 2 channel 1.5 Msps 12-bit analog DAC. Designed with the multi-layered databus, 64KB on-chip SRAM with dual interfaces, the AT32UC3C offers an outstanding data throughput.
+
+**Flash**		512 KiB
+**EEPROM**	None
+**SRAM**		68 KiB
+**Pin Count**	144
+**Frequency**	66 MHz
+
+**Timers**		6
+**USART**		5
+**SPI**			7
+**I2C**			3
+**CAN**		2
+**ADC**		16x 12-bit, 2000 ksps
