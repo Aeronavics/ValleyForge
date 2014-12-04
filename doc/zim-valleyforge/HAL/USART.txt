@@ -23,6 +23,29 @@ usart.enable();
 '''
 
 
+===== Errors & Status Flags =====
+The USART library provides various error and status flags which should be checked to ensure proper operation.
+
+''transmitter_ready()''
+	Indicates when the transmitter is ready to accept more data.
+	Note that this does not guarantee the transmission has finished, only that the transmitter is able to accept more data. This allows chips with a FIFO to make use of buffering. Currently there is no status flag which indicates the transmission has been fully sent.
+	This flag also functions for asynchronous transfers, and in this case will indicate when another asynchronous transmission can be started.
+{{../img/transmitter_ready.svg}}
+	The above timing diagram shows the state of the transmitter_ready() flag when transmitting multiple bytes through either transmit_buffer() or transmit_buffer_async().
+
+''receiver_has_data()''
+	Indicates when the receiver has data to be read. The flag is automatically cleared when you read the data.
+	IMPORTANT: The library only guarantees one byte will be buffered (though some chips may support more). If you do not read the byte as soon as this flag is set, then a buffer overflow may occur!
+	Also, this flag does not produce any indication when receive_buffer_async() is used.
+{{../img/receiver_has_data.svg}}
+
+''get_errors()''
+	Returns any current errors. Not directly useful, since all receive_ functions will automatically check this, and the value of it is not valid after the buffer has been read.
+
+''flush()''
+	Flushes the receive buffer and any errors which may be present. Generally not needed, but provided for convenience.
+
+
 ===== Blocking Communication =====
 The default communication functions are blocking, ie, they will not return until the data transfer is finished.
 This makes it easier to implement complex communications, but starves the CPU of valuable cycles when it could be doing something else.
@@ -40,6 +63,9 @@ See the examples at the bottom of this page to see how to implement blocking com
 ''transmit_string''
 	Sends a null-terminated string of variable size, up to a maximum length. The null character is not transmitted.
 	
+		{{../img/transmit_buffer.svg}}
+								Blocking behaviour of transmit_buffer()
+
 These functions will block if the transmitter or receiver is not yet ready, but may return an error code if something goes wrong.
 Error codes should be respected when using receive functions, as it may indicate framing or parity errors. A simple way of checking for errors is as follows:
 
@@ -74,6 +100,9 @@ The USART library provides asynchronous communication functions, which return im
 ''transmit_string_async''
 	Sends a null-terminated string of variable size, up to a maximum length, returning immediately. The provided callback is called when the operation has completed.
 
+		{{../img/transmit_buffer_async.svg}}
+									Blocking behaviour of transmit_buffer_async()
+
 Because asynchronous functions return immediately, you should always check the return type to see if it returned USART_IO_BUSY. Alternatively you should check the status flags ''transmitter_ready()'' or ''receiver_has_data()'' before calling the functions.
 
 ===== Interrupts =====
@@ -83,22 +112,6 @@ The exact interrupts provided will vary between devices, but generally it will s
 When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes.
 
 IMPORTANT - Only one callback can be registered for each interrupt type.
-
-===== Errors & Status Flags =====
-The USART library provides various error and status flags which should be checked to ensure proper operation.
-
-''transmitter_ready()''
-	Tells when the transmitter is ready to accept more data
-
-''receiver_has_data()''
-	Tells when the receiver has data to be read.
-	Only guarantees a minimum of one byte is in the chip's buffer.
-
-''get_errors()''
-	Returns any current errors. Not directly useful, since all receive_ functions will automatically check this, and the value of it is not valid after the buffer has been read.
-
-''flush()''
-	Flushes the receive buffer and any errors which may be present. Generally not needed, but provided for convenience.
 
 ===== Examples =====
 **A simple echo demo**
@@ -180,18 +193,10 @@ int main(void)
 
 
 ===== Support =====
-To see overall hardware support, see Support
+To see full hardware support, see [[HAL|Support]]
 
 [*] ATmega2560 family - TODO - Untested
 [*] AT90CAN128 family
-[ ] ATmega64M1/ATmega64C1 - These chips do not have USART, but instead provide LIN which is similar. TODO - Partially implemented
-
-[ ] AVR32UC33C0512C - No support
-
-[ ] LM3S1968 - No support
-[ ] STM32 - No support
-
-[ ] [[ArduPilotMega]] - No support
-[ ] Linux - No support
+[ ] ATmega64M1/ATmega64C1 - These chips do not have USART, but instead provide LIN which is similar.
 
 
