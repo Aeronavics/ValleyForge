@@ -11,21 +11,24 @@ struct1 [label=<
 	<td>AT32UC3C0512C</td>
 	<td>LM3S1968</td>
 	<td>STM32F103</td>
+	<td>ATmega8-16AU</td>
 </tr>
 
 <tr><td>GPIO</td>
-	<td bgcolor="orange"></td>
-	<td bgcolor="orange"></td>
-	<td bgcolor="orange"></td>
+	<td bgcolor="yellow"></td>
+	<td bgcolor="yellow"></td>
+	<td bgcolor="yellow"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="yellow"></td>
+	<td bgcolor="gray"></td>
 </tr>
 
 <tr><td>Watchdog</td>
 	<td bgcolor="green"></td>
 	<td bgcolor="green"></td>
 	<td bgcolor="green"></td>
+	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
@@ -38,12 +41,14 @@ struct1 [label=<
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
 </tr>
 
 <tr><td>USART</td>
 	<td bgcolor="yellow"></td>
 	<td bgcolor="orange">LIN</td>
 	<td bgcolor="green"></td>
+	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
@@ -56,10 +61,12 @@ struct1 [label=<
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="yellow"></td>
+	<td bgcolor="gray"></td>
 </tr>
 
 <tr><td>I2C</td>
 	<td bgcolor="gray"></td>
+	<td bgcolor="purple"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
@@ -74,9 +81,11 @@ struct1 [label=<
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="orange"></td>
+	<td bgcolor="gray"></td>
 </tr>
 
 <tr><td>ADC</td>
+	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
