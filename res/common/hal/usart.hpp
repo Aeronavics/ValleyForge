@@ -112,10 +112,20 @@ enum Usart_config_status
 enum Usart_io_status
 {
 	USART_IO_SUCCESS = 0,
+
 	USART_IO_FAILED = -1,	// Unknown failure
 	USART_IO_NODATA = -2,	// There was no data to read
 	USART_IO_BUSY = -3,		// The USART module is currently busy and cannot be used right now
 	USART_IO_STRING_TRUNCATED = -4, // The received/transmitted string was truncated (this can be safely ignored)
+};
+
+enum Usart_error_status
+{
+	USART_ERR_NONE = 0,
+
+	USART_ERR_FRAME = -5,			// Framing error (eg. corrupted start/stop bits)
+	USART_ERR_DATA_OVERRUN = -6,		// Data overrun (data received while rx buffer was still full)
+	USART_ERR_PARITY = -7,			// Parity error (parity bit doesn't match received data)
 };
 
 // USART interrupt configuration status
@@ -147,30 +157,10 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
-//enum Usart_interrupt_type {USART_INT_RX, USART_INT_TX, USART_INT_UDRE};
-
-// NOTE - Not all these interrupts may be supported by the target
-//enum Usart_interrupt_type {
-//	USART_INT_RX_COMPLETE,
-//	USART_INT_TX_COMPLETE, //AVR32
-//	USART_INT_TX_READY, // UDRE for AVR
-//	//USART_INT_RX_OVERFLOW_ERROR,
-//	//USART_INT_RX_FRAMING_ERROR,
-//	//USART_INT_RX_PARITY_ERROR,
-//};
-
-// NOTE - Not all these error codes may be supported by the target
-enum Usart_error_type {
-	USART_ERR_NONE,
-	USART_ERR_FRAME = -1,			// Framing error (eg. corrupted start/stop bits)
-	USART_ERR_DATA_OVERRUN = -2,	// Data overrun (data received while rx buffer was still full)
-	USART_ERR_PARITY = -3			// Parity error (parity bit doesn't match received data)
-};
-
 typedef uint16_t Usart_baud_rate;
 
-typedef void(*usartrx_callback_t)(Usart_error_type, uint8_t* buffer, size_t received_bytes);
-typedef void(*usarttx_callback_t)(Usart_error_type);
+typedef void(*usartrx_callback_t)(Usart_error_status, uint8_t* buffer, size_t received_bytes);
+typedef void(*usarttx_callback_t)(Usart_error_status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -401,7 +391,7 @@ class Usart
 		 *
 		 * @return error The current USART error status i.e the status of the last USART transfer.
 		 */
-		Usart_error_type usart_error(void);
+		Usart_error_status usart_error(void);
 
 		/**
 		 * Clear all errors

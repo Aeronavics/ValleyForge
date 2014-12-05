@@ -311,9 +311,9 @@ public:
 		}
 
 		// Errors must be read before UDR
-		Usart_error_type error = get_errors();
+		Usart_error_status error = get_errors();
 		if (error != USART_ERR_NONE)
-			return error;
+			return (int16_t)error;
 
 		// 9 bit mode
 		if (*registers.UCSRB & _BV(UCSZ2_BIT))
@@ -331,9 +331,9 @@ public:
 			return USART_IO_NODATA;
 
 		// Errors must be read before UDR
-		Usart_error_type error = get_errors();
+		Usart_error_status error = get_errors();
 		if (error != USART_ERR_NONE)
-			return error;
+			return (int16_t)error;
 
 		// 9 bit mode
 		if (*registers.UCSRB & _BV(UCSZ2_BIT))
@@ -352,7 +352,15 @@ public:
 
 		for (size_t i = 0; i < size; i++)
 		{
-			*buffer = (uint8_t)receive_byte();
+			int16_t data = receive_byte();
+
+			// An error occurred, abort
+			if (data < 0)
+			{
+				return USART_IO_FAILED; // TODO - How to get the actual error status flag out?
+			}
+
+			*buffer = (uint8_t)data;
 			buffer++;
 		}
 
@@ -474,7 +482,7 @@ public:
 		return USART_INT_SUCCESS;
 	}
 
-	virtual Usart_error_type get_errors(void)
+	virtual Usart_error_status get_errors(void)
 	{
 		// TODO - what if there are multiple errors?
 		if ((*registers.UCSRA & _BV(FE_BIT)) != 0)
@@ -654,21 +662,33 @@ public:  //// Asynchronous Interrupt Handling ////
 		if (async_rx.active)
 		{
 			// Check errors
-			Usart_error_type error_status = get_errors();
+			Usart_error_status error_status = get_errors();
 
 			// Receive byte
 			uint8_t data = *registers.UDR;
 
-			async_rx.buffer[async_rx.index++] = data;
+			// It doesn't matter if we write data if an error occurred,
+			// since it'll get discared anyway
+			async_rx.buffer[async_rx.index++] = (uint8_t) data;
 
-			// Fully received the buffer
-			if (async_rx.index == async_rx.size)
+			// Fully received the buffer, or an error occurred
+			if ((async_rx.index == async_rx.size) || (error_status != USART_ERR_NONE))
 			{
 				async_rx.active = false;
 
 				// Inform the user the data has been received
 				if (async_rx.cb_done)
-					async_rx.cb_done(error_status, async_rx.buffer, async_rx.index);
+				{
+					if (error_status != USART_ERR_NONE)
+					{
+						Usart_error_status error = (Usart_error_status) data;
+						async_rx.cb_done(error, NULL, 0);
+					}
+					else
+					{
+						async_rx.cb_done(USART_ERR_NONE, async_rx.buffer, async_rx.index);
+					}
+				}
 
 				// Call the user ISR to tell that data has finished being received
 				if (rx_isr && rx_isr_enabled)
@@ -925,9 +945,9 @@ public:
 		}
 
 		// Errors must be read before UDR
-		Usart_error_type error = get_errors();
+		Usart_error_status error = get_errors();
 		if (error != USART_ERR_NONE)
-			return error;
+			return (int16_t)error;
 
 		return LINDAT;
 	}
@@ -938,9 +958,9 @@ public:
 			return USART_IO_NODATA;
 
 		// Errors must be read before UDR
-		Usart_error_type error = get_errors();
+		Usart_error_status error = get_errors();
 		if (error != USART_ERR_NONE)
-			return error;
+			return (int16_t) error;
 
 		return LINDAT;
 	}
@@ -954,7 +974,7 @@ public:
 	//  attach_interrupt()  detach_interrupt()
 
 
-	Usart_error_type get_errors(void)
+	Usart_error_status get_errors(void)
 	{
 		if (LINERR & _BV(LOVERR))
 			return USART_ERR_DATA_OVERRUN;
@@ -1323,7 +1343,7 @@ Usart_int_status Usart::detach_interrupt(Usart_interrupt_type type)
 	return imp->detach_interrupt(type);
 }
 
-Usart_error_type Usart::usart_error(void)
+Usart_error_status Usart::usart_error(void)
 {
 	return imp->get_errors();
 }
