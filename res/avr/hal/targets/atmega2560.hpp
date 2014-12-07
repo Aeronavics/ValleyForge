@@ -88,53 +88,53 @@ enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 
 /* Timer/Counter */
 
-#define T0_SIZE			8
-#define T0_PWM			1
-#define T0_OC			2
-#define T0_IC			0
-#define T0_AS			0
-#define T0_REV			0
+#	define T0_SIZE			8
+#	define T0_PWM			1
+#	define T0_OC			2
+#	define T0_IC			0
+#	define T0_AS			0
+#	define T0_REV			0
 
-#define T1_SIZE			16
-#define T1_PWM			1
-#define T1_OC			3
-#define T1_IC			1
-#define T1_AS			0
-#define T1_REV			0
+#	define T1_SIZE			16
+#	define T1_PWM			1
+#	define T1_OC			3
+#	define T1_IC			1
+#	define T1_AS			0
+#	define T1_REV			0
 
-#define T2_SIZE			8
-#define T2_PWM			1
-#define T2_OC			2
-#define T2_IC			0
-#define T2_AS			1
-#define T2_REV			0
+#	define T2_SIZE			8
+#	define T2_PWM			1
+#	define T2_OC			2
+#	define T2_IC			0
+#	define T2_AS			1
+#	define T2_REV			0
 
-#define T3_SIZE			16
-#define T3_PWM			1
-#define T3_OC			3
-#define T3_IC			1
-#define T3_AS			0
-#define T3_REV			0
+#	define T3_SIZE			16
+#	define T3_PWM			1
+#	define T3_OC			3
+#	define T3_IC			1
+#	define T3_AS			0
+#	define T3_REV			0
 
-#define T4_SIZE			16
-#define T4_PWM			1
-#define T4_OC			3
-#define T4_IC			1
-#define T4_AS			0
-#define T4_REV			0
+#	define T4_SIZE			16
+#	define T4_PWM			1
+#	define T4_OC			3
+#	define T4_IC			1
+#	define T4_AS			0
+#	define T4_REV			0
 
-#define T5_SIZE			16
-#define T5_PWM			1
-#define T5_OC			3
-#define T5_IC			1
-#define T5_AS			0
-#define T5_REV			0
+#	define T5_SIZE			16
+#	define T5_PWM			1
+#	define T5_OC			3
+#	define T5_IC			1
+#	define T5_AS			0
+#	define T5_REV			0
 
-#define NUM_8_BIT_TIMERS		2
-#define NUM_16_BIT_TIMERS	4
-#define NUM_TIMERS		(NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS)
+#	define NUM_8_BIT_TIMERS		2
+#	define NUM_16_BIT_TIMERS	4
+# 	define NUM_TIMERS		(NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS)
 
-#define INT_BIT			7
+#	define INT_BIT			7
 
 enum Tc_number {TC_0, TC_1, TC_2, TC_3, TC_4, TC_5};
 enum Tc_oc_channel {TC_OC_A, TC_OC_B, TC_OC_C};
@@ -146,6 +146,7 @@ enum Tc_clk_src {TC_SRC_INT};
 enum Tc_prescalar {TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
 
 // TODO - Realised this might be an issue if not all the timers are the same size.
+
 
 // This shows which pins have External Interrupts, and which have pin change interrupts assignable. The ATmega2560 has only 8 External Pin interrupts, and a range of Pin Change interrupts.
 static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
