@@ -35,6 +35,6 @@
 ############################################################################
 
 ifeq ($(CONFIG_VALLEYFORGE),y)
-CONFIGURED_APPS += ValleyForge/<APP_DIR>
+CONFIGURED_APPS += ValleyForge/
 endif
 

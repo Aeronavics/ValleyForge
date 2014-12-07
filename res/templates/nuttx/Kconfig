@@ -3,20 +3,3 @@
 # see misc/tools/kconfig-language.txt.
 #
 
-config VF_<APP_NAME>
-	bool "<APP_NAME>"
-	default n
-	---help---
-		Enable the \"<APP_NAME>\" application.
-
-if VF_<APP_NAME>
-
-config VF_<APP_NAME>_PROGNAME
-	string "Program name"
-	default "<APP_NAME>"
-	depends on BUILD_KERNEL
-	---help---
-		This is the name of the program that will be used when the NSH ELF
-		program is installed.
-
-endif
