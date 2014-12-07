@@ -32,6 +32,7 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 shopt -s extglob
+source "./gen_nuttx_app_configuration"
 
 ######################################## FUNCTION #########################################
 ###																						###
@@ -53,6 +54,9 @@ gen_nuttx_build()
 	# PRIVATE INTERNAL FUNCTIONS
 
 	# FUNCTION PROPER STARTS HERE
+
+	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
+	EXECUTABLES="${EXECUTABLES:-$COMPONENT}"
 
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then
@@ -89,14 +93,20 @@ gen_nuttx_build()
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
 	# Create the ValleyForge application directory.
 	cp -fr ${NUTTX_TEMPLATE_SOURCE}/ValleyForge $1/apps/
+	# Copy the project application makefile and Kconfig files to the apps/ValleyForge directory
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/ValleyForge/Kconfig
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/ValleyForge/Makefile
 	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
-	echo -e '\nmenu "ValleyForge"\nsource "$APPSDIR/ValleyForge/Kconfig"\nendmenu' >> $1/apps/Kconfig
+	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/ValleyForge/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
 	# Move the NuttX application files to the new ValleyForge directory.
 	mv -f $1/!(apps|nuttx) $1/apps/ValleyForge/
-	# Update the Kconfig file to point at the new application
-	sed -i -e s/'<APP_NAME>'/${COMPONENT}_app/ $1/apps/ValleyForge/Kconfig
-	# Enable the application in the .config file.
-	echo -e "\n#\n# ValleyForge\n#\nCONFIG_VF_${COMPONENT^^}=y\n" >> $1/nuttx/.config
+
+	# Enable any applications in the .config file.
+	echo -e "\n#\n# ValleyForge\n#\nCONFIG_VALLEYFORGE_${COMPONENT^^}=y\n" >> $1/nuttx/.config
+	for EXECUTABLE in EXECUTABLES
+	do
+		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y\n" >> $1/nuttx/.config
+	done
 	# Update the .config file for building on a Linux system.
 	sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
 	sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
@@ -105,6 +115,5 @@ gen_nuttx_build()
 	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
 	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
 	
-
-	echo -e "${RED}\tDEBUG: EXITING SCRIPT AFTER FETCH_NUTTX...\n${NO_COLOUR}"	
+	gen_nuttx_app_configuration $1/apps/ValleyForge
 }
