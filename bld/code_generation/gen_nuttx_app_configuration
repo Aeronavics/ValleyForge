@@ -23,7 +23,7 @@ UNDERLINED="\033[4m"
 HIGHLIGHT_BLUE="\033[44m"
 
 TEST_APP_NAMES="app0 app1 app2"
-TEST_EXECUTABLES="exec0.c exec1.c exec2.c"
+TEST_EXECUTABLES="exec0 exec1 exec2"
 TEST_APP_PRIORITIES="0 1 2"
 TEST_APP_STACKSIZE="0000 1000 2000"
 
@@ -41,6 +41,7 @@ APP_INSTALL_PART1_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\): \$\(O
 APP_INSTALL_PART2_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)'
 APP_CONTEXT_PART1_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat: \$\(DEPCONFIG\) Makefile\n\t\$\(call REGISTER,\$\(APP<APP_NUMBER>NAME\),\$\(PRIORITY\),\$\(STACKSIZE\),\$\(APP<APP_NUMBER>NAME\)_main\)\n'
 APP_CONTEXT_PART2_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat'
+KCONFIG_TEMPLATE='config VALLEYFORGE_<UPPER_APP_NAME>\n\tbool "\\"<APP_NAME>\\"\n\tdefault n\n\t---help---\n\t\tEnable the \\"<APP_NAME>\\" application.\n\nif VALLEYFORGE_<UPPER_APP_NAME>\n\nconfig VALLEYFORGE_<UPPER_APP_NAME>_PROGNAME\n\tstring "<APP_NAME>"\n\tdefault "<APP_NAME>"\n\tdepends on BUILD_KERNEL\n\t---help---\n\t\tThis is the name of the program that will be used when the\n\t\tNSH ELF program is installed.\n\nendif\n\n'
 
 # Function to echo strings without half of the nonsense that has to be written each time.
 # Expects two positional arguments. If no colour is provided, it defaults to CYAN.
@@ -51,10 +52,12 @@ shout() {
 	echo -e "${!COLOUR}${1}\n${NO_COLOUR}"
 }
 
-test_makefile_updater() {
+test_app_configuration() {
 	# Stuff to look after the makefile.
 	MAKEFILE_LOCATION='./Makefile_backup'
+	KCONFIG_LOCATION='./Kconfig_backup'
 	cp -f ./Makefile $MAKEFILE_LOCATION
+	rm -f ${KCONFIG_LOCATION}
 	
 	# Converting all the strings into arrays.
 	APP_NAMES_ARRAY=($TEST_APP_NAMES)
@@ -76,14 +79,81 @@ test_makefile_updater() {
 
 	for APP_COUNT_CURRENT in $(seq 0 $APP_LOOP_MAX)
 	do
+		# The following functions are for creating the makefile.
 		update_app_info $APP_COUNT_CURRENT ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]} ${APP_PRIORITIES_ARRAY[$APP_COUNT_CURRENT]} ${APP_STACKSIZE_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
-		update_app_source $APP_COUNT_CURRENT ${APP_EXECUTABLES_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
+		update_app_source $APP_COUNT_CURRENT ${APP_EXECUTABLES_ARRAY[$APP_COUNT_CURRENT]} ./ $APP_LOOP_MAX
 		update_main_source $APP_COUNT_CURRENT $APP_LOOP_MAX
 		update_app_objects $APP_COUNT_CURRENT $APP_LOOP_MAX
 		update_app_configs $APP_COUNT_CURRENT $APP_LOOP_MAX
 		update_app_install $APP_COUNT_CURRENT $APP_LOOP_MAX
 		update_app_context $APP_COUNT_CURRENT $APP_LOOP_MAX
+		# The following function is for creating the Kconfig file.
+		update_kconfig ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]}
 	done
+
+	# Add the C and assembly source files to the makefile.
+	update_source_file_lists ./
+}
+
+# gen_app_configuration
+# Expects the path to apps/ValleyForge to be passed in as the first parameter.
+gen_nuttx_app_configuration() {
+	MAKEFILE_LOCATION=$1/Makefile
+	KCONFIG_LOCATION=$1/Kconfig
+
+	# Converting all the strings into arrays.
+	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
+	APP_NAMES_ARRAY=${APP_EXECUTABLES_ARRAY[@]%'_main'}
+	APP_PRIORITIES_ARRAY=($PRIORITIES)
+	APP_STACKSIZE_ARRAY=($STACKSIZES)
+
+	# Find the total number of applications being processed. It is assumed that the EXECUTABLES contains all the applications being built.
+	APP_COUNT_TOTAL=${#APP_EXECUTABLES_ARRAY[@]}
+
+	# Create a variable for the number of times to repeat the for loop.
+	APP_LOOP_MAX=$((${APP_COUNT_TOTAL}-1))
+
+	# Assign default values to anything that isn't already assigned a value.
+	for APP_INDEX in in $(seq 0 $APP_LOOP_MAX)
+	do
+		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
+		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
+	done
+
+	# Populate the makefile and Kconfig file
+	for APP_COUNT_CURRENT in $(seq 0 $APP_LOOP_MAX)
+	do
+		# The following functions are for creating the makefile.
+		update_app_info $APP_COUNT_CURRENT ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]} ${APP_PRIORITIES_ARRAY[$APP_COUNT_CURRENT]} ${APP_STACKSIZE_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
+		update_app_source $APP_COUNT_CURRENT ${APP_EXECUTABLES_ARRAY[$APP_COUNT_CURRENT]} $1 $APP_LOOP_MAX
+		update_main_source $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_objects $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_configs $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_install $APP_COUNT_CURRENT $APP_LOOP_MAX
+		update_app_context $APP_COUNT_CURRENT $APP_LOOP_MAX
+		# The following function is for creating the Kconfig file.
+		update_kconfig ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]}
+	done
+
+	# Add the C and assembly source files to the makefile.
+	update_source_file_lists $1
+}
+
+# update source files
+# 1. The directory of apps/Valleyforge
+update_source_file_lists() {
+	# Find all the C and CPP files in the directory that aren't suffixed by "_main".
+	C_SOURCE_FILES=($(find $1 -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
+	# Find all the assembly files in the directory.
+	ASSEMBLY_SOURCE_FILES=($(find $1 -iname '*.s'))
+
+	# Convert the lists into strings, otherwise sed throws an error.
+	C_SOURCE_FILES=${C_SOURCE_FILES[@]}
+	ASSEMBLY_SOURCE_FILES=${ASSEMBLY_SOURCE_FILES[@]}
+
+	# Place these files in the appropriate location of the makefile.
+	sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^# $MAKEFILE_LOCATION
+	sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^ $MAKEFILE_LOCATION
 }
 
 # update_app_info takes five arguments: The number of the app, the app name, the app priority and the app stack size in that order,
@@ -114,21 +184,27 @@ update_app_info() {
 # update_app_source
 # 1. The number of the app
 # 2. The app exectuable name
-# 3. The total number of applications being included in the makefile
+# 3. The directory the executable is in
+# 4. The total number of applications being included in the makefile
 update_app_source() {
+	# Find the actual filename of the executable file.
+	EXEC_FILENAME=$(find $3 -iname '*.c' -o -iname '*.cpp' | grep "${2}")
+	# Extract the filename from the full path string.
+	EXEC_FILENAME=${EXEC_FILENAME##*/}
+
 	# Copy the APP_SOURCE template so we don't corrupt the template for other iterations.
 	UPDATED_APP_SOURCE=${APP_SOURCE_TEMPLATE}
 	# Fill out the APP_SOURCE string with the various function parameters.
 	UPDATED_APP_SOURCE=$(echo ${UPDATED_APP_SOURCE} | sed s^"<APP_NUMBER>"^$1^)
-	UPDATED_APP_SOURCE=$(echo ${UPDATED_APP_SOURCE} | sed s^"<APP_EXEC_FILE>"^$2^)
+	UPDATED_APP_SOURCE=$(echo ${UPDATED_APP_SOURCE} | sed s^"<APP_EXEC_FILE>"^$EXEC_FILENAME^)
 
 	# Add the completed UPDATED_APP_INFO string to the makefile.
-	if [ ${1} -lt ${3} ]; then
+	if [ ${1} -lt ${4} ]; then
 		# If we're not in the last iteration, also append the <APP_SOURCE> flag for future iterations.
 		sed -i s^"<APP_SOURCE>"^"${UPDATED_APP_SOURCE}<APP_SOURCE>"^ $MAKEFILE_LOCATION
-	elif [ ${1} -eq ${3} ]; then
+	elif [ ${1} -eq ${4} ]; then
 		# If we're in the last iteration, clean up the <APP_SOURCE> flag in the template makefile.
-		sed -i s^"<APP_SOURCE>"^"${UPDATED_APP_SOURCE}"^ $MAKEFILE_LOCATION
+		sed -i s/"<APP_SOURCE>"/"${UPDATED_APP_SOURCE}"/ $MAKEFILE_LOCATION
 	fi
 }
 
@@ -227,4 +303,16 @@ update_app_context() {
 		sed -i s^"<APP_CONTEXT_PART1>"^"${UPDATED_APP_CONTEXT_PART1}"^ $MAKEFILE_LOCATION
 		sed -i s^"<APP_CONTEXT_PART2>"^"${UPDATED_APP_CONTEXT_PART2}"^ $MAKEFILE_LOCATION
 	fi
+}
+
+# kconfig_updater
+# 1. The name of the app.
+update_kconfig() {
+	# Copy the KCONFIG_TEMPLATE so we don't corrupt the template for future iterations.
+	UPDATED_KCONFIG=${KCONFIG_TEMPLATE}
+	# Fill out the KCONFIG string with the various function parameters.
+	UPDATED_KCONFIG=$(echo ${UPDATED_KCONFIG} | sed s/"<UPPER_APP_NAME>"/${1^^}/g)
+	UPDATED_KCONFIG=$(echo ${UPDATED_KCONFIG} | sed s^"<APP_NAME>"^${1}^g)
+
+	echo -e $UPDATED_KCONFIG >> ${KCONFIG_LOCATION}
 }
