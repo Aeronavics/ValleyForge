@@ -84,13 +84,6 @@ gen_nuttx()
 	cp -f ${NUTTX_CONFIG_SOURCE}/Make.defs $1/Make.defs
 	cp -f ${NUTTX_CONFIG_SOURCE}/setenv.sh $1/setenv.sh
 	cp -f ${NUTTX_CONFIG_SOURCE}/defconfig $1/defconfig
-	# Create a folder for the automatically generated application code.
-	mkdir $1/${COMPONENT}_app
-	# The following two configuration files are required for the application.
-	cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/${COMPONENT}_app/Kconfig
-	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/${COMPONENT}_app/Makefile
-	# Replace <APP_NAME> with the name of the component.
-	sed -i -e s/'<APP_NAME>'/${COMPONENT^^}/ $1/${COMPONENT}_app/Kconfig
 
 	# Check if we know of a folder containing patches we should apply.
 	if [ -z "${NUTTX_PATCHES}" ]; then
