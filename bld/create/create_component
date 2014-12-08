@@ -860,7 +860,7 @@ else
 fi
 
 # Update the config file with the executable files.
-push_key ${CONFIG_FILE} "EXECUTABLES" "${EXECUTABLES}"
+push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
 
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
