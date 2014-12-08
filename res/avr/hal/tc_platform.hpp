@@ -36,6 +36,8 @@
 
 // Generic AVR register addresses
 
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+
 // TIMSK addresses
 #	define TIMSK5_ADDRESS		0x73
 #	define TIMSK4_ADDRESS		0x72
@@ -137,10 +139,7 @@
 #	define WGM1_8TC_BIT		3
 #endif
 
-#	define COM_BIT_OFFSET		2
-#	define MAX_TIMER_PINS		4
-
-#ifdef (__AVR_ATmega2560__)
+#ifdef __AVR_ATmega2560__
 // Timer/Counter Peripheral Pin Addresses and Associated Constants.
 #	define TC0_OC_A_PORT		PORT_B
 #	define TC0_OC_A_PIN		PIN_7
@@ -194,6 +193,9 @@
 #	define TC_OC_CHANNEL_C		2
 #	define TC_IC_CHANNEL_A		3
 
+ #	define COM_BIT_OFFSET		2
+#	define MAX_TIMER_PINS		4
+
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	3
 #	define TIMER0_OFFSET		0
@@ -212,7 +214,7 @@
 // Definitions required for Port Directionality Control.
 #	define PORT_REGISTER_MULTIPLIER		0x03
 #	define LOWER_REGISTER_PORT_OFFSET	0x01
-#	define HIGHER_REGISTER_PORT_OFFSET	0xEC
+#	define HIGHER_REGISTER_PORT_OFFSET	0x100
 #endif
 
 #if defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
@@ -236,11 +238,15 @@
 #	define TC1_IC_B_PORT		PORT_C
 #	define TC1_IC_B_PIN		PIN_3
 
-#	define IC_CHANNEL_OFFSET		2	
+#	define IC_CHANNEL_OFFSET		3	
 #	define TC_OC_CHANNEL_A		0
 #	define TC_OC_CHANNEL_B		1
-#	define TC_IC_CHANNEL_A		2
-#	define TC_IC_CHANNEL_B		3
+#	define TC_OC_CHANNEL_C		2
+#	define TC_IC_CHANNEL_A		3
+#	define TC_IC_CHANNEL_B		4
+
+#	define COM_BIT_OFFSET		2
+#	define MAX_TIMER_PINS		4
 
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	2
@@ -250,10 +256,10 @@
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS )
 
 // Definitions required for Port Directionality Control.
-// #	define PORT_REGISTER_MULTIPLIER		0x03		// What is this for?
-// #	define LOWER_REGISTER_PORT_OFFSET	0x01		//
-// #	define HIGHER_REGISTER_PORT_OFFSET	0xEC	//
-	
+#	define PORT_REGISTER_MULTIPLIER		0x03		// What is this for?
+#	define LOWER_REGISTER_PORT_OFFSET	0x04		//
+#endif
+
 #ifdef __AVR_AT90CAN128__
 
 // Timer/Counter Peripheral Pin Addresses and Associated Constants.
@@ -281,11 +287,14 @@
 #	define TC3_IC_A_PORT		PORT_E
 #	define TC3_IC_A_PIN		PIN_7
 
-#	define IC_CHANNEL_OFFSET		2
+#	define IC_CHANNEL_OFFSET		3
 #	define TC_OC_CHANNEL_A		0
 #	define TC_OC_CHANNEL_B		1
 #	define TC_OC_CHANNEL_C		2
 #	define TC_IC_CHANNEL_A		3
+
+#	define COM_BIT_OFFSET		2
+#	define MAX_TIMER_PINS		4
 
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	1
@@ -297,6 +306,12 @@
 #	define NUM_TIMER2_INTERRUPTS	4
 #	define TIMER2_OFFSET		7
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS)
+
+// Definitions required for Port Directionality Control.
+#	define PORT_REGISTER_MULTIPLIER		0x03
+#	define LOWER_REGISTER_PORT_OFFSET	0x01
+
+#endif
 
 #else
 	#error "No support for this target."
