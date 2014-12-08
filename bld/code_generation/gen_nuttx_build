@@ -32,7 +32,7 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 shopt -s extglob
-source "./gen_nuttx_app_configuration"
+source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
 
 ######################################## FUNCTION #########################################
 ###																						###
