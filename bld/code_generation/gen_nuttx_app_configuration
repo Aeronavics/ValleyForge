@@ -1,35 +1,34 @@
 #!/bin/bash
 
-# The following variables are used for testing the script only. Eventually, the script will use the variables made available from other parts of the build process.
-################################
-# TESTING VARIABLES START HERE #
-################################
-NO_COLOUR="\033[0m"
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-RED="\033[0;31m"
-GREEN="\033[0;32m"
-YELLOW="\033[0;33m"
-BLUE="\033[0;34m"
-CYAN="\033[0;36m"
-
-BOLD_RED="\033[1;31m"
-BOLD_GREEN="\033[1;32m"
-BOLD_YELLOW="\033[1;33m"
-BOLD_BLUE="\033[1;34m"
-BOLD_CYAN="\033[1;36m"
-BOLD_WHITE="\033[1;37m"
-
-UNDERLINED="\033[4m"
-HIGHLIGHT_BLUE="\033[44m"
-
-TEST_APP_NAMES="app0 app1 app2"
-TEST_EXECUTABLES="exec0 exec1 exec2"
-TEST_APP_PRIORITIES="0 1 2"
-TEST_APP_STACKSIZE="0000 1000 2000"
-
-################################
-#  TESTING VARIABLES END HERE  #
-################################
+###########################################################################################################################
+###																														###
+### Name:			gen_nuttx_app_configuation																			###
+###																														###
+### Author:			Zane Barker																							###
+###																														###
+### Date Created:	9-12-2014																							###
+###																														###
+### Type:			Bash Script																							###
+###																														###
+### Purpose:		Generates the application configuration inside the Makefile and Kconfig file for the ValleyForge 	###
+###						applications. This script is called as part of the build process for a NuttX project.		 	###
+###																														###
+###########################################################################################################################
 
 # The following variables contain the fragments of makefile that need to be replicated for each application and inserted into the makefile proper.
 APP_INFO_TEMPLATE='APP<APP_NUMBER>NAME = <APP_NAME>\nPRIORITY = <APP_PRIORITY>\nSTACKSIZE = <APP_STACKSIZE>\n'
@@ -43,67 +42,23 @@ APP_CONTEXT_PART1_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>
 APP_CONTEXT_PART2_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat'
 KCONFIG_TEMPLATE='config VALLEYFORGE_<UPPER_APP_NAME>\n\tbool "\\"<APP_NAME>\\"\n\tdefault n\n\t---help---\n\t\tEnable the \\"<APP_NAME>\\" application.\n\nif VALLEYFORGE_<UPPER_APP_NAME>\n\nconfig VALLEYFORGE_<UPPER_APP_NAME>_PROGNAME\n\tstring "<APP_NAME>"\n\tdefault "<APP_NAME>"\n\tdepends on BUILD_KERNEL\n\t---help---\n\t\tThis is the name of the program that will be used when the\n\t\tNSH ELF program is installed.\n\nendif\n\n'
 
-# Function to echo strings without half of the nonsense that has to be written each time.
-# Expects two positional arguments. If no colour is provided, it defaults to CYAN.
-# 1. The message to be echoed
-# 2. The message colour. If this parameter is empty, CYAN is used.
-shout() {
-	COLOUR=${2:-CYAN}
-	echo -e "${!COLOUR}${1}\n${NO_COLOUR}"
-}
-
-test_app_configuration() {
-	# Stuff to look after the makefile.
-	MAKEFILE_LOCATION='./Makefile_backup'
-	KCONFIG_LOCATION='./Kconfig_backup'
-	cp -f ./Makefile $MAKEFILE_LOCATION
-	rm -f ${KCONFIG_LOCATION}
-	
-	# Converting all the strings into arrays.
-	APP_NAMES_ARRAY=($TEST_APP_NAMES)
-	APP_EXECUTABLES_ARRAY=($TEST_EXECUTABLES)
-	APP_PRIORITIES_ARRAY=($TEST_APP_PRIORITIES)
-	APP_STACKSIZE_ARRAY=($TEST_APP_STACKSIZE)
-
-	# Find the total number of applications being processed.
-	APP_COUNT_TOTAL=${#APP_NAMES_ARRAY[@]}
-
-	# Check the arrays have the same number of items in each.
-	if [ ${#APP_NAMES_ARRAY[@]} -ne ${#APP_PRIORITIES_ARRAY[@]} -o  ${#APP_PRIORITIES_ARRAY[@]} -ne ${#APP_STACKSIZE_ARRAY[@]} ]; then
-		echo -e "${RED}The number of app names, priorities and stacksizes provided do not match. Cannot continue script.\n${NO_COLOUR}"
-		exit 1
-	fi
-
-	# Create a variable for the number of times to repeat the for loop.
-	APP_LOOP_MAX=$((${APP_COUNT_TOTAL}-1))
-
-	for APP_COUNT_CURRENT in $(seq 0 $APP_LOOP_MAX)
-	do
-		# The following functions are for creating the makefile.
-		update_app_info $APP_COUNT_CURRENT ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]} ${APP_PRIORITIES_ARRAY[$APP_COUNT_CURRENT]} ${APP_STACKSIZE_ARRAY[$APP_COUNT_CURRENT]} $APP_LOOP_MAX
-		update_app_source $APP_COUNT_CURRENT ${APP_EXECUTABLES_ARRAY[$APP_COUNT_CURRENT]} ./ $APP_LOOP_MAX
-		update_main_source $APP_COUNT_CURRENT $APP_LOOP_MAX
-		update_app_objects $APP_COUNT_CURRENT $APP_LOOP_MAX
-		update_app_configs $APP_COUNT_CURRENT $APP_LOOP_MAX
-		update_app_install $APP_COUNT_CURRENT $APP_LOOP_MAX
-		update_app_context $APP_COUNT_CURRENT $APP_LOOP_MAX
-		# The following function is for creating the Kconfig file.
-		update_kconfig ${APP_NAMES_ARRAY[$APP_COUNT_CURRENT]}
-	done
-
-	# Add the C and assembly source files to the makefile.
-	update_source_file_lists ./
-}
-
-# gen_app_configuration
-# Expects the path to apps/ValleyForge to be passed in as the first parameter.
+######################################## FUNCTION #########################################
+###																						###
+### Name:			gen_nuttx_app_configuration											###
+###																						###
+### Inputs/Outputs:	The path to apps/ValleyForge 										###
+###																						###
+### Purpose:		Handles the task of updating all of the necessary fields in the		###
+###						application Makefile and Kconfig files.							###
+###																						###
+###########################################################################################
 gen_nuttx_app_configuration() {
 	MAKEFILE_LOCATION=$1/Makefile
 	KCONFIG_LOCATION=$1/Kconfig
 
 	# Converting all the strings into arrays.
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
-	APP_NAMES_ARRAY=${APP_EXECUTABLES_ARRAY[@]%'_main'}
+	APP_NAMES_ARRAY=(${APP_EXECUTABLES_ARRAY[@]%'_main'})
 	APP_PRIORITIES_ARRAY=($PRIORITIES)
 	APP_STACKSIZE_ARRAY=($STACKSIZES)
 
@@ -139,8 +94,15 @@ gen_nuttx_app_configuration() {
 	update_source_file_lists $1
 }
 
-# update source files
-# 1. The directory of apps/Valleyforge
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_source_file_lists											###
+###																						###
+### Inputs/Outputs:	The path to apps/ValleyForge 										###
+###																						###
+### Purpose:		Updates the CSRCS and ASRCS fields in the Makefile.					###
+###																						###
+###########################################################################################
 update_source_file_lists() {
 	# Find all the C and CPP files in the directory that aren't suffixed by "_main".
 	C_SOURCE_FILES=($(find $1 -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
@@ -156,12 +118,19 @@ update_source_file_lists() {
 	sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^ $MAKEFILE_LOCATION
 }
 
-# update_app_info takes five arguments: The number of the app, the app name, the app priority and the app stack size in that order,
-# 1. The number of the app
-# 2. The app name
-# 3. The app priority
-# 4. The app stacksize
-# 5. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_info														###
+###																						###
+### Inputs/Outputs:	1. The number of the application									###
+###					2. The app name														###
+###					3. The app priority													###
+###					4. The app stacksize												###
+###					5. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_INFO> fields in the Makefile.						###
+###																						###
+###########################################################################################
 update_app_info() {
 	# Copy the APP_INFO template so we don't corrupt the template for other iterations.
 	UPDATED_APP_INFO=${APP_INFO_TEMPLATE}
@@ -181,11 +150,18 @@ update_app_info() {
 	fi
 }
 
-# update_app_source
-# 1. The number of the app
-# 2. The app exectuable name
-# 3. The directory the executable is in
-# 4. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_source													###
+###																						###
+### Inputs/Outputs:	1. The number of the application									###
+###					2. The app name														###
+###					3. The directory the application is in 								###
+###					4. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_SOURCE> fields in the Makefile.					###
+###																						###
+###########################################################################################
 update_app_source() {
 	# Find the actual filename of the executable file.
 	EXEC_FILENAME=$(find $3 -iname '*.c' -o -iname '*.cpp' | grep "${2}")
@@ -208,9 +184,16 @@ update_app_source() {
 	fi
 }
 
-# update_main_source
-# 1. The number of the app
-# 2. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_main_source													###
+###																						###
+### Inputs/Outputs:	1. The number of the application 									###
+###					2. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <MAIN_SOURCE> fields in the Makefile.					###
+###																						###
+###########################################################################################
 update_main_source() {
 	if [ ${1} -lt ${2} ]; then
 		# If we're not in the last iteration, also append the <MAIN_SOURCE> flag for future iterations.
@@ -221,9 +204,16 @@ update_main_source() {
 	fi
 }
 
-# update_app_objects
-# 1. The number of the app
-# 2. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_objects													###
+###																						###
+### Inputs/Outputs:	1. The number of the application 									###
+###					2. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_OBJS> fields in the Makefile.						###
+###																						###
+###########################################################################################
 update_app_objects() {
 	# Copy the APP_OBJS template so we don't corrupt the template for other iterations.
 	UPDATED_APP_OBJS=${APP_OBJS_TEMPLATE}
@@ -240,9 +230,16 @@ update_app_objects() {
 	fi
 }
 
-# update_app_configs
-# 1. The number of the app
-# 2. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_configs													###
+###																						###
+### Inputs/Outputs:	1. The number of the application 									###
+###					2. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_CONFIG_APPNAME> fields in the Makefile.			###
+###																						###
+###########################################################################################
 update_app_configs() {
 	# Copy the APP_CONFIG_APPNAME template so we don't corrupt the template for other iterations.
 	UPDATED_APP_CONFIG=${APP_CONFIG_APPNAME_TEMPLATE}
@@ -259,9 +256,16 @@ update_app_configs() {
 	fi
 }
 
-# update_app_install
-# 1. The number of the app
-# 2. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_install													###
+###																						###
+### Inputs/Outputs:	1. The number of the application 									###
+###					2. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_INSTALL> fields in the Makefile.					###
+###																						###
+###########################################################################################
 update_app_install() {
 	# Copy the APP_INSTALL template so we don't corrupt the template for other iterations.
 	UPDATED_APP_INSTALL_PART1=${APP_INSTALL_PART1_TEMPLATE}
@@ -282,9 +286,16 @@ update_app_install() {
 	fi
 }
 
-# update_app_context
-# 1. The number of the app
-# 2. The total number of applications being included in the makefile
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_app_context													###
+###																						###
+### Inputs/Outputs:	1. The number of the application 									###
+###					2. The total number of applications being included in the Makefile	###
+###																						###
+### Purpose:		Updates the <APP_CONTEXT> fields in the Makefile.					###
+###																						###
+###########################################################################################
 update_app_context() {
 	# Copy the APP_CONTEXT template so we don't corrupt the template for other iterations.
 	UPDATED_APP_CONTEXT_PART1=${APP_CONTEXT_PART1_TEMPLATE}
@@ -305,8 +316,15 @@ update_app_context() {
 	fi
 }
 
-# kconfig_updater
-# 1. The name of the app.
+######################################## FUNCTION #########################################
+###																						###
+### Name:			update_kconfig 														###
+###																						###
+### Inputs/Outputs:	1. The name of the applications 									###
+###																						###
+### Purpose:		Updates the the Kconfig file for a given application.				###
+###																						###
+###########################################################################################
 update_kconfig() {
 	# Copy the KCONFIG_TEMPLATE so we don't corrupt the template for future iterations.
 	UPDATED_KCONFIG=${KCONFIG_TEMPLATE}
