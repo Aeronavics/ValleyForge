@@ -137,6 +137,12 @@ enum Usart_int_status
 	//USART_INT_NOINT = -3,
 };
 
+enum Usart_interrupt_type
+{
+	USART_INT_TX_COMPLETE,	// The transmission is complete and is ready to receive more data
+	USART_INT_RX_COMPLETE, 	// Some data has been received (either a single byte, or the completion of receive_buffer_async())
+};
+
 /**
  * Available USART channels are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
  *

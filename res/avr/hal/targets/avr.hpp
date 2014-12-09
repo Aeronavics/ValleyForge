@@ -51,7 +51,7 @@
 #define __TARGET_AVR_H__
 
 /* Generic Types */
-typedef int(*callback_t)(void);
+typedef void(*callback_t)(void);
 
 /* Macros */
 
@@ -107,13 +107,6 @@ typedef uint16_t Eeprom_address;
 // UCSRnC Register (when in Master SPI Mode).
 #define UDORD_BIT			2
 #define UCPHA_BIT			1
-
-enum Usart_interrupt_type
-{
-	USART_INT_TX_COMPLETE,	// The TX transmission is complete
-	USART_INT_RX_COMPLETE, 	// A byte of data has been received
-	USART_INT_TX_READY		// The TX is ready to send more data
-};
 
 /* SPI */
 

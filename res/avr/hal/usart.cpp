@@ -256,8 +256,8 @@ public:
 
 		*registers.UDR = data;
 
-		// If the user wants to use the UDR ISR, enable it so it gets triggered.
-		if (udre_isr && udre_isr_enabled)
+		// If the user wants to use the TX ISR to load in more data, enable it so it gets triggered.
+		if (tx_isr && tx_isr_enabled)
 			set_udrie(true);
 
 		return USART_IO_SUCCESS;
@@ -420,16 +420,14 @@ public:
 
 	virtual void enable_interrupts(void)
 	{
-		tx_isr_enabled = true;
-		rx_isr_enabled = true;
-		udre_isr_enabled = true;
+		if (tx_isr) tx_isr_enabled = true;
+		if (rx_isr) rx_isr_enabled = true;
 	}
 
 	virtual void disable_interrupts(void)
 	{
 		tx_isr_enabled = false;
 		rx_isr_enabled = false;
-		udre_isr_enabled = false;
 	}
 
 	virtual Usart_int_status attach_interrupt(Usart_interrupt_type type, callback_t callback)
@@ -453,16 +451,6 @@ public:
 
 				rx_isr = callback;
 				rx_isr_enabled = true;
-				break;
-			};
-
-			case USART_INT_TX_READY:
-			{
-				if (udre_isr != NULL)
-					return USART_INT_INUSE;
-
-				udre_isr = callback;
-				udre_isr_enabled = true;
 				break;
 			};
 
@@ -493,13 +481,6 @@ public:
 			{
 				rx_isr = NULL;
 				rx_isr_enabled = false;
-				break;
-			};
-
-			case USART_INT_TX_READY:
-			{
-				udre_isr = NULL;
-				udre_isr_enabled = false;
 				break;
 			};
 
@@ -754,8 +735,7 @@ public:  //// Asynchronous Interrupt Handling ////
 		// This interrupt is triggered only when the transmission is complete
 		// and there is no new data to be sent
 
-		if (tx_isr && tx_isr_enabled)
-			tx_isr();
+		// Unused.
 	}
 
 	void isr_transmit_ready(void)
@@ -798,29 +778,21 @@ public:  //// Asynchronous Interrupt Handling ////
 					async_tx.cb_done(USART_ERR_NONE);
 
 				// Call the user ISR to indicate the transmitter is free to send more data
-				if (udre_isr && udre_isr_enabled)
-					udre_isr();
+				if (tx_isr && tx_isr_enabled)
+					tx_isr();
 			}
 		}
 		// Only process user ISR if no async operations are running
 		else
 		{
-			bool finished = true;
-
 			// Call the user ISR, which can be used to load more data into UDR.
 			// The callback should return a bool, which should be set to true
 			// when the user has no more data to send.
-			if (udre_isr && udre_isr_enabled)
-			{
-				finished = (bool)udre_isr();
-			}
+			if (tx_isr && tx_isr_enabled)
+				tx_isr();
 
-			// Disable the ISR when there is no more data to be sent,
-			// or there is no ISR to service.
-			if (finished)
-			{
-				set_udrie(false);
-			}
+			// Explicitly clear the UDRIE flag in case they didn't load more data
+			set_udrie(false);
 		}
 	}
 
@@ -832,13 +804,8 @@ public:  //// Asynchronous Interrupt Handling ////
 	// If an _async() call is active, this is called when it finishes.
 	callback_t rx_isr;
 
-	// The UDRE isr is called whenever the transmitter becomes free to transmit more data,
-	// but is only activated when _async() routines are used.
-	callback_t udre_isr;
-
 	bool tx_isr_enabled;
 	bool rx_isr_enabled;
-	bool udre_isr_enabled;
 
 	// State machines used for asynchronous communications
 	struct
@@ -914,15 +881,16 @@ public:
 		LINCR |= _BV(LENA);
 
 		// Enable interrupts
-		//LINENIR |= _BV(LENTXOK) | _BV(LENRXOK);
-
-		//TODO: Does LENA need to be set before or after configuration?
+		LINENIR |= _BV(LENTXOK) | _BV(LENRXOK);
 	}
 
 	void disable(void)
 	{
 		LINCR &= ~_BV(LENA);
 		//TODO: Does disable clear the current configuration?
+
+		// Disable interrupts
+		LINENIR &= ~(_BV(LENTXOK) | _BV(LENRXOK));
 	}
 
 	void flush(void)
@@ -972,10 +940,9 @@ public:
 
 		LINDAT = data;
 
-		// If the user wants to use the UDR ISR, enable it so it gets triggered.
-		if (udre_isr && udre_isr_enabled)
+		// If the user wants to use the TX ready ISR to transmit more data, trigger it.
+		if (tx_isr && tx_isr_enabled)
 			set_udrie(true);
-		// TODO: How does UDRE on LIN work?
 
 		return USART_IO_SUCCESS;
 	}
@@ -983,18 +950,6 @@ public:
 	// NOTE: The following functions do not need to be overridden:
 	// 	transmit_buffer()  transmit_buffer_async()
 	// 	transmit_string()  transmit_string_async()
-
-	Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = NULL)
-	{
-		// TODO - Implement ISR handler, then delete this function
-		return USART_IO_FAILED;
-	}
-
-	Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = NULL)
-	{
-		// TODO - Implement ISR handler, then delete this function
-		return USART_IO_FAILED;
-	}
 
 	int16_t receive_byte(void)
 	{
@@ -1027,12 +982,6 @@ public:
 	// NOTE: The following functions do not need to be overridden:
 	// 	receive_buffer()  receive_buffer_async()
 
-	Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
-	{
-		// TODO - Implement ISR handler, then delete this function
-		return USART_IO_FAILED;
-	}
-
 	// NOTE: The following functions do not need to be overridden:
 	// 	enable_interrupts()  disable_interrupts()
 	//  attach_interrupt()  detach_interrupt()
@@ -1061,8 +1010,6 @@ public:
 
 		// Put the LIN peripheral into UART mode, with RX/TX enabled.
 		LINCR |= _BV(LCMD2) | _BV(LCMD1) | _BV(LCMD0);
-
-		//TODO: Do we need to config pins?
 
 		this->mode = mode;
 
@@ -1134,7 +1081,18 @@ public:
 
 	void set_udrie(bool enabled)
 	{
-		// TODO - How does this work on LIN?
+		// The LIN peripheral does not have a UDRE interrupt like the native USART peripheral.
+		// We can emulate it by calling the transmit_ready ISR here.
+		// The TXOK ISR will continue to be triggered as long as LTXOK is not cleared (Adding data to LINSIR will clear LTXOK).
+		if (enabled)
+		{
+			// Note - set_udrie(true) should not be called from within isr_transmit_ready().
+			isr_transmit_ready();
+		}
+		else
+		{
+			LINSIR |= _BV(LTXOK);
+		}
 	}
 
 protected:
