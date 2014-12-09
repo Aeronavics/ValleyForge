@@ -20,3 +20,6 @@ Created Thursday 04 December 2014
 **I2C**			3
 **CAN**		2
 **ADC**		16x 12-bit, 2000 ksps
+
+
+TODO: //This target does not currently implement any of the //[[HAL|Hardware Abstraction Library]]

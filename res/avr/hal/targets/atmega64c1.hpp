@@ -83,28 +83,28 @@ enum port_t {PORT_B=1, PORT_C, PORT_D};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 
 /* Timer/Counter */
-#define INT_BIT			7
+#	define INT_BIT			7
 
-#define T0_SIZE			8
-#define T0_PWM			1
-#define T0_OC			2
-#define T0_IC			0
-#define T0_AS			0
-#define T0_REV			0
+#	define T0_SIZE			8
+#	define T0_PWM			1
+#	define T0_OC			2
+#	define T0_IC			0
+#	define T0_AS			0
+#	define T0_REV			0
 
-#define T1_SIZE			16
-#define T1_PWM			1
-#define T1_OC			2
-#define T1_IC			1
-#define T1_AS			0
-#define T1_REV			0
+#	define T1_SIZE			16
+#	define T1_PWM			1
+#	define T1_OC			2
+#	define T1_IC			1
+#	define T1_AS			0
+#	define T1_REV			0
 
-#define NUM_8_BIT_TIMERS		1
-#define NUM_16_BIT_TIMERS	1
-#define NUM_TIMERS		(NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS)
+#	define NUM_8_BIT_TIMERS		1
+#	define NUM_16_BIT_TIMERS	1
+# 	define NUM_TIMERS		(NUM_8_BIT_TIMERS + NUM_16_BIT_TIMERS)
 
 enum Tc_number {TC_0, TC_1};
-enum Tc_oc_channel {TC_OC_A, TC_OC_B, TC_OC_C};
+enum Tc_oc_channel {TC_OC_A, TC_OC_B};
 enum Tc_oc_mode {TC_OC_NONE, TC_OC_MODE_1, TC_OC_MODE_2, TC_OC_MODE_3, TC_OC_MODE_4, TC_OC_MODE_5, TC_OC_MODE_6, TC_OC_MODE_7, TC_OC_MODE_8, TC_OC_MODE_9, TC_OC_MODE_10, TC_OC_MODE_11, TC_OC_MODE_12, TC_OC_MODE_13, TC_OC_MODE_14, TC_OC_MODE_15};
 enum Tc_oc_channel_mode {TC_OC_CHANNEL_MODE_0, TC_OC_CHANNEL_MODE_1, TC_OC_CHANNEL_MODE_2, TC_OC_CHANNEL_MODE_3};
 enum Tc_ic_channel {TC_IC_A, TC_IC_B};

@@ -35,404 +35,29 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
-#include <avr/io.h>
+#include "tc_platform.hpp"
+#include <avr_magic/avr_magic.hpp>
 #include <avr/interrupt.h>
 
 // DEFINE PRIVATE MACROS.
 
 // Define target specific register addresses.
 
-#ifdef (__AVR_ATmega2560__)
-
-	// Timer/Counter 0.
-	#	define TIMSK0_ADDRESS		0x6E
-	#	define TCNT0_ADDRESS		0x36
-	#	define OCR0B_ADDRESS		0x28
-	#	define OCR0A_ADDRESS		0x27
-	#	define TCCR0B_ADDRESS		0x25
-	#	define TCCR0A_ADDRESS		0x24
-
-	// Timer/Counter 1.
-	#	define OCR1C_ADDRESS		0x8C
-	#	define OCR1B_ADDRESS		0x8A
-	#	define OCR1A_ADDRESS		0x88
-	#	define TCNT1_ADDRESS		0x84
-	#	define TCCR1B_ADDRESS		0x81
-	#	define TCCR1A_ADDRESS		0x80
-	#	define TIMSK1_ADDRESS		0x6F
-
-	// Timer/Counter 2.
-	#	define OCR2B_ADDRESS		0xB4
-	#	define OCR2A_ADDRESS		0xB3
-	#	define TCNT2_ADDRESS		0xB2
-	#	define TCCR2B_ADDRESS		0xB1
-	#	define TCCR2A_ADDRESS		0xB0
-	#	define TIMSK2_ADDRESS		0x70
-
-	// Timer/Counter 3.
-	#	define OCR3C_ADDRESS		0x9C
-	#	define OCR3B_ADDRESS		0x9A
-	#	define OCR3A_ADDRESS		0x98
-	#	define TCNT3_ADDRESS		0x94
-	#	define TCCR3B_ADDRESS		0x91
-	#	define TCCR3A_ADDRESS		0x90
-	#	define TIMSK3_ADDRESS		0x71
-
-	// Timer/Counter 4.
-	#	define OCR4C_ADDRESS		0xAC
-	#	define OCR4B_ADDRESS		0xAA
-	#	define OCR4A_ADDRESS		0xA8
-	#	define TCNT4_ADDRESS		0xA4
-	#	define TCCR4B_ADDRESS		0xA1
-	#	define TCCR4A_ADDRESS		0xA0
-	#	define TIMSK4_ADDRESS		0x72
-
-	// Timer/Counter 5.
-	#	define OCR5C_ADDRESS		0x12C
-	#	define OCR5B_ADDRESS		0x12A
-	#	define OCR5A_ADDRESS		0x128
-	#	define TCNT5_ADDRESS		0x124
-	#	define TCCR5B_ADDRESS		0x121
-	#	define TCCR5A_ADDRESS		0x120
-	#	define TIMSK5_ADDRESS		0x73
-
-	// Input Capture Registers.
-	#	define ICR1_ADDRESS		0x86
-	#	define ICR3_ADDRESS		0x96
-	#	define ICR4_ADDRESS		0xA6
-	#	define ICR5_ADDRESS		0x126
 	
-	// TCCRC generic bits
-	#	define FOCA_BIT			7
-	#	define FOCB_BIT			6
-	#	define FOCC_BIT			5
-	
-	// TCCRB_16bit generic bits
-	#	define ICNC_16TC_BIT			7
-	#	define ICES_16TC_BIT			6
-	#	define WGM3_BIT			4			
-	#	define WGM2_BIT			3	
-	#	define CS2_BIT			2				
-	#	define CS1_BIT			1
-	#	define CS0_BIT			0
-	
-	// TIMSK generic bits.
-	#	define ICIE_BIT			5
-	#	define OCIEC_BIT			3
-	#	define OCIEB_BIT			2
-	#	define OCIEA_BIT			1
-	#	define TOIE_BIT			0
-	
-	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
-	#	define COMA1_BIT		7
-	#	define COMA0_BIT		6
-	#	define COMB1_BIT		5
-	#	define COMB0_BIT		4
-	#	define COMC1_BIT		3
-	#	define COMC0_BIT		2
-	#	define WGM1_BIT		1
-	#	define WGM0_BIT		0
-	
-	#	define COM_BIT_OFFSET		2
-	#	define MAX_TIMER_PINS		4
-
-	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
-	#	define TC0_OC_A_PORT		PORT_B
-	#	define TC0_OC_A_PIN		PIN_7
-	#	define TC0_OC_B_PORT		PORT_G
-	#	define TC0_OC_B_PIN		PIN_5
-
-	#	define TC1_OC_A_PORT		PORT_B
-	#	define TC1_OC_A_PIN		PIN_5
-	#	define TC1_OC_B_PORT		PORT_B
-	#	define TC1_OC_B_PIN		PIN_6
-	#	define TC1_OC_C_PORT		PORT_B
-	#	define TC1_OC_C_PIN		PIN_7
-	#	define TC1_IC_A_PORT		PORT_D
-	#	define TC1_IC_A_PIN		PIN_4
-
-	#	define TC2_OC_A_PORT		PORT_B
-	#	define TC2_OC_A_PIN		PIN_4
-	#	define TC2_OC_B_PORT		PORT_H
-	#	define TC2_OC_B_PIN		PIN_6
-
-	#	define TC3_OC_A_PORT		PORT_E
-	#	define TC3_OC_A_PIN		PIN_3
-	#	define TC3_OC_B_PORT		PORT_E
-	#	define TC3_OC_B_PIN		PIN_4
-	#	define TC3_OC_C_PORT		PORT_E
-	#	define TC3_OC_C_PIN		PIN_5
-	#	define TC3_IC_A_PORT		PORT_E
-	#	define TC3_IC_A_PIN		PIN_7
-
-	#	define TC4_OC_A_PORT		PORT_H
-	#	define TC4_OC_A_PIN		PIN_3
-	#	define TC4_OC_B_PORT		PORT_H
-	#	define TC4_OC_B_PIN		PIN_4
-	#	define TC4_OC_C_PORT		PORT_H
-	#	define TC4_OC_C_PIN		PIN_5
-	#	define TC4_IC_A_PORT		PORT_L
-	#	define TC4_IC_A_PIN		PIN_0
-
-	#	define TC5_OC_A_PORT		PORT_L
-	#	define TC5_OC_A_PIN		PIN_3
-	#	define TC5_OC_B_PORT		PORT_L
-	#	define TC5_OC_B_PIN		PIN_4
-	#	define TC5_OC_C_PORT		PORT_L
-	#	define TC5_OC_C_PIN		PIN_5
-	#	define TC5_IC_A_PORT		PORT_L
-	#	define TC5_IC_A_PIN		PIN_1
-
-
-	#	define IC_CHANNEL_OFFSET	3
-	//#	define TC_OC_CHANNEL_A		0
-	//#	define TC_OC_CHANNEL_B		1
-	//#	define TC_OC_CHANNEL_C		2
-	#	define TC_IC_CHANNEL_A		3
-
-	// Interrupt Pointer Array values and offsets.
-	#	define NUM_TIMER0_INTERRUPTS	3
-	#	define TIMER0_OFFSET		0
-	#	define NUM_TIMER1_INTERRUPTS	5
-	#	define TIMER1_OFFSET		3
-	#	define NUM_TIMER2_INTERRUPTS	3
-	#	define TIMER2_OFFSET		8
-	#	define NUM_TIMER3_INTERRUPTS	5
-	#	define TIMER3_OFFSET		11
-	#	define NUM_TIMER4_INTERRUPTS	5
-	#	define TIMER4_OFFSET		16
-	#	define NUM_TIMER5_INTERRUPTS	5
-	#	define TIMER5_OFFSET		21
-	#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS + NUM_TIMER4_INTERRUPTS + NUM_TIMER5_INTERRUPTS)
-
-	// Definitions required for Port Directionality Control.
-	#	define PORT_REGISTER_MULTIPLIER		0x03
-	#	define LOWER_REGISTER_PORT_OFFSET	0x01
-	#	define HIGHER_REGISTER_PORT_OFFSET	0xEC
-	
-#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-
-	// Timer/ Counter 0
-	#	define TIMSK0_ADDRESS	0x6E
-	//	#	define OCR0B_ADDRESS	0x48			// Port E is unavailable, so this is redundant.
-	#	define OCR0A_ADDRESS	0x47
-	#	define TCNT0_ADDRESS	0x46
-	#	define TCCR0B_ADDRESS	0x45
-	#	define TCCR0A_ADDRESS	0x44
-	
-	// Timer/ Counter 1
-	#	define TIMSK1_ADDRESS	0x6F
-	#	define TCNT1_ADDRESS	0x84
-	#	define TCCR1C_ADDRESS	0x82
-	#	define TCCR1B_ADDRESS	0x81
-	#	define TCCR1A_ADDRESS	0x80
-	#	define OCR1A_ADDRESS	0x88
-	#	define OCR1B_ADDRESS	0x8A
-	
-	// Input Capture Register.
-	#	define ICR1_ADDRESS		0x86
-
-	// TCCR1C bits.
-	#	define FOCA_BIT	7					
-	#	define FOCB_BIT	6
-	
-	// TCCRB generic bits
-	#	define ICNC_BIT			7
-	#	define ICES_BIT			6
-	#	define WGM3_BIT			4			
-	#	define WGM2_BIT			3
-	#	define CS2_BIT			2
-	#	define CS1_BIT			1
-	#	define CS0_BIT			0		
-	
-	// TIMSK generic bits.
-	#	define ICIE_BIT			5
-	#	define OCIEC_BIT			3
-	#	define OCIEB_BIT			2
-	#	define OCIEA_BIT			1
-	#	define TOIE_BIT			0
-	
-	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
-	#	define COMA1_BIT		7
-	#	define COMA0_BIT		6
-	#	define COMB1_BIT		5
-	#	define COMB0_BIT		4
-	#	define COMC1_BIT		3
-	#	define COMC0_BIT		2
-	#	define WGM1_BIT		1
-	#	define WGM0_BIT		0
-	
-	#	define COM_BIT_OFFSET		2
-	#	define MAX_TIMER_PINS		4
-	
-	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
-	/**
-	*	Port E of the ATmega64 series are not used. Avionics board connects the pins
-	*	to an oscillator, effectively making it inaccessible.
-	**/
-	#	define TC0_OC_A_PORT		PORT_D
-	#	define TC0_OC_A_PIN		PIN_3
-	// #	define TC0_OC_B_PORT		PORT_E
-	// #	define TC0_OC_B_PIN		PIN_1
-
-	#	define TC1_OC_A_PORT		PORT_D
-	#	define TC1_OC_A_PIN		PIN_2
-	#	define TC1_OC_B_PORT		PORT_C
-	#	define TC1_OC_B_PIN		PIN_1
-	#	define TC1_IC_A_PORT		PORT_D
-	#	define TC1_IC_A_PIN			PIN_4
-	#	define TC1_IC_B_PORT		PORT_C
-	#	define TC1_IC_B_PIN			PIN_3
-	
-	#	define IC_CHANNEL_OFFSET		2	
-	//#	define TC_OC_CHANNEL_A		0
-	//#	define TC_OC_CHANNEL_B		1
-	#	define TC_IC_CHANNEL_A		2
-	#	define TC_IC_CHANNEL_B		3
-	
-	// Interrupt Pointer Array values and offsets.
-	#	define NUM_TIMER0_INTERRUPTS	2
-	#	define TIMER0_OFFSET		0
-	#	define NUM_TIMER1_INTERRUPTS	4
-	#	define TIMER1_OFFSET		2
-	#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS )
-
-	// Definitions required for Port Directionality Control.
-	// #	define PORT_REGISTER_MULTIPLIER		0x03		// What is this for?
-	// #	define LOWER_REGISTER_PORT_OFFSET	0x01		//
-	// #	define HIGHER_REGISTER_PORT_OFFSET	0xEC	//
-	
-#elif defined (__AVR_AT90CAN128__)
-	
-	// Timer/ Counter 0
-	#	define TIMSK0_ADDRESS	0x6E
-	#	define OCR0A_ADDRESS	0x47
-	#	define TCNT0_ADDRESS	0x46
-	#	define TCCR0A_ADDRESS	0x44
-	
-	// Timer/ Counter 1
-	#	define TIMSK1_ADDRESS	0x6F
-	#	define OCR1C_ADDRESS	0x8C
-	#	define OCR1B_ADDRESS	0x8A
-	#	define OCR1A_ADDRESS	0x88
-	#	define ICR1_ADDRESS		0x86
-	#	define TCNT1_ADDRESS	0x84
-	#	define TCCR1C_ADDRESS	0x82
-	#	define TCCR1B_ADDRESS	0x81
-	#	define TCCR1A_ADDRESS	0x80
-	
-	// Timer/ Counter 2	
-	#	define TIMSK2_ADDRESS	0x70
-	#	define OCR2A_ADDRESS	0xB3
-	#	define TCNT2_ADDRESS	0xB2
-	#	define TCCR2A_ADDRESS	0xB0
-	
-	// Timer/ Counter 3
-	#	define TIMSK3_ADDRESS	0x71
-	#	define OCR3C_ADDRESS	0x9C
-	#	define OCR3B_ADDRESS	0x9A
-	#	define OCR3A_ADDRESS	0x98
-	#	define ICR3_ADDRESS		0x96
-	#	define TCNT3_ADDRESS	0x94
-	#	define TCCR3C_ADDRESS	0x92
-	#	define TCCR3B_ADDRESS	0x91
-	#	define TCCR3A_ADDRESS	0x90
-	
-	// Input Capture Register.
-	#	define ICR3_ADDRESS		0x96
-	#	define ICR1_ADDRESS		0x86
-	
-	// TCCRnC generic bits.
-	#	define FOCA_BIT		7
-	#	define FOCB_BIT		6
-	#	define FOCC_BIT		5
-	
-	// TCCRB_16bit generic bits
-	#	define ICNC_BIT			7
-	#	define ICES_BIT			6
-	#	define WGM3_BIT			4			
-	#	define WGM2_BIT			3
-	#	define CS2_BIT			2				
-	#	define CS1_BIT			1
-	#	define CS0_BIT			0
-
-	// TIMSK generic bits.
-	#	define ICIE_BIT			5
-	#	define OCIEC_BIT			3
-	#	define OCIEB_BIT			2
-	#	define OCIEA_BIT			1
-	#	define TOIE_BIT			0
-	
-	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
-	#	define COMA1_BIT		7
-	#	define COMA0_BIT		6
-	#	define COMB1_BIT		5
-	#	define COMB0_BIT		4
-	#	define COMC1_BIT		3
-	#	define COMC0_BIT		2
-	#	define WGM1_BIT		1
-	#	define WGM0_BIT		0
-	
-	#	define COM_BIT_OFFSET		2
-	#	define MAX_TIMER_PINS		4
-	
-	// TCCRA_8bit generic bits.
-	//#	define FOCA_BIT			7
-	#	define WGM0_8BIT_BIT			6
-	#	define COMA1_8BIT_BIT			5
-	#	define COMA0_8BIT_BIT			4
-	#	define WGM1_8BIT_BIT			3
-	//#	define CS2_BIT			2				
-	//#	define CS1_BIT			1
-	//#	define CS0_BIT			0
-	
-	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
-	#	define TC0_OC_A_PORT		PORT_B
-	#	define TC0_OC_A_PIN		PIN_7
-
-	#	define TC1_OC_A_PORT		PORT_B
-	#	define TC1_OC_A_PIN		PIN_5
-	#	define TC1_OC_B_PORT		PORT_B
-	#	define TC1_OC_B_PIN		PIN_6
-	#	define TC1_OC_C_PORT		PORT_B
-	#	define TC1_OC_C_PIN		PIN_7
-	#	define TC1_IC_A_PORT		PORT_D
-	#	define TC1_IC_A_PIN			PIN_4
-	
-	#	define TC2_OC_B_PORT		PORT_B
-	#	define TC2_OC_B_PIN		PIN_4
-	
-	#	define TC3_OC_A_PORT		PORT_E
-	#	define TC3_OC_A_PIN		PIN_3
-	#	define TC3_OC_B_PORT		PORT_E
-	#	define TC3_OC_B_PIN		PIN_4
-	#	define TC3_OC_C_PORT		PORT_E
-	#	define TC3_OC_C_PIN		PIN_5
-	#	define TC3_IC_A_PORT		PORT_E
-	#	define TC3_IC_A_PIN			PIN_7
-	
-	#	define IC_CHANNEL_OFFSET		2
-	//#	define TC_OC_CHANNEL_A		0
-	//#	define TC_OC_CHANNEL_B		1
-	//#	define TC_OC_CHANNEL_C		2
-	#	define TC_IC_CHANNEL_A			3
-	
-	// Interrupt Pointer Array values and offsets.
-	#	define NUM_TIMER0_INTERRUPTS	1
-	#	define TIMER0_OFFSET		0
-	#	define NUM_TIMER1_INTERRUPTS	4
-	#	define TIMER1_OFFSET		1
-	#	define NUM_TIMER2_INTERRUPTS	2
-	#	define TIMER2_OFFSET		5
-	#	define NUM_TIMER2_INTERRUPTS	4
-	#	define TIMER2_OFFSET		7
-	#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS)
-
-#else
-	#error "No support for this target."
-#endif
-
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
+
+typedef struct Tc_registerTable
+{
+	int16_t TIMSK_ADDRESS;		// shouldn't this be volatile?
+	int16_t TCCR_A_ADDRESS;
+	int16_t TCCR_B_ADDRESS;
+	int16_t TCCR_C_ADDRESS;
+	int16_t OCR_A_ADDRESS;
+	int16_t OCR_B_ADDRESS;
+	int16_t OCR_C_ADDRESS;
+	int16_t ICR_ADDRESS;
+	int16_t TCNT_ADDRESS;
+};
 
 /**
  * Private, target specific implementation class for public Tc class.
@@ -504,11 +129,13 @@ class Tc_imp
 
 		Tc_timer_size timer_size;
 		
-		Tc_registerTable* imp_register_table;
-		
+		#ifdef __AVR_ATmega2560__
+		Tc_registerTable imp_register_table;
+		#endif
+
 		Tc_rate imp_rate;
 		
-		Tc_pins pin_address(MAX_TIMER_PINS);
+		Tc_pins pin_address [MAX_TIMER_PINS] = {};
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
@@ -517,6 +144,892 @@ class Tc_imp
 void (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void) = {NULL};
 
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
+Tc_command_status start_8bit_timers (Tc_number tc_number, Tc_rate rate) //
+{
+	// Temporary pointer to the appropriate timer/counter register
+	volatile uint8_t* tccr_b_address;
+	
+	#ifdef __AVR_AT90CAN128__
+	if (tc_number == TC_0)
+	{
+		*tccr_b_address = TCCR0A;
+	}
+	else if (tc_number == TC_2)
+	{
+		*tccr_b_address = TCCR2A;
+	}
+	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+	if (tc_number == TC_0)
+	{
+		*tccr_b_address = TCCR0B;
+	}
+	#endif 
+		
+	switch(rate.pre)
+	{
+		case TC_PRE_1 :
+	   	{
+	   		*tccr_b_address &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+	   		*tccr_b_address |= (1 << CS0_BIT);
+	   		return TC_CMD_ACK;	
+	   	}
+	   	case TC_PRE_8 :
+	   	{
+	   		*tccr_b_address &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+	   		*tccr_b_address |= (1 << CS1_BIT);
+	   		return TC_CMD_ACK;	
+	   	}
+	   	case TC_PRE_32 :
+	   	{
+	   		#ifdef __AVR_AT90CAN128__
+	   		if (tc_number == TC_2)
+	   		{
+	   			*tccr_b_address &= ~(1 << CS2_BIT);
+			   	*tccr_b_address |= (1 << CS1_BIT);
+			   	return TC_CMD_ACK;	
+	   		}
+	   		#endif
+	   		return TC_CMD_NAK;
+	   	}
+	   	case TC_PRE_64 :
+	   	{
+	   		*tccr_b_address &= ~(1 << CS2_BIT);
+		   	*tccr_b_address |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+		   	return TC_CMD_ACK;
+	   	}
+	   	case TC_PRE_128 :
+	   	{
+	   		#ifdef __AVR_AT90CAN128__
+	   		if (tc_number == TC_2)
+	   		{
+	   			*tccr_b_address &= ~(1 << CS1_BIT);
+			   	*tccr_b_address |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+			   	return TC_CMD_ACK;	
+	   		}
+	   		#endif
+	   		return TC_CMD_NAK;
+	   	}
+	   	case TC_PRE_256 :
+	   	{
+	   		*tccr_b_address &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		   	*tccr_b_address |= ((1 << CS2_BIT));
+		   	return TC_CMD_ACK;
+	   	}
+	   	case TC_PRE_1024:
+	   	{
+	   		*tccr_b_address &= ~(1 << CS1_BIT);
+		   	*tccr_b_address |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+		   	return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+}
+Tc_command_status start_16bit_timers (Tc_number tc_number, Tc_rate rate)
+{
+	volatile uint8_t* tccr_b_address;
+	if (tc_number == TC_1)
+	{
+		*tccr_b_address = TCCR1B;
+
+	}
+	#ifdef __AVR_AT90CAN128__
+	else if (tc_number == TC_3)
+	{
+		*tccr_b_address = TCCR3B;
+	}
+	#endif
+
+	switch(rate.pre)
+	{
+		case TC_PRE_1:
+		{
+			*tccr_b_address &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+			*tccr_b_address |= (1 << CS0_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_8:
+		{
+			*tccr_b_address &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+			*tccr_b_address |= (1 << CS1_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_32:
+		{
+		  	return TC_CMD_NAK;
+		}
+		case TC_PRE_64:
+		{
+			*tccr_b_address &= ~(1 << CS2_BIT);
+			*tccr_b_address |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_128:	
+		{
+		  	return TC_CMD_NAK;
+		}
+		case TC_PRE_256:	
+		{
+		  	*tccr_b_address &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		  	*tccr_b_address |= ((1 << CS2_BIT));
+		  	return TC_CMD_ACK;
+		}
+		case TC_PRE_1024:
+		{
+		  	*tccr_b_address &= ~(1 << CS1_BIT);
+		  	*tccr_b_address |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+		  	return TC_CMD_ACK;
+		}
+		default:
+		{
+			return TC_CMD_NAK;
+		} /*Not a valid prescalar*/		
+	}
+}
+Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode)
+{
+	volatile uint8_t* tccr_a_address;
+	volatile uint8_t* tccr_b_address;
+	volatile uint8_t* timsk_address;
+
+	if (tc_number == TC_0)
+	{
+		*tccr_a_address = TCCR0A;
+		*timsk_address = TIMSK0;
+
+		#if defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+		*tccr_b_address = TCCR0B;
+		#endif 
+	}
+	#ifdef __AVR_AT90CAN128__
+	else if (tc_number == TC_2)
+	{
+		*tccr_a_address = TCCR2A;
+		*timsk_address = TIMSK2;
+	}
+	#endif
+
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			#ifdef __AVR_AT90CAN128__
+			*tccr_a_address &= (~(1 << WGM1_8BIT_BIT) & ~(1 << WGM0_8BIT_BIT));
+			
+			#else
+			*tccr_a_address &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			*tccr_b_address &= (~(1 << WGM2_BIT)); 
+	
+			#endif
+
+			*timsk_address &= ~(1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			#ifdef __AVR_AT90CAN128__
+			*tccr_a_address &= ~(1 << WGM1_8BIT_BIT);
+			*tccr_a_address |= (1 << WGM0_8BIT_BIT);
+
+			#else
+			*tccr_a_address &= ~(1 << WGM1_BIT);
+			*tccr_a_address |= (1 << WGM0_BIT);
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			#ifdef __AVR_AT90CAN128__
+			*tccr_a_address &= ~(1 << WGM0_8BIT_BIT);
+			*tccr_a_address |= (1 << WGM1_8BIT_BIT);
+			
+			#else
+			*tccr_a_address &= ~(1 << WGM0_BIT);
+			*tccr_a_address |= (1 << WGM1_BIT);
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			#ifdef __AVR_AT90CAN128__
+			*tccr_a_address |= ((1 << WGM1_8BIT_BIT) | (1 << WGM0_8BIT_BIT));
+			
+			#else
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			// Reserved. (Datasheet)
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			#if defined __AVR_ATmega64M1__ || defined __AVR_ATmega64C1__
+			*tccr_a_address &= ~(1 << WGM1_BIT);
+			*tccr_a_address |= (1 << WGM0_BIT);
+			*tccr_b_address |= (1 << WGM2_BIT);
+			return TC_CMD_ACK;
+			#endif
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			// Reserved. (Datasheet)
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			#if defined __AVR_ATmega64M1__ || defined __AVR_ATmega64C1__
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			*tccr_b_address |= (1 << WGM2_BIT);
+			return TC_CMD_ACK;
+			#endif
+			return TC_CMD_NAK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+}
+Tc_command_status enable_oc_16bit(Tc_number tc_number, Tc_oc_mode mode)
+{
+	volatile uint8_t* tccr_a_address;
+	volatile uint8_t* tccr_b_address;
+	volatile uint8_t* timsk_address;
+
+	if (tc_number == TC_1)
+	{
+		*tccr_a_address = TCCR0A;
+		*tccr_b_address = TCCR0B;
+		*timsk_address = TIMSK0;
+	}
+	#ifdef __AVR_AT90CAN128__
+	else if (tc_number == TC_3)
+	{
+		*tccr_a_address = TCCR3A;
+		*tccr_b_address = TCCR3B;
+		*timsk_address = TIMSK3;
+	}
+	#endif
+
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			/* Reset the timer counter mode back to NORMAL */
+			*tccr_a_address &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			*tccr_b_address &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			/* Disable the output compare interrupt */
+			*timsk_address &= ~(1 << OCIEA_BIT);
+			/* Disconnect the output pin to allow for normal operation */
+			*tccr_a_address &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			/* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
+			*tccr_a_address |= (1 << WGM0_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM1_BIT); 
+			*tccr_b_address &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			/* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
+			*tccr_a_address |= (1 << WGM1_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM0_BIT);
+			*tccr_b_address &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			 /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			 /* Clear un-needed bits (safeguard) */
+			*tccr_b_address &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			 /* Set WGMn3:0 bits to 0x04 for CTC mode where TOP = OCRnA */
+			*tccr_b_address |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			*tccr_b_address &= ~(1 << WGM3_BIT);
+			
+			 /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
+			*timsk_address |= (1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			 /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
+			*tccr_a_address |= (1 << WGM0_BIT);
+			*tccr_b_address |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM1_BIT);
+			*tccr_b_address &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			/* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
+			*tccr_a_address |= (1 << WGM1_BIT);
+			*tccr_b_address |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM0_BIT);
+			*tccr_b_address &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			/* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			*tccr_b_address |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			*tccr_b_address &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_8 :
+		{
+			 /* Set WGMn3:0 bits to 0x08 for PWM, Phase & Frequency Correct mode where TOP = ICRn */
+			*tccr_b_address |= (1 << WGM3_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_9 :
+		{
+			 /* Set WGMn3:0 bits to 0x09 for PWM, Phase & Frequency Correct mode where TOP = OCRnA */
+			*tccr_b_address |= (1 << WGM3_BIT);
+			*tccr_a_address |= (1 << WGM0_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM1_BIT);
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_10 :
+		{
+			 /* Set WGMn3:0 bits to 0x10 for PWM, Phase Correct mode where TOP = ICRn */
+			*tccr_b_address |= (1 << WGM3_BIT);
+			*tccr_a_address |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= ~(1 << WGM0_BIT);
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_11 :
+		{
+			 /* Set WGMn3:0 bits to 0x11 for PWM, Phase Correct mode where TOP = OCRnA */
+			*tccr_b_address |= (1 << WGM3_BIT);
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_b_address &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_12 :
+		{
+			 /* Set WGMn3:0 bits to 0x12 for CTC mode where TOP = ICRn */
+			*tccr_b_address |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_13 :
+		{
+			// Reserved
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_14 :
+		{
+			 /* Set WGMn3:0 bits to 0x14 for Fast PWM mode, where TOP = ICRn */
+			*tccr_b_address |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			*tccr_a_address |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			*tccr_a_address &= (1 << WGM0_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_15 : 
+		{
+			/* Set WGMn3:0 bits to 0x15 for Fast PWM mode, where TOP = OCRnA */
+			*tccr_b_address |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			*tccr_a_address |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+	}
+	return TC_CMD_NAK;
+}
+
+#ifdef __AVR_ATmega2560__
+Tc_command_status start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable table) //
+{
+	// NOTE : TCCR_B_ADDRESS for the AT90CAN128 points to the address of TCCR_A_ADDRESS
+	if (tc_number == TC_0)
+	{
+		switch(rate.pre)
+	   {
+		   case TC_PRE_1 :
+		   {
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+				_SFR_IO8(table.TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+				return TC_CMD_ACK;	
+		   }
+		   case TC_PRE_8 :
+		   {
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+				_SFR_IO8(table.TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				return TC_CMD_ACK;
+		   }
+		   case TC_PRE_32 :
+		   {
+				return TC_CMD_NAK;
+		   }
+		   case TC_PRE_64 :
+		   {
+			   _SFR_IO8(table.TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+			   _SFR_IO8(table.TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+			   return TC_CMD_ACK;
+		   }
+		   case TC_PRE_128 :
+		   {
+				return TC_CMD_NAK;
+		   }
+		   case TC_PRE_256 :
+		   {
+			   _SFR_IO8(table.TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			   _SFR_IO8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
+			   return TC_CMD_ACK;
+		   }
+		   case TC_PRE_1024:
+		   {
+			   _SFR_IO8(table.TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+			   _SFR_IO8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+			   return TC_CMD_ACK;
+		   }
+		   default :	// it would never come to this anyways
+				return TC_CMD_NAK;
+		}
+	}
+	else if (tc_number = TC_2)
+	{
+		switch(rate.pre)
+	   {
+		   case TC_PRE_1 :
+		   {
+				_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+				_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+				return TC_CMD_ACK;	
+		   }
+		   case TC_PRE_8 :
+		   {
+				_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+				_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				return TC_CMD_ACK;
+		   }
+		   case TC_PRE_32 :
+		   {
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				return TC_CMD_ACK;
+		   }
+		   case TC_PRE_64 :
+		   {
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS2_BIT);
+			   return TC_CMD_ACK;
+		   }
+		   case TC_PRE_128 :
+		   {
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+				return TC_CMD_ACK;
+		   }
+		   case TC_PRE_256 :
+		   {
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << CS0_BIT);
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
+			   return TC_CMD_ACK;
+		   }
+		   	case TC_PRE_1024:
+		   	{
+			   _SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
+			   return TC_CMD_ACK;
+		   	}
+		   	default :	// it would never come to this anyways
+		   	{
+		   		return TC_CMD_NAK
+		   	}
+
+		}
+	}
+}
+Tc_command_status start_16bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable table) //
+{
+	switch(rate.pre)
+	{
+		case TC_PRE_1:
+		{
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_8:
+		{
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_32:
+		{
+		  	return TC_CMD_NAK;
+		}
+		case TC_PRE_64:
+		{
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_PRE_128:	
+		{
+		  	return TC_CMD_NAK;
+		}
+		case TC_PRE_256:	
+		{
+		  	_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		  	_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
+		  	return TC_CMD_ACK;
+		}
+		case TC_PRE_1024:
+		{
+		  	_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+		  	_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+		  	return TC_CMD_ACK;
+		}
+		default:
+		{
+			return TC_CMD_NAK;
+		} /*Not a valid prescalar*/
+	}
+}
+Tc_command_status enable_oc_8bit (Tc_oc_mode mode, Tc_registerTable table) //
+{
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				_SFR_IO8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
+			}
+			else
+			{
+				_SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+				_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
+			}
+			/* Disable the output compare interrupt */
+			_SFR_MEM8(table.TIMSK_ADDRESS) &= ~(1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
+				_SFR_IO8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_IO8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+
+			}
+			else 
+			{
+				 /* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
+				_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);	
+			}
+			
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x02 for Clear timer on compare (CTC) mode, where TOP = OCRnA */
+				_SFR_IO8(table.TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+				_SFR_IO8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			}
+			else
+			{
+				_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+				_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+				_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x03 for Fast PWM mode, where TOP = 0xFF */
+				_SFR_IO8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_IO8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			}
+			else
+			{
+				_SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x05 for PWM Phase Correct mode, where TOP = OCRnA */
+				_SFR_IO8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_IO8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_IO8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			else
+			{
+				_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			if (table.TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x07 for Fast PWM mode, where TOP = OCRnA */
+				_SFR_IO8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_IO8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			else
+			{
+				_SFR_MEM8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+
+	}
+	return TC_CMD_NAK;
+}
+Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
+{
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			/* Reset the timer counter mode back to NORMAL */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			/* Disable the output compare interrupt */
+			_SFR_MEM8(table.TIMSK_ADDRESS) &= ~(1 << OCIEA_BIT);
+			/* Disconnect the output pin to allow for normal operation */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			/* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT); 
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			/* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			 /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+			 _SFR_MEM8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			 /* Set WGMn3:0 bits to 0x04 for CTC mode where TOP = OCRnA */
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			
+			 /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
+			 _SFR_MEM8(table.TIMSK_ADDRESS) |= (1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			 /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
+			 _SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+			 _SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			/* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			/* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_8 :
+		{
+			 /* Set WGMn3:0 bits to 0x08 for PWM, Phase & Frequency Correct mode where TOP = ICRn */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_9 :
+		{
+			 /* Set WGMn3:0 bits to 0x09 for PWM, Phase & Frequency Correct mode where TOP = OCRnA */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_10 :
+		{
+			 /* Set WGMn3:0 bits to 0x10 for PWM, Phase Correct mode where TOP = ICRn */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_11 :
+		{
+			 /* Set WGMn3:0 bits to 0x11 for PWM, Phase Correct mode where TOP = OCRnA */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_12 :
+		{
+			 /* Set WGMn3:0 bits to 0x12 for CTC mode where TOP = ICRn */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_13 :
+		{
+			// Reserved
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_14 :
+		{
+			 /* Set WGMn3:0 bits to 0x14 for Fast PWM mode, where TOP = ICRn */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table.TCCR_A_ADDRESS) &= (1 << WGM0_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_15 : 
+		{
+			/* Set WGMn3:0 bits to 0x15 for Fast PWM mode, where TOP = OCRnA */
+			_SFR_MEM8(table.TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			_SFR_MEM8(table.TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+	}
+	return TC_CMD_NAK;
+}
+#endif
+
+
 
 // IMPLEMENT PUBLIC CLASS FUNCTIONS (METHODS).
 
@@ -533,17 +1046,135 @@ Tc::Tc(Tc_number timer)
 {
 	// *** TARGET CONFIGURATION SPECIFIC.
 
-	#ifdef (__AVR_ATmega2560__)
+	#ifdef __AVR_ATmega2560__
+	switch (timer)
+	{
+		case TC_0:
+		{
+			static Tc_imp tc_0(TC_0, TC_8BIT);
+			imp = &tc_0;
 
-		// We create a static implementation for each of the timer peripherals.
+			// Initialize the register addresses.
+			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR0B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR0B_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
+			break;
+		}
+		case TC_1:
+		{
+			static Tc_imp tc_1(TC_1, TC_16BIT);
+			imp = &tc_1;
+
+			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR1C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
+			break;
+		}
+		case TC_2:
+		{
+			static Tc_imp tc_2(TC_2, TC_8BIT);
+			imp = &tc_2;
+			imp_register_table.TIMSK_ADDRESS = TIMSK2_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR2A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR2B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR2A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR2B_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT2_ADDRESS;
+			break;
+		}
+		case TC_3:
+		{
+			static Tc_imp tc_3(TC_3, TC_16BIT);
+			imp = &tc_3;
+
+			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR3B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR3A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR3B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR3C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR3_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT3_ADDRESS;
+			break;
+		}
+		case TC_4:
+		{
+			static Tc_imp tc_4(TC_4, TC_16BIT);
+			imp = &tc_4;
+
+			imp_register_table.TIMSK_ADDRESS = TIMSK4_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR4A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR4B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR4A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR4B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR4C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR4_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT4_ADDRESS;
+			break;
+		}
+		case TC_5:
+		{
+			static Tc_imp tc_5(TC_5, TC_16BIT);
+			imp = &tc_5;
+
+			imp_register_table.TIMSK_ADDRESS = TIMSK5_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR5A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR5B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR5A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR5B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR5C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR5_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT5_ADDRESS;
+			break;
+		}
+		default:
+		{
+			// If we end up here, something terrible has happened.
+			imp = NULL;
+			break;
+		}
+	}
+	#elif __AVR_AT90CAN128__
 		static Tc_imp tc_0(TC_0, TC_8BIT);
-		static Tc_imp tc_1(TC_1, TC_8BIT);
-		static Tc_imp tc_2(TC_2, TC_16BIT);			// Asynchronous
+		static Tc_imp tc_1(TC_1, TC_16BIT);
+		static Tc_imp tc_2(TC_2, TC_8BIT);			// Asynchronous
 		static Tc_imp tc_3(TC_3, TC_16BIT);
-		static Tc_imp tc_4(TC_4, TC_16BIT);
-		static Tc_imp tc_5(TC_5, TC_16BIT);
+		
+		switch (timer)
+		{
+			case TC_0:
+				imp = &tc_0;
+				break;
 
-		// Attach this object to the appropriate implementation.
+			case TC_1:
+				imp = &tc_1;
+				break;
+
+			case TC_2:
+				imp = &tc_2;
+				break;
+
+			case TC_3:
+				imp = &tc_3;
+				break;
+
+			default:
+				imp = NULL;
+				break;
+		}
+		
+	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+		static Tc_imp tc_0(TC_0, TC_8BIT);
+		static Tc_imp tc_1(TC_1, TC_16BIT);
+
 		switch (timer)
 		{
 			case TC_0:
@@ -551,107 +1182,17 @@ Tc::Tc(Tc_number timer)
 				imp = &tc_0;
 				break;
 			}
-
 			case TC_1:
 			{
 				imp = &tc_1;
 				break;
 			}
-
-			case TC_2:
-			{
-				imp = &tc_2;
-				break;
-			}
-
-			case TC_3:
-			{
-				imp = &tc_3;
-				break;
-			}
-
-			case TC_4:
-			{
-				imp = &tc_4;
-				break;
-			}
-
-			case TC_5:
-			{
-				imp = &tc_5;
-				break;
-			}
-
 			default:
 			{
-				// If we end up here, something terrible has happened.
 				imp = NULL;
 				break;
 			}
 		}
-	#elif defined (__AVR_AT90CAN128__)
-	static Tc_imp tc_0(TC_0, TC_8BIT);
-	static Tc_imp tc_1(TC_1, TC_16BIT);
-	static Tc_imp tc_2(TC_2, TC_8BIT);			// Asynchronous
-	static Tc_imp tc_3(TC_3, TC_16BIT);
-	
-	switch (timer)
-	{
-		case TC_0:
-		{
-			imp = &tc_0;
-			break;
-		}
-
-		case TC_1:
-		{
-			imp = &tc_1;
-			break;
-		}
-
-		case TC_2:
-		{
-			imp = &tc_2;
-			break;
-		}
-
-		case TC_3:
-		{
-			imp = &tc_3;
-			break;
-		}
-
-		default:
-		{
-			imp = NULL;
-			break;
-		}
-	}
-	
-	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-	static Tc_imp tc_0(TC_0, TC_8BIT);
-	static Tc_imp tc_1(TC_1, TC_16BIT);
-
-	switch (timer)
-	{
-		case TC_0:
-		{
-			imp = &tc_0;
-			break;
-		}
-		case TC_1:
-		{
-			imp = &tc_1;
-			break;
-		}
-
-		default:
-		{
-			imp = NULL;
-			break;
-		}
-	}
-
 	#else
 		#error "No implementation for this target."
 	#endif
@@ -973,259 +1514,90 @@ void Tc_imp::disable_interrupts(void)
 	**/
 }
 		
-Tc_command_status Tc_imp::set_rate(Tc_rate rate)
+Tc_command_status Tc_imp::set_rate(Tc_rate rate) //
 {
-	#ifdef (__AVR_ATmega2560__)
+	
 	switch (timer_number)
 	{
-		case TC_0 :
+		case TC_0:
+		{
+			// These prescalers are only available to the asynchronous TC
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_1:
 		{
 			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
 			{
 				return TC_CMD_NAK;
 			}
-			// here imp_register_table is a POINTER. The address that the pointer is referencing is given in hex.
-			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR0B_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCNT0_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR0B_ADDRESS;
-			
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
-		case TC_1 :
-		{ 
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR1C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
-			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		case TC_2 :
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		case TC_2:
 		{
-			imp_register_table.OCR_A_ADDRESS = OCR2A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR2B_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT2_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR2A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR2B_ADDRESS;
-			imp_register_table.TIMSK_ADDRESS = TIMSK2_ADDRESS;
-			
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
-		case TC_3 :
+		case TC_3:
 		{
 			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
 			{
 				return TC_CMD_NAK;
 			}
-			imp_register_table.OCR_A_ADDRESS = OCR3A_ADDRESS; 
-			imp_register_table.OCR_B_ADDRESS = OCR3B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR3C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT3_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR3A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR3B_ADDRESS;
-			imp_register_table.TIMSK_ADDRESS = TIMSK3_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR3_ADDRESS;
-			
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
-		case TC_4 :
+		#endif
+		#ifdef __AVR_ATmega2560__
+		case TC_4:
 		{
 			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
 			{
 				return TC_CMD_NAK;
 			}
-			imp_register_table.OCR_A_ADDRESS = OCR4A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR4B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR4C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT4_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR4A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR4B_ADDRESS;
-			imp_register_table.TIMSK_ADDRESS = TIMSK4_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR4_ADDRESS;
-			
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
-		case TC_5 :
+		case TC_5:
 		{
 			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
 			{
 				return TC_CMD_NAK;
 			}
-			imp_register_table.OCR_A_ADDRESS = OCR5A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR5B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR5C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT5_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR5A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR5B_ADDRESS;
-			imp_register_table.TIMSK_ADDRESS = TIMSK5_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR5_ADDRESS;
-			
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
+		#endif
 		default :
 		{
+			// Something went wrong
 			return TC_CMD_NAK;
 		}
 	}
-
-	#elif defined (__AVR_AT90CAN128__)
-	switch (timer_number)
-	{
-		case TC_0 :
-		{
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR0A_ADDRESS;
-
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		case TC_1 :
-		{
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR1C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
-			imp_register_table.TCCR_C_ADDRESS = TCCR1C_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		case TC_2 :
-		{
-			imp_register_table.TIMSK_ADDRESS = TIMSK2_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR2A_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT2_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR2A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR2A_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		case TC_3 :
-		{
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.TIMSK_ADDRESS = TIMSK3_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR3A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR3B_ADDRESS;
-			imp_register_table.OCR_C_ADDRESS = OCR3C_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT3_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR3A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR3B_ADDRESS;
-			imp_register_table.TCCR_C_ADDRESS = TCCR3C_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR3_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		default :
-		{
-			return TC_CMD_NAK;
-		}
-	}
-
-	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
-	switch (timer_number)
-	{
-		case TC_0 :
-		{
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR0B_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		case TC_1 :
-		{
-			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
-			{
-				return TC_CMD_NAK;
-			}
-			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
-			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
-			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
-			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
-			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
-			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
-			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
-			
-			imp_rate.pre = rate.pre;
-			imp_rate.src = TC_SRC_INT;
-			return TC_CMD_ACK;
-		}
-		default :
-		{
-			return TC_CMD_NAK;
-		}
-	}
-
-	#endif
-
-	return TC_CMD_NAK;
 }
 		
-Tc_command_status Tc_imp::load_timer_value(Tc_value value)
+Tc_command_status Tc_imp::load_timer_value(Tc_value value) //
 {
-	// TODO - This has not been tested.
-	// Check if the value is the correct size
+	// TODO - This.
+	#if __AVR_ATmega2560__
 	if (value.type == TC_16BIT)
 	{
 		_SFR_MEM16(imp_register_table.TCNT_ADDRESS) = value.value;
 		return TC_CMD_ACK;
 	}
-	else if (registerTable.TCNT_address > 0x60) 
+	else if (imp_register_table.TCNT_address > 0x60) 
 	{
 		_SFR_MEM8(imp_register_table.TCNT_ADDRESS) = value.value;
 		return TC_CMD_ACK;
@@ -1235,24 +1607,91 @@ Tc_command_status Tc_imp::load_timer_value(Tc_value value)
 		_SFR_IO8(imp_register_table.TCNT_ADDRESS) = value.value;
 		return TC_CMD_ACK;
 	}
+	
+	#elif defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+	switch (timer_number)
+	{
+		case TC_0:
+		{
+			TCNT0 = value.value.as_8bit;
+			return TC_CMD_ACK;
+		}
+		case TC_1:
+		{
+			TCNT1 = value.value.as_16bit;
+			return TC_CMD_ACK;
+		}
+		
+		#ifdef __AVR_AT90CAN128__
+		case TC_2:
+		{
+			TCNT2 = value.value.as_8bit;
+			return TC_CMD_ACK;
+		}
+		case TC_3:
+		{
+			TCNT3 = value.value.as_16bit;
+			return TC_CMD_ACK;
+		}
+		#endif
+		
+		default:
+		{
+			return TC_CMD_NAK;
+		}
+
+	}
+	#endif
+
 	return TC_CMD_NAK;
+
 }
 		
 Tc_value Tc_imp::get_timer_value(void)
 {
 	// TODO - This has not been tested
+	#ifdef __AVR_ATmega2560__
 	if (timer_size == TC_16BIT)
-	   {
-		 return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.TCNT_ADDRESS));
-	   }
-	   else if (imp_register_table.TCNT_ADDRESS > 0x60)
-	   {
-		 return Tc_value::from_uint8(_SFR_MEM8(imp_register_table.TCNT_ADDRESS));
-	   }
-	   else
-	   {
-		 return Tc_value::from_uint8(_SFR_IO8(imp_register_table.TCNT_ADDRESS));
-	   }
+	{
+		return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.TCNT_ADDRESS));
+	}
+	else if (imp_register_table.TCNT_ADDRESS > 0x60)
+	{
+		return Tc_value::from_uint8(_SFR_MEM8(imp_register_table.TCNT_ADDRESS));
+	}
+	else
+	{
+		return Tc_value::from_uint8(_SFR_IO8(imp_register_table.TCNT_ADDRESS));
+	}
+	#else
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			return Tc_value::from_uint8(TCNT0);
+		}
+		case TC_1 :
+		{
+			return Tc_value::from_uint16(TCNT1);
+		}
+
+		#ifdef __AVR_AT90CAN128__
+		case TC_2 :
+		{
+			return Tc_value::from_uint8(TCNT2);
+		}
+		case TC_3 :
+		{
+			return Tc_value::from_uint16(TCNT3);
+		}
+		#endif
+		default :
+		{
+			return Tc_value::from_uint8(0);
+		}
+	}
+
+	#endif
 	return Tc_value::from_uint8(0);
 }
 		
@@ -1264,37 +1703,48 @@ Tc_command_status Tc_imp::start(void)
    		case TC_16BIT:
 	 	{
 	   		/*edit the TCCR0B registers for the 16bit Timer/Counters */
-			if (imp_rate == TC_SRC_INT)
+			if (imp_rate.src == TC_SRC_INT)
 		   	{
-				start_16bit_timers(timer_number, imp_rate,  &register_Table);
+		   		#ifndef __AVR_ATmega2560__
+		   		start_16bit_timers(timer_number, imp_rate);
+				#else
+				return start_16bit_timers(timer_number, imp_rate,  imp_register_table);
+				#endif
 			} 
 			else 
 			{
 				// if we ever have an external clock source
-			}
-				   
-	   	return TC_CMD_ACK;
+			}	   
+	   		return TC_CMD_ACK;
 	 	}
 	 	case TC_8BIT:
 	 	{
 	   		/*edit the TCCRA or TCCRB registers for the 8bit Timer/Counters */
-		   	if (imp_rate == TC_SRC_INT)
+		   	if (imp_rate.src == TC_SRC_INT)
 		   	{
-				start_8bit_timers(timer_number, imp_rate,  &register_Table);
+		   		#ifndef __AVR_ATmega2560__
+		   		return start_8bit_timers(timer_number, imp_rate);
+		   		#else
+				return start_8bit_timers(timer_number, imp_rate,  imp_register_table);
+				#endif
 			} 
 			else
 			{
 				// if we ever have an external clock source
 			}
+			return TC_CMD_ACK;
 	   	}
-	   	return TC_CMD_ACK;
+	   	default :
+	   	{
+	   		return TC_CMD_NAK;
+	   	}
 	}
-	return TC_CMD_NAK;
 }
 		
 Tc_command_status Tc_imp::stop(void)
 {
 	// TODO - Requires testing.
+	#ifdef __AVR_ATmega2560__
 	if (imp_register_table.TCNT_ADDRESS > 0x60)
 	{
 		_SFR_MEM8(imp_register_table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
@@ -1305,147 +1755,272 @@ Tc_command_status Tc_imp::stop(void)
 		_SFR_IO8(imp_register_table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
 		return TC_CMD_ACK;
 	}
+	
+	#elif __AVR_AT90CAN128__
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			TCCR0A &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			TCCR1B &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			TCCR2A &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_3 :
+		{
+			TCCR3B &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+	#else
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			TCCR0B &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			TCCR1B &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+	#endif
 	return TC_CMD_NAK;
 }
 
 Tc_command_status Tc_imp::enable_tov_interrupt(void (*callback)(void))
 {
 	// TODO - Requires testing.
-	
+	// (void (*ISRptr)(void))
 	// NOTE	-	Remove or find out why the mode of operation is being switched to normal operation
 	
-	#ifdef (__AVR_ATmega2560__)
- 	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
-
+	#ifdef __AVR_ATmega2560__
    	switch(timer_number)
   	{
 		case TC_0:
 		{
-			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			timerInterrupts[TIMER0_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_1:
 		{
-			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			timerInterrupts[TIMER1_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_2:
 		{
-			timerInterrupts[TIMER2_OVF_int] = ISRptr;
+			timerInterrupts[TIMER2_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_3:
 		{
-			timerInterrupts[TIMER3_OVF_int] = ISRptr;
+			timerInterrupts[TIMER3_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_4:
 		{
-			timerInterrupts[TIMER4_OVF_int] = ISRptr;
+			timerInterrupts[TIMER4_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_5:
 		{
-			timerInterrupts[TIMER5_OVF_int] = ISRptr;
+			timerInterrupts[TIMER5_OVF_int] = callback;
+			_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
 		}
 	} 
 
 	#elif defined (__AVR_AT90CAN128__)
-	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
-	
 	switch(timer_number)
    	{
 		case TC_0:
 		{
-			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			timerInterrupts[TIMER0_OVF_int] = callback;
+			TIMSK0 |= (1 << TOIE_BIT); // This command has to come last. It turns on the interrupts
 			return TC_CMD_ACK;
 		}
 		case TC_1:
 		{
-			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			timerInterrupts[TIMER1_OVF_int] = callback;
+			TIMSK1 |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_2:
 		{
-			timerInterrupts[TIMER2_OVF_int] = ISRptr;
+			timerInterrupts[TIMER2_OVF_int] = callback;
+			TIMSK2 |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_3:
 		{
-			timerInterrupts[TIMER3_OVF_int] = ISRptr;
+			timerInterrupts[TIMER3_OVF_int] = callback;
+			TIMSK3 |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
 		}
 	}
 
 	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
-	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
-
    	switch(timer_number)
    	{
 		case TC_0:
 		{
-			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			timerInterrupts[TIMER0_OVF_int] = callback;
+			TIMSK0 |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_1:
 		{
-			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			timerInterrupts[TIMER1_OVF_int] = callback;
+			TIMSK0 |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
 		}
 	}  
 	#endif
-
-
 	return TC_CMD_NAK;  // something went wrong
 }
-		
+
 Tc_command_status Tc_imp::disable_tov_interrupt(void)
 {
 	// TODO - Requires testing.
 	
 	// NOTE	-	Style change required. Keep the different MCUs in separate chunks of code
-	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
-
+	#ifdef __AVR_ATmega2560__
 	switch(timer_number)
 	{
 	 	case TC_0:
 	 	{
-	   /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	   		/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
 	   		timerInterrupts[TIMER0_OVF_int] = NULL;
+	   		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
 	 	}
 	 	case TC_1:
 	 	{
-	  		 timerInterrupts[TIMER1_OVF_int] = NULL;
+	  		timerInterrupts[TIMER1_OVF_int] = NULL;
+	  		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
 	 	}
-	 	#ifdef (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 	 	case TC_2:
 	 	{
 	   		timerInterrupts[TIMER2_OVF_int] = NULL;
+	   		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
-	   		
 	 	}
 	 	case TC_3:
 	 	{
 	   		timerInterrupts[TIMER3_OVF_int] = NULL;
+	   		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
 		}
-		#endif
-		#ifdef (__AVR_ATmega2560__)
 	 	case TC_4:
 	 	{
 	   		timerInterrupts[TIMER4_OVF_int] = NULL;
+	   		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
 	 	}
 	 	case TC_5:
 	 	{
 	   		timerInterrupts[TIMER5_OVF_int] = NULL;
+	   		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 	   		return TC_CMD_ACK;
 	 	}
-	 	#endif
+	 	default :
+	 	{
+	 		return TC_CMD_NAK;
+	 	}
 	}
+
+	#elif defined (__AVR_AT90CAN128__)
+	switch(timer_number)
+	{
+	 	case TC_0:
+	 	{
+	   		/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	   		timerInterrupts[TIMER0_OVF_int] = NULL;
+	   		TIMSK0 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_1:
+	 	{
+	  		timerInterrupts[TIMER1_OVF_int] = NULL;
+	  		TIMSK1 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_2:
+	 	{
+	   		timerInterrupts[TIMER2_OVF_int] = NULL;
+	   		TIMSK2 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_3:
+	 	{
+	   		timerInterrupts[TIMER3_OVF_int] = NULL;
+	   		TIMSK3 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+		}
+	 	default :
+	 	{
+	 		return TC_CMD_NAK;
+	 	}
+	}
+
+	#else
+	switch(timer_number)
+	{
+	 	case TC_0:
+	 	{
+	   		/*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	   		timerInterrupts[TIMER0_OVF_int] = NULL;
+	   		TIMSK0 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_1:
+	 	{
+	  		timerInterrupts[TIMER1_OVF_int] = NULL;
+	  		TIMSK1 &= ~(1 << TOIE_BIT);
+	   		return TC_CMD_ACK;
+	 	}
+	 	default :
+	 	{
+	 		return TC_CMD_NAK;
+	 	}
+	}
+	#endif
 	return TC_CMD_NAK;
 }
 		
@@ -1453,53 +2028,203 @@ Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 {
 	// TODO - Requires testing.
 	
-	// TODO - better error handling. 
-	
-	switch(timer_number)
+	switch (timer_size)
 	{
-		case TC_0:
-		{ 
-			return enable_oc_8bit(mode, &imp_register_table); // will a try and catch function be safer?
-		}
-		case TC_1:
+		case TC_16BIT :
 		{
-			return enable_oc_16bit(mode, &imp_register_table);
+			#ifdef __AVR_ATmega2560__
+			return enable_oc_16bit(mode, imp_register_table);
+			#else
+			return enable_oc_16bit(timer_number, mode, imp_register_table);
+			#endif 
+			return TC_CMD_ACK;
 		}
-		#ifdef (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
-		case TC_2:
+		case TC_8BIT :
 		{
-			return enable_oc_8bit(mode, &imp_register_table);
+			#ifdef __AVR_ATmega2560__
+			return enable_oc_8bit(mode, imp_register_table);
+			#else
+			return enable_oc_8bit(timer_number, mode, imp_register_table);
+			#endif 
 		}
-		case TC_3:
-		{
-			return enable_oc_16bit(mode, &imp_register_table);
-		}
-		#endif
-		#ifdef (__AVR_ATmega2560__)
-		case TC_4:
-		{
-			return enable_oc_16bit(mode, &imp_register_table);
-		}
-		case TC_5:
-		{
-			return enable_oc_16bit(mode, &imp_register_table);
-		}
-		#endif
-		default:	/* No more timers available, return an error. */
+		default :
 		{
 			return TC_CMD_NAK;
 		}
-	} 
+	}
+	return TC_CMD_NAK;
 }
 		
 Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode)
 {
 	// TODO -	Requires testing.
-	
-	#ifndef (__AVR_AT90CAN128__)
+	#ifdef __AVR_AT90CAN128__
+	volatile uint8_t* tccr_a_address;
+
+	if (timer_number == TC_0)
+	{
+		*tccr_a_address = TCCR0A;
+	}
+	else if (timer_number == TC_1)
+	{
+		*tccr_a_address = TCCR1A;
+	}
+	else if (timer_number == TC_2)
+	{
+		*tccr_a_address = TCCR2A;
+	}
+	else if (timer_number == TC_3)
+	{
+		*tccr_a_address = TCCR3A;
+	}
+
 	switch (mode)
 	{
-		case TC_OC_CHANNEL_MODE_0 ;
+		case TC_OC_CHANNEL_MODE_0 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				*tccr_a_address &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address &= (~(1 << COM0A1) & ~(1 << COM0A0));
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address &= (~(1 << COM2A1) & ~(1 << COM2A0));
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_1 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				*tccr_a_address &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*tccr_a_address |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address &= ~(1 << COM0A1);
+				*tccr_a_address |= (1 << COM0A0);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address &= ~(1 << COM2A1);
+				*tccr_a_address |= (1 << COM2A0);
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_2 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				*tccr_a_address |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*tccr_a_address &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address |= (1 << COM0A1);
+				*tccr_a_address &= ~(1 << COM0A0);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address |= (1 << COM2A1);
+				*tccr_a_address &= ~(1 << COM2A0);
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_3 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				*tccr_a_address |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else if (timer_number == TC_0)
+			{if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address |= ((1 << COM0A1) | (1 << COM0A0);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				*tccr_a_address |= ((1 << COM2A1) | (1 << COM0A0);
+			}
+			return TC_CMD_ACK;
+		}
+	}	
+
+	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+	volatile uint8_t* tccr_a_address;
+
+	if (timer_number == TC_0)
+	{
+		*tccr_a_address = TCCR0A;
+	}
+	else if (timer_number == TC_1)
+	{
+		*tccr_a_address = TCCR1A;
+	}
+
+	switch (mode)
+	{
+		case TC_OC_CHANNEL_MODE_0 :
+		{
+			*tccr_a_address &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			return TC_CMD_ACK; 
+		}
+		case TC_OC_CHANNEL_MODE_1 :
+		{
+			*tccr_a_address &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			*tccr_a_address |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_2 :
+		{
+			*tccr_a_address |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			*tccr_a_address &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_3 :
+		{
+			*tccr_a_address |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			return TC_CMD_ACK;
+		}
+	}
+
+	#elif defined (__AVR_ATmega2560__)
+	switch (mode)
+	{
+		case TC_OC_CHANNEL_MODE_0 :
 		{
 			if (imp_register_table.TCCR_A_ADDRESS > 0x60)
 			{
@@ -1525,7 +2250,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 			}
 			return TC_CMD_ACK;
 		}
-		case TC_OC_CHANNEL_MODE_2 ;
+		case TC_OC_CHANNEL_MODE_2 :
 		{
 			if (imp_register_table.TCCR_A_ADDRESS >0x60)
 			{
@@ -1552,123 +2277,237 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 			return TC_CMD_ACK;
 		}
 	}
-	
-	#else
-	switch (mode)
-	{
-		case TC_OC_CHANNEL_MODE_0 ;
-		{
-			if (timer_number != TC_0 || timer_number != TC_2)
-			{
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
-			}
-			else if (timer_number == TC_0)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << COMA1_8BIT_BIT) & ~(1 << COMA0_8BIT_BIT));
-			}
-			else if (timer_number == TC_2)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << COMA1_8BIT_BIT) & ~(1 << COMA0_8BIT_BIT));
-			}
-			return TC_CMD_ACK;
-		}
-		
-		case TC_OC_CHANNEL_MODE_1 :
-		{
-			if (timer_number != TC_0 || timer_number != TC_2)
-			{
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
-			}
-			else if (timer_number == TC_0)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA1_8BIT_BIT);
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA0_8BIT_BIT);
-			}
-			else if (timer_number == TC_2)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA1_8BIT_BIT);
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA0_8BIT_BIT);
-			}
-			return TC_CMD_ACK;
-		}
-		
-		case TC_OC_CHANNEL_MODE_2 :
-		{
-			if (timer_number != TC_0 || timer_number != TC_2)
-			{
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
-			}
-			else if (timer_number == TC_0)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA1_8BIT_BIT);
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA0_8BIT_BIT);
-			}
-			else if (timer_number == TC_2)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA1_8BIT_BIT);
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA0_8BIT_BIT);
-			}
-			return TC_CMD_ACK;
-		}
-		
-		case TC_OC_CHANNEL_MODE_3 :
-		{
-			if (timer_number != TC_0 || timer_number != TC_2)
-			{
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
-			}
-			else if (timer_number == TC_0)
-			{if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << COMA1_8BIT_BIT) | (1 << COMA0_8BIT_BIT);
-			}
-			else if (timer_number == TC_2)
-			{
-				if (channel != TC_OC_A)
-				{
-					return TC_CMD_NAK;
-				}
-				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << COMA1_8BIT_BIT) | (1 << COMA0_8BIT_BIT);
-			}
-			return TC_CMD_ACK;
-		}
-	}
-	
 	#endif
 	return TC_CMD_NAK;
 }
 
 Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, void (*callback)(void))
 {
-	// TODO - This.
+	// TODO - Requires testing.
+	#ifndef __AVR_ATmega2560__
+	volatile uint8_t* timsk_address;
+	if (timer_number == TC_0)
+	{
+		*timsk_address = TIMSK0;
+	}
+	else if (timer_number == TC_1)
+	{
+		*timsk_address = TIMSK1;
+	}
+
+	#ifdef __AVR_AT90CAN128__
+	else if (timer_number == TC_2)
+	{
+		*timsk_address = TIMSK2;
+	}
+	else if (timer_number == TC_3)
+	{
+		*timsk_address = TIMSK3;
+	}
+	#endif
+	#endif
+
+	switch (timer_number)
+	{
+		case TC_0:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER0_COMPA_int] = callback;
+					break;
+				}
+				case TC_OC_B:
+				{
+					timerInterrupts[TIMER0_COMPB_int] = callback;
+					break;
+				}
+				default:
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		case TC_1:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER1_COMPA_int] = callback;
+					break;
+				}
+				case TC_OC_B:
+				{	
+					timerInterrupts[TIMER1_COMPB_int] = callback;
+					break;
+				}
+				#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+				case TC_OC_C:
+				{
+					timerInterrupts[TIMER1_COMPC_int] = callback;
+					break;
+				}
+				#endif
+				default :
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		case TC_2:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER2_COMPA_int] = callback;
+					break;
+				}
+				#ifdef (__AVR_AT90CAN128__)
+				case TC_OC_B:
+				{
+					timerInterrupts[TIMER2_COMPB_int] = callback;
+					break;
+				}
+				#endif
+				default:
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		case TC_3:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER3_COMPA_int] = callback;
+					break;
+				}
+				case TC_OC_B:
+				{
+					timerInterrupts[TIMER3_COMPB_int] = callback;
+					break;
+				}
+				case TC_OC_C:
+				{
+					timerInterrupts[TIMER3_COMPC_int] = callback;
+					break;
+				}
+				default :
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		#endif
+		#ifdef __AVR_ATmega2560__
+		case TC_4:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER4_COMPA_int] = callback;
+					break;
+				}
+				case TC_OC_B:
+				{
+					timerInterrupts[TIMER4_COMPB_int] = callback;
+					break;
+				}
+				case TC_OC_C:
+				{
+					timerInterrupts[TIMER4_COMPC_int] = callback;
+					break;
+				}
+				default :
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		case TC_5:
+		{
+			switch (channel)
+			{
+				case TC_OC_A:
+				{
+					timerInterrupts[TIMER5_COMPA_int] = callback;
+					break;
+				}
+				case TC_OC_B:
+				{
+					timerInterrupts[TIMER5_COMPB_int] = callback;
+					break;
+				}
+				case TC_OC_C:
+				{
+					timerInterrupts[TIMER5_COMPC_int] = callback;
+					break;
+				}
+				default :
+				{
+					return TC_CMD_NAK;
+				}
+			}
+			break;
+		}
+		#endif
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	} 
+
+	/*   
+  	 * Switch which output compare interrupt to enable based on which channel is provided
+  	 */
+  	#ifdef __AVR_ATmega2560__
+	if (channel == TC_OC_A)
+	{
+		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << OCIEA_BIT);
+		return TC_CMD_ACK;
+	}
+	else if(channel == TC_OC_B)
+	{
+		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << OCIEB_BIT);
+		return TC_CMD_ACK;
+	}
+	else if (channel == TC_OC_C)
+	{
+		_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << OCIEC_BIT);
+		return TC_CMD_ACK;
+	}
+
+	#else
+	if (channel == TC_OC_A)
+	{
+		*timsk_address |= (1 << OCIEA_BIT);
+		return TC_CMD_ACK;
+	}
+	else if (channel == TC_OC_B)
+	{
+		*timsk_address |= (1 << OCIEB_BIT);
+		return TC_CMD_ACK;
+	}
+	#ifdef __AVR_AT90CAN128__
+	else if (channel == TC_OC_C)
+	{
+		*timsk_address |= (1 << OCIEC_BIT);
+		return TC_CMD_ACK;
+	}
+	#endif
+	#endif
 
 	return TC_CMD_NAK;
 }
@@ -1676,9 +2515,334 @@ Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, void (*call
 Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
 {
 	// TODO - This.
+	/*
+    * Clear the ISR pointer in the appropriate element of the function pointer array
+    * depending on which timer has been implemented and channel provided.
+    */
+    #ifdef __AVR_ATmega2560__
+    switch (timer_number)
+    {
+    	case TC_0 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER0_COMPA_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER0_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_1 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				 timerInterrupts[TIMER1_COMPA_int] = NULL;
+    				 break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER1_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER1_COMPC_int] = NULL;
+    				break;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_2 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER2_COMPA_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER2_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_3 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER3_COMPA_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER3_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER3_COMPC_int] = NULL;
+    				break;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_4 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER4_COMPA_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER4_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER4_COMPC_int] = NULL;
+    				break;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_5 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER5_COMPA_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER5_COMPB_int] = NULL;
+    				break;
+    			}
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER5_COMPC_int] = NULL;
+    				break;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	default :
+    	{
+    		return TC_CMD_NAK;
+    	}
+    }
+    
+    #else
+    switch (timer_number)
+    {
+    	case TC_0 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER0_COMPA_int] = NULL;
+    				TIMSK0 &= ~(1 << OCIEA_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			
+    			case TC_OC_B :
+    			{
+    				#if defined (__AVR_ATmega64C1__) || defined (__AVR_ATmega64M1__)
+    				timerInterrupts[TIMER0_COMPB_int] = NULL;
+    				TIMSK0 &= ~(1 << OCIEB_BIT);
+    				return TC_CMD_ACK;
+    				#else
+    				return TC_CMD_NAK;
+    				#endif
+    			}
+    			#ifdef __AVR_AT90CAN128__
+    			case TC_OC_C :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    			#endif
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_1 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER1_COMPA_int] = NULL;
+    				TIMSK1 &= ~(1 << OCIEA_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER1_COMPB_int] = NULL;
+    				TIMSK1 &= ~(1 << OCIEB_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			#ifdef __AVR_AT90CAN128__
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER1_COMPC_int] = NULL;
+    				TIMSK1 &= ~(1 << OCIEC_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			#endif
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	#ifdef __AVR_AT90CAN128__
+    	case TC_2 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+    				timerInterrupts[TIMER2_COMPA_int] = NULL;
+    				TIMSK2 &= ~(1 << OCIEA_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			case TC_OC_B :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    			case TC_OC_C :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	case TC_3 :
+    	{
+    		switch (channel)
+    		{
+    			case TC_OC_A :
+    			{
+					timerInterrupts[TIMER3_COMPA_int] = NULL;
+					TIMSK3 &= ~(1 << OCIEA_BIT);
+					return TC_CMD_ACK;
+    			}
+    			case TC_OC_B :
+    			{
+    				timerInterrupts[TIMER3_COMPB_int] = NULL;
+    				TIMSK3 &= ~(1 << OCIEB_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			case TC_OC_C :
+    			{
+    				timerInterrupts[TIMER3_COMPC_int] = NULL;
+    				TIMSK3 &= ~(1 << OCIEC_BIT);
+    				return TC_CMD_ACK;
+    			}
+    			default :
+    			{
+    				return TC_CMD_NAK;
+    			}
+    		}
+    		break;
+    	}
+    	#endif
+    	default :
+    	{
+    		return TC_CMD_NAK;
+    	}
+    }
+    #endif
 
+  	/* Switch the process of disabling output compare interrupts depending on which timer is used for
+  	 * implementation
+  	 */
+   	#ifdef __AVR_ATmega2560__
+  	switch (channel)
+  	{
+    	case TC_OC_A:
+    	{
+      		_SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEA_BIT);
+      		return TC_CMD_ACK;
+    	}
+    	case TC_OC_B:
+    	{
+      		_SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEB_BIT);
+      		return TC_CMD_ACK;
+    	}
+    	case TC_OC_C:
+    	{
+      		_SFR_MEM8(registerTable.TIMSK_address) &= ~(1 << OCIEC_BIT);
+      		return TC_CMD_ACK;
+    	}
+    	default :
+    	{
+    		return TC_CMD_NAK;
+    	}
+  	}
+  	#endif
 	return TC_CMD_NAK;
 }
+
 
 Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 {
@@ -1696,8 +2860,179 @@ Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 
 Tc_value Tc_imp::get_ocR(Tc_oc_channel channel)
 {
-	// TODO - This.
+	// TODO - Testing
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			if (channel == TC_OC_C)
+			{
+				return Tc_value::from_uint8(0);
+			}
+			#ifdef __AVR_AT90CAN128__
+			else if (channel == TC_OC_B)
+			{
+				return Tc_value::from_uint8(0);
+			}
+			#endif
+			break;
+		}
+		case TC_1 :
+		{
+			#if defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+			if (channel == TC_OC_C)
+			{
+				return Tc_value::from_uint16(0);
+			}
+			#endif
+			break;
+		}
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		case TC_2 :
+		{
+			if (channel == TC_OC_C)
+			{
+				return Tc_value::from_uint8(0);
+			}
+			#ifdef __AVR_AT90CAN128__
+			else if (channel == TC_OC_B)
+			{
+				return Tc_value::from_uint8(0);
+			}
+			#endif
+			break;
+		}
+		case TC_3 :
+		{
+			break;
+		}
+		#endif
+		#ifdef __AVR_ATmega2560__
+		case TC_4 :
+		{
+			break;
+		}
+		case TC_5 :
+		{
+			break;	
+		}
+		#endif
+		default :
+		{
+			return Tc_value::from_uint8(0);
+		}
+	}
 
+	#ifdef __AVR_ATmega2560__
+	switch (channel)
+	{
+		case TC_OC_A :
+		{
+			if (timer_size == TC_16BIT)
+			{
+				return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.OCR_A_ADDRESS));
+			}
+			else if (imp_register_table.OCR_A_ADDRESS > 0x60)
+			{
+				return Tc_value::from_uint8(_SFR_MEM8(imp_register_table.OCR_A_ADDRESS));
+			}
+			else
+			{
+				return Tc_value::from_uint8(_SFR_IO8(imp_register_table.OCR_A_ADDRESS));
+			}
+		}
+		case TC_OC_B :
+		{
+			if (timer_size == TC_16BIT)
+			{
+				return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.OCR_B_ADDRESS));
+			}
+			else if (imp_register_table.OCR_B_ADDRESS > 0x60)
+			{
+				return Tc_value::from_uint8(_SFR_MEM8(imp_register_table.OCR_B_ADDRESS));
+			}
+			else
+			{
+				return Tc_value::from_uint8(_SFR_IO8(imp_register_table.OCR_B_ADDRESS));
+			}
+		}
+		case TC_OC_C :
+		{
+			if (timer_size == TC_16BIT)
+			{
+				return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.OCR_C_ADDRESS));
+			}
+			else
+			{
+				return Tc_value::from_uint8(0);
+			}
+		}
+		default :
+		{
+			return Tc_value::from_uint8(0);
+		}
+	}
+	
+	#else
+	switch (timer_number)
+	{
+		case TC_0 :
+		{	
+			if (channel == TC_OC_A)
+			{
+				return Tc_value::from_uint8(OCR0A);
+			}
+			#if defined (__AVR_ATmega64C1__) || defined (__AVR_ATmega64M1__)
+			else
+			{
+				return Tc_value::from_uint8(OCR0B);
+			}
+			#endif
+		}
+		case TC_1 :
+		{
+			if (channel == TC_OC_A)
+			{
+				return Tc_value::from_uint16(OCR1A);
+			}
+			else if (channel == TC_OC_B)
+			{
+				return Tc_value::from_uint16(OCR1B);
+			}
+			#ifdef __AVR_AT90CAN128__
+			else 
+			{
+				return Tc_value::from_uint16(OCR1C);
+			}
+			#endif
+		}
+		#ifdef __AVR_AT90CAN128__
+		case TC_2 :
+		{
+			return Tc_value::from_uint8(OCR2A);
+		}
+		case TC_3 :
+		{
+			if (channel == TC_OC_A)
+			{
+				return Tc_value::from_uint16(OCR3A);
+			}
+			else if (channel == TC_OC_B)
+			{
+				return Tc_value::from_uint16(OCR3B);
+			}
+			else 
+			{
+				return Tc_value::from_uint16(OCR3C);
+			}
+		}
+		#endif
+		default :
+		{
+			return Tc_value::from_uint8(0);
+		}
+	}
+	#endif
 	return Tc_value::from_uint8(0);
 }
 		
@@ -1730,6 +3065,8 @@ Tc_command_status Tc_imp::set_icR(Tc_ic_channel channel, Tc_value value)
 		// The value doesn't fit into this sort of timer.
 		return TC_CMD_NAK;
 	}
+
+	//   _SFR_MEM16(registerTable.ICR_address) = value;
 	
 	// TODO - This.
 
@@ -1741,567 +3078,6 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 	// TODO - This.
 
 	return Tc_value::from_uint8(0);
-}
-
-// AVR SPECIFIC FUNTIONS
-void start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable *table) //
-{
-	// NOTE : TCCR_B_ADDRESS for the AT90CAN128 points to the address of TCCR_A_ADDRESS
-	if (tc_number = TC_0)
-	{
-		switch(rate.pre)
-	   {
-		   case TC_PRE_1 :
-		   {
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
-				break;	
-		   }
-		   case TC_PRE_8 :
-		   {
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
-				break;
-		   }
-		   case TC_PRE_32 :
-		   {
-				break;
-		   }
-		   case TC_PRE_64 :
-		   {
-			   _SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
-			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
-			   break;
-		   }
-		   case TC_PRE_128 :
-		   {
-				break;
-		   }
-		   case TC_PRE_256 :
-		   {
-			   _SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
-			   break;
-		   }
-		   case TC_PRE_1024:
-		   {
-			   _SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
-			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
-			   break;
-		   }
-		   default :	// it would never come to this anyways
-				return -1;
-		}
-	}
-	#ifdef (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
-	else if (tc_number = TC_2)
-	{
-		switch(rate.pre)
-	   {
-		   case TC_PRE_1 :
-		   {
-				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
-				break;	
-		   }
-		   case TC_PRE_8 :
-		   {
-				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
-				break;
-		   }
-		   case TC_PRE_32 :
-		   {
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
-				break;
-		   }
-		   case TC_PRE_64 :
-		   {
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS2_BIT);
-			   break;
-		   }
-		   case TC_PRE_128 :
-		   {
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
-				break;
-		   }
-		   case TC_PRE_256 :
-		   {
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS0_BIT);
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
-			   break;
-		   }
-		   case TC_PRE_1024:
-		   {
-			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
-			   break;
-		   }
-		   default :	// it would never come to this anyways
-
-		}
-	}
-	#endif
-}
-
-void start_16bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable *table) //
-{
-	switch(rate.pre)
-	{
-		case TC_PRE_1:
-		{
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
-		  break;
-		}
-		case TC_PRE_8:
-		{
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
-		  break;
-		}
-		case TC_PRE_32:
-		{
-		  break;
-		}
-		case TC_PRE_64:
-		{
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
-		  break;
-		}
-		case TC_PRE_128:	
-		{
-		  break;
-		}
-		case TC_PRE_256:	
-		{
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
-		  break;
-		}
-		case TC_PRE_1024:
-		{
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
-		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
-		  break;
-		}
-		   default: /*Not a valid prescalar*/
-				
-	}
-}
-
-Tc_command_status enable_oc_8bit (tc_oc_mode mode, Tc_registerTable *table) //
-{
-	#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-	if (mode == TC_OC_MODE_2)
-	{
-		mode = TC_OC_MODE_4;
-	}
-	else if (mode == TC_OC_MODE_3)
-	{
-		mode = TC_OC_MODE_5;
-	}
-	else if (mode == TC_OC_MODE_5)
-	{
-		mode = TC_OC_MODE_11;
-	}
-	else if (mode == TC_OC_MODE_7)
-	{
-		mode = TC_OC_MODE_15;
-	}
-	
-	#elif defined(__AVR_AT90CAN128__)
-	if (mode == TC_OC_MODE_2) 
-	{
-		mode = TC_OC_MODE_4;
-	}
-	else if (mode == TC_OC_MODE_3)
-	{
-		mode = TC_OC_MODE_5;
-	}
-	
-	#endif
-	
-	switch (mode)
-	{
-		case TC_OC_NONE :
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
-			
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_8BIT_BIT) & ~(1 << WGM0_8BIT_BIT));
-			
-				#endif
-			}
-			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
-			else
-			{
-				#ifdef (__AVR_ATmega2560__)
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_8BIT_BIT) & ~(1 << WGM0_8BIT_BIT));
-				
-				#endif
-			}
-			#endif
-			/* Disable the output compare interrupt */
-			_SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_1 :
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				/* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_8BIT_BIT);
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_8BIT_BIT);
-				
-				#endif
-			}
-			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
-			else 
-			{
-				#ifdef (__AVR_ATmega2560__)
-				 /* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-				_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);	
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_8BIT_BIT);
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_8BIT_BIT);
-				
-				#endif
-			}
-			#endif
-			
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_2 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_3 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_4 :
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				/* Set WGMn2:0 bits to 0x02 for Clear timer on compare (CTC) mode, where TOP = OCRnA */
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_8BIT_BIT);
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM1_8BIT_BIT);
-				
-				#endif
-			}
-			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
-			else 
-			{
-				#ifdef (__AVR_ATmega2560__)
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-				_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);	
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_8BIT_BIT);
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_8BIT_BIT);
-				
-				#endif
-			}
-			#endif
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_5 :
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				/* Set WGMn2:0 bits to 0x03 for Fast PWM mode, where TOP = 0xFF */
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_8BIT_BIT) | (1 << WGM0_8BIT_BIT));
-				
-				#endif
-			}
-			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
-			else
-			{
-				#ifdef (__AVR_ATmega2560__)
-				_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-				_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
-				
-				#elif defined(__AVR_AT90CAN128__)
-				_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_8BIT_BIT) | (1 << WGM0_8BIT_BIT));
-				
-				#endif
-			}
-			#endif
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_6 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_7 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_8 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_9 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_10 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_11 :
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				/* Set WGMn2:0 bits to 0x05 for PWM Phase Correct mode, where TOP = OCRnA */
-				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-				#endif
-			}
-			#ifdef (__AVR_ATmega2560__)
-			else
-			{
-				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			}
-			#endif
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_12 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_13 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_14 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_15 : 
-		{
-			if (table->TCCR_A_ADDRESS <= 0x60)
-			{
-				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-				/* Set WGMn2:0 bits to 0x07 for Fast PWM mode, where TOP = OCRnA */
-				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-				#endif
-			}
-			#ifdef (__AVR_ATmega2560__)
-			else
-			{
-				_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			}
-			#endif
-			return TC_CMD_ACK;
-		}
-	}
-}
-
-Tc_command_status enable_oc_16bit(tc_oc_mode mode, Tc_registerTable *table) //
-{
-	switch (mode)
-	{
-		case TC_OC_NONE :
-		{
-			/* Reset the timer counter mode back to NORMAL */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
-			/* Disable the output compare interrupt */
-			_SFR_MEM8(table->TIMSK_ADDRESS) &= ~(1 << OCIEA_BIT);
-			/* Disconnect the output pin to allow for normal operation */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
-			
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_1 :
-		{
-			/* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-			
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT); 
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_2 :
-		{
-			/* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-			
-			 /* Clear un-needed bits (safeguard) */
-			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_3 :
-		{
-			 /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-			 _SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-			
-			 /* Clear un-needed bits (safeguard) */
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_4 :
-		{
-			 /* Set WGMn3:0 bits to 0x04 for CTC mode where TOP = OCRnA */
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			
-			 /* Clear un-needed bits (safeguard) */
-			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
-			
-			 /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-			 _SFR_MEM8(table->TIMSK_ADDRESS) |= (1 << OCIEA_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_5 :
-		{
-			 /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
-			 _SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			
-			 /* Clear un-needed bits (safeguard) */
-			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_6 :
-		{
-			/* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_7 :
-		{
-			/* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
-			
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_8 :
-		{
-			 /* Set WGMn3:0 bits to 0x08 for PWM, Phase & Frequency Correct mode where TOP = ICRn */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_9 :
-		{
-			 /* Set WGMn3:0 bits to 0x09 for PWM, Phase & Frequency Correct mode where TOP = OCRnA */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_10 :
-		{
-			 /* Set WGMn3:0 bits to 0x10 for PWM, Phase Correct mode where TOP = ICRn */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_11 :
-		{
-			 /* Set WGMn3:0 bits to 0x11 for PWM, Phase Correct mode where TOP = OCRnA */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_12 :
-		{
-			 /* Set WGMn3:0 bits to 0x12 for CTC mode where TOP = ICRn */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_13 :
-		{
-			// Reserved
-			return TC_CMD_NAK;
-		}
-		case TC_OC_MODE_14 :
-		{
-			 /* Set WGMn3:0 bits to 0x14 for Fast PWM mode, where TOP = ICRn */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
-
-			/* Clear un-needed bits (safeguard) */
-			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (1 << WGM0_BIT);
-			return TC_CMD_ACK;
-		}
-		case TC_OC_MODE_15 : 
-		{
-			/* Set WGMn3:0 bits to 0x15 for Fast PWM mode, where TOP = OCRnA */
-			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-			
-			return TC_CMD_ACK;
-		}
-	}
 }
 
 
@@ -2351,7 +3127,7 @@ Tc_command_status enable_oc_16bit(tc_oc_mode mode, Tc_registerTable *table) //
      timerInterrupts[TIMER1_COMPB_int]();
  }
 
-#ifdef (__AVR_ATmega2560__)
+#ifdef __AVR_ATmega2560__
  ISR(TIMER1_COMPC_vect)
  {
    if (timerInterrupts[TIMER1_COMPC_int])
@@ -2384,15 +3160,15 @@ Tc_command_status enable_oc_16bit(tc_oc_mode mode, Tc_registerTable *table) //
      timerInterrupts[TIMER1_OVF_int]();
  }
  
- #ifndef (__AVR_AT90CAN128__)
+ #ifdef __AVR_AT90CAN128__
 ISR(TIMER2_COMP_vect)
 {
-	if (timerInterrupts[TIMER2_COMP_INT])
-		timerInterrupts[TIMER2_COMP_INT]();
+	if (timerInterrupts[TIMER2_COMP_int])
+		timerInterrupts[TIMER2_COMP_int]();
 }
 #endif
  
- #ifndef (__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+ #if defined (__AVR_ATmega2560__) || defined  (__AVR_AT90CAN128__)
  ISR(TIMER2_OVF_vect)
  {
    if (timerInterrupts[TIMER2_OVF_int])
@@ -2430,7 +3206,7 @@ ISR(TIMER2_COMP_vect)
  }
 #endif
 
-#ifdef (__AVR_ATmega2560__)
+#ifdef __AVR_ATmega2560__
  ISR(TIMER4_CAPT_vect)
  {
    if (timerInterrupts[TIMER4_CAPT_int])
@@ -3138,10 +3914,10 @@ ISR(TIMER2_COMP_vect)
 //   }
   
 //   /* Vacate the associated GPIO semaphore */
-//   timer_pins[(int8_t)channel].s->vacate();
+//   timer_pins[(int8_t)channel].s.vacate();
 // }
 // /* Attempt to procure the semaphore for the GPIO pin required prior to setting the output bits */
-// else if (timer_pins[(int8_t)channel].s->procure())
+// else if (timer_pins[(int8_t)channel].s.procure())
 // {
 //   switch (mode)
 //   {
@@ -3178,7 +3954,7 @@ ISR(TIMER2_COMP_vect)
 //     }
 //     case OC_CHANNEL_MODE_3:	/* COMnX1:0 bits set to 0x03 */
 //     {
-//       if (timer_pins[(int8_t)channel].s->procure())
+//       if (timer_pins[(int8_t)channel].s.procure())
 //       {
 // 	if (registerTable.TCCRA_address > 0x60)
 // 	{
@@ -3765,7 +4541,7 @@ ISR(TIMER2_COMP_vect)
 //    * given to the function
 //    */
 //   /* Attempt to procure the required GPIO semaphore first */
-//   if (timer_pins[(int8_t)channel + IC_CHANNEL_OFFSET].s->procure())
+//   if (timer_pins[(int8_t)channel + IC_CHANNEL_OFFSET].s.procure())
 //   {
 //     switch(channel)
 //     {
@@ -3835,7 +4611,7 @@ ISR(TIMER2_COMP_vect)
 // 	    else
 // 	    {
 // 	      _SFR_IO8(registerTable.TCCRB_address) &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));	  
-// 	    }
+// 	    }r
 	    
 // 	    break;
 // 	  }
@@ -3984,7 +4760,7 @@ ISR(TIMER2_COMP_vect)
 //   /*
 //    * Vacate the GPIO semaphore gathered
 //    */
-//   timer_pins[(int8_t)channel + IC_CHANNEL_OFFSET].s->vacate();
+//   timer_pins[(int8_t)channel + IC_CHANNEL_OFFSET].s.vacate();
   
 //  return 0;  
 // }
@@ -4041,32 +4817,32 @@ ISR(TIMER2_COMP_vect)
 //       {
 // 	case TC_PRE_1:	//Prescalar = 1
 // 	{
-// 	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-// 	  _SFR_IO8(table->TCCRB_address) |= (1 << CS0_BIT);	  
+// 	  _SFR_IO8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+// 	  _SFR_IO8(table.TCCRB_address) |= (1 << CS0_BIT);	  
 // 	  break;
 // 	}
 // 	case TC_PRE_8:	//Prescalar = 8
 // 	{
-// 	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_IO8(table->TCCRB_address) |= (1 << CS1_BIT);
+// 	  _SFR_IO8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_IO8(table.TCCRB_address) |= (1 << CS1_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_64:	//Prescalar = 64
 // 	{
-//   	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS2_BIT);
-// 	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+//   	  _SFR_IO8(table.TCCRB_address) &= ~(1 << CS2_BIT);
+// 	  _SFR_IO8(table.TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_256:	//Prescalar = 256
 // 	{
-//   	  _SFR_IO8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT));
+//   	  _SFR_IO8(table.TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_IO8(table.TCCRB_address) |= ((1 << CS2_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_1024:	//Prescalar = 1024
 // 	{
-//   	  _SFR_IO8(table->TCCRB_address) &= ~(1 << CS1_BIT);
-// 	  _SFR_IO8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+//   	  _SFR_IO8(table.TCCRB_address) &= ~(1 << CS1_BIT);
+// 	  _SFR_IO8(table.TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 // 	default: /*Not a valid prescalar*/
@@ -4098,32 +4874,32 @@ ISR(TIMER2_COMP_vect)
 //       {
 // 	case TC_PRE_1:	//Prescalar = 1
 // 	{
-//  	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS0_BIT);
+//  	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS0_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_8:	//Prescalar = 8
 // 	{
-//  	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS1_BIT);
+//  	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS1_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_64:	//Prescalar = 64
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= ~(1 << CS2_BIT);
-// 	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+//   	  _SFR_MEM8(table.TCCRB_address) &= ~(1 << CS2_BIT);
+// 	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_256:	//Prescalar = 256
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS2_BIT));
+//   	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS2_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_1024:	//Prescalar = 1024
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= ~(1 << CS1_BIT);
-// 	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+//   	  _SFR_MEM8(table.TCCRB_address) &= ~(1 << CS1_BIT);
+// 	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 //       default: /*Not a valid prescalar*/
@@ -4155,43 +4931,43 @@ ISR(TIMER2_COMP_vect)
 //       {
 // 	case TC_PRE_1:	//Prescalar = 1
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS0_BIT);
+//   	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS0_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_8:	//Prescalar = 8
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS1_BIT);
+//   	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS1_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_32:	//Prescalar = 32
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= ~(1 << CS2_BIT);
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS1_BIT);
+//   	  _SFR_MEM8(table.TCCRB_address) &= ~(1 << CS2_BIT);
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS1_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_64:	//Prescalar = 64
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
-// 	  _SFR_MEM8(table->TCCRB_address) |= (1 << CS2_BIT);
+//   	  _SFR_MEM8(table.TCCRB_address) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+// 	  _SFR_MEM8(table.TCCRB_address) |= (1 << CS2_BIT);
 // 	  break;
 // 	}
 // 	case TC_PRE_128:	//Prescalar = 128
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= ~(1 << CS1_BIT);
-// 	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+//   	  _SFR_MEM8(table.TCCRB_address) &= ~(1 << CS1_BIT);
+// 	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_256:	//Prescalar = 256
 // 	{
-//   	  _SFR_MEM8(table->TCCRB_address) &= ~(1 << CS0_BIT);
-// 	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
+//   	  _SFR_MEM8(table.TCCRB_address) &= ~(1 << CS0_BIT);
+// 	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
 // 	  break;
 // 	}
 // 	case TC_PRE_1024:	//Prescalar = 1024
 // 	{
-//  	  _SFR_MEM8(table->TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
+//  	  _SFR_MEM8(table.TCCRB_address) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
 // 	  break;
 // 	}
 //       default: /*Not a valid prescalar*/
@@ -4217,74 +4993,74 @@ ISR(TIMER2_COMP_vect)
 //   {
 //     case OC_NONE:	/* Reset the Timer/Counter to NORMAL mode */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set the WGMn2:0 bits to 0x00 for NORMAL mode */
-// 	_SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-// 	_SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM2_BIT));
+// 	_SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+// 	_SFR_MEM8(table.TCCRB_address) &= (~(1 << WGM2_BIT));
 //       }
 //       else
 //       {
 // 	/* Set the WGMn2:0 bits to 0x00 for NORMAL mode */
-// 	_SFR_IO8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-// 	_SFR_IO8(table->TCCRB_address) &= (~(1 << WGM2_BIT));
+// 	_SFR_IO8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+// 	_SFR_IO8(table.TCCRB_address) &= (~(1 << WGM2_BIT));
 //       }
 //        /* Disable the output compare interrupt */
-//       _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
+//       _SFR_MEM8(table.TIMSK_address) &= ~(1 << OCIEA_BIT);
       
 //       break;
 //     }	  	  
 //     case OC_MODE_1:	/* PWM Phase Correct, where TOP = 0xFF */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
-// 	_SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-// 	_SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
-// 	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);	
+// 	_SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) |= (1 << WGM0_BIT);
+// 	_SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);	
 //       }
 //       else
 //       {
 // 	/* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
-// 	_SFR_IO8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-// 	_SFR_IO8(table->TCCRA_address) |= (1 << WGM0_BIT);
-// 	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);	
+// 	_SFR_IO8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+// 	_SFR_IO8(table.TCCRA_address) |= (1 << WGM0_BIT);
+// 	_SFR_IO8(table.TCCRB_address) &= ~(1 << WGM2_BIT);	
 //       }
       
 //       break;
 //     }
 //     case OC_MODE_2:	/* Clear timer on compare (CTC) mode, where TOP = OCRnA */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set WGMn2:0 bits to 0x02 for Clear timer on compare (CTC) mode, where TOP = OCRnA */
-// 	_SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-// 	_SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
-// 	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);	
+// 	_SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM0_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) |= (1 << WGM1_BIT);
+// 	_SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);	
 //       }
 //       else
 //       {
 // 	/* Set WGMn2:0 bits to 0x02 for Clear timer on compare (CTC) mode, where TOP = OCRnA */
-// 	_SFR_IO8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-// 	_SFR_IO8(table->TCCRA_address) |= (1 << WGM1_BIT);
-// 	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+// 	_SFR_IO8(table.TCCRA_address) &= ~(1 << WGM0_BIT);
+// 	_SFR_IO8(table.TCCRA_address) |= (1 << WGM1_BIT);
+// 	_SFR_IO8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
 //       }
       
 //       break;
 //     }
 //     case OC_MODE_3:	/* Fast PWM mode, where TOP = 0xFF */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set WGMn2:0 bits to 0x03 for Fast PWM mode, where TOP = 0xFF */
-// 	_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-// 	_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+// 	_SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
 //       }
 //       else
 //       {
 // 	/* Set WGMn2:0 bits to 0x03 for Fast PWM mode, where TOP = 0xFF */
-// 	_SFR_IO8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-// 	_SFR_IO8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+// 	_SFR_IO8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+// 	_SFR_IO8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
 //       }
 	      
 //       break;
@@ -4292,19 +5068,19 @@ ISR(TIMER2_COMP_vect)
 //     /* Mode 4 reserved */
 //     case OC_MODE_5:	/* PWM Phase Correct mode, where TOP = OCRnA */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set WGMn2:0 bits to 0x05 for PWM Phase Correct mode, where TOP = OCRnA */
-// 	_SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-// 	_SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
-// 	_SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) |= (1 << WGM0_BIT);
+// 	_SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
 //       }
 //       else
 //       {
 // 	/* Set WGMn2:0 bits to 0x05 for PWM Phase Correct mode, where TOP = OCRnA */
-// 	_SFR_IO8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-// 	_SFR_IO8(table->TCCRA_address) |= (1 << WGM0_BIT);
-// 	_SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
+// 	_SFR_IO8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+// 	_SFR_IO8(table.TCCRA_address) |= (1 << WGM0_BIT);
+// 	_SFR_IO8(table.TCCRB_address) |= (1 << WGM2_BIT);
 //       }
 	      
 //       break;
@@ -4312,17 +5088,17 @@ ISR(TIMER2_COMP_vect)
 //     /* Mode 6 reserved */
 //     case OC_MODE_7:	/* Fast PWM mode, where TOP = OCRnA */
 //     {
-//       if (table->TCCRA_address > 0x60)
+//       if (table.TCCRA_address > 0x60)
 //       {
 // 	/* Set WGMn2:0 bits to 0x07 for Fast PWM mode, where TOP = OCRnA */
-// 	_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-// 	_SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+// 	_SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+// 	_SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
 //       }
 //       else
 //       {
 // 	/* Set WGMn2:0 bits to 0x07 for Fast PWM mode, where TOP = OCRnA */
-// 	_SFR_IO8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-// 	_SFR_IO8(table->TCCRB_address) |= (1 << WGM2_BIT);
+// 	_SFR_IO8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+// 	_SFR_IO8(table.TCCRB_address) |= (1 << WGM2_BIT);
 //       }
 	      
 //       break;
@@ -4355,146 +5131,146 @@ ISR(TIMER2_COMP_vect)
 //   case OC_NONE:
 //   {
 //     /* Reset the timer counter mode back to NORMAL */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-//     _SFR_MEM8(table->TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
 //     /* Disable the output compare operation */
-//     _SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
+//     _SFR_MEM8(table.TIMSK_address) &= ~(1 << OCIEA_BIT);
 //     /* Disconnect the output pin to allow for normal operation */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
 //     break;
 //   }
 //   case OC_MODE_1:	/* PWM, Phase Correct, 8-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM0_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM1_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM1_BIT));
     	    
 //     break;
 //   }
 //   case OC_MODE_2:	/* PWM, Phase Correct, 9-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM1_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT) & ~(1 << WGM0_BIT));
     	    
 //     break;
 //   }
 //   case OC_MODE_3:	/* PWM, Phase Correct, 10-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
     	    
 //     break;
 //   }
 //   case OC_MODE_4:	/* Clear timer on Compare (CTC) mode where TOP = OCRnA */
 //   {
 //     /* Set WGMn3:0 bits to 0x04 for CTC mode where TOP = OCRnA */
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM3_BIT);
     
 //     /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
-//     _SFR_MEM8(table->TIMSK_address) |= (1 << OCIEA_BIT);
+//     _SFR_MEM8(table.TIMSK_address) |= (1 << OCIEA_BIT);
 	    
 //     break;
 //   }
 //   case OC_MODE_5:	/* Fast PWM, 8-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM3_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_6:	/* Fast PWM, 9-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM3_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_7:	/* Fast PWM, 10-bit */
 //   {
 //     /* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
-//     _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM2_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM3_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_8:	/* PWM, Phase & Frequency Correct where TOP = ICRn */
 //   {
 //     /* Set WGMn3:0 bits to 0x08 for PWM, Phase & Frequency Correct mode where TOP = ICRn */
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM3_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_9:	/* PWM, Phase & Frequency Correct where TOP = OCRnA */
 //   {
 //     /* Set WGMn3:0 bits to 0x09 for PWM, Phase & Frequency Correct mode where TOP = OCRnA */
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM3_BIT);
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM0_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM1_BIT);
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_10:	/* PWM, Phase Correct where TOP = ICRn */
 //   {
 //     /* Set WGMn3:0 bits to 0x10 for PWM, Phase Correct mode where TOP = ICRn */
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM3_BIT);
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM1_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= ~(1 << WGM0_BIT);
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= ~(1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_11:	/* PWM, Phase Correct where TOP = OCRnA */
 //   {
 //     /* Set WGMn3:0 bits to 0x11 for PWM, Phase Correct mode where TOP = OCRnA */
-//     _SFR_MEM8(table->TCCRB_address) |= (1 << WGM3_BIT);
-//     _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) |= (1 << WGM3_BIT);
+//     _SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+//     _SFR_MEM8(table.TCCRB_address) &= ~(1 << WGM2_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_12:	/* Clear timer on Compare (CTC) mode where TOP = ICRn */
 //   {
 //     /* Set WGMn3:0 bits to 0x12 for CTC mode where TOP = ICRn */
-//     _SFR_MEM8(table->TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+//     _SFR_MEM8(table.TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRA_address) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
     
 //     break;
 //   }
@@ -4507,19 +5283,19 @@ ISR(TIMER2_COMP_vect)
 //   case OC_MODE_14:	/* Fast PWM mode, where TOP = ICRn */
 //   {
 //     /* Set WGMn3:0 bits to 0x14 for Fast PWM mode, where TOP = ICRn */
-//     _SFR_MEM8(table->TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-//     _SFR_MEM8(table->TCCRA_address) |= (1 << WGM1_BIT);
+//     _SFR_MEM8(table.TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+//     _SFR_MEM8(table.TCCRA_address) |= (1 << WGM1_BIT);
     
 //     /* Clear un-needed bits (safeguard) */
-//     _SFR_MEM8(table->TCCRA_address) &= (1 << WGM0_BIT);
+//     _SFR_MEM8(table.TCCRA_address) &= (1 << WGM0_BIT);
     
 //     break;
 //   }
 //   case OC_MODE_15:	/* Fast PWM mode, where TOP = OCRnA */
 //   {
 //     /* Set WGMn3:0 bits to 0x15 for Fast PWM mode, where TOP = OCRnA */
-//     _SFR_MEM8(table->TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-//     _SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+//     _SFR_MEM8(table.TCCRB_address) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+//     _SFR_MEM8(table.TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
     
 //     break;
 //   }

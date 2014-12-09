@@ -6,12 +6,11 @@ struct1 [label=<
 
 <tr><td colspan="2" width="350"><b>Key</b></td></tr>
 <tr><td>Implemented &amp; Tested</td><td bgcolor="green"></td></tr>
-<tr><td>Implemented</td><td bgcolor="yellow"></td></tr>
-<tr><td>Partially Implemented</td><td bgcolor="orange"></td></tr>
-<tr><td>Interface Designed</td><td bgcolor="skyblue"></td></tr>
+<tr><td>Implemented</td><td bgcolor="forestgreen"></td></tr>
+<tr><td>Work in Progress</td><td bgcolor="orange"></td></tr>
+<tr><td>Started</td><td bgcolor="skyblue"></td></tr>
 <tr><td>Not Yet Started</td><td bgcolor="gray"></td></tr>
 <tr><td>Not Supported</td><td bgcolor="red"></td></tr>
-<tr><td>Started</td><td bgcolor="purple"></td></tr>
 </TABLE>
 </FONT>
 >];
