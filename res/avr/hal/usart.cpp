@@ -170,7 +170,7 @@ public:
 
 	virtual void flush(void)
 	{
-		while (*registers.UCSRA & _BV(RXC_BIT))
+		while (bit_read(*registers.UCSRA, RXC_BIT) == 1)
 		{
 			volatile uint8_t dummy __attribute__((unused)) = *registers.UDR;
 		}
@@ -209,12 +209,12 @@ public:
 	virtual bool transmitter_ready(void)
 	{
 		// Check if we're ready to transmit more data
-		return ((*registers.UCSRA & _BV(UDRE_BIT)) != 0) && (!async_tx.active);
+		return ((bit_read(*registers.UCSRA, UDRE_BIT) == 1) && !async_tx.active);
 	}
 
 	virtual bool receiver_has_data(void)
 	{
-		return ((*registers.UCSRA & _BV(RXC_BIT)) != 0) && (!async_rx.active);
+		return ((bit_read(*registers.UCSRA, RXC_BIT) == 1) && !async_rx.active);
 	}
 
 
@@ -226,10 +226,11 @@ public:
 		}
 
 		// 9 bit mode
-		if (*registers.UCSRB & _BV(UCSZ2_BIT))
+		if (bit_read(*registers.UCSRB, UCSZ2_BIT) == 1)
 		{
 			uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
-			*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
+			bit_write(*registers.UCSRB, TXB8_BIT, bit8);
+			return USART_IO_FAILED;
 		}
 
 		*registers.UDR = data;
@@ -248,10 +249,11 @@ public:
 			return USART_IO_BUSY;
 
 		// 9 bit mode
-		if (*registers.UCSRB & _BV(UCSZ2_BIT))
+		if (bit_read(*registers.UCSRB, UCSZ2_BIT) == 1)
 		{
 			uint8_t bit8 = 0; // TODO - How to feed in the 9th bit?
-			*registers.UCSRB = (*registers.UCSRB & ~_BV(TXB8_BIT)) | bit8;
+			bit_write(*registers.UCSRB, TXB8_BIT, bit8);
+			return USART_IO_FAILED;
 		}
 
 		*registers.UDR = data;
@@ -349,9 +351,9 @@ public:
 			return (int16_t)error;
 
 		// 9 bit mode
-		if (*registers.UCSRB & _BV(UCSZ2_BIT))
+		if (bit_read(*registers.UCSRB, UCSZ2_BIT) == 1)
 		{
-			uint8_t bit8 = (*registers.UCSRB & _BV(RXB8_BIT)) >> RXB8_BIT;
+			uint8_t bit8 = bit_read(*registers.UCSRB, RXB8_BIT);
 			return (bit8 << 8) | (*registers.UDR);
 		}
 
@@ -369,9 +371,9 @@ public:
 			return (int16_t)error;
 
 		// 9 bit mode
-		if (*registers.UCSRB & _BV(UCSZ2_BIT))
+		if (bit_read(*registers.UCSRB, UCSZ2_BIT) == 1)
 		{
-			uint8_t bit8 = (*registers.UCSRB & _BV(RXB8_BIT)) >> RXB8_BIT;
+			uint8_t bit8 = bit_read(*registers.UCSRB, RXB8_BIT);
 			return (bit8 << 8) | (*registers.UDR);
 		}
 
@@ -499,11 +501,11 @@ public:
 	virtual Usart_error_status get_errors(void)
 	{
 		// TODO - what if there are multiple errors?
-		if ((*registers.UCSRA & _BV(FE_BIT)) != 0)
+		if (bit_read(*registers.UCSRA, FE_BIT))
 			return USART_ERR_FRAME;
-		if ((*registers.UCSRA & _BV(DOR_BIT)) != 0)
+		if (bit_read(*registers.UCSRA, DOR_BIT))
 			return USART_ERR_DATA_OVERRUN;
-		if ((*registers.UCSRA & _BV(UPE_BIT)) != 0)
+		if (bit_read(*registers.UCSRA, UPE_BIT))
 			return USART_ERR_PARITY;
 
 		return USART_ERR_NONE;
@@ -520,12 +522,11 @@ protected: //// Utility Functions ////
 			case USART_MODE_ASYNCHRONOUS_DOUBLESPEED:
 			{
 				// UMSEL<1:0> = 0b00 (Asynchronous mode)
-				*registers.UCSRC =
-					(*registers.UCSRC & ~UMSEL_MASK) | (0b00 << UMSEL0_BIT);
+				reg_write(*registers.UCSRC, UMSEL0_BIT, 2, 0b00);
 
 				// Enable double-speed mode
 				if (mode == USART_MODE_ASYNCHRONOUS_DOUBLESPEED)
-					*registers.UCSRA |= _BV(U2X_BIT);
+					bit_write(*registers.UCSRA, U2X_BIT, 1);
 
 				break;
 			}
@@ -534,11 +535,10 @@ protected: //// Utility Functions ////
 			case USART_MODE_SYNCHRONOUS_SLAVE:
 			{
 				// UMSEL<1:0> = 0b01 (Synchronous mode)
-				*registers.UCSRC =
-					(*registers.UCSRC & ~UMSEL_MASK) | (0b01 << UMSEL0_BIT);
+				reg_write(*registers.UCSRC, UMSEL0_BIT, 2, 0b01);
 
 				// For synchronous mode, clear the double USART transmission speed bit
-				*registers.UCSRA &= ~_BV(U2X_BIT);
+				bit_write(*registers.UCSRA, U2X_BIT, 0);
 
 				// Configure the GPIO
 				Gpio_pin xck(pins.xck_address);
@@ -570,52 +570,46 @@ protected: //// Utility Functions ////
 		if (data_bits == 9)
 		{
 			// UCSZ = 0b100
-			*registers.UCSRB |= _BV(UCSZ2_BIT);
-			*registers.UCSRC &= ~(_BV(UCSZ1_BIT) | _BV(UCSZ0_BIT));
+			bit_write(*registers.UCSRB, UCSZ2_BIT, 1); // 9-bit mode
+			reg_write(*registers.UCSRC, UCSZ0_BIT, 2, 0b00);
 		}
 		else // (data_bits <= 8)
 		{
 			// UCSZ = 0b0xx
 			uint8_t ucsz = (data_bits - 5);
 
-			*registers.UCSRB &= ~_BV(UCSZ2_BIT); // regular mode
-			*registers.UCSRC =
-				(*registers.UCSRC & ~(_BV(UCSZ1_BIT) | _BV(UCSZ0_BIT)))
-				| (ucsz << UCSZ0_BIT);
+			bit_write(*registers.UCSRB, UCSZ2_BIT, 0); // regular mode
+			reg_write(*registers.UCSRC, UCSZ0_BIT, 2, ucsz);
 		}
 
 		// Parity
-		uint8_t upm;
 		switch (parity)
 		{
 			case USART_PARITY_EVEN:
-				upm = 0b10u;
+				reg_write(*registers.UCSRC, UPM0_BIT, 2, 0b10);
 				break;
 
 			case USART_PARITY_ODD:
-				upm = 0b11u;
+				reg_write(*registers.UCSRC, UPM0_BIT, 2, 0b11);
 				break;
 
 			case USART_PARITY_NONE:
-				upm = 0b00u;
+				reg_write(*registers.UCSRC, UPM0_BIT, 2, 0b00);
 				break;
 
 			default: // Unsupported parity mode
 				return USART_CFG_INVALID_PARITY;
 		}
-		*registers.UCSRC =
-			(*registers.UCSRC & ~(_BV(UPM1_BIT) | _BV(UPM0_BIT)))
-			| (upm << UPM0_BIT);
 
 		// Stop bits
 		switch (stop_bits)
 		{
 			case 1:
-				*registers.UCSRC &= ~_BV(USBS_BIT);
+				bit_write(*registers.UCSRC, USBS_BIT, 0);
 				break;
 
 			case 2:
-				*registers.UCSRC |= _BV(USBS_BIT);
+				bit_write(*registers.UCSRC, USBS_BIT, 1);
 				break;
 
 			default: // Invalid number of stop bits
@@ -665,10 +659,7 @@ public:  //// Asynchronous Interrupt Handling ////
 
 	virtual void set_udrie(bool enabled)
 	{
-		if (enabled)
-			*registers.UCSRB |= _BV(UDRIE_BIT);
-		else
-			*registers.UCSRB &= ~_BV(UDRIE_BIT);
+		bit_write(*registers.UCSRB, UDRIE_BIT, enabled);
 	}
 
 	void isr_receive_byte(void)
@@ -878,7 +869,7 @@ public:
 	void enable(void)
 	{
 		// Enable LIN module
-		LINCR |= _BV(LENA);
+		bit_write(LINCR, LENA, 1);
 
 		// Enable interrupts
 		LINENIR |= _BV(LENTXOK) | _BV(LENRXOK);
@@ -886,7 +877,7 @@ public:
 
 	void disable(void)
 	{
-		LINCR &= ~_BV(LENA);
+		bit_write(LINCR, LENA, 0);
 		//TODO: Does disable clear the current configuration?
 
 		// Disable interrupts
@@ -910,14 +901,14 @@ public:
 	{
 		// The LBUSY flag signals that the controller is busy with UART communication.
 		// TODO - Unsure if LTXOK is needed, but things seem to function fine so far...
-		return ((LINSIR & _BV(LBUSY)) == 0) /*&& ((LINSIR & _BV(LTXOK)) == 0)*/;
+		return (bit_read(LINSIR, LBUSY) == 0) /*&& ((LINSIR & _BV(LTXOK)) == 0)*/;
 	}
 
 	bool receiver_has_data(void)
 	{
 		// The LRXOK flag is set when a byte of data has been received.
 		// It is cleared when the data is read from LINDAT.
-		return (LINSIR & _BV(LRXOK)) != 0;
+		return (bit_read(LINSIR, LRXOK) == 1);
 	}
 
 
@@ -989,11 +980,11 @@ public:
 
 	Usart_error_status get_errors(void)
 	{
-		if (LINERR & _BV(LOVERR))
+		if (bit_read(LINERR, LOVERR))
 			return USART_ERR_DATA_OVERRUN;
-		if (LINERR & _BV(LFERR))
+		if (bit_read(LINERR, LFERR))
 			return USART_ERR_FRAME;
-		if (LINERR & _BV(LPERR))
+		if (bit_read(LINERR, LPERR))
 			return USART_ERR_PARITY;
 
 		// Other error flags are only relevant for LIN.
@@ -1009,7 +1000,7 @@ public:
 			return USART_CFG_INVALID_MODE;
 
 		// Put the LIN peripheral into UART mode, with RX/TX enabled.
-		LINCR |= _BV(LCMD2) | _BV(LCMD1) | _BV(LCMD0);
+		reg_write(LINCR, LCMD0, 3, 0b111);
 
 		this->mode = mode;
 
@@ -1032,17 +1023,17 @@ public:
 		{
 			case USART_PARITY_NONE:
 			{
-				LINCR = (LINCR & ~(0b11u<<LCONF0)) | (0b00u<<LCONF0); // 8-bit, no parity, listen off
+				reg_write(LINCR, LCONF0, 2, 0b00); // 8-bit, no parity, listen off
 				break;
 			};
 			case USART_PARITY_EVEN:
 			{
-				LINCR = (LINCR & ~(0b11u<<LCONF0)) | (0b01u<<LCONF0); // 8-bit, even parity, listen off
+				reg_write(LINCR, LCONF0, 2, 0b01); // 8-bit, even parity, listen off
 				break;
 			};
 			case USART_PARITY_ODD:
 			{
-				LINCR = (LINCR & ~(0b11u<<LCONF0)) | (0b10<<LCONF0); // 8-bit, odd parity, listen off
+				reg_write(LINCR, LCONF0, 2, 0b10); // 8-bit, odd parity, listen off
 				break;
 			};
 
@@ -1091,7 +1082,7 @@ public:
 		}
 		else
 		{
-			LINSIR |= _BV(LTXOK);
+			bit_write(LINSIR, LTXOK, 1); // Clear
 		}
 	}
 
@@ -1406,7 +1397,7 @@ ISR(USART0_RX_vect)
 
 	// NOTE - The RXC flag is automatically cleared when UDR is read,
 	// but clear the RXC flag anyway as a safeguard
-	UCSR0A &= _BV(RXC_BIT);
+	bit_clear(UCSR0A, RXC_BIT);
 }
 
 ISR(USART0_TX_vect)
@@ -1425,7 +1416,7 @@ ISR(USART0_UDRE_vect)
 ISR(USART1_RX_vect)
 {
 	usart1_imp.isr_receive_byte();
-	UCSR1A &= _BV(RXC_BIT);
+	bit_clear(UCSR1A, RXC_BIT);
 }
 
 ISR(USART1_TX_vect)
@@ -1443,7 +1434,7 @@ ISR(USART1_UDRE_vect)
 ISR(USART2_RX_vect)
 {
 	usart2_imp.isr_receive_byte();
-	UCSR2A &= _BV(RXC_BIT);
+	bit_clear(UCSR2A, RXC_BIT);
 }
 
 ISR(USART2_TX_vect)
@@ -1461,7 +1452,7 @@ ISR(USART2_UDRE_vect)
 ISR(USART3_RX_vect)
 {
 	usart3_imp.isr_receive_byte();
-	UCSR3A &= _BV(RXC_BIT);
+	bit_clear(UCSR3A, RXC_BIT);
 }
 
 ISR(USART3_TX_vect)
@@ -1478,13 +1469,13 @@ ISR(USART3_UDRE_vect)
 #ifdef USE_USART_LIN
 ISR(LIN_TC_vect)
 {
-	if (LINSIR & _BV(LRXOK))
+	if (bit_read(LINSIR, LRXOK))
 	{
 		usart_lin_imp.isr_receive_byte();
 		return;
 	}
 
-	if (LINSIR & _BV(LTXOK))
+	if (bit_read(LINSIR, LTXOK))
 	{
 		usart_lin_imp.isr_transmit_complete();
 		usart_lin_imp.isr_transmit_ready(); // The LIN doesn't have a separate "UDRE" status flag
