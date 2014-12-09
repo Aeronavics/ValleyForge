@@ -145,6 +145,7 @@ enum Tc_ic_mode {TC_IC_NONE, TC_IC_MODE_1, TC_IC_MODE_2, TC_IC_MODE_3, TC_IC_MOD
 enum Tc_clk_src {TC_SRC_INT};
 enum Tc_prescalar {TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
 
+enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_COMPC_int, TIMER1_CAPT_int, TIMER2_OVF_int, TIMER2_COMPA_int, TIMER2_COMPB_int, TIMER3_OVF_int, TIMER3_COMPA_int, TIMER3_COMPB_int, TIMER3_COMPC_int, TIMER3_CAPT_int, TIMER4_OVF_int, TIMER4_COMPA_int, TIMER4_COMPB_int, TIMER4_COMPC_int, TIMER4_CAPT_int, TIMER5_OVF_int, TIMER5_COMPA_int, TIMER5_COMPB_int, TIMER5_COMPC_int, TIMER5_CAPT_int};
 // TODO - Realised this might be an issue if not all the timers are the same size.
 
 

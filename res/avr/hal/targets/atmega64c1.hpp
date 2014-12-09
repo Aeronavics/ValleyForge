@@ -112,6 +112,8 @@ enum Tc_ic_mode {TC_IC_NONE, TC_IC_MODE_1, TC_IC_MODE_2, TC_IC_MODE_3, TC_IC_MOD
 enum Tc_clk_src {TC_SRC_INT};
 enum Tc_prescalar {TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024};
 
+enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF_int, TIMER1_COMPA_int, TIMER1_COMPB_int, TIMER1_CAPT_int};
+
 /* CAN */
 #define CAN_NUM_BUFFERS  6
 #define CAN_NUM_FILTERS  6

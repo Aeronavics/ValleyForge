@@ -90,7 +90,6 @@
 
 // Include the standard C++ definitions.
 //#include <stddef.h>
-#include <vector>
 
 // Include the hal library.
 #include "hal/hal.hpp"
@@ -112,19 +111,6 @@ struct Tc_rate
 	Tc_clk_src src; // enumerate with TC_SRC_INT; which means INTernal Source clock
 						 // the other option would be an EXTernal source clock
 	Tc_prescalar pre;
-};
-
-struct Tc_registerTable
-{
-	uint8_t TIMSK_ADDRESS;
-	uint8_t TCCR_A_ADDRESS;
-	uint8_t TCCR_B_ADDRESS;
-	uint8_t TCCR_C_ADDRESS;
-	uint8_t OCR_A_ADDRESS;
-	uint8_t OCR_B_ADDRESS;
-	uint8_t OCR_C_ADDRESS;
-	uint8_t ICR_ADDRESS;
-	uint8_t TCNT_ADDRESS;
 };
 
 struct Tc_value
@@ -165,7 +151,7 @@ struct Tc_pins
 	IO_pin_address address;
 	// we need a semaphore here
 	// POSIX?
-}
+};
 // DEFINE PUBLIC CLASSES.
 
 /**

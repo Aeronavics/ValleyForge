@@ -36,68 +36,70 @@
 
 // Generic AVR register addresses
 
-#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
-
 // TIMSK addresses
-#	define TIMSK5_ADDRESS		0x73
-#	define TIMSK4_ADDRESS		0x72
-#	define TIMSK3_ADDRESS		0x71
-#	define TIMSK2_ADDRESS		0x70
-#	define TIMSK1_ADDRESS		0x6F
-#	define TIMSK0_ADDRESS		0x6E
+#	define TIMSK5_ADDRESS		_SFR_MEM8(0x73)
+#	define TIMSK4_ADDRESS		_SFR_MEM8(0x72)
+#	define TIMSK3_ADDRESS		_SFR_MEM8(0x71)
+#	define TIMSK2_ADDRESS		_SFR_MEM8(0x70)
+#	define TIMSK1_ADDRESS		_SFR_MEM8(0x6F)
+#	define TIMSK0_ADDRESS		_SFR_MEM8(0x6E)
 
 // Timer/Counter 0.
-#	define OCR0B_ADDRESS		0x48
-#	define OCR0A_ADDRESS		0x47
-#	define TCNT0_ADDRESS		0x46
-#	define TCCR0B_ADDRESS		0x45
-#	define TCCR0A_ADDRESS		0x44
+#	define OCR0B_ADDRESS		_SFR_IO8(0x28)
+#	define OCR0A_ADDRESS		_SFR_IO8(0x27)
+#	define TCNT0_ADDRESS		_SFR_IO8(0x26)
+#	define TCCR0B_ADDRESS		_SFR_IO8(0x25)
+#	define TCCR0A_ADDRESS		_SFR_IO8(0x24)
 
 // Timer/Counter 1.
-#	define OCR1C_ADDRESS		0x8C
-#	define OCR1B_ADDRESS		0x8A
-#	define OCR1A_ADDRESS		0x88
-#	define ICR1_ADDRESS		0x86
-#	define TCNT1_ADDRESS		0x84
-#	define TCCR1B_ADDRESS		0x81
-#	define TCCR1A_ADDRESS		0x80
+#	define OCR1C_ADDRESS		_SFR_MEM16(0x8C)
+#	define OCR1B_ADDRESS		_SFR_MEM16(0x8A)
+#	define OCR1A_ADDRESS		_SFR_MEM16(0x88)
+#	define ICR1_ADDRESS		_SFR_MEM16(0x86)
+#	define TCNT1_ADDRESS		_SFR_MEM16(0x84)
+#	define TCCR1C_ADDRESS		_SFR_MEM8(0x82)
+#	define TCCR1B_ADDRESS		_SFR_MEM8(0x81)
+#	define TCCR1A_ADDRESS		_SFR_MEM8(0x80)
 
-#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+ #if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 // Timer/Counter 2.
-#	define OCR2B_ADDRESS		0xB4
-#	define OCR2A_ADDRESS		0xB3
-#	define TCNT2_ADDRESS		0xB2
-#	define TCCR2B_ADDRESS		0xB1
-#	define TCCR2A_ADDRESS		0xB0
+#	define OCR2B_ADDRESS		_SFR_MEM8(0xB4)
+#	define OCR2A_ADDRESS		_SFR_MEM8(0xB3)
+#	define TCNT2_ADDRESS		_SFR_MEM8(0xB2)
+#	define TCCR2B_ADDRESS		_SFR_MEM8(0xB1)
+#	define TCCR2A_ADDRESS		_SFR_MEM8(0xB0)
 
 // Timer/Counter 3.
-#	define OCR3C_ADDRESS		0x9C
-#	define OCR3B_ADDRESS		0x9A
-#	define OCR3A_ADDRESS		0x98
-#	define ICR3_ADDRESS		0x96
-#	define TCNT3_ADDRESS		0x94
-#	define TCCR3B_ADDRESS		0x91
-#	define TCCR3A_ADDRESS		0x90
-#endif
+#	define OCR3C_ADDRESS		_SFR_MEM16(0x9C)
+#	define OCR3B_ADDRESS		_SFR_MEM16(0x9A)
+#	define OCR3A_ADDRESS		_SFR_MEM16(0x98)
+#	define ICR3_ADDRESS		_SFR_MEM16(0x96)
+#	define TCNT3_ADDRESS		_SFR_MEM16(0x94)
+#	define TCCR3C_ADDRESS		_SFR_MEM8(0x92)
+#	define TCCR3B_ADDRESS		_SFR_MEM8(0x91)
+#	define TCCR3A_ADDRESS		_SFR_MEM8(0x90)
+ #endif
 
 #ifdef __AVR_ATmega2560__
 // Timer/Counter 4.
-#	define OCR4C_ADDRESS		0xAC
-#	define OCR4B_ADDRESS		0xAA
-#	define OCR4A_ADDRESS		0xA8
-#	define ICR4_ADDRESS		0xA6
-#	define TCNT4_ADDRESS		0xA4
-#	define TCCR4B_ADDRESS		0xA1
-#	define TCCR4A_ADDRESS		0xA0
+#	define OCR4C_ADDRESS		_SFR_MEM16(0xAC)
+#	define OCR4B_ADDRESS		_SFR_MEM16(0xAA)
+#	define OCR4A_ADDRESS		_SFR_MEM16(0xA8)
+#	define ICR4_ADDRESS		_SFR_MEM16(0xA6)
+#	define TCNT4_ADDRESS		_SFR_MEM16(0xA4)
+#	define TCCR4C_ADDRESS		_SFR_MEM8(0xA2)
+#	define TCCR4B_ADDRESS		_SFR_MEM8(0xA1)
+#	define TCCR4A_ADDRESS		_SFR_MEM8(0xA0)
 
 // Timer/Counter 5.
-#	define OCR5C_ADDRESS		0x12C
-#	define OCR5B_ADDRESS		0x12A
-#	define OCR5A_ADDRESS		0x128
-#	define ICR5_ADDRESS		0x126
-#	define TCNT5_ADDRESS		0x124
-#	define TCCR5B_ADDRESS		0x121
-#	define TCCR5A_ADDRESS		0x120
+#	define OCR5C_ADDRESS		_SFR_MEM16(0x12C)
+#	define OCR5B_ADDRESS		_SFR_MEM16(0x12A)
+#	define OCR5A_ADDRESS		_SFR_MEM16(0x128)
+#	define ICR5_ADDRESS		_SFR_MEM16(0x126)
+#	define TCNT5_ADDRESS		_SFR_MEM16(0x124)
+#	define TCCR5C_ADDRESS		_SFR_MEM16(0x122)
+#	define TCCR5B_ADDRESS		_SFR_MEM16(0x121)
+#	define TCCR5A_ADDRESS		_SFR_MEM16(0x120)
 #endif
 
 // TIMSK generic bits.
@@ -193,7 +195,7 @@
 #	define TC_OC_CHANNEL_C		2
 #	define TC_IC_CHANNEL_A		3
 
- #	define COM_BIT_OFFSET		2
+#	define COM_BIT_OFFSET		2
 #	define MAX_TIMER_PINS		4
 
 // Interrupt Pointer Array values and offsets.
@@ -311,10 +313,20 @@
 #	define PORT_REGISTER_MULTIPLIER		0x03
 #	define LOWER_REGISTER_PORT_OFFSET	0x01
 
-#endif
-
-#else
-	#error "No support for this target."
+#	define TIMER1_CAPT_vect_num  11
+#	define TIMER1_CAPT_vect      _VECTOR(11)  /* Timer/Counter1 Capture Event */
+#	define TIMER1_COMPA_vect_num  12
+#	define TIMER1_COMPA_vect      _VECTOR(12)  /* Timer/Counter1 Compare Match A */
+#	define TIMER1_COMPB_vect_num  13
+#	define TIMER1_COMPB_vect      _VECTOR(13)  /* Timer/Counter1 Compare Match B */
+#	define TIMER1_OVF_vect_num  14
+#	define TIMER1_OVF_vect      _VECTOR(14)  /* Timer1/Counter1 Overflow */
+#	define TIMER0_COMPA_vect_num  15
+#	define TIMER0_COMPA_vect      _VECTOR(15)  /* Timer/Counter0 Compare Match A */
+#	define TIMER0_COMPB_vect_num  16
+#	define TIMER0_COMPB_vect      _VECTOR(16)  /* Timer/Counter0 Compare Match B */
+#	define TIMER0_OVF_vect_num  17
+#	define TIMER0_OVF_vect      _VECTOR(17)  /* Timer/Counter0 Overflow */
 #endif
 
 #endif // __TC_PLATFORM_H__
