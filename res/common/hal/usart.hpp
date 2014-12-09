@@ -157,8 +157,6 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
-typedef uint16_t Usart_baud_rate;
-
 typedef void(*usartrx_callback_t)(Usart_error_status, uint8_t* buffer, size_t received_bytes);
 typedef void(*usarttx_callback_t)(Usart_error_status);
 
@@ -210,6 +208,8 @@ class Usart
 		/**
 		 * Configures the USART with the specified configuration
 		 *
+		 * NOTE: Always measure the USART output to determine the real baud rate!
+		 *
 		 * @param  mode			Operating mode to set the USART to
 		 * @param baud_rate		The speed of the USART, in bits per second (eg. 9600)
 		 * @param data_bits		The number of data bits to send for each byte (default 8 bits)
@@ -217,9 +217,7 @@ class Usart
 		 * @param stop_bits		The number of stop bits to use (default 1 stop bit)
 		 * @return 				The status of the operation
 		 */
-		Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
-
-		// TODO - Not sure if we need additional configs or not.
+		Usart_config_status configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
 		
 		/**
 		 * Indicates whether the USART transmitter is ready to transmit data

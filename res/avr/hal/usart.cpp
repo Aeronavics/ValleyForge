@@ -21,13 +21,45 @@
  *
  *  COMPONENT:		hal
  * 
- *  AUTHOR: 		Paul Bowler
+ *  AUTHOR: 		Jared Sanson
  *
  *  DATE CREATED:	17-01-2012
  *
- *	Functionality to provide implementation for USART/UART in target devices.
+ *	AVR specific implementation of the USART HAL module.
+ *  Supports hardware USART peripherals on all AVR chips,
+ *  and the LIN-USART peripheral on ATmega64M1/C1 devices.
  *
  ********************************************************************************************************************************/
+
+/* TESTING
+ * The following functions have been tested and confirmed to work correctly on the ATmega2560
+ * Usart_imp
+ *   configure() 				(only 8n1 framing mode tested so far)
+ *   transmit_byte()
+ *   receive_byte()
+ *   transmit_string()
+ *   transmit_buffer()
+ *   transmit_string_async()
+ *   receive_buffer_async() 	(including callback)
+ *   transmitter_ready()
+ *   receiver_has_data()
+ *
+ * attach_interrupt() & detach_interrupt() have not been tested!
+ * enable() & disable() have not been tested!
+ *
+ * The following functions have been tested and confirmed to work correctly on the ATmega64M1
+ * Lin_imp
+ *   configure()				(TODO: baud rate is hard-coded to 19200)
+ *   transmit_byte()
+ *   receive_byte()
+ *   transmit_string()
+ *   transmit_byte_async()
+ *   receive_byte_async()
+ *
+ * TODO: transmit/receive buffer async
+ * TODO: ISR handlers
+ *
+ */
 
 // INCLUDE THE MATCHING HEADER FILE.
 
@@ -40,6 +72,7 @@
 #include "hal/hal.hpp"
 #include "hal/gpio.hpp"
 #include "hal/usart.hpp"
+#include "hal/targets/avr.hpp"
 
 // DEFINE PRIVATE MACROS.
 
@@ -144,7 +177,7 @@ public:
 	}
 
 
-	virtual Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1)
+	virtual Usart_config_status configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1)
 	{
 		Usart_config_status result = USART_CFG_FAILED;
 
@@ -611,7 +644,7 @@ protected: //// Utility Functions ////
 		return USART_CFG_SUCCESS;
 	}
 
-	virtual Usart_config_status set_baud_rate(Usart_baud_rate baud_rate)
+	virtual Usart_config_status set_baud_rate(uint32_t baud_rate)
 	{
 		// Calculate the Baud value required for the user provided Baud rate
 		// Baud value = F_CPU			- 1
@@ -636,9 +669,11 @@ protected: //// Utility Functions ////
 			return USART_CFG_INVALID_MODE;
 
 		// Set the UBBR value according to the equation above
-		*registers.UBRR = (((F_CPU / (baud_rate * K))) - 1); // TODO - Possible overflow here
+		uint32_t ubrr = ((((uint32_t)F_CPU / (baud_rate * K))) - 1);
+		if (ubrr > 65535)
+			return USART_CFG_INVALID_BAUD_RATE;
 
-		// TODO - Range checking of baud rate values
+		*registers.UBRR = (uint16_t)ubrr;
 
 		return USART_CFG_SUCCESS;
 	}
@@ -658,6 +693,8 @@ public:  //// Asynchronous Interrupt Handling ////
 	void isr_receive_byte(void)
 	{
 		// This interrupt is triggered when a byte has been received
+		// NOTE - This ISR can be used for both Usart_imp and Lin_imp,
+		//  since it uses common functionality.
 
 		if (async_rx.active)
 		{
@@ -665,6 +702,7 @@ public:  //// Asynchronous Interrupt Handling ////
 			Usart_error_status error_status = get_errors();
 
 			// Receive byte
+			// NOTE - *registers.UDR points to LINDAT for Lin_imp.
 			uint8_t data = *registers.UDR;
 
 			// It doesn't matter if we write data if an error occurred,
@@ -850,6 +888,8 @@ protected:
 };
 
 
+#ifdef USE_USART_LIN
+
 /**
  * The ATmega64M1/C1 chips can support basic UART through the LIN peripheral.
  * This class overrides the behaviour in Usart_imp to make the LIN
@@ -874,7 +914,7 @@ public:
 		LINCR |= _BV(LENA);
 
 		// Enable interrupts
-		LINENIR |= _BV(LENTXOK) | _BV(LENRXOK);
+		//LINENIR |= _BV(LENTXOK) | _BV(LENRXOK);
 
 		//TODO: Does LENA need to be set before or after configuration?
 	}
@@ -887,22 +927,29 @@ public:
 
 	void flush(void)
 	{
-		//TODO
+		while (receiver_has_data())
+		{
+			volatile uint8_t __attribute__((unused)) dummy = LINDAT;
+		}
 	}
 
-	Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1)
+	Usart_config_status configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1)
 	{
 		return Usart_imp::configure(mode, baud_rate, data_bits, parity, stop_bits);
 	}
 
 	bool transmitter_ready(void)
 	{
-		return false; // TODO
+		// The LBUSY flag signals that the controller is busy with UART communication.
+		// TODO - Unsure if LTXOK is needed, but things seem to function fine so far...
+		return ((LINSIR & _BV(LBUSY)) == 0) /*&& ((LINSIR & _BV(LTXOK)) == 0)*/;
 	}
 
 	bool receiver_has_data(void)
 	{
-		return false; // TODO
+		// The LRXOK flag is set when a byte of data has been received.
+		// It is cleared when the data is read from LINDAT.
+		return (LINSIR & _BV(LRXOK)) != 0;
 	}
 
 
@@ -928,7 +975,7 @@ public:
 		// If the user wants to use the UDR ISR, enable it so it gets triggered.
 		if (udre_isr && udre_isr_enabled)
 			set_udrie(true);
-		// TODO: How does USRE on LIN work?
+		// TODO: How does UDRE on LIN work?
 
 		return USART_IO_SUCCESS;
 	}
@@ -936,6 +983,18 @@ public:
 	// NOTE: The following functions do not need to be overridden:
 	// 	transmit_buffer()  transmit_buffer_async()
 	// 	transmit_string()  transmit_string_async()
+
+	Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = NULL)
+	{
+		// TODO - Implement ISR handler, then delete this function
+		return USART_IO_FAILED;
+	}
+
+	Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = NULL)
+	{
+		// TODO - Implement ISR handler, then delete this function
+		return USART_IO_FAILED;
+	}
 
 	int16_t receive_byte(void)
 	{
@@ -968,6 +1027,11 @@ public:
 	// NOTE: The following functions do not need to be overridden:
 	// 	receive_buffer()  receive_buffer_async()
 
+	Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
+	{
+		// TODO - Implement ISR handler, then delete this function
+		return USART_IO_FAILED;
+	}
 
 	// NOTE: The following functions do not need to be overridden:
 	// 	enable_interrupts()  disable_interrupts()
@@ -1042,13 +1106,30 @@ public:
 		return USART_CFG_SUCCESS;
 	}
 
-	Usart_config_status set_baud_rate(Usart_baud_rate baud_rate)
+	Usart_config_status set_baud_rate(uint32_t baud_rate)
 	{
 		// NOTE - This is called by Usart_imp::configure()
+		// NOTE - LENA must be zero before LINBTR can be changed
 
-		LINBRR = 0x0000;
+		// Highest supported baud rate is: fclk/8
+		// For best results, choose a baud rate fclk/(8n) for some integer n.
+		// Eg, at fclk=16MHz, supported baud rates are 2Mbaud, 1M, 0.67M, 0.5M, 0.4M, 0.33M, etc.
+		// Baudrates that do not lie on these values will truncate to the nearest integer, and the
+		// error produced by this will be worse for fast baud rates.
 
-		return USART_CFG_INVALID_BAUD_RATE; // TODO
+		// BAUD = fclkIO / (LBT[5..0] x (LDIV[11..0] + 1))		where LDIV is 0..4095
+		// LDIV[11..0] = (fclkIO / (LBT[5..0] x BAUD)) - 1		where LBT is 8..63
+
+		const uint32_t lbt = 8;
+		uint32_t ldiv = ((uint32_t)F_CPU / lbt / baud_rate) - 1;
+
+		if (ldiv > 4095)
+			return USART_CFG_INVALID_BAUD_RATE;
+
+		LINBRR = (uint16_t)ldiv;
+		LINBTR = _BV(LDISR) | (lbt & 0x3F);  // LBT
+
+		return USART_CFG_SUCCESS;
 	}
 
 	void set_udrie(bool enabled)
@@ -1061,8 +1142,13 @@ protected:
 	Lin_imp(Lin_imp*);
 };
 
+#endif // USE_USART_LIN
+
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
+// NOTE - Instead of hard-coding specific AVR chips,
+// we use constants defined in <target_config.hpp> to specify which
+// peripherals are present, and which channel corresponds to each peripheral.
 
 #ifdef USE_USART0
 static Usart_imp usart0_imp = Usart_imp(
@@ -1181,14 +1267,6 @@ Usart Usart::bind(Usart_channel channel)
 	// Acquire access to the implementation instance.
 	// TODO: What do we do if this fails, or if someone has already binded to the instance??
 
-
-	// NOTE - Instead of hard-coding specific AVR chips,
-	// we use constants defined in <target_config.hpp> to specify which
-	// peripherals are present, and which channel corresponds to each peripheral.
-
-	// NOTE - By defining static variables in here, the instances aren't
-	// instantiated until required, thus saving valuable memory.
-
 	// TODO - Check thread-safety of this. It is only guaranteed to be thread-safe under C++11??
 
 	switch (channel)
@@ -1258,7 +1336,7 @@ void Usart::flush()
 	imp->flush();
 }
 
-Usart_config_status Usart::configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
+Usart_config_status Usart::configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
 {
 	return imp->configure(mode, baud_rate, data_bits, parity, stop_bits);
 }
@@ -1452,6 +1530,7 @@ ISR(LIN_TC_vect)
 	{
 		usart_lin_imp.isr_transmit_complete();
 		usart_lin_imp.isr_transmit_ready(); // The LIN doesn't have a separate "UDRE" status flag
+		return;
 	}
 
 	// LIDOK is not generated in UART mode.
