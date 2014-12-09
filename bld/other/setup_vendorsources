@@ -45,6 +45,9 @@ VENDOR_FREERTOS_REMOTE="http://sourceforge.net/projects/freertos/files/latest/do
 VENDOR_NUTTX_LOCAL=${TCPATH}/res/vendor/nuttx
 VENDOR_NUTTX_REMOTE="git://git.code.sf.net/p/nuttx/git"
 
+VENDOR_LM4TOOLS_LOCAL=${TCPATH}/res/vendor/lm4tools
+VENDOR_LM4TOOLS_REMOTE="https://github.com/utzig/lm4tools.git"
+
 VENDOR_STLINK_LOCAL=${TCPATH}/res/vendor/stlink
 VENDOR_STLINK_REMOTE="https://github.com/texane/stlink.git"
 
@@ -172,6 +175,47 @@ unpack_nuttx()
 }
 
 ######################################## FUNCTION #########################################
+###																						###
+### NAME:		unpack_lm4tools															###
+###																						###
+### Inputs/Outputs:	None.																###
+###																						###
+### Purpose:		Checks if the lm4tools vendor source is available for use, and		###
+###			if not, sets it up ready to go.												###
+###																						###
+###########################################################################################
+
+unpack_lm4tools()
+{
+	# Check if the lm4tools source has been downloaded already
+	if [ ! -d ${VENDOR_LM4TOOLS_LOCAL} ]; then
+		# We need to download the source before we can use it
+		echo -e "${CYAN}\tDownloading the lm4tools vendor source...\n${NO_COLOUR}"
+		git clone --depth=1 ${VENDOR_LM4TOOLS_REMOTE} ${VENDOR_LM4TOOLS_LOCAL}
+		echo -e ""
+	else
+		# Check if the directory is not actually a git repository, which would indicate something bad.
+		if [ ! -d ${VENDOR_LM4TOOLS_LOCAL}/.git ]; then
+			# The directory isn't a git repository, so something is very wrong.
+			echo -e "${RED}The directory ${VENDOR_LM4TOOLS_LOCAL} is not a git repository. Cannot unpack lm4tools source.\n${NO_COLOUR}"
+			return 1
+		else
+			# The repository already exists, so just need to make sure it is up to date.
+			echo -e "${CYAN}\tUpdating the lm4tools vendor source...\n${NO_COLOUR}"
+			pushd ${VENDOR_LM4TOOLS_LOCAL} >/dev/null
+			git pull
+			echo -e ""
+			popd >/dev/null
+		fi
+	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_vendor_stlink						###
 ###											###
@@ -230,6 +274,7 @@ pack_allv()
 	# Just pack each of the vendor sources in turn.
 	pack_mavlink
 	pack_freertos
+	pack_vendor_lm4tools
 	pack_vendor_stlink
 }
 
@@ -306,6 +351,31 @@ pack_vendor_nuttx()
 
 	# All done.
 	return
+}
+
+######################################## FUNCTION #########################################
+###																						###
+### NAME:			pack_vendor_lm4tools												###
+###																						###
+### Inputs/Outputs:	None.																###
+###																						###
+### Purpose:		Checks if the lm4tools vendor source was previously unpacked,		###
+###						and if it was, then packs it back up again.						###
+###																						###
+###########################################################################################
+
+pack_vendor_lm4tools()
+{
+	# Check if the lm4tools repository has been downloaded already.
+	if [ -d ${VENDOR_LM4TOOLS_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.		
+		echo -e "${CYAN}\tCleaning up lm4tools vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_LM4TOOLS_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
 }
 
 ######################################## FUNCTION #########################################

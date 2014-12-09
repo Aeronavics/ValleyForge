@@ -208,6 +208,64 @@ unpack_openocd()
 }
 
 ######################################## FUNCTION #########################################
+###																						###
+### NAME:			unpack_lm4flash														###
+###																						###
+### Inputs/Outputs:	None.																###
+###																						###
+### Purpose:		Checks if lm4flash is available for use, and if not, sets it up		###
+###						ready to go.													###
+###																						###
+###########################################################################################
+
+unpack_lm4flash()
+{
+	# Check to see if lm4flash is already available.
+
+	# Check if there is a cached copy of the tool.
+	if [ -f "${TMP_COMPILER_DIR}/lm4flash/lm4flash" ]; then
+		# We don't need to do anything, since the tool is already ready to go.
+		echo -e "${CYAN}lm4flash (already) available.\n${NO_COLOUR}"
+	else
+		# The tool isn't ready, so we need to unpack it.
+
+		# We'll need the vendor source for the tool, which we can build it from.
+		unpack_vendor_lm4tools
+
+		# Check if that worked.
+		if [ ! -d "${VENDOR_LM4TOOLS_LOCAL}" ]; then
+			# Something went wrong.
+			echo -e "${RED}Unable to fetch lm4flash source.\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# Copy the vendor source into a temporary location.
+		cp -rf "${VENDOR_LM4TOOLS_LOCAL}/lm4flash" "${TMP_COMPILER_DIR}/lm4flash"
+		rm -rf "${TMP_COMPILER_DIR}/stlink/.git"
+
+		# Build the lm4flash software.  This might take a while.
+		echo -e "${CYAN}Building lm4flash...\n${NO_COLOUR}"
+		make ${TMP_COMPILER_DIR}/lm4flash
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build lm4flash: the 'make' stage failed.\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# We should be all good to go now.
+		popd >/dev/null
+		echo -e "${CYAN}\nlm4flash available.\n${NO_COLOUR}"
+
+	fi
+
+	# TODO - Test the now the required executables actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
 ###											###
 ### NAME:		pack_allc							###
 ###											###
@@ -222,6 +280,7 @@ pack_allt()
 {
 	# Just pack each of the tools in turn.
 	pack_stlink
+	pack_lm4flash
 	pack_openocd
 }
 
@@ -243,6 +302,20 @@ pack_stlink()
 		# We just delete the cached directory.
 		echo -e "${CYAN}Cleaning up STLink...\n${NO_COLOUR}"
 		rm -Rf "$TMP_COMPILER_DIR/stlink"
+    	fi
+		# Else, the tool is already packed.
+
+	# All done.
+	return	
+}
+
+pack_lm4flash()
+{
+	# Check if lm4flash exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/lm4flash" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up lm4flash...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/lm4flash"
     	fi
 		# Else, the tool is already packed.
 
