@@ -112,10 +112,20 @@ enum Usart_config_status
 enum Usart_io_status
 {
 	USART_IO_SUCCESS = 0,
+
 	USART_IO_FAILED = -1,	// Unknown failure
 	USART_IO_NODATA = -2,	// There was no data to read
 	USART_IO_BUSY = -3,		// The USART module is currently busy and cannot be used right now
 	USART_IO_STRING_TRUNCATED = -4, // The received/transmitted string was truncated (this can be safely ignored)
+};
+
+enum Usart_error_status
+{
+	USART_ERR_NONE = 0,
+
+	USART_ERR_FRAME = -5,			// Framing error (eg. corrupted start/stop bits)
+	USART_ERR_DATA_OVERRUN = -6,		// Data overrun (data received while rx buffer was still full)
+	USART_ERR_PARITY = -7,			// Parity error (parity bit doesn't match received data)
 };
 
 // USART interrupt configuration status
@@ -125,6 +135,12 @@ enum Usart_int_status
 	USART_INT_FAILED = -1,		// Invalid interrupt type
 	USART_INT_INUSE = -2,		// Interrupt already attached to something
 	//USART_INT_NOINT = -3,
+};
+
+enum Usart_interrupt_type
+{
+	USART_INT_TX_COMPLETE,	// The transmission is complete and is ready to receive more data
+	USART_INT_RX_COMPLETE, 	// Some data has been received (either a single byte, or the completion of receive_buffer_async())
 };
 
 /**
@@ -147,30 +163,8 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
-//enum Usart_interrupt_type {USART_INT_RX, USART_INT_TX, USART_INT_UDRE};
-
-// NOTE - Not all these interrupts may be supported by the target
-//enum Usart_interrupt_type {
-//	USART_INT_RX_COMPLETE,
-//	USART_INT_TX_COMPLETE, //AVR32
-//	USART_INT_TX_READY, // UDRE for AVR
-//	//USART_INT_RX_OVERFLOW_ERROR,
-//	//USART_INT_RX_FRAMING_ERROR,
-//	//USART_INT_RX_PARITY_ERROR,
-//};
-
-// NOTE - Not all these error codes may be supported by the target
-enum Usart_error_type {
-	USART_ERR_NONE,
-	USART_ERR_FRAME = -1,			// Framing error (eg. corrupted start/stop bits)
-	USART_ERR_DATA_OVERRUN = -2,	// Data overrun (data received while rx buffer was still full)
-	USART_ERR_PARITY = -3			// Parity error (parity bit doesn't match received data)
-};
-
-typedef uint16_t Usart_baud_rate;
-
-typedef void(*usartrx_callback_t)(Usart_error_type, uint8_t* buffer, size_t received_bytes);
-typedef void(*usarttx_callback_t)(Usart_error_type);
+typedef void(*usartrx_callback_t)(Usart_error_status, uint8_t* buffer, size_t received_bytes);
+typedef void(*usarttx_callback_t)(Usart_error_status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -220,6 +214,8 @@ class Usart
 		/**
 		 * Configures the USART with the specified configuration
 		 *
+		 * NOTE: Always measure the USART output to determine the real baud rate!
+		 *
 		 * @param  mode			Operating mode to set the USART to
 		 * @param baud_rate		The speed of the USART, in bits per second (eg. 9600)
 		 * @param data_bits		The number of data bits to send for each byte (default 8 bits)
@@ -227,9 +223,7 @@ class Usart
 		 * @param stop_bits		The number of stop bits to use (default 1 stop bit)
 		 * @return 				The status of the operation
 		 */
-		Usart_config_status configure(Usart_setup_mode mode, Usart_baud_rate baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
-
-		// TODO - Not sure if we need additional configs or not.
+		Usart_config_status configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1);
 		
 		/**
 		 * Indicates whether the USART transmitter is ready to transmit data
@@ -401,7 +395,7 @@ class Usart
 		 *
 		 * @return error The current USART error status i.e the status of the last USART transfer.
 		 */
-		Usart_error_type usart_error(void);
+		Usart_error_status usart_error(void);
 
 		/**
 		 * Clear all errors

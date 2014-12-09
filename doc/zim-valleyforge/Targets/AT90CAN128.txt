@@ -28,7 +28,15 @@ eg. do the pins support pull-ups? pin-change? interrupts?
 ===== USART =====
 The ATmega2560 has 2 USARTs available (''USART_0'' and ''USART_1''), and can be configured for Synchronous (SPI-like) and Asynchronous (UART) operating modes. For more information see [[HAL:USART]]
 
-For a 16MHz clock, the baud rate can be configured between (**TODO**) and (**TODO**)
+The highest supported baud rate for this target is //fclk/K//, where K is 16 for USART_MODE_ASYNCHRONOUS, 8 for USART_MODE_ASYNCHRONOUS_DOUBLESPEED, and 2 for USART_MODE_SYNCHRONOUS_xxx.
+For the maximum clock of 16MHz, this is 1Mbps for USART_MODE_ASYNCHRONOUS.
+For best results, choose a baud rate //fclk/(K*n)// for some //n//. Eg. at 16MHz, supported baud rates are 1M, 6667K, 5000K, 4000Kbaud, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (K * (floor(fclk / (K * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
 
 Supported frame formats:
 	5 - 9 data bits
@@ -36,7 +44,7 @@ Supported frame formats:
 
 Supported modes:
 	''USART_MODE_ASYNCHRONOUS''			- UART
-	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	
+	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	- UART, Allows faster baud rates (AVR-specific)
 	''USART_MODE_SYNCHRONOUS_MASTER''		- Chip drives the XCK pin
 	''USART_MODE_SYNCHRONOUS_SLAVE''		- Chip uses the XCK pin for synchronization
 

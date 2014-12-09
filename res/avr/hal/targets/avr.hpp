@@ -51,7 +51,7 @@
 #define __TARGET_AVR_H__
 
 /* Generic Types */
-typedef int(*callback_t)(void);
+typedef void(*callback_t)(void);
 
 /* Macros */
 
@@ -108,13 +108,6 @@ typedef uint16_t Eeprom_address;
 #define UDORD_BIT			2
 #define UCPHA_BIT			1
 
-enum Usart_interrupt_type
-{
-	USART_INT_TX_COMPLETE,	// The TX transmission is complete
-	USART_INT_RX_COMPLETE, 	// A byte of data has been received
-	USART_INT_TX_READY		// The TX is ready to send more data
-};
-
 /* SPI */
 
 enum Spi_setup_mode {SPI_MASTER, SPI_SLAVE};
@@ -134,6 +127,56 @@ enum Spi_interrupt_types {SPI_STC};
 
 enum Spi_slave_select_mode {SPI_SOFTWARE_SS, SPI_HARDWARE_SS};
 
+
+/* AVR Bit Twiddling */
+// For best performance only constants should be used for value/bit/bitwidth parameters.
+// NOTE: These will usually compile down to efficient instructions, even if they look complex!
+
+// Create a bitmask for the given number of bits
+// eg. _bitmask(3) -> 0b00000111
+#define _bitmask(bitwidth) ((1<<(bitwidth))-1)
+
+// Set a single bit (Set to 1)
+// bit_set(PORTB, 2)
+// Equivalent to bit_write(reg, bit, 1)
+#define bit_set(reg, bit) ((reg) |= (1<<(bit)))
+
+// Clear a single bit (Set to 0)
+// bit_clear(PORTB, 2)
+// Equivalent to bit_write(reg, bit, 0)
+#define bit_clear(reg, bit) ((reg) &= ~(1<<(bit)))
+
+// Toggle a single bit
+// bit_toggle(PORTB, 2)
+#define bit_toggle(reg, bit) ((reg) ^= (1<<(bit)))
+
+// Write a single bit
+// bit_write(PORTB, 2, my_bool)
+#define bit_write(reg, bit, value) ((reg) = ( (reg) & ~(1<<(bit)) ) | (((value)&1)<<(bit)))
+
+// Read the state of a single bit
+// if (bit_read(PORTB, 2)) { ... }
+#define bit_read(reg, bit) (((reg) & (1<<(bit))) >> (bit))
+
+/**
+ * Write a set of bits to a register/variable
+ * Usage:
+ * 	reg_write(UCSRC, UMSEL0_BIT, 2, 0b01);
+ * Expands to:
+ * 	UCSRC = (UCSRC & ~(0b11 << UMSEL0_BIT)) | ((0b01 & 0b11) << UMSEL0_BIT)
+ * Equivalent to:
+ *  UCSRC = (UCSRC & 0b00111111) | 0b01000000
+ */
+#define reg_write(reg, lsb, bitwidth, value) ( (reg) = ( (reg) & ~(_bitmask(bitwidth)<<(lsb)) ) | ( (((value)&_bitmask(bitwidth))<<(lsb)) ))
+
+/**
+ * Read a set of bits from a register/variable
+ * Usage:
+ * 	uint8_t value = reg_read(UCSRC, UMSEL0_BIT, 2)
+ * Expands to:
+ * 	uint8_t value = (UCSRC >> UMSEL0_BIT) & 0b11;
+ */
+#define reg_read(reg, lsb, bitwidth) ( ((reg) >> (lsb)) & _bitmask(bitwidth) )
 
 #endif /*__TARGET_AVR_H__*/
 

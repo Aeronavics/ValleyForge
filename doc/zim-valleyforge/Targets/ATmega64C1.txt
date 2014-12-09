@@ -30,7 +30,16 @@ eg. do the pins support pull-ups? pin-change? interrupts?
 ===== USART =====
 This target supports basic UART communication through the LIN peripheral (''USART_0''), but does not have the same capabilities as other AVR chips. For more information see [[HAL:USART]]
 
-For a 16MHz clock, the baud rate can be configured between (**TODO**) and (**TODO**)
+The highest supported baud rate for this target is //fclk/8//. For the maximum clock of 16MHz, this is 2Mbaud.
+For best results, choose a baud rate //fclk/(8n)// for some //n//. Eg. at 16MHz, supported baud rates are 2M, 1M, 6667K, 5000K, 4000Kbaud, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (8 * (floor(fclk / (8 * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
+
+//Note for ValleyForge developers: 8 is the value of LBT.//
 
 The framing format for the USART is restricted to 8 data bits and 1 stop bit.
 Any other value will cause the configuration to fail.
