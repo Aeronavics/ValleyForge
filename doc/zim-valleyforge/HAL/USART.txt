@@ -22,6 +22,7 @@ usart.configure(USART_MODE_ASYNCHRONOUS, 9600, 8, USART_PARITY_NONE, 1);
 usart.enable();
 '''
 
+NOTE: For specific configuration values, see the appropriate [[Targets|target]] documentation.
 
 ===== Errors & Status Flags =====
 The USART library provides various error and status flags which should be checked to ensure proper operation.
@@ -195,9 +196,9 @@ int main(void)
 ===== Support =====
 To see full hardware support, see [[HAL|Support]]
 
-[*] ATmega2560 family - TODO - Untested
-[*] AT90CAN128 family
-[ ] ATmega64M1/ATmega64C1 - These chips do not have USART, but instead provide LIN which is similar.
+[*] [[Targets:ATmega2560|ATmega2560]] family - TODO - Untested
+[*] [[Targets:AT90CAN128|AT90CAN128]] family
+[ ] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]] - These chips do not have USART, but instead provide LIN which is similar.
 
 The USART AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp
 

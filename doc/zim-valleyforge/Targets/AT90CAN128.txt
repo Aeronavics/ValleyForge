@@ -21,3 +21,36 @@ The high-performance, low-power Atmel 8-bit AVR RISC-basedmicrocontroller combin
 **CAN**		1
 **ADC**		8x 10-bit, 15 ksps
 
+===== GPIO =====
+TODO: Description of ports, pins, and allowable config modes
+eg. do the pins support pull-ups? pin-change? interrupts?
+
+===== USART =====
+The ATmega2560 has 2 USARTs available (''USART_0'' and ''USART_1''), and can be configured for Synchronous (SPI-like) and Asynchronous (UART) operating modes. For more information see [[HAL:USART]]
+
+For a 16MHz clock, the baud rate can be configured between (**TODO**) and (**TODO**)
+
+Supported frame formats:
+	5 - 9 data bits
+	1 - 2 stop bits
+
+Supported modes:
+	''USART_MODE_ASYNCHRONOUS''			- UART
+	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	
+	''USART_MODE_SYNCHRONOUS_MASTER''		- Chip drives the XCK pin
+	''USART_MODE_SYNCHRONOUS_SLAVE''		- Chip uses the XCK pin for synchronization
+
+Supported parity settings:
+	''USART_PARITY_NONE''
+	''USART_PARITY_EVEN''
+	''USART_PARITY_ODD''
+
+
+===== SPI =====
+TODO: Description of the SPI module and allowable config values
+
+===== I2C =====
+TODO: Description of the I2C module and allowable config values
+
+===== CAN =====
+TODO: Description of the CAN module and allowable config values
