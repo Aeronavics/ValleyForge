@@ -36,7 +36,7 @@ APP_SOURCE_TEMPLATE='APP<APP_NUMBER>SRC = <APP_EXEC_FILE>\n'
 MAIN_SOURCE_TEMPLATE='MAINSRC = <APPSRC>\n'
 APP_OBJS_TEMPLATE='APP<APP_NUMBER>OBJS = \$\(APP<APP_NUMBER>SRC:.c=\$\(OBJEXT\)\)\n'
 APP_CONFIG_APPNAME_TEMPLATE='APP_CONFIG_APP<APP_NUMBER> ?= APP<APP_NUMBER>\$\(EXEEXT\)\nAPP<APP_NUMBER> = \$\(APP_CONFIG_APP<APP_NUMBER>\)\n'
-APP_INSTALL_PART1_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\): \$\(OBJS\) \$\(APP<APP_NUMBER>OBJ\)\n\t@echo "LD: \$\(APP<APP_NUMBER>\)"\n\t\$\(Q\) \$\(LD\) \$\(LDELFFLAGS\) \$\(LDLIBPATH\) -o \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\) \$\(ARCHCRT0OBJ\) \$\(MAINOBJ\) \$\(LDLIBS\)\n\t\$\(Q\) \$\(NM\) -u \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)\n\n'
+APP_INSTALL_PART1_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\): \$\(OBJS\) \$\(APP<APP_NUMBER>OBJS\)\n\t@echo "LD: \$\(APP<APP_NUMBER>\)"\n\t\$\(Q\) \$\(LD\) \$\(LDELFFLAGS\) \$\(LDLIBPATH\) -o \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\) \$\(ARCHCRT0OBJ\) \$\(MAINOBJ\) \$\(LDLIBS\)\n\t\$\(Q\) \$\(NM\) -u \$\(INSTALL_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)\n\n'
 APP_INSTALL_PART2_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)'
 APP_CONTEXT_PART1_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat: \$\(DEPCONFIG\) Makefile\n\t\$\(call REGISTER,\$\(APP<APP_NUMBER>NAME\),\$\(PRIORITY\),\$\(STACKSIZE\),\$\(APP<APP_NUMBER>NAME\)_main\)\n'
 APP_CONTEXT_PART2_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat'
@@ -46,7 +46,7 @@ KCONFIG_TEMPLATE='config VALLEYFORGE_<UPPER_APP_NAME>\n\tbool "\\"<APP_NAME>\\""
 ###																						###
 ### Name:			gen_nuttx_app_configuration											###
 ###																						###
-### Inputs/Outputs:	The path to apps/ValleyForge 										###
+### Inputs/Outputs:	The path to apps/external/COMPONENT_NAME							###
 ###																						###
 ### Purpose:		Handles the task of updating all of the necessary fields in the		###
 ###						application Makefile and Kconfig files.							###
@@ -98,7 +98,7 @@ gen_nuttx_app_configuration() {
 ###																						###
 ### Name:			update_source_file_lists											###
 ###																						###
-### Inputs/Outputs:	The path to apps/ValleyForge 										###
+### Inputs/Outputs:	The path to apps/external/COMPONENT_NAME							###
 ###																						###
 ### Purpose:		Updates the CSRCS and ASRCS fields in the Makefile.					###
 ###																						###
