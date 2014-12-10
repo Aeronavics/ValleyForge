@@ -40,7 +40,7 @@ APP_INSTALL_PART1_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\): \$\(O
 APP_INSTALL_PART2_TEMPLATE='\$\(BIN_DIR\)\$\(DELIM\)\$\(APP<APP_NUMBER>\)'
 APP_CONTEXT_PART1_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat: \$\(DEPCONFIG\) Makefile\n\t\$\(call REGISTER,\$\(APP<APP_NUMBER>NAME\),\$\(PRIORITY\),\$\(STACKSIZE\),\$\(APP<APP_NUMBER>NAME\)_main\)\n'
 APP_CONTEXT_PART2_TEMPLATE='\$\(BUILTIN_REGISTRY\)\$\(DELIM\)\$\(APP<APP_NUMBER>NAME\)_main.bdat'
-KCONFIG_TEMPLATE='config VALLEYFORGE_<UPPER_APP_NAME>\n\tbool "\\"<APP_NAME>\\"\n\tdefault n\n\t---help---\n\t\tEnable the \\"<APP_NAME>\\" application.\n\nif VALLEYFORGE_<UPPER_APP_NAME>\n\nconfig VALLEYFORGE_<UPPER_APP_NAME>_PROGNAME\n\tstring "<APP_NAME>"\n\tdefault "<APP_NAME>"\n\tdepends on BUILD_KERNEL\n\t---help---\n\t\tThis is the name of the program that will be used when the\n\t\tNSH ELF program is installed.\n\nendif\n\n'
+KCONFIG_TEMPLATE='config VALLEYFORGE_<UPPER_APP_NAME>\n\tbool "\\"<APP_NAME>\\""\n\tdefault n\n\t---help---\n\t\tEnable the \\"<APP_NAME>\\" application.\n\nif VALLEYFORGE_<UPPER_APP_NAME>\n\nconfig VALLEYFORGE_<UPPER_APP_NAME>_PROGNAME\n\tstring "<APP_NAME>"\n\tdefault "<APP_NAME>"\n\tdepends on BUILD_KERNEL\n\t---help---\n\t\tThis is the name of the program that will be used when the\n\t\tNSH ELF program is installed.\n\nendif\n\n'
 
 ######################################## FUNCTION #########################################
 ###																						###

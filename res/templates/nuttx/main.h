@@ -29,12 +29,6 @@ extern "C" {
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
-// Include the required IO header file.
-#include >>>TC_INSERTS_IO_FILE_NAME_HERE<<<
-
-// Include the STDINT fixed width types.
-#include >>>TC_INSERTS_STDINT_FILE_NAME_HERE<<<
-
 // Include the C99 boolean type.
 #include <stdbool.h>
 
@@ -57,7 +51,7 @@ extern "C" {
 #ifdef CONFIG_BUILD_TERMINAL
 int main(int argc, FAR char *argv[]);
 #else
-int <<<TC_INSERTS_COMPONENT_NAME_HERE>>>_main(int argc, char *argv[])
+int <<<TC_INSERTS_COMPONENT_NAME_HERE>>>_main(int argc, char *argv[]);
 #endif
 
 #endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
