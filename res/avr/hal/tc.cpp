@@ -232,7 +232,7 @@ Tc_command_status start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_regis
 		}
 	}
 	#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
-	else if (tc_number = TC_2)
+	else if (tc_number == TC_2)
 	{
 		switch(rate.pre)
 	   {
@@ -807,9 +807,8 @@ Tc::Tc(Tc_number timer)
 		}
 		case TC_3:
 		{
-			static Tc_imp tc_3(TC_3, TC_16BIT, imp_register_table);
-			imp = &tc_3;
-
+			static Tc_registerTable imp_register_table;
+			
 			imp_register_table.TIMSK_ADDRESS = &TIMSK0_ADDRESS;
 			imp_register_table.TCCR_A_ADDRESS = &TCCR0A_ADDRESS;
 			imp_register_table.TCCR_B_ADDRESS = &TCCR3B_ADDRESS;
@@ -818,14 +817,16 @@ Tc::Tc(Tc_number timer)
 			imp_register_table.OCR_C_ADDRESS.as_16bit = &OCR3C_ADDRESS;
 			imp_register_table.ICR_ADDRESS = &ICR3_ADDRESS;
 			imp_register_table.TCNT_ADDRESS.as_16bit = &TCNT3_ADDRESS;
+
+			static Tc_imp tc_3(TC_3, TC_16BIT, imp_register_table);
+			imp = &tc_3;
 			break;
 		}
 		#endif
 		#ifdef __AVR_ATmega2560__
 		case TC_4:
 		{
-			static Tc_imp tc_4(TC_4, TC_16BIT, imp_register_table);
-			imp = &tc_4;
+			static Tc_registerTable imp_register_table;
 
 			imp_register_table.TIMSK_ADDRESS = &TIMSK4_ADDRESS;
 			imp_register_table.TCCR_A_ADDRESS = &TCCR4A_ADDRESS;
@@ -835,12 +836,14 @@ Tc::Tc(Tc_number timer)
 			imp_register_table.OCR_C_ADDRESS.as_16bit = &OCR4C_ADDRESS;
 			imp_register_table.ICR_ADDRESS = &ICR4_ADDRESS;
 			imp_register_table.TCNT_ADDRESS.as_16bit = &TCNT4_ADDRESS;
+
+			static Tc_imp tc_4(TC_4, TC_16BIT, imp_register_table);
+			imp = &tc_4;
 			break;
 		}
 		case TC_5:
 		{
-			static Tc_imp tc_5(TC_5, TC_16BIT, imp_register_table);
-			imp = &tc_5;
+			static Tc_registerTable imp_register_table;
 
 			imp_register_table.TIMSK_ADDRESS = &TIMSK5_ADDRESS;
 			imp_register_table.TCCR_A_ADDRESS = &TCCR5A_ADDRESS;
@@ -850,6 +853,9 @@ Tc::Tc(Tc_number timer)
 			imp_register_table.OCR_C_ADDRESS.as_16bit = &OCR5C_ADDRESS;
 			imp_register_table.ICR_ADDRESS = &ICR5_ADDRESS;
 			imp_register_table.TCNT_ADDRESS.as_16bit = &TCNT5_ADDRESS;
+
+			static Tc_imp tc_5(TC_5, TC_16BIT, imp_register_table);
+			imp = &tc_5;
 			break;
 		}
 		#endif
@@ -1135,11 +1141,7 @@ Tc_command_status Tc_imp::initialise(void) //
 
 			return TC_CMD_ACK;
 		}
-		case TC_4 :
-		{
-			return TC_CMD_NAK;
-		}
-		case TC_5 :
+		default :
 		{
 			return TC_CMD_NAK;
 		}
@@ -1575,7 +1577,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 				{
 					return TC_CMD_NAK;
 				}
-				*imp_register_table.TCCR_A_ADDRESS &= (~(1 << COMA1_8TC_BIT) & ~(1 << COMA0_8TC_BIT));
+				*imp_register_table.TCCR_A_ADDRESS &= (~(1 << COMA1_8BIT_BIT) & ~(1 << COMA0_8BIT_BIT));
 			}
 			return TC_CMD_ACK;
 		}
@@ -1592,8 +1594,8 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 				{
 					return TC_CMD_NAK;
 				}
-				*imp_register_table.TCCR_A_ADDRESS &= ~(1 << COMA1_8TC_BIT);
-				*imp_register_table.TCCR_A_ADDRESS |= (1 << COMA0_8TC_BIT);
+				*imp_register_table.TCCR_A_ADDRESS &= ~(1 << COMA1_8BIT_BIT);
+				*imp_register_table.TCCR_A_ADDRESS |= (1 << COMA0_8BIT_BIT);
 			}
 			return TC_CMD_ACK;
 		}
@@ -1610,8 +1612,8 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 				{
 					return TC_CMD_NAK;
 				}
-				*imp_register_table.TCCR_A_ADDRESS |= (1 << COMA1_8TC_BIT);
-				*imp_register_table.TCCR_A_ADDRESS &= ~(1 << COMA0_8TC_BIT);
+				*imp_register_table.TCCR_A_ADDRESS |= (1 << COMA1_8BIT_BIT);
+				*imp_register_table.TCCR_A_ADDRESS &= ~(1 << COMA0_8BIT_BIT);
 			}
 			return TC_CMD_ACK;
 		}
@@ -1627,7 +1629,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 				{
 					return TC_CMD_NAK;
 				}
-				*imp_register_table.TCCR_A_ADDRESS |= ((1 << COMA1_8TC_BIT) | (1 << COMA0_8TC_BIT);
+				*imp_register_table.TCCR_A_ADDRESS |= ((1 << COMA1_8BIT_BIT) | (1 << COMA0_8BIT_BIT));
 			}
 
 			return TC_CMD_ACK;
