@@ -230,7 +230,7 @@ unpack_lm4flash()
 		# The tool isn't ready, so we need to unpack it.
 
 		# We'll need the vendor source for the tool, which we can build it from.
-		unpack_vendor_lm4tools
+		unpack_lm4tools
 
 		# Check if that worked.
 		if [ ! -d "${VENDOR_LM4TOOLS_LOCAL}" ]; then
@@ -245,7 +245,9 @@ unpack_lm4flash()
 
 		# Build the lm4flash software.  This might take a while.
 		echo -e "${CYAN}Building lm4flash...\n${NO_COLOUR}"
-		make ${TMP_COMPILER_DIR}/lm4flash
+		pushd ${TMP_COMPILER_DIR}/lm4flash >/dev/null
+		make
+		popd >/dev/null
 		# Check if making worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -254,7 +256,6 @@ unpack_lm4flash()
 		fi
 
 		# We should be all good to go now.
-		popd >/dev/null
 		echo -e "${CYAN}\nlm4flash available.\n${NO_COLOUR}"
 
 	fi
