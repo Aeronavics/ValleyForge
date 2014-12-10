@@ -1,0 +1,127 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###																														###
+### Name:			upload_lm4flash																						###
+###																														###
+### Author:			Zane Barker																							###
+###																														###
+### Date Created:	10-12-2014																							###
+###																														###
+### Type:			Bash Script																							###
+###																														###
+### Purpose:		Provides functions for uploading code to targets using lm4flash (for use with TI Stellaris and		###
+###						Tiva LaunchPad boards).																			###
+###																														###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported lm4flash upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###																						###
+### Name:			upload_lm4flash														###
+###																						###
+### Inputs/Outputs:	None																###
+###																						###
+### Purpose:		Uploads files to a target connected to the host PC, though the		###
+###						use of lm4flash.												###
+###																						###
+###########################################################################################
+
+upload_lm4flash() 
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if we are supposed to be loading the application code.
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.bin" ]; then
+			# The expected binary file was not present.		
+			echo -e "${RED}Could not find application executable (ARM BIN) for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Check if we are supposed to be loading the bootloader code.
+	if [ $UPLOAD_BOOTLOADER ]; then
+
+		# TODO - Fixme.
+		echo -e "${RED}Loading bootloader via lm4flash is unsupported at this time.\n${NO_COLOUR}"
+		return 1
+
+#		# Check that the expected binary is available in the toolchain output folder.
+#		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin" ]; then
+#			# The expected binary file was not present.
+#			echo -e "${RED}Could not find bootloader binary for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+#			return 1
+#		fi
+	fi
+
+	# TODO - Unpack other tools?  There is the question of what to do if we need a compiler's binutils?
+	
+	# Unpack lm4flash.
+	unpack_lm4flash
+
+	local LM4FLASH_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.bin"
+	
+	echo -e "${YELLOW}Programming using lm4flash requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	
+	# We don't need to unpack any other tools.
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via lm4flash? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via lm4flash.\n${NO_COLOUR}"
+		echo -e "${CYAN}Uploading files $LM4FLASH_BINARY\n${NO_COLOUR}"
+
+		pushd ${TMP_COMPILER_DIR}/lm4flash/ >/dev/null
+		sudo ./lm4flash $LM4FLASH_BINARY
+		popd >/dev/null
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+	fi
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+
