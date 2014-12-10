@@ -3,4 +3,4 @@
 # see misc/tools/kconfig-language.txt.
 #
 
-source "$APPSDIR/ValleyForge/<APP_NAME>/Kconfig"
+source "$APPSDIR/external/<COMPONENT_NAME>/Kconfig"

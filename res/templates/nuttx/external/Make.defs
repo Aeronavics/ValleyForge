@@ -34,7 +34,7 @@
 #
 ############################################################################
 
-ifeq ($(CONFIG_VALLEYFORGE),y)
-CONFIGURED_APPS += ValleyForge/
-endif
+#ifeq ($(CONFIG_VALLEYFORGE_<APP_NAME>),y)
+CONFIGURED_APPS += external/<COMPONENT_NAME>
+#endif
 
