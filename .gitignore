@@ -13,5 +13,6 @@ res/vendor/mavlink/*
 res/vendor/freertos/*
 res/vendor/stlink/*
 res/vendor/nuttx/*
+res/vendor/lm4tools/*
 doc/zim-valleyforge/.zim/*
 */*~
