@@ -336,7 +336,7 @@ nuttx_compile()
 	mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
 
 	echo -e "${CYAN}Copying output file to ${TCPATH}/$OUTPUT_DIR/${COMPONENT}/ \n${NO_COLOUR}"
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx/nuttx.hex ${TCPATH}/$OUTPUT_DIR/${COMPONENT}/${COMPONENT}.hex
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx/nuttx.bin ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.bin
 
 	# Remove all of the temporary files.
 	tidy_up
