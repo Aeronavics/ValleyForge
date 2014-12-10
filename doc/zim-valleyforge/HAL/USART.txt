@@ -12,15 +12,15 @@ The modes that the USART library supports depends heavily on the capabilities of
 
 In synchronous mode, the USART can be configured as either master (chip drives the clock output), or slave (chip uses the clock provided by a master).
 
-IMPORTANT - The USART module must be instantiated and configured before it can be used!
-By default, the USART module is disabled, and must be enabled before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
+By default, the USART module is disabled, and must be configured before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
 
 Example configuration:
 '''
 Usart usart = Usart::bind(USART_0);
 usart.configure(USART_MODE_ASYNCHRONOUS, 9600, 8, USART_PARITY_NONE, 1);
-usart.enable();
 '''
+
+It's good practice to check the result of the configuration to make sure it actually succeeded, or you may get confused as to why the USART doesn't seem to be working as it should.
 
 NOTE: For specific configuration values, see the appropriate [[Targets|target]] documentation.
 
@@ -198,7 +198,7 @@ To see full hardware support, see [[HAL|Support]]
 
 [*] [[Targets:ATmega2560|ATmega2560]] family - TODO - Untested
 [*] [[Targets:AT90CAN128|AT90CAN128]] family
-[ ] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]] - These chips do not have USART, but instead provide LIN which is similar.
+[*] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]] - These chips do not have USART, but instead provide LIN which is similar.
 
 The USART AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp
 

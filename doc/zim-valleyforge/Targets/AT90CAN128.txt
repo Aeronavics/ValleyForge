@@ -55,7 +55,20 @@ Supported parity settings:
 
 
 ===== SPI =====
-TODO: Description of the SPI module and allowable config values
+The ATmega2560 has 1 SPI available (SPI_0), and can be configured for both Master and Slave SPI.
+
+AVR chips support only a limited number of clock speeds, defined in the Spi_clock_speed enum.
+Do not use an integer value for configuring the clock speed, use the appropriate enum, eg. SPI_DIV_2.
+
+Supported clock speeds:
+	''SPI_DIV_x'' where x is one of: 2, 4, 8, 16, 32, 64, 128
+SPI speed can be calculated with the following formula:
+	''fspi = fclkIO / spi_div''
+
+Supported data frame modes:
+	SPI_MSB_FIRST
+	SPI_LSB_FIRST
+
 
 ===== I2C =====
 TODO: Description of the I2C module and allowable config values

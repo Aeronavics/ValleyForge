@@ -184,8 +184,7 @@ class Usart
 		// Methods.
 		
 		/**
-		 * Binds the interface with a USART hardware peripheral,
-		 * locking it for exclusive access.
+		 * Binds the interface with a USART hardware peripheral
 		 */
 		static Usart bind(Usart_channel channel);
 		
@@ -196,7 +195,7 @@ class Usart
 
 		/**
 		 * Enable transmitter/receiver hardware.
-		 * This must be called before any data transfers can occur!!
+		 * Called automatically by configure()
 		 */
 		void enable(void);
 

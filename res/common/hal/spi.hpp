@@ -82,11 +82,44 @@ enum Spi_int_status {SPI_INT_SUCCESS = 0, SPI_INT_EXISTS = -1, SPI_INT_NOINT = -
 
 enum Spi_interrupt_type {SPI_INT_TODO}; // TODO - Interrupts. Should these be put into target_config.hpp?
 
+
+// Specifies master/slave mode
+enum Spi_setup_mode
+{
+	SPI_MASTER,
+	SPI_SLAVE
+};
+
+// Specifies polarity of Clock/Data signals
+enum Spi_data_mode
+{
+	SPI_MODE_0,
+	SPI_MODE_1,
+	SPI_MODE_2,
+	SPI_MODE_3
+};
+
+
+enum Spi_interrupt_types
+{
+	SPI_INT // Generic interrupt?
+};
+
+enum Spi_slave_select_mode
+{
+	SPI_USER_SS,	// The user application is responsible for controlling the SS of the other device
+	SPI_AUTO_SS		// This SPI module controls the SS output pin automatically
+};
+
+
 typedef void (*spi_data_callback_t)(Spi_io_status status, uint8_t* buffer, size_t buffer_size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 class Spi_imp;
+
+enum Spi_frame_format;
+//enum Spi_clock_speed;		// Different targets may restrict clock speeds depending on the hardware.
 
 // DEFINE PUBLIC CLASSES.
 
@@ -112,6 +145,25 @@ public:
 	~Spi(void);
 
 	/**
+	 * Enable SPI hardware.
+	 */
+	void enable(void);
+
+	/**
+	 * Disable transmitter/receiver hardware.
+	 * Called automatically by unbind()
+	 */
+	void disable(void);
+
+	/**
+	 * Configures the SPI transceiver
+	 *
+	 * @param TODO
+	 */
+	Spi_config_status configure(Spi_setup_mode setup_mode, uint16_t speed, Spi_data_mode data_mode, Spi_frame_format frame_format);
+
+
+	/**
 	 * Configures the operating mode (master, slave)
 	 *
 	 * @param  mode	 		Operating mode to set the SPI to
@@ -123,11 +175,10 @@ public:
 	 * Configures the data format and SPI data mode.
 	 *
 	 * @param  mode			The data operating mode (clock and data polarity)
-	 * @param  bit_order 	MSB or LSB first data frames
-	 * @param  frame_format The number of bits to transmit in each frame
+	 * @param  frame_format The format of the data frames (MSB/LSB first, number of bits)
 	 * @return 				The status of the operation
 	 */
-	Spi_config_status set_data_config(Spi_data_mode mode, Spi_bit_order bit_order, Spi_frame_format frame_format);
+	Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format);
 
 	/**
 	 * Configures the speed of the SPI module

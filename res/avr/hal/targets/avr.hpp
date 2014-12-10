@@ -110,22 +110,25 @@ typedef uint16_t Eeprom_address;
 
 /* SPI */
 
-enum Spi_setup_mode {SPI_MASTER, SPI_SLAVE};
+// Configuration stuff specific to the AVR family of chips
 
-// Specifies polarity of Clock/Data signals
-enum Spi_data_mode {SPI_MODE_0, SPI_MODE_1, SPI_MODE_2, SPI_MODE_3};
+enum Spi_frame_format
+{
+	SPI_MSB_FIRST,
+	SPI_LSB_FIRST,
+};
 
-// Specifies bit ordering
-enum Spi_bit_order {MSB_FIRST, LSB_FIRST};
-
-// Specifies how many bits to send per frame
-enum Spi_frame_format {SPI_8BIT, SPI_16BIT};
-
-enum Spi_clock_divider {SPI_DIV_2, SPI_DIV_4, SPI_DIV_8, SPI_DIV_16, SPI_DIV_32, SPI_DIV_64, SPI_DIV_128};
-
-enum Spi_interrupt_types {SPI_STC};
-
-enum Spi_slave_select_mode {SPI_SOFTWARE_SS, SPI_HARDWARE_SS};
+enum Spi_clock_speed
+{
+	// SPI2X, SPR1, SPR0
+	SPI_DIV_2 = 0b100,
+	SPI_DIV_4 = 0b000,
+	SPI_DIV_8 = 0b101,
+	SPI_DIV_16 = 0b001,
+	SPI_DIV_32 = 0b110,
+	SPI_DIV_64 = 0b111,
+	SPI_DIV_128 = 0b011
+};
 
 
 /* AVR Bit Twiddling */

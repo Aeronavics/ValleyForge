@@ -1,0 +1,57 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-10T16:11:25+13:00
+
+====== SPI ======
+Created Wednesday 10 December 2014
+
+The Serial Peripheral Interface (SPI) module provides a portable interface for communicating with SPI based devices.
+
+===== Configuration =====
+Most targets support both Master and Slave modes, and a number of operating modes (Mode 0 to 3) which specifies clock polarity and phase. Certain targets may support additional configuration settings such as MSB/LSB first, number of data bits, etc. but this is not guaranteed.
+
+By default, the SPI module is disabled, and must be configured before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
+
+Example configuration:
+'''
+Spi spi = Spi::bind(SPI_0);
+spi.configure(SPI_MASTER, 2000000, SPI_MODE_0, SPI_MSB_FIRST);
+'''
+
+It's good practice to check the result of the configuration to make sure it actually succeeded, or you may get confused as to why the SPI doesn't seem to be working as it should.
+
+NOTE: Some targets may not support integer clock speeds, and may instead provide an enum with allowable values. AVRs do this.
+NOTE: For specific configuration values, see the appropriate [[Targets|target]] documentation.
+
+=== SPI Modes ===
+The SPI operating mode (SPI_MODE_x) defines how the SPI module samples/outputs data with respect to the clock edge. The four operating modes are outlined below:
+{{../img/spi-mode-a.png}}
+
+{{../img/spi-mode-b.png}}
+In the above timing charts, data is sampled by the receiver at the dashed line, and is changed by the transmitter on the adjacent edge. It is valid for both master and slave SPI operation.
+
+It is important that you choose the same mode as the other device!
+
+===== Errors & Status Flags =====
+TODO
+
+===== Blocking Communication =====
+TODO
+
+===== Asynchronous Communication =====
+TODO
+
+===== Interrupts =====
+TODO
+
+===== Examples =====
+TODO
+
+===== Support =====
+To see full hardware support, see [[HAL|Support]]
+
+[x] [[Targets:ATmega2560|ATmega2560]] family
+[x] [[Targets:AT90CAN128|AT90CAN128]] family
+[x] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]]
+
+The SPI AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp
