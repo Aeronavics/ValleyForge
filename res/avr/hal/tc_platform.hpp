@@ -135,10 +135,10 @@
 
 #ifdef __AVR_AT90CAN128__
 // TCCRA for 8bit timer/counters in AT90CAN128
-#	define WGM0_8TC_BIT		6
-#	define COMA1_8TC_BIT		5
-#	define COMA0_8TC_BIT		4
-#	define WGM1_8TC_BIT		3
+#	define WGM0_8BIT_BIT		6
+#	define COMA1_8BIT_BIT		5
+#	define COMA0_8BIT_BIT		4
+#	define WGM1_8BIT_BIT		3
 #endif
 
 #ifdef __AVR_ATmega2560__
@@ -277,8 +277,8 @@
 #	define TC1_IC_A_PORT		PORT_D
 #	define TC1_IC_A_PIN		PIN_4
 
-#	define TC2_OC_B_PORT		PORT_B
-#	define TC2_OC_B_PIN		PIN_4
+#	define TC2_OC_A_PORT		PORT_B
+#	define TC2_OC_A_PIN		PIN_4
 
 #	define TC3_OC_A_PORT		PORT_E
 #	define TC3_OC_A_PIN		PIN_3
@@ -305,28 +305,14 @@
 #	define TIMER1_OFFSET		1
 #	define NUM_TIMER2_INTERRUPTS	2
 #	define TIMER2_OFFSET		5
-#	define NUM_TIMER2_INTERRUPTS	4
-#	define TIMER2_OFFSET		7
+#	define NUM_TIMER3_INTERRUPTS	4
+#	define TIMER3_OFFSET		7
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS)
 
 // Definitions required for Port Directionality Control.
 #	define PORT_REGISTER_MULTIPLIER		0x03
 #	define LOWER_REGISTER_PORT_OFFSET	0x01
 
-#	define TIMER1_CAPT_vect_num  11
-#	define TIMER1_CAPT_vect      _VECTOR(11)  /* Timer/Counter1 Capture Event */
-#	define TIMER1_COMPA_vect_num  12
-#	define TIMER1_COMPA_vect      _VECTOR(12)  /* Timer/Counter1 Compare Match A */
-#	define TIMER1_COMPB_vect_num  13
-#	define TIMER1_COMPB_vect      _VECTOR(13)  /* Timer/Counter1 Compare Match B */
-#	define TIMER1_OVF_vect_num  14
-#	define TIMER1_OVF_vect      _VECTOR(14)  /* Timer1/Counter1 Overflow */
-#	define TIMER0_COMPA_vect_num  15
-#	define TIMER0_COMPA_vect      _VECTOR(15)  /* Timer/Counter0 Compare Match A */
-#	define TIMER0_COMPB_vect_num  16
-#	define TIMER0_COMPB_vect      _VECTOR(16)  /* Timer/Counter0 Compare Match B */
-#	define TIMER0_OVF_vect_num  17
-#	define TIMER0_OVF_vect      _VECTOR(17)  /* Timer/Counter0 Overflow */
 #endif
 
 #endif // __TC_PLATFORM_H__
