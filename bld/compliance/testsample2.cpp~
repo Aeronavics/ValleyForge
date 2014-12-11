@@ -1,0 +1,55 @@
+#include <iostream.h>
+#include <conio.h>
+void main()
+{
+ //  clrscr(); 
+	int number , count = 0;
+
+/*      TODO - 
+ * *comment
+ */
+
+/*
+ * Tod O class
+ * asdasd
+ *       TODO - 
+ *       TODO - 
+ */
+
+/*      TODO - 
+ * *adsnmmnihjk
+ */
+typedef class Z
+{
+}
+qwerty<asdas dfsd;
+template<class Z>;
+struct Ssdasd{}
+struct Avnjkfndgf{}
+
+class Sample2 {}
+
+	cout << "ENTER NUMBER TO CHECK IT IS PRIME OR NOT "; //clrscr
+	cin >> number;
+	for (int a = 1; a <= number; a++)
+	{
+		if (number % a == 0)
+		{
+			count++;
+		}
+	}
+	if (count == 2)
+	{
+		cout << " PRIME NUMBER \n";
+	}
+	else
+	{
+		cout << " NOT A PRIME NUMBER \n";
+	}
+
+	if (i == 0)
+	{
+	}
+
+ //  getch(); 
+}

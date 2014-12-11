@@ -1,9 +1,14 @@
 bin/*
+
 tmp/*
+
 src/*
+
 lib/*
+
 var/config.cfg
 var/mavlink.xml
+
 res/arm/omap4/images/*
 res/arm/omap4/angstrom/images/*
 res/arm/omap4/ubuntu-core/images/*
@@ -14,7 +19,11 @@ res/vendor/freertos/*
 res/vendor/stlink/*
 res/vendor/nuttx/*
 res/vendor/lm4tools/*
+
 doc/zim-valleyforge/.zim/*
-*/*~
+
 valleyforge.sublime-workspace
+
+*/*~
+*~
 

@@ -1,0 +1,7 @@
+#!/bin/bash
+string=$(tail -1 $1 | head -1)
+if [[ $string != "// ALL DONE." ]]; then
+echo -e "\nWARNING: ALL DONE comment seems to be missing at EOF!!! Please check if the file is complete. If complete, add \"// ALL DONE.\" to the last line of the file.\n"
+fi
+
+
