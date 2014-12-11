@@ -37,10 +37,13 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <hal/usart.hpp>
 #include <hal/gpio.hpp>
 
 #include "hal/spi.hpp"
+
+#ifdef USE_SPI_USART
+	#include <hal/usart.hpp>
+#endif
 
 // DEFINE PRIVATE MACROS.
 
@@ -101,7 +104,7 @@ public:
 		disable();
 	}
 
-	void enable(void)
+	virtual void enable(void)
 	{
 		Gpio_pin mosi(pins.mosi);
 		Gpio_pin miso(pins.miso);
@@ -138,7 +141,7 @@ public:
 		bit_write(SPCR, SPIE, 1);	// Enable interrupt
 	}
 
-	void disable(void)
+	virtual void disable(void)
 	{
 		// Would it make sense to disable the GPIO pins here?
 
@@ -146,7 +149,7 @@ public:
 		bit_write(SPCR, SPIE, 0);	// Disable interrupt
 	}
 
-	Spi_config_status configure(Spi_setup_mode setup_mode, Spi_data_mode data_mode, Spi_frame_format frame_format)
+	virtual Spi_config_status configure(Spi_setup_mode setup_mode, Spi_data_mode data_mode, Spi_frame_format frame_format)
 	{
 		Spi_config_status result;
 
@@ -167,15 +170,24 @@ public:
 		return SPI_CFG_SUCCESS;
 	}
 
-	Spi_config_status set_mode(Spi_setup_mode mode)
+	virtual Spi_config_status set_mode(Spi_setup_mode mode)
 	{
-		if (mode == SPI_MASTER)
+		switch (mode)
 		{
-			bit_write(SPCR, MSTR, 1); // Master mode
-		}
-		else // SPI_SLAVE
-		{
-			bit_write(SPCR, MSTR, 0); // Slave mode
+			case SPI_MASTER:
+			{
+				bit_write(SPCR, MSTR, 1); // Master mode
+				break;
+			};
+
+			case SPI_SLAVE:
+			{
+				bit_write(SPCR, MSTR, 0); // Slave mode
+				break;
+			};
+
+			default:
+				return SPI_CFG_FAILED;
 		}
 
 		this->setup_mode = mode;
@@ -183,7 +195,7 @@ public:
 		return SPI_CFG_SUCCESS;
 	}
 
-	Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format)
+	virtual Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format)
 	{
 		// Configure the data/clock polarity (data mode)
 		// The operating modes 0 to 3 represent standard operating modes of SPI,
@@ -227,8 +239,7 @@ public:
 		}
 
 		// Configure the frame format.
-		// The AVR supports 8/16 bit data and LSB/MSB-first data configuration.
-
+		// The AVR supports 8 bit data and LSB/MSB-first data configuration.
 
 		switch (frame_format)
 		{
@@ -248,11 +259,10 @@ public:
 				return SPI_CFG_FAILED;
 		}
 
-
 		return SPI_CFG_SUCCESS;
 	}
 
-	Spi_config_status set_speed(int16_t divider)
+	virtual Spi_config_status set_speed(int16_t divider)
 	{
 		// The AVR only supports a fixed number of SPI speeds,
 		// defined in the enum Spi_clock_speed as clock postscaler settings.
@@ -267,7 +277,7 @@ public:
 		return SPI_CFG_SUCCESS;
 	}
 
-	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin)
+	virtual Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin)
 	{
 		// NOTE: This is only applicable in master mode
 
@@ -301,7 +311,7 @@ public:
 		return SPI_CFG_SUCCESS;
 	}
 
-	int16_t transfer(uint8_t tx_data)
+	virtual int16_t transfer(uint8_t tx_data)
 	{
 		// Master: Should initiate a transfer and block until fully shifted (and rx_data is valid)
 		// Slave: Should block until the remote master shifts in enough data (and tx_data is fully shifted out)
@@ -326,7 +336,7 @@ public:
 		return SPDR;
 	}
 
-	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL)
+	virtual Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL)
 	{
 		// Master: Should initiate a transfer and return immediately, calling done callback when rx_data is valid.
 		// Slave: Should tell the transceiver that we're expecting some data, and it should call the done callback when data is received
@@ -350,7 +360,7 @@ public:
 		return SPI_IO_SUCCESS;
 	}
 
-	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
+	virtual Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
 	{
 		if (tx_data == NULL)
 			return SPI_IO_FAILED;
@@ -387,7 +397,7 @@ public:
 		return SPI_IO_SUCCESS;
 	}
 
-	Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL)
+	virtual Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL)
 	{
 		if (size == 0)
 			return SPI_IO_FAILED;
@@ -411,7 +421,7 @@ public:
 		return SPI_IO_SUCCESS;
 	}
 
-	bool transfer_busy(void)
+	virtual bool transfer_busy(void)
 	{
 		// The SPI module is currently shifting data.
 		// rx_data is not yet valid, and tx_data cannot be written.
@@ -419,7 +429,7 @@ public:
 		return (bit_read(SPSR, SPIF) == 0) || (async.active);
 	}
 
-	Spi_io_status get_status(void)
+	virtual Spi_io_status get_status(void)
 	{
 		return SPI_IO_FAILED;
 	}
@@ -529,19 +539,235 @@ public: // Asynchronous Interrupt Handling
 	// callback : function pointer
 	// *data : one or more bytes
 	// active : bool
+
+protected:
+
+	// Methods
+
+	Spi_imp(void);	// Poisoned.
+
+	Spi_imp(Usart_imp*);	// Poisoned.
 };
 
+
+#ifdef USE_SPI_USART
+
+typedef struct
+{
+	volatile uint8_t* UDR;
+	volatile uint8_t* UCSRA;
+	volatile uint8_t* UCSRB;
+	volatile uint8_t* UCSRC;
+	volatile uint16_t* UBRR;
+} Usart_registers;
+
 /**
- * Class to implement the functionality
- * required for USART-based SPI.
+ * Class to implement the functionality required for USART-based SPI (MSPIM).
+ * See the ATmega2560 datasheet for more info.
+ *
+ * Unfortunately there seems to be no easy way to share functionality
+ * with the Usart_imp class.
  */
-/*class Usartspi_imp : public Spi_imp
+class Usartspi_imp : public Spi_imp
 {
 public:
-	Usartspi_imp();
+	Usartspi_imp(Spi_channel channel, Spi_pins pins, Usart_registers registers)
+		: Spi_imp(channel, pins)
+	{ }
 
-	~Usartspi_imp();
-};*/
+	~Usartspi_imp() { }
+
+	bool enabled(void) const
+	{
+		return (bit_read(*registers.UCSRB, TXEN_BIT) || bit_read(*registers.UCSRB, RXEN_BIT));
+	}
+
+	bool usart_inuse(void)
+	{
+		// Check if the peripheral is currently configured for USART mode
+		bool mspim_mode = reg_read(*registers.UCSRC, UMSEL0_BIT, 2) == 0b11;
+		return (enabled() && !mspim_mode);
+	}
+
+	void enable(void)
+	{
+		*registers.UBRR = 0;
+
+		// Configure XCK as output, for master mode
+		Gpio_pin xck = Gpio_pin(pins.sck);
+		xck.set_mode(GPIO_OUTPUT_PP);
+
+		// Enable the transceivers
+		bit_write(*registers.UCSRB, TXEN_BIT, 1);
+		bit_write(*registers.UCSRB, RXEN_BIT, 1);
+
+		// NOTE - UBRR cannot be set until AFTER the peripheral is enabled
+		*registers.UBRR = this->ubrr;
+	}
+
+	void disable(void)
+	{
+		// NOTE - UBRR must be set to 0 before configuring
+		*registers.UBRR = 0;
+
+		// Disable the transceivers
+		bit_write(*registers.UCSRB, TXEN_BIT, 0);
+		bit_write(*registers.UCSRB, RXEN_BIT, 0);
+	}
+
+	Spi_config_status configure(Spi_setup_mode setup_mode, Spi_data_mode data_mode, Spi_frame_format frame_format)
+	{
+		// Check that we're not already configured for USART mode
+		if (usart_inuse())
+			return SPI_CFG_FAILED;
+
+		return Spi_imp::configure(setup_mode, data_mode, frame_format);
+	}
+
+	Spi_config_status set_mode(Spi_setup_mode mode)
+	{
+		// MSPIM only supports master mode.
+		if (mode != SPI_MASTER)
+			return SPI_CFG_FAILED;
+
+		// Check that we're not already configured for USART mode
+		if (usart_inuse())
+			return SPI_CFG_FAILED;
+
+		reg_write(*registers.UCSRC, UMSEL0_BIT, 2, 0b11); //MSPIM mode (master SPI)
+
+		return SPI_CFG_SUCCESS;
+	}
+
+	Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format)
+	{
+		switch (data_mode)
+		{
+			case SPI_MODE_0:
+			{
+				bit_write(*registers.UCSRC, UCPOL_BIT, 0);
+				bit_write(*registers.UCSRC, UCPHA_BIT, 0);
+				break;
+			};
+
+			case SPI_MODE_1:
+			{
+				bit_write(*registers.UCSRC, UCPOL_BIT, 0);
+				bit_write(*registers.UCSRC, UCPHA_BIT, 1);
+				break;
+			};
+
+			case SPI_MODE_2:
+			{
+				bit_write(*registers.UCSRC, UCPOL_BIT, 1);
+				bit_write(*registers.UCSRC, UCPHA_BIT, 0);
+				break;
+			};
+
+			case SPI_MODE_3:
+			{
+				bit_write(*registers.UCSRC, UCPOL_BIT, 1);
+				bit_write(*registers.UCSRC, UCPHA_BIT, 1);
+				break;
+			};
+
+			default:
+				return SPI_CFG_FAILED;
+		}
+
+		switch (frame_format)
+		{
+			case SPI_MSB_FIRST:
+			{
+				bit_write(*registers.UCSRC, UDORD_BIT, 0);
+				break;
+			};
+
+			case SPI_LSB_FIRST:
+			{
+				bit_write(*registers.UCSRC, UDORD_BIT, 1);
+				break;
+			};
+
+			default:
+				return SPI_CFG_FAILED;
+		}
+
+		return SPI_CFG_SUCCESS;
+	}
+
+	Spi_config_status set_speed(int16_t baud_rate)
+	{
+		// Unlike the hardware SPI peripheral, the MSPIM peripheral supports a configurable baud rate.
+		// See Usart_imp::set_baud_rate() for calculations
+
+		uint32_t ubrr = (((uint32_t)F_CPU / (baud_rate * 2)) - 1); // K = 2
+		if (ubrr > 65535)
+			return SPI_CFG_FAILED;
+
+		if (enabled())
+		{
+			// UBRR can be set immediately if the module is already enabled
+			*registers.UBRR = (uint16_t)ubrr;
+		}
+
+		// Otherwise it must be set after the module has been enabled
+		this->ubrr = (uint16_t)ubrr;
+		return SPI_CFG_SUCCESS;
+	}
+
+	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin)
+	{
+		// MSPIM doesn't support a hardware SS. It must be user controlled!
+		if (mode == SPI_SS_HARDWARE)
+			return SPI_CFG_FAILED;
+
+		return Spi_imp::set_slave_select(mode, software_ss_pin);
+	}
+
+	int16_t transfer(uint8_t tx_data)
+	{
+		// TODO
+		return -1;
+	}
+
+	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL)
+	{
+		// TODO
+		return SPI_IO_FAILED;
+	}
+
+	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
+	{
+		// TODO
+		return SPI_IO_FAILED;
+	}
+
+	Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL)
+	{
+		// TODO
+		return SPI_IO_FAILED;
+	}
+
+	bool transfer_busy(void)
+	{
+		// TODO
+		return false;
+	}
+
+	Spi_io_status get_status(void)
+	{
+		// TODO
+		return SPI_IO_FAILED;
+	}
+
+	// Fields
+
+	Usart_registers registers;
+
+	uint16_t ubrr; // delayed ubrr
+};
+#endif
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
@@ -557,6 +783,91 @@ static Spi_imp spi_imp = Spi_imp(
 		.ss   = _IOADDR(SPI0_SS_PORT, SPI0_SS_PIN),
 	}
 );
+
+#ifdef USE_SPI_USART
+
+#ifdef USE_USART0
+//extern Usart_imp usart0_imp;
+static Usartspi_imp usartspi0_imp = Usartspi_imp(
+	USARTSPI_0,
+	(Spi_pins) {
+		.miso = _IOADDR(USART0_RX_PORT, USART0_RX_PIN),
+		.mosi = _IOADDR(USART0_TX_PORT, USART0_TX_PIN),
+		.sck  = _IOADDR(USART0_XCK_PORT, USART0_XCK_PIN),
+		// No SS pin
+	},
+	(Usart_registers) {
+		// Registers are defined in <avr/io.h>
+		.UDR    = &UDR0,
+		.UCSRA  = &UCSR0A,
+		.UCSRB  = &UCSR0B,
+		.UCSRC  = &UCSR0C,
+		.UBRR   = &UBRR0
+	}
+);
+#endif
+
+#ifdef USE_USART1
+static Usartspi_imp usartspi1_imp = Usartspi_imp(
+	USARTSPI_1,
+	(Spi_pins) {
+		.miso = _IOADDR(USART1_RX_PORT, USART1_RX_PIN),
+		.mosi = _IOADDR(USART1_TX_PORT, USART1_TX_PIN),
+		.sck  = _IOADDR(USART1_XCK_PORT, USART1_XCK_PIN),
+		// No SS pin
+	},
+	(Usart_registers) {
+		// Registers are defined in <avr/io.h>
+		.UDR    = &UDR1,
+		.UCSRA  = &UCSR1A,
+		.UCSRB  = &UCSR1B,
+		.UCSRC  = &UCSR1C,
+		.UBRR   = &UBRR1
+	}
+);
+#endif
+
+#ifdef USE_USART2
+static Usartspi_imp usartspi2_imp = Usartspi_imp(
+	USARTSPI_2,
+	(Spi_pins) {
+		.miso = _IOADDR(USART2_RX_PORT, USART2_RX_PIN),
+		.mosi = _IOADDR(USART2_TX_PORT, USART2_TX_PIN),
+		.sck  = _IOADDR(USART2_XCK_PORT, USART2_XCK_PIN),
+		// No SS pin
+	},
+	(Usart_registers) {
+		// Registers are defined in <avr/io.h>
+		.UDR    = &UDR2,
+		.UCSRA  = &UCSR2A,
+		.UCSRB  = &UCSR2B,
+		.UCSRC  = &UCSR2C,
+		.UBRR   = &UBRR2
+	}
+);
+#endif
+
+#ifdef USE_USART3
+static Usartspi_imp usartspi3_imp = Usartspi_imp(
+	USARTSPI_3,
+	(Spi_pins) {
+		.miso = _IOADDR(USART3_RX_PORT, USART3_RX_PIN),
+		.mosi = _IOADDR(USART3_TX_PORT, USART3_TX_PIN),
+		.sck  = _IOADDR(USART3_XCK_PORT, USART3_XCK_PIN),
+		// No SS pin
+	},
+	(Usart_registers) {
+		// Registers are defined in <avr/io.h>
+		.UDR    = &UDR3,
+		.UCSRA  = &UCSR3A,
+		.UCSRB  = &UCSR3B,
+		.UCSRC  = &UCSR3C,
+		.UBRR   = &UBRR3
+	}
+);
+#endif
+
+#endif // USE_SPI_USART
 
 // TODO - USART-SPI
 
@@ -578,6 +889,29 @@ Spi Spi::bind(Spi_channel channel)
 	{
 		case SPI_0:
 			return Spi(&spi_imp);
+
+	#ifdef USE_SPI_USART
+		#ifdef USE_USART0
+		case USARTSPI_0:
+			return Spi(&usartspi0_imp);
+		#endif
+
+		#ifdef USE_USART1
+		case USARTSPI_1:
+			return Spi(&usartspi1_imp);
+		#endif
+
+		#ifdef USE_USART2
+		case USARTSPI_2:
+			return Spi(&usartspi2_imp);
+		#endif
+
+		#ifdef USE_USART3
+		case USARTSPI_3:
+			return Spi(&usartspi3_imp);
+		#endif
+	#endif
+
 	}
 
 	// If we make it to here, then something has gone very wrong (like the user maliciously cast an invalid value into a channel number).

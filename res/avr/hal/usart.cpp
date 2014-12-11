@@ -31,36 +31,6 @@
  *
  ********************************************************************************************************************************/
 
-/* TESTING
- * The following functions have been tested and confirmed to work correctly on the ATmega2560
- * Usart_imp
- *   configure() 				(only 8n1 framing mode tested so far)
- *   transmit_byte()
- *   receive_byte()
- *   transmit_string()
- *   transmit_buffer()
- *   transmit_string_async()
- *   receive_buffer_async() 	(including callback)
- *   transmitter_ready()
- *   receiver_has_data()
- *
- * attach_interrupt() & detach_interrupt() have not been tested!
- * enable() & disable() have not been tested!
- *
- * The following functions have been tested and confirmed to work correctly on the ATmega64M1
- * Lin_imp
- *   configure()				(TODO: baud rate is hard-coded to 19200)
- *   transmit_byte()
- *   receive_byte()
- *   transmit_string()
- *   transmit_byte_async()
- *   receive_byte_async()
- *
- * TODO: transmit/receive buffer async
- * TODO: ISR handlers
- *
- */
-
 // INCLUDE THE MATCHING HEADER FILE.
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
@@ -69,6 +39,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <hal/spi.hpp>
 #include "hal/hal.hpp"
 #include "hal/gpio.hpp"
 #include "hal/usart.hpp"
@@ -144,6 +115,15 @@ public:
 		//pins.tx.unbind(); // TODO
 	}
 
+#ifdef USE_SPI_USART
+	bool mspim_inuse(void)
+	{
+		// Check if the peripheral is currently configured for MSPIM mode
+		bool enabled = (bit_read(*registers.UCSRB, TXEN_BIT) || bit_read(*registers.UCSRB, RXEN_BIT));
+		bool mspim_mode = reg_read(*registers.UCSRC, UMSEL0_BIT, 2) == 0b11;
+		return (enabled && mspim_mode);
+	}
+#endif
 
 	virtual void enable(void)
 	{
@@ -180,6 +160,12 @@ public:
 	virtual Usart_config_status configure(Usart_setup_mode mode, uint32_t baud_rate, uint8_t data_bits = 8, Usart_parity parity = USART_PARITY_NONE, uint8_t stop_bits = 1)
 	{
 		Usart_config_status result = USART_CFG_FAILED;
+
+		// Check that the USART is not being used by the SPI module
+		#ifdef USE_SPI_USART
+		if (mspim_inuse())
+			return USART_CFG_FAILED;
+		#endif
 
 		// Disable tx/rx before configuring
 		disable();
@@ -1100,7 +1086,7 @@ protected:
 // peripherals are present, and which channel corresponds to each peripheral.
 
 #ifdef USE_USART0
-static Usart_imp usart0_imp = Usart_imp(
+Usart_imp usart0_imp = Usart_imp(
 	USE_USART0, // Channel
 	(Usart_pins) {
 		// Pins are defined in <target_config.hpp>
