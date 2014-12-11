@@ -60,7 +60,7 @@ struct1 [label=<
 
 <tr><td>USART</td>
 	<td bgcolor="forestgreen"></td>
-	<td bgcolor="orange">LIN</td>
+	<td bgcolor="forestgreen">LIN</td>
 	<td bgcolor="green"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
