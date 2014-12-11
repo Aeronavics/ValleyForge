@@ -60,7 +60,7 @@ struct1 [label=<
 
 <tr><td>USART</td>
 	<td bgcolor="forestgreen"></td>
-	<td bgcolor="forestgreen">LIN</td>
+	<td bgcolor="green">(LIN)</td>
 	<td bgcolor="green"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
@@ -69,9 +69,9 @@ struct1 [label=<
 </tr>
 
 <tr><td>SPI</td>
-	<td bgcolor="skyblue"></td>
-	<td bgcolor="skyblue"></td>
-	<td bgcolor="skyblue"></td>
+	<td bgcolor="orange"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="forestgreen"></td>
