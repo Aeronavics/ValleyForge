@@ -1,0 +1,43 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T16:05:48+13:00
+
+====== ValleyForge ======
+Created Thursday 04 December 2014
+
+===== Documentation =====
+
+[[Download|Downloading a Copy of the Toolchain]]
+[[HAL|Hardware Abstraction Library]]
+[[Architectures]]
+[[Targets|Supported Targets]]
+
+===== About the ValleyForge Project =====
+ValleyForge is a 'tool-chain' for developing embedded software: specifically, for developing avionics software for Unmanned Aerial Systems (UAS'), but it might also be useful in the development of other embedded software projects, particularly any mission critical software which requires close integration between a number of discrete sub-systems.
+
+The meaning of 'tool-chain' is somewhat vague (see [[http://en.wikipedia.org/wiki/Toolchain|Wikipedia]]). In this context, ValleyForge consists of a number of scripts, boot-loaders, libraries, software packages and (most crucially) documentation, which when used together, provides a unified development experience across a range of hardware targets.
+
+==== Motivation ====
+The development of a tool-chain such as ValleyForge is motivated by the desire to:
+
+* Reduce the time spend in setting up the required development tools for a particular task. As many hardware students will attest, when given a specific programming task involving a new device, a major proportion of time is spend 'getting the damn thing to connect'. Once that first 'Hello World' program is flashing an LED, that's probably 30% of the task completed. This is hardly efficient. Hence, a unified development environment, which hides much of the device specific complexity, would have major benefits. These benefits would be most pronounced in development projects which are likely to involve multiple different hardware devices, and which may involve the work of many different contributers over a long period of time.
+* Enhance portability of software, by abstracting away device specific complexity. Many different software project require similar functionality, especially in relation to basic functions such as the operation of common peripheral devices or resource management. Reinventing the wheel is not good software practice, but this is often required in embedded programming due to the lack of portability between different hardware platforms. An embedded programmer might write software to generate a PWM waveform using a timer/counter a dozen times during their career! A unified set of hardware abstraction libraries could make significant reductions to the development work required for moving to a new type of device.
+* Provide a framework which promotes improved software engineering practices. In applications such as mobile robotics, embedded software is often mission critical; software failures can by extremely costly. Additionally, the possibility of software failures may impact negatively on the range of environments in which the robot is even allowed to operate (for example, civil aviation regulations severely limit the applications in which a UAS can be operated). The use of a unified development framework which imposes style guides and other best-practice specifications could allow for improvements in software reliability and performance, and perhaps more importantly, makes it easier to convince other people that your software is going to be reliable.
+
+The development of such a 'unified development environment' is by no means a simple task. There are any number of competing drivers which need to be considered: consistency versus performance, completeness versus simplicity, flexibility versus consistency, etc. In all likelihood, no one tool is able to satisfy all these requirements simultaneously. However, this does not mean that there is not a place for such a specific tool as ValleyForge.
+
+Whilst this might mean that our library doesn't provide the fastest possible implementation of DMA transfer, it does mean that developmental resources are concentrated on improving things. Sure, you might be able to write a faster library, but if you are the only one who ever uses the tool, then you're certainly the only one who is contributing toward its development. And perhaps eventually it will be decided that your implementation was actually better after all, and we should be using it instead; the important thing is that there is a unifying construct within which to discuss the issue.
+
+==== Who Owns ValleyForge? ====
+ValleyForge is a collection of different parts. Many of the components are existing open source tools, licensed under the GPL. Other parts of ValleyForge are owned by Unison Networks Ltd: these parts are dual licensed under both the GPL and a commercial license. The reason for the dual licensing is because of what ValleyForge is intended for producing: mission-critical embedded systems, which themselves may or may not be open-source. In the future, Unison might decide to offer a certified mission-critical version of the tool-chain commercially, or a version which can build closed-source software. There are no plans to do so at present, and even if this were the case, the GPL licensed version of the tool-chain would remain available.
+
+==== Can I Use ValleyForge? ====
+**Yes!**
+And you should. ValleyForge is all about improving the development process for embedded software. I order for that to happen, people need to use it! Further, ValleyForge is a project under constant development; the more people who use it, then the better it will become. Realise that, equally, ValleyForge is a project under constant development; it isn't perfect, or at this point even vaguely feature complete (don't expect it to do everything you could ever ask, or to magically guarantee that your mission-critical firmware is now free of bugs, or to have documentation explaining exactly what you want to do). ValleyForge is (generally) licensed under the GPL.
+
+==== Can I Contribute to ValleyForge? ====
+**Yes!**
+And you should. ValleyForge is under constant development; at the moment, barely a fraction of the intended functionality is completed, the libraries are probably in need of major redesign, and the documentation is woefully inadequate. Contributions would be gladly welcomed. There is a single requirement; contributors are required to agree to a Contributor License Agreement before their code is accepted into the official repositories. This agreement essentially allows Unison to use your contributions (which would otherwise be GPL licensed along with the rest of the project) in their (hypothetical) commercially licensed versions; this is important, because it allows the possibility of the tool-chain being used as widely as possible in the future.
+
+
+

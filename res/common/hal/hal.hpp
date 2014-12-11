@@ -100,6 +100,10 @@ struct IO_pin_address
 	port_t port;
 	pin_t pin;
 };
+
+// Macro for convenience. Usage:
+//   IO_pin_address pinaddr = _IOPADDR(PORT_A, PIN_0);
+#define _IOADDR(port, pin) ((IO_pin_address){port, pin})
 #endif
 
 // Generic ISR callback.

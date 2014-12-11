@@ -1,0 +1,123 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<FONT POINT-SIZE="8" FACE="sans-serif">
+<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="2">
+
+<!-- Implemented and Tested: 	green -->
+<!-- Implemented: 		forestgreen -->
+<!-- Work-in-progress: 		orange -->
+<!-- Started: 			skyblue -->
+<!-- Not yet started: 		gray -->
+<!-- Not supported: 		red -->
+
+
+<tr><td color="white"></td>
+	<td colspan="4">AVR</td>
+	<td colspan="1">AVR32</td>
+	<td colspan="2">ARM</td>
+</tr>
+
+<tr><td><b>Feature</b></td>
+	<td>ATmega2560</td>
+	<td>ATmega64M1/C1</td>
+	<td>ATmega90CAN128</td>
+	<td>ATmega8-16AU</td>
+	<td>AT32UC3C0512C</td>
+	<td>LM3S1968</td>
+	<td>STM32F103</td>
+</tr>
+
+<tr><td>GPIO</td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>Watchdog</td>
+	<td bgcolor="green"></td>
+	<td bgcolor="green"></td>
+	<td bgcolor="green"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>EEPROM</td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>USART</td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen">LIN</td>
+	<td bgcolor="green"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>SPI</td>
+	<td bgcolor="skyblue"></td>
+	<td bgcolor="skyblue"></td>
+	<td bgcolor="skyblue"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>I2C</td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="red">Not Supported</td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>CAN</td>
+	<td bgcolor="red">Not Supported</td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="orange"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>ADC</td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+<tr><td>Timer</td>
+	<td bgcolor="orange"></td>
+	<td bgcolor="orange"></td>
+	<td bgcolor="orange"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+	<td bgcolor="gray"></td>
+</tr>
+
+</TABLE></FONT>
+>];
+}

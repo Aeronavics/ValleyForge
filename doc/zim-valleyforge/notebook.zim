@@ -2,8 +2,8 @@
 name=Valley Forge Toolchain Documentation
 version=0.4
 endofline=unix
-profile=
-home=Home
+profile=None
+home=ValleyForge
 icon=None
 document_root=None
 shared=True

@@ -1,0 +1,4 @@
+{signal: [
+  {name: 'USART TX', wave: '1.=.=.=.=.1.', data: ['buf[0]','buf[1]','buf[2]','buf[3]']},
+  {name: 'transmitter_ready()', wave: '1.0.....x.1.'},
+]}

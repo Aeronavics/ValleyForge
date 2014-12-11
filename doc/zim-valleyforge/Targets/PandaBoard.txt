@@ -1,0 +1,18 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T16:01:58+13:00
+
+====== PandaBoard ======
+Created Thursday 04 December 2014
+
+[[[http://pandaboard.org/|Product Page]]]
+The PandaBoard is a community developed Single Board Computer (SBC), primarily intended as a development platform for Texas Instruments OMAP4 application processors, which are commonly found in modern smart-phones.
+
+**Note**: The PandaBoard target is intended specifically to generate software for the PandaBoard. However, it may also be used to generate software for other devices which use an OMAP4 series application processor. In this case, behavior is undefined.
+
+===== Processor =====
+The PandaBoard uses a single TI OMAP4430 System-on-Chip (SoC) application processor. The processor uses a dual-core ARM Cortex-A9 architecture, clocked at 1.0GHz. The processor is mated to 1GB of DDR2 SD-RAM, using a Package-on-Package (PoP) arrangement.
+
+The SoC also includes a wide range of common peripherals such as SPI, I2C, GPIO and USB, via a large number of heavily multiplexed pins.
+
+More information on the OMAP4430 processor is available on the Texas Instruments [[http://www.ti.com/product/omap4430|website]].

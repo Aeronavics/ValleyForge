@@ -1,0 +1,66 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T15:56:46+13:00
+
+====== ATmega64M1 / ATmega64C1 ======
+Created Thursday 04 December 2014
+
+[[[http://www.atmel.com/Images/Atmel-7647-Automotive-Microcontrollers-ATmega16M1-32M1-64M1-32C1-64C1_datasheet.pdf|Datasheet]]] [[[http://www.atmel.com/devices/atmega64c1automotive.aspx|Product Page]]]
+The low-power automotive CMOS 8-bit microcontroller, based on the AVR enhanced RISC architecture, features 64KB self-programming flash program memory, 2KB SRAM, 1KB EEPROM, CAN controller with 6 message-objects, LIN controller, 8-channel 10-bit A/D-converter, and JTAG interface for on-chip-debug. The device achieves up to 16 MIPS throughput at 16 MHz. 2.7 - 5.5 Volt operation.
+
+The ATmega64M1 and ATmega64C1 are identical, except the C1 has three Power Stage Controller (PSC) channels.
+
+**Flash**		64 KiB
+**EEPROM**	2 KiB
+**SRAM**		4 KiB
+**Pin Count**	32
+**Frequency**	16 MHz
+
+**Timers**		2
+**USART**		1
+**SPI**			1
+**I2C**			None
+**CAN**		1
+**ADC**		11x 10-bit, 125 ksps
+
+===== GPIO =====
+TODO: Description of ports, pins, and allowable config modes
+eg. do the pins support pull-ups? pin-change? interrupts?
+
+===== USART =====
+This target supports basic UART communication through the LIN peripheral (''USART_0''), but does not have the same capabilities as other AVR chips. For more information see [[HAL:USART]]
+
+The highest supported baud rate for this target is //fclk/8//. For the maximum clock of 16MHz, this is 2Mbaud.
+For best results, choose a baud rate //fclk/(8n)// for some //n//. Eg. at 16MHz, supported baud rates are 2M, 1M, 6667K, 5000K, 4000Kbaud, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (8 * (floor(fclk / (8 * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
+
+//Note for ValleyForge developers: 8 is the value of LBT.//
+
+The framing format for the USART is restricted to 8 data bits and 1 stop bit.
+Any other value will cause the configuration to fail.
+
+Supported modes:
+	''USART_MODE_ASYNCHRONOUS''
+
+Supported parity settings:
+	''USART_PARITY_NONE''
+	''USART_PARITY_EVEN''
+	''USART_PARITY_ODD''
+
+NOTE - The USART for this target does not support asynchronous communications!
+ie. you cannot use transmit_buffer_async() or receive_buffer_async()!
+transmit_byte_async() and receive_byte_async() are supported however.
+
+===== SPI =====
+TODO: Description of the SPI module and allowable config values
+
+===== I2C =====
+This target does not support I2C/TWI
+
+===== CAN =====
+TODO: Description of the CAN module and allowable config values
