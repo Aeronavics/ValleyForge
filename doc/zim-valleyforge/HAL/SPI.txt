@@ -7,6 +7,9 @@ Created Wednesday 10 December 2014
 
 The Serial Peripheral Interface (SPI) module provides a portable interface for communicating with SPI based devices.
 
+Additional target-specific information:
+	* [[SPI:AVR]]
+
 ===== Configuration =====
 Most targets support both Master and Slave modes, and a number of operating modes (Mode 0 to 3) which specifies clock polarity and phase. Certain targets may support additional configuration settings such as MSB/LSB first, number of data bits, etc. but this is not guaranteed.
 
@@ -15,13 +18,19 @@ By default, the SPI module is disabled, and must be configured before it can be 
 Example configuration:
 '''
 Spi spi = Spi::bind(SPI_0);
-spi.configure(SPI_MASTER, 2000000, SPI_MODE_0, SPI_MSB_FIRST);
+spi.set_mode(SPI_MASTER);
+spi.set_data_config(SPI_MODE_0, SPI_MSB_FIRST);  // Sample on leading rising edge of clock
+
+// Configuration settings for masters
+spi.set_speed(2000000); 
+spi.set_slave_select(SPI_SS_HARDWARE);
+
+spi.enable();
 '''
 
 It's good practice to check the result of the configuration to make sure it actually succeeded, or you may get confused as to why the SPI doesn't seem to be working as it should.
 
-NOTE: Some targets may not support integer clock speeds, and may instead provide an enum with allowable values. AVRs do this.
-NOTE: For specific configuration values, see the appropriate [[Targets|target]] documentation.
+NOTE: Some targets (such as [[SPI:AVR|AVR]]) may not support integer clock speeds, and may instead provide an enum with allowable speeds or clock divisors.
 
 === SPI Modes ===
 The SPI operating mode (SPI_MODE_x) defines how the SPI module samples/outputs data with respect to the clock edge. The four operating modes are outlined below:
@@ -32,8 +41,21 @@ In the above timing charts, data is sampled by the receiver at the dashed line, 
 
 It is important that you choose the same mode as the other device!
 
+=== Slave Select ===
+The SPI module can be configured to automatically drive the SS pin. Three modes are provided:
+	''SPI_SS_SOFTWARE'' - Use the provided SS pin. Must be configured as an output.
+	''SPI_SS_HARDWARE'' - Use the hardware SS pin, if available. Not all targets support this.
+	''SPI_SS_NONE'' - Don't drive the SS pin, you must drive it yourself. Useful if you want fine grain control over the SS pin, or have multiple slave devices.
+
+NOTE - This is only applicable for SPI_MASTER mode!
+
+When using SPI_SS_SOFTWARE or SPI_SS_HARDWARE, the SPI HAL library controls the output of the pin automatically for each transfer. The SS pin is brought low at the beginning of every transfer (byte or buffer), and is kept low until the end of the transfer.
+
+The functionality of the SS pin in slave mode depends on the target. For the [[SPI:AVR|AVR]], the SS pin is forced to be an input and must be pulled low before it will shift any data! This cannot be disabled.
+
 ===== Errors & Status Flags =====
-TODO
+''transfer_busy()''
+True if the SPI module is currently transferring data, whether blocking or asynchronous.
 
 ===== Blocking Communication =====
 TODO
@@ -42,7 +64,9 @@ TODO
 TODO
 
 ===== Interrupts =====
-TODO
+One interrupt is provided, which is called whenever a data transfer has completed.
+	''SPI_INT_TRANSFER_COMPLETE''
+TODO: Not sure how this interrupt is useful.
 
 ===== Examples =====
 TODO
@@ -50,8 +74,8 @@ TODO
 ===== Support =====
 To see full hardware support, see [[HAL|Support]]
 
-[x] [[Targets:ATmega2560|ATmega2560]] family
-[x] [[Targets:AT90CAN128|AT90CAN128]] family
-[x] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]]
+[*] [[Targets:ATmega2560|ATmega2560]] family
+[*] [[Targets:AT90CAN128|AT90CAN128]] family
+[*] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]]
 
 The SPI AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp

@@ -87,7 +87,7 @@ enum Spi_interrupt_type {SPI_INT_TODO}; // TODO - Interrupts. Should these be pu
 enum Spi_setup_mode
 {
 	SPI_MASTER,
-	SPI_SLAVE
+	SPI_SLAVE,
 };
 
 // Specifies polarity of Clock/Data signals
@@ -102,17 +102,18 @@ enum Spi_data_mode
 
 enum Spi_interrupt_types
 {
-	SPI_INT // Generic interrupt?
+	SPI_INT_TRANSFER_COMPLETE,	// The transfer has completed
 };
 
 enum Spi_slave_select_mode
 {
-	SPI_USER_SS,	// The user application is responsible for controlling the SS of the other device
-	SPI_AUTO_SS		// This SPI module controls the SS output pin automatically
+	SPI_SS_NONE,		// Do not use SS pin. You must do it yourself
+	SPI_SS_HARDWARE, 	// Use hardware SS pin automatically
+	SPI_SS_SOFTWARE,	// Use the provided SS pin automatically
 };
 
 
-typedef void (*spi_data_callback_t)(Spi_io_status status, uint8_t* buffer, size_t buffer_size);
+typedef void (*spi_data_callback_t)(Spi_io_status status, uint8_t *rx_data, size_t size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -156,11 +157,12 @@ public:
 	void disable(void);
 
 	/**
-	 * Configures the SPI transceiver
+	 * Configures the SPI transceiver.
+	 * Calls set_mode(), set_data_config(), and enable()
 	 *
 	 * @param TODO
 	 */
-	Spi_config_status configure(Spi_setup_mode setup_mode, uint16_t speed, Spi_data_mode data_mode, Spi_frame_format frame_format);
+	Spi_config_status configure(Spi_setup_mode setup_mode, Spi_data_mode data_mode, Spi_frame_format frame_format);
 
 
 	/**
@@ -183,7 +185,7 @@ public:
 	/**
 	 * Configures the speed of the SPI module
 	 *
-	 * @param  speed		TODO - How do we define speed?
+	 * @param  speed		The speed of the SPI output (target dependant, only valid in master mode)
 	 * @return 				The status of the operation
 	 */
 	Spi_config_status set_speed(int16_t speed);
@@ -197,7 +199,7 @@ public:
 	 * @param  mode			The slave select operating mode
 	 * @return 				The status of the operation
 	 */
-	Spi_config_status set_slave_select(Spi_slave_select_mode mode);
+	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
 
 	/**
 	 * Shift one byte through the SPI, blocking until the transfer has completed.
@@ -208,7 +210,7 @@ public:
 	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
 	 * @return 				The status of the operation
 	 */
-	Spi_io_status transfer(uint8_t tx_data, uint8_t *rx_data = NULL);
+	int16_t transfer(uint8_t tx_data);
 
 	// Return immediately, transfer data in background. Optional callback
 	/**
@@ -230,7 +232,7 @@ public:
 
 	/**
 	 * Shift a chunk of data through the SPI, blocking until the transfer has completed.
-	 * Both buffers must be the same size!
+	 * Both buffers must have at least 'size' bytes allocated!
 	 *
 	 * rx_data is optional. If NULL, received data will be discarded.
 	 *
@@ -243,7 +245,7 @@ public:
 
 	/**
 	 * Shift a chunk of data through the SPI, asynchronously.
-	 * Both buffers must be the same size!
+	 * Both buffers must have at least 'size' bytes allocated!
 	 * The function returns immediately.
 	 *
 	 * rx_data is optional. If NULL, received data will be discarded.

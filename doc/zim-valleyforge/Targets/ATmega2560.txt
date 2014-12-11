@@ -58,7 +58,11 @@ Supported parity settings:
 
 
 ===== SPI =====
-TODO: Description of the SPI module and allowable config values
+The ATmega2560 has 1 SPI available (SPI_0), and can be configured for both Master and Slave SPI.
+It has four hardware pins: MISO, MOSI, SCK, and SS.
+See [[HAL:SPI:AVR]] for more info on target-specific configuration settings.
+
+TODO: SPIs available through USART peripheral.
 
 ===== I2C =====
 TODO: Description of the I2C module and allowable config values

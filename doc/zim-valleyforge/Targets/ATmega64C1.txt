@@ -57,7 +57,9 @@ ie. you cannot use transmit_buffer_async() or receive_buffer_async()!
 transmit_byte_async() and receive_byte_async() are supported however.
 
 ===== SPI =====
-TODO: Description of the SPI module and allowable config values
+The ATmega2560 has 1 SPI available (SPI_0), and can be configured for both Master and Slave SPI.
+It has four hardware pins: MISO, MOSI, SCK, and SS.
+See [[HAL:SPI:AVR]] for more info on target-specific configuration settings.
 
 ===== I2C =====
 This target does not support I2C/TWI

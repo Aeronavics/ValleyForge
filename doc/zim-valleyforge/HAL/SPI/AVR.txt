@@ -1,0 +1,29 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-11T15:24:10+13:00
+
+====== AVR - SPI Module Configuration ======
+Created Thursday 11 December 2014
+
+All AVR chips use the same SPI peripheral, so the configuration is identical across all chips.
+
+===== Master Clock Speed =====
+The SPI module's clock is provided directly from fclkIO and a divisor which can be configured in discrete steps.
+Allowable values are:
+	SPI_DIV_x where x is 2, 4, 8, 16, 32, 64, 128
+	
+The SPI frequency can be determined by the following formula:
+	''fspi = fclkIO / spi_div''
+
+===== Slave Select =====
+AVR chips have a hardware SS pin which has special functionality and cannot be disabled.
+
+In master mode, it is configured as an output, and is controlled by the SPI HAL library.
+	If using SPI_SS_NONE or SPI_SS_SOFTWARE, it must be kept as an output, but can be controlled by the user application. (or not used at all)
+	If using SPI_SS_HARDWARE, it is automatically driven by the SPI HAL library for every transfer.
+	
+In slave mode, it is configured as an input, and disables the SPI shift register when logic high. ie, you must pull it low before any data can be transferred! This behaviour cannot be disabled.
+
+IMPORTANT:
+If in master mode, do NOT configure the SS pin as an input, or the SPI peripheral will treat it as a multi-master detection input which the SPI HAL library cannot handle!
+Pins are automatically configured by the library so you should not be manually configuring them anyway.
