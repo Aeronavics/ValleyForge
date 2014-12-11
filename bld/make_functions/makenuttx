@@ -1,0 +1,100 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:		makenuttx
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	11-12-2014
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes components using the NuttX platform, which has its own build system.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Nuttx make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		makenuttx_armcortex
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Makefunction for ARM Cortex-M targets using the NuttX platform.
+###
+###             Copies both the component source files and the NuttX vendor code into the
+###				temporary location, creates the required compile time configuration files,
+###				then invokes the NuttX build system, which takes over the build process.
+###
+###########################################################################################
+
+makenuttx_armcortex()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# TODO - Unpacking the compiler won't help, because at the moment NuttX won't use the version we unpack.
+
+	# Set up the native compiler.
+	unpack_embeddedarmc
+
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	$OBJCOPY -O binary $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx/nuttx $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi
+	echo -e ""
+
+	# Also copy the ELF across, in case we also want that.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx/nuttx $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+
+	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
+
+# ALL DONE.

@@ -72,18 +72,6 @@ source $TCPATH/bld/common/create_empty_dirs
 
 ##################################### MINOR FUNCTIONS ####################################
 
-# Find the rtos files and copy them into the tmp directory
-get_rtos_files ()
-{
-	echo -e "${CYAN}Importing common FreeRTOS files...\n${NO_COLOUR}"
-	# Copy the FreeRTOS common files into our temporary directory.
-	cp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.c $TCPATH/$BCONF_COMMON_RTOS_PATH/*.cpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.h $TCPATH/$BCONF_COMMON_RTOS_PATH/*.hpp $TCPATH/$BCONF_COMMON_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
-	echo -e "${CYAN}Importing port specific FreeRTOS files...\n${NO_COLOUR}"
-	# Copy the FreeRTOS port files into our temporary directory.
-	cp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.c $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.cpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.h $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.hpp $TCPATH/$BCONF_SPECIFIC_RTOS_PATH/*.s $TCPATH/$TMP_SRC_DIR/$COMPONENT 2>/dev/null
-	echo -e "${CYAN}Files imported.\n${NO_COLOUR}"
-}
-
 # Find suitable libraries and copy them into the tmp directory.
 get_suitable_libs()
 {
@@ -326,25 +314,6 @@ fetch_source()
 	return 0
 }
 
-nuttx_compile()
-{
-	echo -e "${CYAN}Beginning component compilation using NuttX makefile.\n${NO_COLOUR}"
-	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
-	echo -e "${CYAN}Component compilation complete.\n${NO_COLOUR}"
-
-	# Create the output directory for the hex file.
-	mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
-
-	echo -e "${CYAN}Copying output file to ${TCPATH}/$OUTPUT_DIR/${COMPONENT}/ \n${NO_COLOUR}"
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx/nuttx.bin ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.bin
-
-	# Remove all of the temporary files.
-	tidy_up
-
-	# The script has finished building the component, exit.
-	exit 0
-}
-
 # Do generic pre-compile tasks; fetching source and preprocessing.
 generic_precompile()
 {
@@ -361,25 +330,11 @@ generic_precompile()
 	# Perform any required code generation.
 	generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	if [ ${PLATFORM,,} == "nuttx" ]; then
-		nuttx_compile
-	fi
-
 	# Perform any required preprocessing.
 	preprocess_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
-	# TODO - This FreeRTOS bit will probably be deprecated shortly.
-
-	# Check to see if the platform is freertos.
-	if [ ${PLATFORM,,} == "freertos" ]; then
-	    # Fetch the freertos files.
-	    get_rtos_files
-	fi
-
 	# Fetch the HAL library files.  This is done after other preprocessing, since the HAL is preprocessed separately.
 	get_hal
-
-	# TODO - If there is anything required to set up the platform, maybe it goes about here?
 
 	# All done.
 	return 0
@@ -875,6 +830,7 @@ do
 	fi
 done
 
+# Remove any temporary files if we haven't specifically asked to keep them.
 tidy_up
 
 # All done.

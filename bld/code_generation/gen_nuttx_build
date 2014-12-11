@@ -83,23 +83,30 @@ gen_nuttx_build()
 	fi
 
 	# First we copy the original NuttX source files across to where they are needed.
-	echo -e "${CYAN}\tCopying NuttX source files into place...\n${NO_COLOUR}"
+	echo -e "${CYAN}\tImporting NuttX source files...\n${NO_COLOUR}"
 
 	# Copy the Nuttx source files across to where they are needed.
 	cp -fr ${NUTTX_COMMON_SOURCE}/nuttx $1/nuttx/
 	cp -fr ${NUTTX_COMMON_SOURCE}/apps $1/apps/
+
 	# Move the NuttX configuration files into the /nuttx/ directory, overwriting any pre-existing files.
+	echo -e "${CYAN}\tConfiguring source tree for NuttX build system...\n${NO_COLOUR}"
+
 	# defconfig also needs to be renamed to .config at this stage.
 	mv -f $1/defconfig $1/nuttx/.config
 	mv -f $1/Make.defs $1/nuttx/Make.defs
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
+
 	# Create the ValleyForge application directory. This is called 'external' due to peculiarities with NuttX. Read the bottom of /apps/README.txt for details.
 	cp -fr ${NUTTX_TEMPLATE_SOURCE}/external $1/apps/external
+
 	# Create the component directory inside apps/external/. This is necessary because NuttX won't compile with the application code sitting inside external.
 	mkdir $1/apps/external/$COMPONENT_NAME
+
 	# Copy the project application makefile and Kconfig files to the apps/external/COMPONENT_NAME directory
 	cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/$COMPONENT_NAME/Kconfig
 	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/$COMPONENT_NAME/Makefile
+
 	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
 	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
 	# Update the Kconfig file in apps/external to point to the Kconfig file inside apps/external/COMPONENT_NAME
@@ -115,14 +122,19 @@ gen_nuttx_build()
 	do
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
 	done
+
 	# Update the .config file for building on a Linux system.
 	sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
 	sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
 	sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
+	
 	# Update the .config file to use the gcc-arm-none-eabi toolchain
 	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
 	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
 	
 	# Fill the Kconfig file and Makefile with the appropriate information for the project.
 	gen_nuttx_app_configuration $1/apps/external/$COMPONENT_NAME
+
+	# All done.
+	return 0
 }
