@@ -14,7 +14,7 @@
  *
  *  DATE CREATED:       27-11-2014
  *
- *	This is the header file which matches tc_platform.cpp...
+ *	This is the header file which matches tc_platform.cpp.
  * 
  ********************************************************************************************************************************/
 
@@ -61,7 +61,7 @@
 #	define TCCR1B_ADDRESS		_SFR_MEM8(0x81)
 #	define TCCR1A_ADDRESS		_SFR_MEM8(0x80)
 
- #if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 // Timer/Counter 2.
 #	define OCR2B_ADDRESS		_SFR_MEM8(0xB4)
 #	define OCR2A_ADDRESS		_SFR_MEM8(0xB3)
@@ -78,8 +78,8 @@
 #	define TCCR3C_ADDRESS		_SFR_MEM8(0x92)
 #	define TCCR3B_ADDRESS		_SFR_MEM8(0x91)
 #	define TCCR3A_ADDRESS		_SFR_MEM8(0x90)
- #endif
-
+#endif
+	
 #ifdef __AVR_ATmega2560__
 // Timer/Counter 4.
 #	define OCR4C_ADDRESS		_SFR_MEM16(0xAC)

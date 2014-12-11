@@ -1,0 +1,77 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-10T17:38:16+13:00
+
+====== Timer Counter ======
+Created Wednesday 10 December 2014
+
+Basic Information
+
+=== Goal ===
+[ ] Implement the key functionalities of a Timer/ Counter hardware abstraction library (HAL).
+[ ] Create a user friendly library intuitive to use and descriptive enough that new users can understand the functions.
+[ ] Take care of bugs
+
+=== General Abstraction Model ===
+
+The main difference in Timer/ Counter modules between targets are :
+
+1. Number of Timer/ Counters units.
+2. Number of input and output channels in each Timer/ Counter unit.
+3. Pin configuration of each Timer/ Counter unit.
+4. Timer/ Counter register bit configurations.
+5. Available interrupt options.
+
+The Timer/ Counter module is abstracted into two segments, the user and the implementation. The data stored within the implementations are linked to the user's instance of the Timer/ Counter unit, creating a singleton pattern. Constructors and destructors are rigidly set and undesired variations of constructing or destructing a instance of Timer/ Counter module are poisoned. 
+
+=== Class ===
+Contains functions and variables required to interface with, both synchronous and asyncronous, Timer/ Counter module of the target microcontroller.  
+
+== Private ==
+Timer/ Counter uses the singleton pattern and therefore, within the private field, the pointer to the instance of the implementation are stored.
+
+Limiting the users to a designed method of instantiating a Timer/ Counter unit requires prohibiting undesired methods of constructing and destroying instances. Therefore, methods of instanciating the Timer/ Counter class that are undesireable are stored in the private field of the class. This is refered to as poisoning the function calls.
+
+Data associated with controlling a Timer/ Counter unit are contained within registers in the target microcontroller. Implementation of the Timer/ Counter (Tc_imp) contains the links to the registers but are designed to be inaccessible to the user's instance of Timer/ Counter class.
+
+== Public ==
+Functions which the user calls to manipulate the Timer/ Counter unit to the desired behaviour. 
+
+(link to Doxygen timer/ counter)
+
+=== Usage ===
+Summaries of the Timer/ Counter units to each target board can be found in the links below:
+
+	(Link to each target device summary)
+
+
+== Initialisation ==
+
+Functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean variable can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
+
+== Example ==
+‎
+	‭''thasidoh ;asd fkasj;dl fisadj; fkljasd;lfjlasdk;j flk;asdjfkl;sjdkajs;dlk j;as''
+	
+	
+
+	''Tc timer0_pre1(TC_0);		// Creates an Instance of Timer/ Counter 0''
+	''Tc_rate timer0_rate;''
+	''timer0_rate.pre = TC_PRE_1;''
+	''timer0_rate.src = TC_SRC_INT;''
+	
+	''timer0_pre1.initialise();''
+	''timer0_pre1.set_rate(timer0_rate);''
+
+
+=== Setting the mode ===
+
+== Example ==
+
+=== Writing to the pin ===
+
+== Example ==
+
+=== Interrupts ===
+
+==== Implementation Status ====
