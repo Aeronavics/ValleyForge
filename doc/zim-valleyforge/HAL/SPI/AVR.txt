@@ -7,15 +7,15 @@ Created Thursday 11 December 2014
 
 All AVR chips use the same SPI peripheral, so the configuration is identical across all chips.
 
-===== Master Clock Speed =====
+=== Master Clock Speed ===
 The SPI module's clock is provided directly from fclkIO and a divisor which can be configured in discrete steps.
 Allowable values are:
 	SPI_DIV_x where x is 2, 4, 8, 16, 32, 64, 128
 	
 The SPI frequency can be determined by the following formula:
-	''fspi = fclkIO / spi_div''
+''fspi = fclkIO / spi_div''
 
-===== Slave Select =====
+=== Slave Select ===
 AVR chips have a hardware SS pin which has special functionality and cannot be disabled.
 
 In master mode, it is configured as an output, and is controlled by the SPI HAL library.
@@ -27,3 +27,19 @@ In slave mode, it is configured as an input, and disables the SPI shift register
 IMPORTANT:
 If in master mode, do NOT configure the SS pin as an input, or the SPI peripheral will treat it as a multi-master detection input which the SPI HAL library cannot handle!
 Pins are automatically configured by the library so you should not be manually configuring them anyway.
+
+===== USART-SPI (MSPIM) =====
+On certain targets (eg. the [[Targets:ATmega2560|ATmega2560]]) the USART peripherals can also be used as a master SPI.
+This is different to Synchronous USART in that you can configure the clock polarity/phase (SPI data mode) and MSB/LSB first formats, much like the native SPI peripheral.
+
+=== GPIO Pins ===
+In MSPIM mode the RX pin becomes MISO, the TX pin becomes MOSI, and the XCK pin becomes SCK. There is no hardware SS pin so you must provide one to ''set_slave_select()'' or do it yourself!
+
+=== SPI Speed ===
+Unlike the hardware SPI peripheral, the SPI clock speed can be configured using the baud rate register instead of discrete clock dividers. The formula used is the same as used for Synchronous USART, so for best results choose a baud rate //fclk/(2n)// for some n ≤ 4095. The maximum speed is thus //fclk/2//, or 8Mbps for a 16MHz CPU clock.
+
+=== Usage ===
+In order to use the USART-SPI, bind a new Spi() object and pass in USARTSPI_x where x is the number of the USART to use. eg:
+''Spi spi = Spi::bind(USARTSPI_0);''
+
+When using a USART for SPI, it cannot be used by the USART HAL module, and vise-versa!

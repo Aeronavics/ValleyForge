@@ -7,6 +7,10 @@ Created Wednesday 03 December 2014
 
 The Universal Synchronous-Asynchronous Receive-Transmit (USART) module provides a portable interface for communicating with USART based devices, such as serial terminals and cellular modems.
 
+Additional target-specific information:
+	* [[USART:AVR]]
+	* [[USART:AVR-LIN]] (For the ATmega64C1)
+
 ===== Configuration =====
 The modes that the USART library supports depends heavily on the capabilities of the chip. All chips will support USART_MODE_ASYNCHRONOUS which is just standard UART with RX/TX pins, and some chips will also support USART_MODE_SYNCHRONOUS which adds a clock pin as well, similar to SPI.
 

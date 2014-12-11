@@ -1,0 +1,33 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-12T12:17:16+13:00
+
+====== AVR-LIN ======
+Created Friday 12 December 2014
+
+Some AVR chips do not have a proper USART peripheral but can instead provide UART (Not USART) through a LIN peripheral, for example the [[Targets:ATmega64C1|ATmega64C1 family]].
+
+=== Baud Rate ===
+The highest supported baud rate is //fclk/8//. For a CPU clock of 16MHz, this is 2Mbps.
+For best results, choose a baud rate //fclk/(8n)// for some n ≤ 4095. Eg. at 16MHz, supported baud rates are 2M, 1M, 6667K, 5000K, 4000Kbps, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+=== Baud Error ===
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (8 * (floor(fclk / (8 * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
+
+//Note for ValleyForge developers: 8 is the value of LBT.//
+
+=== Configuration Options ===
+The framing format for the USART is restricted to 8 data bits and 1 stop bit.
+Any other value will cause the configuration to fail.
+
+Supported modes:
+	''USART_MODE_ASYNCHRONOUS''
+
+Supported parity settings:
+	''USART_PARITY_NONE''
+	''USART_PARITY_EVEN''
+	''USART_PARITY_ODD''
