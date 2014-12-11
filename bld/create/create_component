@@ -275,7 +275,7 @@ choose_bootloader()
 ### Purpose:		Asks the user whether or not they want multiple executable files.	###
 ###			If yes, the user is asked for their names to populate EXECUTABLES.			###
 ###			Otherwise, it is assumed that the component name is the name of the 		###
-###			sole exectuable file.														###
+###			sole executable file.														###
 ###																						###
 ###########################################################################################
 
@@ -287,7 +287,7 @@ choose_executables() {
 
 	# If they responded YES, then ask for the names of the executables.
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		echo -e -n "${GREEN}What are the names of the exectuables? (Enter the names separated by a space) ${NO_COLOUR}"
+		echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
 		read -e
 		echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
@@ -850,7 +850,7 @@ generate_code_config_time $TCPATH/src/$COMPONENT
 
 # Check if we have been supplied some executable names and that we're not in batch mode.
 if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
-	# Offer the user the opportunity to define some custom exectuable names.
+	# Offer the user the opportunity to define some custom executable names.
 	choose_executables
 elif [ ! -z $EXECUTABLES ]; then
 	# We've been provided with a list of executables, do nothing.
