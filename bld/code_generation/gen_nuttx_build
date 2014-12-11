@@ -1,0 +1,128 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###																														###
+### Name:		gen_nuttx_build																							###
+###																														###
+### Author:		Zane Barker																								###
+###																														###
+### Date Created:	27-11-2014																							###
+###																														###
+### Type:		Bash Script																								###
+###																														###
+### Purpose:		Provides functions which generate code which implements the NuttX platform.		 					###
+###																														###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
+shopt -s extglob
+source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
+
+######################################## FUNCTION #########################################
+###																						###
+### Name:		gen_nuttx_build															###
+###																						###
+### Inputs/Outputs:	Takes the path to the source location where to place the code.		###
+###																						###
+### Purpose:		Fetches files which implements the NuttX platform. The 				###
+###			fetched files are then integrated with the user's application code.			###
+###																						###
+###########################################################################################
+gen_nuttx_build()
+{
+	# DEFINE CONSTANTS
+
+	GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	# PRIVATE INTERNAL FUNCTIONS
+
+	# FUNCTION PROPER STARTS HERE
+
+	# Load the configuration variables from the project .cfg file.
+	source $1/$COMPONENT_NAME.cfg
+
+	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
+	EXECUTABLES="${EXECUTABLES:-$COMPONENT}"
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Fetching Nuttx platform code...\n${NO_COLOUR}"
+
+	# Check to see if the required platform configuration settings are present.
+	if [ -z "${NUTTX_COMMON_SOURCE}" -o -z "${NUTTX_CONFIG_SOURCE}" -o -z "${NUTTX_TEMPLATE_SOURCE}" ]; then
+		# Some of the required platform configuration settings are missing, so we must abort.
+		echo -e "${RED}NuttX platform configuration incomplete. Cannot fetch NuttX files.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Unpack the NuttX source files where they are needed.
+	unpack_nuttx
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the NuttX source, so we have to abort
+		return 1
+	fi
+
+	# First we copy the original NuttX source files across to where they are needed.
+	echo -e "${CYAN}\tCopying NuttX source files into place...\n${NO_COLOUR}"
+
+	# Copy the Nuttx source files across to where they are needed.
+	cp -fr ${NUTTX_COMMON_SOURCE}/nuttx $1/nuttx/
+	cp -fr ${NUTTX_COMMON_SOURCE}/apps $1/apps/
+	# Move the NuttX configuration files into the /nuttx/ directory, overwriting any pre-existing files.
+	# defconfig also needs to be renamed to .config at this stage.
+	mv -f $1/defconfig $1/nuttx/.config
+	mv -f $1/Make.defs $1/nuttx/Make.defs
+	mv -f $1/setenv.sh $1/nuttx/setenv.sh
+	# Create the ValleyForge application directory. This is called 'external' due to peculiarities with NuttX. Read the bottom of /apps/README.txt for details.
+	cp -fr ${NUTTX_TEMPLATE_SOURCE}/external $1/apps/external
+	# Create the component directory inside apps/external/. This is necessary because NuttX won't compile with the application code sitting inside external.
+	mkdir $1/apps/external/$COMPONENT_NAME
+	# Copy the project application makefile and Kconfig files to the apps/external/COMPONENT_NAME directory
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/$COMPONENT_NAME/Kconfig
+	cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/$COMPONENT_NAME/Makefile
+	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
+	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
+	# Update the Kconfig file in apps/external to point to the Kconfig file inside apps/external/COMPONENT_NAME
+	sed -i s^"<COMPONENT_NAME>"^"$COMPONENT_NAME"^ $1/apps/external/Kconfig
+	# Update the Make.defs file in apps/external to include the ValleyForge applications.
+	sed -i s^"<COMPONENT_NAME>"^"$COMPONENT_NAME"^ $1/apps/external/Make.defs
+	# Move the NuttX application files to the new ValleyForge directory.
+	mv -f $1/!(apps|nuttx) $1/apps/external/$COMPONENT_NAME
+
+	# Enable the ValleyForge applications by default.
+	echo -e "\n#\n# ValleyForge\n#" >> $1/nuttx/.config
+	for EXECUTABLE in $EXECUTABLES
+	do
+		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
+	done
+	# Update the .config file for building on a Linux system.
+	sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
+	sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
+	sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
+	# Update the .config file to use the gcc-arm-none-eabi toolchain
+	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
+	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
+	
+	# Fill the Kconfig file and Makefile with the appropriate information for the project.
+	gen_nuttx_app_configuration $1/apps/external/$COMPONENT_NAME
+}

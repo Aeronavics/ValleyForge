@@ -42,7 +42,8 @@
 
 // Define target specific register addresses.
 
-#if defined (__AVR_ATmega2560__)
+#ifdef (__AVR_ATmega2560__)
+
 	// Timer/Counter 0.
 	#	define TIMSK0_ADDRESS		0x6E
 	#	define TCNT0_ADDRESS		0x36
@@ -100,34 +101,40 @@
 	#	define ICR3_ADDRESS		0x96
 	#	define ICR4_ADDRESS		0xA6
 	#	define ICR5_ADDRESS		0x126
-
-	// TCCRnB generic bits.
-	#	define ICNC_BIT			7
-	#	define ICES_BIT			6
-	#	define WGM3_BIT			4
-	#	define WGM2_BIT			3
-	#	define CS2_BIT			2
+	
+	// TCCRC generic bits
+	#	define FOCA_BIT			7
+	#	define FOCB_BIT			6
+	#	define FOCC_BIT			5
+	
+	// TCCRB_16bit generic bits
+	#	define ICNC_16TC_BIT			7
+	#	define ICES_16TC_BIT			6
+	#	define WGM3_BIT			4			
+	#	define WGM2_BIT			3	
+	#	define CS2_BIT			2				
 	#	define CS1_BIT			1
 	#	define CS0_BIT			0
-
-	// TCCRnA generic bits.
+	
+	// TIMSK generic bits.
+	#	define ICIE_BIT			5
+	#	define OCIEC_BIT			3
+	#	define OCIEB_BIT			2
+	#	define OCIEA_BIT			1
+	#	define TOIE_BIT			0
+	
+	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
 	#	define COMA1_BIT		7
 	#	define COMA0_BIT		6
 	#	define COMB1_BIT		5
 	#	define COMB0_BIT		4
 	#	define COMC1_BIT		3
 	#	define COMC0_BIT		2
-	#	define WGM1_BIT			1
-	#	define WGM0_BIT			0
-
-	#	define COM_BIT_OFFSET	2
-
-	// TIMSKn generic bits.
-	#	define ICIE_BIT			5
-	#	define OCIEC_BIT		3
-	#	define OCIEB_BIT		2
-	#	define OCIEA_BIT		1
-	#	define TOIE_BIT			0
+	#	define WGM1_BIT		1
+	#	define WGM0_BIT		0
+	
+	#	define COM_BIT_OFFSET		2
+	#	define MAX_TIMER_PINS		4
 
 	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
 	#	define TC0_OC_A_PORT		PORT_B
@@ -176,11 +183,11 @@
 	#	define TC5_IC_A_PORT		PORT_L
 	#	define TC5_IC_A_PIN		PIN_1
 
-	#	define MAX_TIMER_PINS		4
+
 	#	define IC_CHANNEL_OFFSET	3
-	#	define TC_OC_CHANNEL_A		0
-	#	define TC_OC_CHANNEL_B		1
-	#	define TC_OC_CHANNEL_C		2
+	//#	define TC_OC_CHANNEL_A		0
+	//#	define TC_OC_CHANNEL_B		1
+	//#	define TC_OC_CHANNEL_C		2
 	#	define TC_IC_CHANNEL_A		3
 
 	// Interrupt Pointer Array values and offsets.
@@ -202,6 +209,225 @@
 	#	define PORT_REGISTER_MULTIPLIER		0x03
 	#	define LOWER_REGISTER_PORT_OFFSET	0x01
 	#	define HIGHER_REGISTER_PORT_OFFSET	0xEC
+	
+#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+
+	// Timer/ Counter 0
+	#	define TIMSK0_ADDRESS	0x6E
+	//	#	define OCR0B_ADDRESS	0x48			// Port E is unavailable, so this is redundant.
+	#	define OCR0A_ADDRESS	0x47
+	#	define TCNT0_ADDRESS	0x46
+	#	define TCCR0B_ADDRESS	0x45
+	#	define TCCR0A_ADDRESS	0x44
+	
+	// Timer/ Counter 1
+	#	define TIMSK1_ADDRESS	0x6F
+	#	define TCNT1_ADDRESS	0x84
+	#	define TCCR1C_ADDRESS	0x82
+	#	define TCCR1B_ADDRESS	0x81
+	#	define TCCR1A_ADDRESS	0x80
+	#	define OCR1A_ADDRESS	0x88
+	#	define OCR1B_ADDRESS	0x8A
+	
+	// Input Capture Register.
+	#	define ICR1_ADDRESS		0x86
+
+	// TCCR1C bits.
+	#	define FOCA_BIT	7					
+	#	define FOCB_BIT	6
+	
+	// TCCRB generic bits
+	#	define ICNC_BIT			7
+	#	define ICES_BIT			6
+	#	define WGM3_BIT			4			
+	#	define WGM2_BIT			3
+	#	define CS2_BIT			2
+	#	define CS1_BIT			1
+	#	define CS0_BIT			0		
+	
+	// TIMSK generic bits.
+	#	define ICIE_BIT			5
+	#	define OCIEC_BIT			3
+	#	define OCIEB_BIT			2
+	#	define OCIEA_BIT			1
+	#	define TOIE_BIT			0
+	
+	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
+	#	define COMA1_BIT		7
+	#	define COMA0_BIT		6
+	#	define COMB1_BIT		5
+	#	define COMB0_BIT		4
+	#	define COMC1_BIT		3
+	#	define COMC0_BIT		2
+	#	define WGM1_BIT		1
+	#	define WGM0_BIT		0
+	
+	#	define COM_BIT_OFFSET		2
+	#	define MAX_TIMER_PINS		4
+	
+	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
+	/**
+	*	Port E of the ATmega64 series are not used. Avionics board connects the pins
+	*	to an oscillator, effectively making it inaccessible.
+	**/
+	#	define TC0_OC_A_PORT		PORT_D
+	#	define TC0_OC_A_PIN		PIN_3
+	// #	define TC0_OC_B_PORT		PORT_E
+	// #	define TC0_OC_B_PIN		PIN_1
+
+	#	define TC1_OC_A_PORT		PORT_D
+	#	define TC1_OC_A_PIN		PIN_2
+	#	define TC1_OC_B_PORT		PORT_C
+	#	define TC1_OC_B_PIN		PIN_1
+	#	define TC1_IC_A_PORT		PORT_D
+	#	define TC1_IC_A_PIN			PIN_4
+	#	define TC1_IC_B_PORT		PORT_C
+	#	define TC1_IC_B_PIN			PIN_3
+	
+	#	define IC_CHANNEL_OFFSET		2	
+	//#	define TC_OC_CHANNEL_A		0
+	//#	define TC_OC_CHANNEL_B		1
+	#	define TC_IC_CHANNEL_A		2
+	#	define TC_IC_CHANNEL_B		3
+	
+	// Interrupt Pointer Array values and offsets.
+	#	define NUM_TIMER0_INTERRUPTS	2
+	#	define TIMER0_OFFSET		0
+	#	define NUM_TIMER1_INTERRUPTS	4
+	#	define TIMER1_OFFSET		2
+	#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS )
+
+	// Definitions required for Port Directionality Control.
+	// #	define PORT_REGISTER_MULTIPLIER		0x03		// What is this for?
+	// #	define LOWER_REGISTER_PORT_OFFSET	0x01		//
+	// #	define HIGHER_REGISTER_PORT_OFFSET	0xEC	//
+	
+#elif defined (__AVR_AT90CAN128__)
+	
+	// Timer/ Counter 0
+	#	define TIMSK0_ADDRESS	0x6E
+	#	define OCR0A_ADDRESS	0x47
+	#	define TCNT0_ADDRESS	0x46
+	#	define TCCR0A_ADDRESS	0x44
+	
+	// Timer/ Counter 1
+	#	define TIMSK1_ADDRESS	0x6F
+	#	define OCR1C_ADDRESS	0x8C
+	#	define OCR1B_ADDRESS	0x8A
+	#	define OCR1A_ADDRESS	0x88
+	#	define ICR1_ADDRESS		0x86
+	#	define TCNT1_ADDRESS	0x84
+	#	define TCCR1C_ADDRESS	0x82
+	#	define TCCR1B_ADDRESS	0x81
+	#	define TCCR1A_ADDRESS	0x80
+	
+	// Timer/ Counter 2	
+	#	define TIMSK2_ADDRESS	0x70
+	#	define OCR2A_ADDRESS	0xB3
+	#	define TCNT2_ADDRESS	0xB2
+	#	define TCCR2A_ADDRESS	0xB0
+	
+	// Timer/ Counter 3
+	#	define TIMSK3_ADDRESS	0x71
+	#	define OCR3C_ADDRESS	0x9C
+	#	define OCR3B_ADDRESS	0x9A
+	#	define OCR3A_ADDRESS	0x98
+	#	define ICR3_ADDRESS		0x96
+	#	define TCNT3_ADDRESS	0x94
+	#	define TCCR3C_ADDRESS	0x92
+	#	define TCCR3B_ADDRESS	0x91
+	#	define TCCR3A_ADDRESS	0x90
+	
+	// Input Capture Register.
+	#	define ICR3_ADDRESS		0x96
+	#	define ICR1_ADDRESS		0x86
+	
+	// TCCRnC generic bits.
+	#	define FOCA_BIT		7
+	#	define FOCB_BIT		6
+	#	define FOCC_BIT		5
+	
+	// TCCRB_16bit generic bits
+	#	define ICNC_BIT			7
+	#	define ICES_BIT			6
+	#	define WGM3_BIT			4			
+	#	define WGM2_BIT			3
+	#	define CS2_BIT			2				
+	#	define CS1_BIT			1
+	#	define CS0_BIT			0
+
+	// TIMSK generic bits.
+	#	define ICIE_BIT			5
+	#	define OCIEC_BIT			3
+	#	define OCIEB_BIT			2
+	#	define OCIEA_BIT			1
+	#	define TOIE_BIT			0
+	
+	// TCCRA generic bits. TCCRA for 8bit TCs in AT90CAN128 are different
+	#	define COMA1_BIT		7
+	#	define COMA0_BIT		6
+	#	define COMB1_BIT		5
+	#	define COMB0_BIT		4
+	#	define COMC1_BIT		3
+	#	define COMC0_BIT		2
+	#	define WGM1_BIT		1
+	#	define WGM0_BIT		0
+	
+	#	define COM_BIT_OFFSET		2
+	#	define MAX_TIMER_PINS		4
+	
+	// TCCRA_8bit generic bits.
+	//#	define FOCA_BIT			7
+	#	define WGM0_8BIT_BIT			6
+	#	define COMA1_8BIT_BIT			5
+	#	define COMA0_8BIT_BIT			4
+	#	define WGM1_8BIT_BIT			3
+	//#	define CS2_BIT			2				
+	//#	define CS1_BIT			1
+	//#	define CS0_BIT			0
+	
+	// Timer/Counter Peripheral Pin Addresses and Associated Constants.
+	#	define TC0_OC_A_PORT		PORT_B
+	#	define TC0_OC_A_PIN		PIN_7
+
+	#	define TC1_OC_A_PORT		PORT_B
+	#	define TC1_OC_A_PIN		PIN_5
+	#	define TC1_OC_B_PORT		PORT_B
+	#	define TC1_OC_B_PIN		PIN_6
+	#	define TC1_OC_C_PORT		PORT_B
+	#	define TC1_OC_C_PIN		PIN_7
+	#	define TC1_IC_A_PORT		PORT_D
+	#	define TC1_IC_A_PIN			PIN_4
+	
+	#	define TC2_OC_B_PORT		PORT_B
+	#	define TC2_OC_B_PIN		PIN_4
+	
+	#	define TC3_OC_A_PORT		PORT_E
+	#	define TC3_OC_A_PIN		PIN_3
+	#	define TC3_OC_B_PORT		PORT_E
+	#	define TC3_OC_B_PIN		PIN_4
+	#	define TC3_OC_C_PORT		PORT_E
+	#	define TC3_OC_C_PIN		PIN_5
+	#	define TC3_IC_A_PORT		PORT_E
+	#	define TC3_IC_A_PIN			PIN_7
+	
+	#	define IC_CHANNEL_OFFSET		2
+	//#	define TC_OC_CHANNEL_A		0
+	//#	define TC_OC_CHANNEL_B		1
+	//#	define TC_OC_CHANNEL_C		2
+	#	define TC_IC_CHANNEL_A			3
+	
+	// Interrupt Pointer Array values and offsets.
+	#	define NUM_TIMER0_INTERRUPTS	1
+	#	define TIMER0_OFFSET		0
+	#	define NUM_TIMER1_INTERRUPTS	4
+	#	define TIMER1_OFFSET		1
+	#	define NUM_TIMER2_INTERRUPTS	2
+	#	define TIMER2_OFFSET		5
+	#	define NUM_TIMER2_INTERRUPTS	4
+	#	define TIMER2_OFFSET		7
+	#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS)
+
 #else
 	#error "No support for this target."
 #endif
@@ -277,9 +503,18 @@ class Tc_imp
 		Tc_number timer_number;
 
 		Tc_timer_size timer_size;
+		
+		Tc_registerTable* imp_register_table;
+		
+		Tc_rate imp_rate;
+		
+		Tc_pins pin_address(MAX_TIMER_PINS);
 };
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
+
+// /* Array of user ISRs for timer interrupts. */
+void (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void) = {NULL};
 
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
 
@@ -298,12 +533,12 @@ Tc::Tc(Tc_number timer)
 {
 	// *** TARGET CONFIGURATION SPECIFIC.
 
-	#ifdef __AVR_ATmega2560__
+	#ifdef (__AVR_ATmega2560__)
 
 		// We create a static implementation for each of the timer peripherals.
 		static Tc_imp tc_0(TC_0, TC_8BIT);
 		static Tc_imp tc_1(TC_1, TC_8BIT);
-		static Tc_imp tc_2(TC_2, TC_16BIT);
+		static Tc_imp tc_2(TC_2, TC_16BIT);			// Asynchronous
 		static Tc_imp tc_3(TC_3, TC_16BIT);
 		static Tc_imp tc_4(TC_4, TC_16BIT);
 		static Tc_imp tc_5(TC_5, TC_16BIT);
@@ -312,34 +547,110 @@ Tc::Tc(Tc_number timer)
 		switch (timer)
 		{
 			case TC_0:
+			{
 				imp = &tc_0;
 				break;
+			}
 
 			case TC_1:
+			{
 				imp = &tc_1;
 				break;
+			}
 
 			case TC_2:
+			{
 				imp = &tc_2;
 				break;
+			}
 
 			case TC_3:
+			{
 				imp = &tc_3;
 				break;
+			}
 
 			case TC_4:
+			{
 				imp = &tc_4;
 				break;
+			}
 
 			case TC_5:
+			{
 				imp = &tc_5;
 				break;
+			}
 
 			default:
+			{
 				// If we end up here, something terrible has happened.
 				imp = NULL;
 				break;
+			}
 		}
+	#elif defined (__AVR_AT90CAN128__)
+	static Tc_imp tc_0(TC_0, TC_8BIT);
+	static Tc_imp tc_1(TC_1, TC_16BIT);
+	static Tc_imp tc_2(TC_2, TC_8BIT);			// Asynchronous
+	static Tc_imp tc_3(TC_3, TC_16BIT);
+	
+	switch (timer)
+	{
+		case TC_0:
+		{
+			imp = &tc_0;
+			break;
+		}
+
+		case TC_1:
+		{
+			imp = &tc_1;
+			break;
+		}
+
+		case TC_2:
+		{
+			imp = &tc_2;
+			break;
+		}
+
+		case TC_3:
+		{
+			imp = &tc_3;
+			break;
+		}
+
+		default:
+		{
+			imp = NULL;
+			break;
+		}
+	}
+	
+	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+	static Tc_imp tc_0(TC_0, TC_8BIT);
+	static Tc_imp tc_1(TC_1, TC_16BIT);
+
+	switch (timer)
+	{
+		case TC_0:
+		{
+			imp = &tc_0;
+			break;
+		}
+		case TC_1:
+		{
+			imp = &tc_1;
+			break;
+		}
+
+		default:
+		{
+			imp = NULL;
+			break;
+		}
+	}
 
 	#else
 		#error "No implementation for this target."
@@ -492,88 +803,866 @@ Tc_imp::~Tc_imp(void)
 
 Tc_command_status Tc_imp::initialise(void)
 {
-	// TODO - This.
+	#ifdef __AVR_ATmega2560__
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			pin_address[TC_OC_A].address.port = TC0_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC0_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC0_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC0_OC_B_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			pin_address[TC_OC_A].address.port = TC1_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC1_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC1_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC1_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC1_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC1_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC1_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC1_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			pin_address[TC_OC_A].address.port = TC2_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC2_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC2_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC2_OC_B_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_3 :
+		{
+			pin_address[TC_OC_A].address.port = TC3_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC3_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC3_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC3_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC3_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC3_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC3_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC3_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_4 :
+		{
+			pin_address[TC_OC_A].address.port = TC4_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC4_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC4_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC4_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC4_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC4_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC4_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC4_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_5 :
+		{
+			pin_address[TC_OC_A].address.port = TC5_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC5_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC5_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC5_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC5_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC5_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC5_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC5_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+	}
+	
+	#elif defined (__AVR_AT90CAN128__)
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			pin_address[TC_OC_A].address.port = TC0_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC0_OC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			pin_address[TC_OC_A].address.port = TC1_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC1_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC1_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC1_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC1_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC1_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC1_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC1_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			pin_address[TC_OC_A].address.port = TC2_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC2_OC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_3 :
+		{
+			pin_address[TC_OC_A].address.port = TC3_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC3_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC3_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC3_OC_B_PIN;
+			pin_address[TC_OC_CHANNEL_C].address.port = TC3_OC_C_PORT;
+			pin_address[TC_OC_CHANNEL_C].address.pin = TC3_OC_C_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC3_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC3_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+	}
+	
+	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			pin_address[TC_OC_A].address.port = TC0_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC0_OC_A_PIN;
+			
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			pin_address[TC_OC_A].address.port = TC1_OC_A_PORT;
+			pin_address[TC_OC_A].address.pin = TC1_OC_A_PIN;
+			pin_address[TC_OC_B].address.port = TC1_OC_B_PORT;
+			pin_address[TC_OC_B].address.pin = TC1_OC_B_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC1_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC1_IC_A_PIN;
+			pin_address[TC_IC_CHANNEL_B].address.port = TC1_IC_B_PORT;
+			pin_address[TC_IC_CHANNEL_B].address.pin = TC1_IC_B_PIN;
+
+			return TC_CMD_ACK;
+		}
+	}
+	#endif
 
 	return TC_CMD_NAK;
+
+	// Requires testing at all pins!
 }
 
 void Tc_imp::enable_interrupts(void)
 {
 	// TODO - This.
+
+	/**
+	*	This is most likely a master interrupt function.
+	*
+	**/
 }
 	    
 void Tc_imp::disable_interrupts(void)
 {
 	// TODO - This.
+
+	/**
+	*	See enable_interrupts function
+	**/
 }
 		
 Tc_command_status Tc_imp::set_rate(Tc_rate rate)
 {
-	// TODO - This.
+	#ifdef (__AVR_ATmega2560__)
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			// here imp_register_table is a POINTER. The address that the pointer is referencing is given in hex.
+			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR0B_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCNT0_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR0B_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{ 
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR1C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
+			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			imp_register_table.OCR_A_ADDRESS = OCR2A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR2B_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT2_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR2A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR2B_ADDRESS;
+			imp_register_table.TIMSK_ADDRESS = TIMSK2_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_3 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.OCR_A_ADDRESS = OCR3A_ADDRESS; 
+			imp_register_table.OCR_B_ADDRESS = OCR3B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR3C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT3_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR3A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR3B_ADDRESS;
+			imp_register_table.TIMSK_ADDRESS = TIMSK3_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR3_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_4 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.OCR_A_ADDRESS = OCR4A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR4B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR4C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT4_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR4A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR4B_ADDRESS;
+			imp_register_table.TIMSK_ADDRESS = TIMSK4_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR4_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_5 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.OCR_A_ADDRESS = OCR5A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR5B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR5C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT5_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR5A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR5B_ADDRESS;
+			imp_register_table.TIMSK_ADDRESS = TIMSK5_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR5_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+
+	#elif defined (__AVR_AT90CAN128__)
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR0A_ADDRESS;
+
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR1C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
+			imp_register_table.TCCR_C_ADDRESS = TCCR1C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			imp_register_table.TIMSK_ADDRESS = TIMSK2_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR2A_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT2_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR2A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR2A_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_3 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.TIMSK_ADDRESS = TIMSK3_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR3A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR3B_ADDRESS;
+			imp_register_table.OCR_C_ADDRESS = OCR3C_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT3_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR3A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR3B_ADDRESS;
+			imp_register_table.TCCR_C_ADDRESS = TCCR3C_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR3_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+
+	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.TIMSK_ADDRESS = TIMSK0_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR0A_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT0_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR0A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR0B_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
+			{
+				return TC_CMD_NAK;
+			}
+			imp_register_table.TIMSK_ADDRESS = TIMSK1_ADDRESS;
+			imp_register_table.TCNT_ADDRESS = TCNT1_ADDRESS;
+			imp_register_table.TCCR_A_ADDRESS = TCCR1A_ADDRESS;
+			imp_register_table.TCCR_B_ADDRESS = TCCR1B_ADDRESS;
+			imp_register_table.OCR_A_ADDRESS = OCR1A_ADDRESS;
+			imp_register_table.OCR_B_ADDRESS = OCR1B_ADDRESS;
+			imp_register_table.ICR_ADDRESS = ICR1_ADDRESS;
+			
+			imp_rate.pre = rate.pre;
+			imp_rate.src = TC_SRC_INT;
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+
+	#endif
 
 	return TC_CMD_NAK;
 }
 		
 Tc_command_status Tc_imp::load_timer_value(Tc_value value)
 {
-	// Check if the value is the correct size.
-	if (value.type != timer_size)
+	// TODO - This has not been tested.
+	// Check if the value is the correct size
+	if (value.type == TC_16BIT)
 	{
-		// The value doesn't fit into this sort of timer.
-		return TC_CMD_NAK;
+		_SFR_MEM16(imp_register_table.TCNT_ADDRESS) = value.value;
+		return TC_CMD_ACK;
 	}
-
-	// TODO - This.
-
+	else if (registerTable.TCNT_address > 0x60) 
+	{
+		_SFR_MEM8(imp_register_table.TCNT_ADDRESS) = value.value;
+		return TC_CMD_ACK;
+	}
+	else
+	{
+		_SFR_IO8(imp_register_table.TCNT_ADDRESS) = value.value;
+		return TC_CMD_ACK;
+	}
 	return TC_CMD_NAK;
 }
 		
 Tc_value Tc_imp::get_timer_value(void)
 {
-	// TODO - This.
-
+	// TODO - This has not been tested
+	if (timer_size == TC_16BIT)
+	   {
+		 return Tc_value::from_uint16(_SFR_MEM16(imp_register_table.TCNT_ADDRESS));
+	   }
+	   else if (imp_register_table.TCNT_ADDRESS > 0x60)
+	   {
+		 return Tc_value::from_uint8(_SFR_MEM8(imp_register_table.TCNT_ADDRESS));
+	   }
+	   else
+	   {
+		 return Tc_value::from_uint8(_SFR_IO8(imp_register_table.TCNT_ADDRESS));
+	   }
 	return Tc_value::from_uint8(0);
 }
 		
 Tc_command_status Tc_imp::start(void)
 {
-	// TODO - This.
-
+	// TODO - Requires testing.
+	switch(timer_size)
+   	{
+   		case TC_16BIT:
+	 	{
+	   		/*edit the TCCR0B registers for the 16bit Timer/Counters */
+			if (imp_rate == TC_SRC_INT)
+		   	{
+				start_16bit_timers(timer_number, imp_rate,  &register_Table);
+			} 
+			else 
+			{
+				// if we ever have an external clock source
+			}
+				   
+	   	return TC_CMD_ACK;
+	 	}
+	 	case TC_8BIT:
+	 	{
+	   		/*edit the TCCRA or TCCRB registers for the 8bit Timer/Counters */
+		   	if (imp_rate == TC_SRC_INT)
+		   	{
+				start_8bit_timers(timer_number, imp_rate,  &register_Table);
+			} 
+			else
+			{
+				// if we ever have an external clock source
+			}
+	   	}
+	   	return TC_CMD_ACK;
+	}
 	return TC_CMD_NAK;
 }
 		
 Tc_command_status Tc_imp::stop(void)
 {
-	// TODO - This.
-
+	// TODO - Requires testing.
+	if (imp_register_table.TCNT_ADDRESS > 0x60)
+	{
+		_SFR_MEM8(imp_register_table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		return TC_CMD_ACK;
+	}
+	else
+	{
+		_SFR_IO8(imp_register_table.TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		return TC_CMD_ACK;
+	}
 	return TC_CMD_NAK;
 }
 
 Tc_command_status Tc_imp::enable_tov_interrupt(void (*callback)(void))
 {
-	// TODO - This.
+	// TODO - Requires testing.
+	
+	// NOTE	-	Remove or find out why the mode of operation is being switched to normal operation
+	
+	#ifdef (__AVR_ATmega2560__)
+ 	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
 
-	return TC_CMD_NAK;
+   	switch(timer_number)
+  	{
+		case TC_0:
+		{
+			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_1:
+		{
+			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_2:
+		{
+			timerInterrupts[TIMER2_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_3:
+		{
+			timerInterrupts[TIMER3_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_4:
+		{
+			timerInterrupts[TIMER4_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_5:
+		{
+			timerInterrupts[TIMER5_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+	} 
+
+	#elif defined (__AVR_AT90CAN128__)
+	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
+	
+	switch(timer_number)
+   	{
+		case TC_0:
+		{
+			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_1:
+		{
+			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_2:
+		{
+			timerInterrupts[TIMER2_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_3:
+		{
+			timerInterrupts[TIMER3_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+	}
+
+	#elif defined (__AVR_ATmega64M1__) || defined (__AVR_ATmega64C1__)
+	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) |= (1 << TOIE_BIT);
+
+   	switch(timer_number)
+   	{
+		case TC_0:
+		{
+			timerInterrupts[TIMER0_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+		case TC_1:
+		{
+			timerInterrupts[TIMER1_OVF_int] = ISRptr;
+			return TC_CMD_ACK;
+		}
+	}  
+	#endif
+
+
+	return TC_CMD_NAK;  // something went wrong
 }
 		
 Tc_command_status Tc_imp::disable_tov_interrupt(void)
 {
-	// TODO - This.
+	// TODO - Requires testing.
+	
+	// NOTE	-	Style change required. Keep the different MCUs in separate chunks of code
+	_SFR_MEM8(imp_register_table.TIMSK_ADDRESS) &= ~(1 << TOIE_BIT);
 
+	switch(timer_number)
+	{
+	 	case TC_0:
+	 	{
+	   /*replace ISR pointer in timerInterrupts array with NULL to prevent an ISR firing (just in case)*/
+	   		timerInterrupts[TIMER0_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_1:
+	 	{
+	  		 timerInterrupts[TIMER1_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+	 	}
+	 	#ifdef (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+	 	case TC_2:
+	 	{
+	   		timerInterrupts[TIMER2_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+	   		
+	 	}
+	 	case TC_3:
+	 	{
+	   		timerInterrupts[TIMER3_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+		}
+		#endif
+		#ifdef (__AVR_ATmega2560__)
+	 	case TC_4:
+	 	{
+	   		timerInterrupts[TIMER4_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+	 	}
+	 	case TC_5:
+	 	{
+	   		timerInterrupts[TIMER5_OVF_int] = NULL;
+	   		return TC_CMD_ACK;
+	 	}
+	 	#endif
+	}
 	return TC_CMD_NAK;
 }
 		
 Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 {
-	// TODO - This.
-
-	return TC_CMD_NAK;
+	// TODO - Requires testing.
+	
+	// TODO - better error handling. 
+	
+	switch(timer_number)
+	{
+		case TC_0:
+		{ 
+			return enable_oc_8bit(mode, &imp_register_table); // will a try and catch function be safer?
+		}
+		case TC_1:
+		{
+			return enable_oc_16bit(mode, &imp_register_table);
+		}
+		#ifdef (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		case TC_2:
+		{
+			return enable_oc_8bit(mode, &imp_register_table);
+		}
+		case TC_3:
+		{
+			return enable_oc_16bit(mode, &imp_register_table);
+		}
+		#endif
+		#ifdef (__AVR_ATmega2560__)
+		case TC_4:
+		{
+			return enable_oc_16bit(mode, &imp_register_table);
+		}
+		case TC_5:
+		{
+			return enable_oc_16bit(mode, &imp_register_table);
+		}
+		#endif
+		default:	/* No more timers available, return an error. */
+		{
+			return TC_CMD_NAK;
+		}
+	} 
 }
 		
 Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode)
 {
-	// TODO - This.
-
+	// TODO -	Requires testing.
+	
+	#ifndef (__AVR_AT90CAN128__)
+	switch (mode)
+	{
+		case TC_OC_CHANNEL_MODE_0 ;
+		{
+			if (imp_register_table.TCCR_A_ADDRESS > 0x60)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else 
+			{
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			return TC_CMD_ACK; 
+		}
+		case TC_OC_CHANNEL_MODE_1 :
+		{
+			if (imp_register_table.TCCR_A_ADDRESS > 0x60)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else
+			{
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_2 ;
+		{
+			if (imp_register_table.TCCR_A_ADDRESS >0x60)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else
+			{
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			return TC_CMD_ACK;
+		}
+		case TC_OC_CHANNEL_MODE_3 :
+		{
+			if (imp_register_table.TCCR_A_ADDRESS > 0x60)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else
+			{
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			return TC_CMD_ACK;
+		}
+	}
+	
+	#else
+	switch (mode)
+	{
+		case TC_OC_CHANNEL_MODE_0 ;
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << COMA1_8BIT_BIT) & ~(1 << COMA0_8BIT_BIT));
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= (~(1 << COMA1_8BIT_BIT) & ~(1 << COMA0_8BIT_BIT));
+			}
+			return TC_CMD_ACK;
+		}
+		
+		case TC_OC_CHANNEL_MODE_1 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA1_8BIT_BIT);
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA0_8BIT_BIT);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA1_8BIT_BIT);
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA0_8BIT_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		
+		case TC_OC_CHANNEL_MODE_2 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+			}
+			else if (timer_number == TC_0)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA1_8BIT_BIT);
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA0_8BIT_BIT);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= (1 << COMA1_8BIT_BIT);
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) &= ~(1 << COMA0_8BIT_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+		
+		case TC_OC_CHANNEL_MODE_3 :
+		{
+			if (timer_number != TC_0 || timer_number != TC_2)
+			{
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+			}
+			else if (timer_number == TC_0)
+			{if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_IO8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << COMA1_8BIT_BIT) | (1 << COMA0_8BIT_BIT);
+			}
+			else if (timer_number == TC_2)
+			{
+				if (channel != TC_OC_A)
+				{
+					return TC_CMD_NAK;
+				}
+				_SFR_MEM8(imp_register_table.TCCR_A_ADDRESS) |= ((1 << COMA1_8BIT_BIT) | (1 << COMA0_8BIT_BIT);
+			}
+			return TC_CMD_ACK;
+		}
+	}
+	
+	#endif
 	return TC_CMD_NAK;
 }
 
@@ -654,7 +1743,754 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 	return Tc_value::from_uint8(0);
 }
 
+// AVR SPECIFIC FUNTIONS
+void start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable *table) //
+{
+	// NOTE : TCCR_B_ADDRESS for the AT90CAN128 points to the address of TCCR_A_ADDRESS
+	if (tc_number = TC_0)
+	{
+		switch(rate.pre)
+	   {
+		   case TC_PRE_1 :
+		   {
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+				break;	
+		   }
+		   case TC_PRE_8 :
+		   {
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				break;
+		   }
+		   case TC_PRE_32 :
+		   {
+				break;
+		   }
+		   case TC_PRE_64 :
+		   {
+			   _SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+			   break;
+		   }
+		   case TC_PRE_128 :
+		   {
+				break;
+		   }
+		   case TC_PRE_256 :
+		   {
+			   _SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
+			   break;
+		   }
+		   case TC_PRE_1024:
+		   {
+			   _SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+			   _SFR_IO8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+			   break;
+		   }
+		   default :	// it would never come to this anyways
+				return -1;
+		}
+	}
+	#ifdef (__AVR_ATmega2560__) || defined(__AVR_AT90CAN128__)
+	else if (tc_number = TC_2)
+	{
+		switch(rate.pre)
+	   {
+		   case TC_PRE_1 :
+		   {
+				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+				break;	
+		   }
+		   case TC_PRE_8 :
+		   {
+				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				break;
+		   }
+		   case TC_PRE_32 :
+		   {
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+				break;
+		   }
+		   case TC_PRE_64 :
+		   {
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS2_BIT);
+			   break;
+		   }
+		   case TC_PRE_128 :
+		   {
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+				break;
+		   }
+		   case TC_PRE_256 :
+		   {
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS0_BIT);
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT));
+			   break;
+		   }
+		   case TC_PRE_1024:
+		   {
+			   _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS1_BIT) | (1 << CS0_BIT));
+			   break;
+		   }
+		   default :	// it would never come to this anyways
+
+		}
+	}
+	#endif
+}
+
+void start_16bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable *table) //
+{
+	switch(rate.pre)
+	{
+		case TC_PRE_1:
+		{
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS1_BIT));
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS0_BIT);
+		  break;
+		}
+		case TC_PRE_8:
+		{
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS2_BIT) & ~(1 << CS0_BIT));
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << CS1_BIT);
+		  break;
+		}
+		case TC_PRE_32:
+		{
+		  break;
+		}
+		case TC_PRE_64:
+		{
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS2_BIT);
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS1_BIT) | (1 << CS0_BIT));
+		  break;
+		}
+		case TC_PRE_128:	
+		{
+		  break;
+		}
+		case TC_PRE_256:	
+		{
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << CS1_BIT) & ~(1 << CS0_BIT));
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT));
+		  break;
+		}
+		case TC_PRE_1024:
+		{
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << CS1_BIT);
+		  _SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << CS2_BIT) | (1 << CS0_BIT));
+		  break;
+		}
+		   default: /*Not a valid prescalar*/
+				
+	}
+}
+
+Tc_command_status enable_oc_8bit (tc_oc_mode mode, Tc_registerTable *table) //
+{
+	#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+	if (mode == TC_OC_MODE_2)
+	{
+		mode = TC_OC_MODE_4;
+	}
+	else if (mode == TC_OC_MODE_3)
+	{
+		mode = TC_OC_MODE_5;
+	}
+	else if (mode == TC_OC_MODE_5)
+	{
+		mode = TC_OC_MODE_11;
+	}
+	else if (mode == TC_OC_MODE_7)
+	{
+		mode = TC_OC_MODE_15;
+	}
+	
+	#elif defined(__AVR_AT90CAN128__)
+	if (mode == TC_OC_MODE_2) 
+	{
+		mode = TC_OC_MODE_4;
+	}
+	else if (mode == TC_OC_MODE_3)
+	{
+		mode = TC_OC_MODE_5;
+	}
+	
+	#endif
+	
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
+			
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_8BIT_BIT) & ~(1 << WGM0_8BIT_BIT));
+			
+				#endif
+			}
+			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
+			else
+			{
+				#ifdef (__AVR_ATmega2560__)
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+				_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM2_BIT));
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_8BIT_BIT) & ~(1 << WGM0_8BIT_BIT));
+				
+				#endif
+			}
+			#endif
+			/* Disable the output compare interrupt */
+			_SFR_MEM8(table->TIMSK_address) &= ~(1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_8BIT_BIT);
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_8BIT_BIT);
+				
+				#endif
+			}
+			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
+			else 
+			{
+				#ifdef (__AVR_ATmega2560__)
+				 /* Set WGMn2:0 bits to 0x01 for PWM Phase Correct mode, where TOP = 0xFF */
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);	
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_8BIT_BIT);
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_8BIT_BIT);
+				
+				#endif
+			}
+			#endif
+			
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x02 for Clear timer on compare (CTC) mode, where TOP = OCRnA */
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_8BIT_BIT);
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM1_8BIT_BIT);
+				
+				#endif
+			}
+			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
+			else 
+			{
+				#ifdef (__AVR_ATmega2560__)
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+				_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);	
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_8BIT_BIT);
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_8BIT_BIT);
+				
+				#endif
+			}
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				/* Set WGMn2:0 bits to 0x03 for Fast PWM mode, where TOP = 0xFF */
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_IO8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_8BIT_BIT) | (1 << WGM0_8BIT_BIT));
+				
+				#endif
+			}
+			#ifndef (__AVR_ATmega64M1__) || (__AVR_ATmega64C1__)
+			else
+			{
+				#ifdef (__AVR_ATmega2560__)
+				_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_MEM8(table->TCCRB_address) &= ~(1 << WGM2_BIT);
+				
+				#elif defined(__AVR_AT90CAN128__)
+				_SFR_MEM8(table->TCCRA_address) |= ((1 << WGM1_8BIT_BIT) | (1 << WGM0_8BIT_BIT));
+				
+				#endif
+			}
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_8 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_9 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_10 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_11 :
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				/* Set WGMn2:0 bits to 0x05 for PWM Phase Correct mode, where TOP = OCRnA */
+				_SFR_IO8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+				#endif
+			}
+			#ifdef (__AVR_ATmega2560__)
+			else
+			{
+				_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			#endif
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_12 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_13 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_14 :
+		{
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_15 : 
+		{
+			if (table->TCCR_A_ADDRESS <= 0x60)
+			{
+				#ifdef (__AVR_ATmega2560__) || defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+				/* Set WGMn2:0 bits to 0x07 for Fast PWM mode, where TOP = OCRnA */
+				_SFR_IO8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_IO8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+				#endif
+			}
+			#ifdef (__AVR_ATmega2560__)
+			else
+			{
+				_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+				_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			}
+			#endif
+			return TC_CMD_ACK;
+		}
+	}
+}
+
+Tc_command_status enable_oc_16bit(tc_oc_mode mode, Tc_registerTable *table) //
+{
+	switch (mode)
+	{
+		case TC_OC_NONE :
+		{
+			/* Reset the timer counter mode back to NORMAL */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			/* Disable the output compare interrupt */
+			_SFR_MEM8(table->TIMSK_ADDRESS) &= ~(1 << OCIEA_BIT);
+			/* Disconnect the output pin to allow for normal operation */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << COMA1_BIT) & ~(1 << COMA0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_1 :
+		{
+			/* Set WGMn3:0 bits to 0x01 for Phase Correct mode with TOP = 0x00FF (8-bit) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT); 
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_2 :
+		{
+			/* Set WGMn3:0 bits to 0x02 for Phase Correct mode with TOP = 0x01FF (9-bit) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_3 :
+		{
+			 /* Set WGMn3:0 bits to 0x03 for Phase Correct mode with TOP = 0x03FF (10-bit) */
+			 _SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_4 :
+		{
+			 /* Set WGMn3:0 bits to 0x04 for CTC mode where TOP = OCRnA */
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			
+			 /* TODO: Move this to the enable_oc_interrupt()! Enable Output Compare Interrupt Match Enable in Timer Interrupt Mask register */
+			 _SFR_MEM8(table->TIMSK_ADDRESS) |= (1 << OCIEA_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_5 :
+		{
+			 /* Set WGMn3:0 bits to 0x05 for Fast PWM mode where TOP = 0x00FF (8-bit) */
+			 _SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			 /* Clear un-needed bits (safeguard) */
+			 _SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+			 _SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_6 :
+		{
+			/* Set WGMn3:0 bits to 0x06 for Fast PWM mode where TOP = 0x01FF (9-bit) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_7 :
+		{
+			/* Set WGMn3:0 bits to 0x07 for Fast PWM mode where TOP = 0x03FF (10-bit) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM2_BIT);
+			
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM3_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_8 :
+		{
+			 /* Set WGMn3:0 bits to 0x08 for PWM, Phase & Frequency Correct mode where TOP = ICRn */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_9 :
+		{
+			 /* Set WGMn3:0 bits to 0x09 for PWM, Phase & Frequency Correct mode where TOP = OCRnA */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM0_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM1_BIT);
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_10 :
+		{
+			 /* Set WGMn3:0 bits to 0x10 for PWM, Phase Correct mode where TOP = ICRn */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= ~(1 << WGM0_BIT);
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_11 :
+		{
+			 /* Set WGMn3:0 bits to 0x11 for PWM, Phase Correct mode where TOP = OCRnA */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= (1 << WGM3_BIT);
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) &= ~(1 << WGM2_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_12 :
+		{
+			 /* Set WGMn3:0 bits to 0x12 for CTC mode where TOP = ICRn */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_13 :
+		{
+			// Reserved
+			return TC_CMD_NAK;
+		}
+		case TC_OC_MODE_14 :
+		{
+			 /* Set WGMn3:0 bits to 0x14 for Fast PWM mode, where TOP = ICRn */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= (1 << WGM1_BIT);
+
+			/* Clear un-needed bits (safeguard) */
+			_SFR_MEM8(table->TCCR_A_ADDRESS) &= (1 << WGM0_BIT);
+			return TC_CMD_ACK;
+		}
+		case TC_OC_MODE_15 : 
+		{
+			/* Set WGMn3:0 bits to 0x15 for Fast PWM mode, where TOP = OCRnA */
+			_SFR_MEM8(table->TCCR_B_ADDRESS) |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
+			_SFR_MEM8(table->TCCR_A_ADDRESS) |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
+			
+			return TC_CMD_ACK;
+		}
+	}
+}
+
+
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
+
+// /** IMPLEMENT ISR POINTERS
+//  * 
+//  * Each timer interrupt type is tied to a relevant interrupt vector. These are associated
+//  * with the user ISRs by way of the function pointer array timerInterrupts[]. Here the
+//  * ISRs are declared and the user ISR is called if the appropriate element of the function
+//  * pointer array is non NULL.
+//  */
+
+ ISR(TIMER0_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER0_COMPA_int])
+     timerInterrupts[TIMER0_COMPA_int]();
+ }
+
+ ISR(TIMER0_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER0_COMPB_int])
+     timerInterrupts[TIMER0_COMPB_int]();
+ }
+
+ ISR(TIMER0_OVF_vect)
+ {
+   if (timerInterrupts[TIMER0_OVF_int])
+     timerInterrupts[TIMER0_OVF_int]();
+ }
+
+ ISR(TIMER1_CAPT_vect)
+ {
+   if (timerInterrupts[TIMER1_CAPT_int])
+     timerInterrupts[TIMER1_CAPT_int]();
+ }
+
+ ISR(TIMER1_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER1_COMPA_int])
+     timerInterrupts[TIMER1_COMPA_int]();
+ }
+
+ ISR(TIMER1_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER1_COMPB_int])
+     timerInterrupts[TIMER1_COMPB_int]();
+ }
+
+#ifdef (__AVR_ATmega2560__)
+ ISR(TIMER1_COMPC_vect)
+ {
+   if (timerInterrupts[TIMER1_COMPC_int])
+     timerInterrupts[TIMER1_COMPC_int]();
+ }
+ 
+  /*
+  * To prevent TIMER2_COMPA_vect being referenced by Free RTOS too; exclude the 
+  * reference here if FREE_RTOS is defined
+  */
+ #ifndef (FREE_RTOS_INC) 
+ ISR(TIMER2_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER2_COMPA_int])
+     timerInterrupts[TIMER2_COMPA_int]();
+ }
+ #endif
+ 
+  ISR(TIMER2_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER2_COMPB_int])
+     timerInterrupts[TIMER2_COMPB_int]();
+ }
+ 
+#endif
+
+ ISR(TIMER1_OVF_vect)
+ {
+   if (timerInterrupts[TIMER1_OVF_int])
+     timerInterrupts[TIMER1_OVF_int]();
+ }
+ 
+ #ifndef (__AVR_AT90CAN128__)
+ISR(TIMER2_COMP_vect)
+{
+	if (timerInterrupts[TIMER2_COMP_INT])
+		timerInterrupts[TIMER2_COMP_INT]();
+}
+#endif
+ 
+ #ifndef (__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
+ ISR(TIMER2_OVF_vect)
+ {
+   if (timerInterrupts[TIMER2_OVF_int])
+     timerInterrupts[TIMER2_OVF_int]();
+ }
+
+ ISR(TIMER3_CAPT_vect)
+ {
+   if (timerInterrupts[TIMER3_CAPT_int])
+     timerInterrupts[TIMER3_CAPT_int]();
+ }
+
+ ISR(TIMER3_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER3_COMPA_int])
+     timerInterrupts[TIMER3_COMPA_int]();
+ }
+
+ ISR(TIMER3_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER3_COMPB_int])
+     timerInterrupts[TIMER3_COMPB_int]();
+ }
+
+ ISR(TIMER3_COMPC_vect)
+ {
+   if (timerInterrupts[TIMER3_COMPC_int])
+     timerInterrupts[TIMER3_COMPC_int]();
+ }
+
+ ISR(TIMER3_OVF_vect)
+ {
+   if (timerInterrupts[TIMER3_OVF_int])
+     timerInterrupts[TIMER3_OVF_int]();
+ }
+#endif
+
+#ifdef (__AVR_ATmega2560__)
+ ISR(TIMER4_CAPT_vect)
+ {
+   if (timerInterrupts[TIMER4_CAPT_int])
+     timerInterrupts[TIMER4_CAPT_int]();
+ }
+
+ ISR(TIMER4_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER4_COMPA_int])
+     timerInterrupts[TIMER4_COMPA_int]();
+ }
+
+ ISR(TIMER4_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER4_COMPB_int])
+     timerInterrupts[TIMER4_COMPB_int]();
+ }
+
+ ISR(TIMER4_COMPC_vect)
+ {
+   if (timerInterrupts[TIMER4_COMPC_int])
+     timerInterrupts[TIMER4_COMPC_int]();
+ }
+
+ ISR(TIMER4_OVF_vect)
+ {
+   if (timerInterrupts[TIMER4_OVF_int])
+     timerInterrupts[TIMER4_OVF_int]();
+ }
+
+ ISR(TIMER5_CAPT_vect)
+ {
+   if (timerInterrupts[TIMER5_CAPT_int])
+     timerInterrupts[TIMER5_CAPT_int]();
+ }
+
+ ISR(TIMER5_COMPA_vect)
+ {
+   if (timerInterrupts[TIMER5_COMPA_int])
+     timerInterrupts[TIMER5_COMPA_int]();
+ }
+
+ ISR(TIMER5_COMPB_vect)
+ {
+   if (timerInterrupts[TIMER5_COMPB_int])
+     timerInterrupts[TIMER5_COMPB_int]();
+ }
+
+ ISR(TIMER5_COMPC_vect)
+ {
+   if (timerInterrupts[TIMER5_COMPC_int])
+     timerInterrupts[TIMER5_COMPC_int]();
+ }
+
+ ISR(TIMER5_OVF_vect)
+ {
+   if (timerInterrupts[TIMER5_OVF_int])
+     timerInterrupts[TIMER5_OVF_int]();
+ }
+ #endif
 
 // TODO - This.
 
@@ -735,20 +2571,20 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
     
 //     /* Assign the implementation semaphore pointers to their associated peripheral pins */
 //     /* Timer/Counter 0 */ /* TODO: break out into a seperate initialisation function */
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_A].address.port = TC0_OC_A_PORT;
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_A].address.pin = TC0_OC_A_PIN;
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC0_OC_A_PORT][(int8_t)TC0_OC_A_PIN];
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_B].address.port = TC0_OC_B_PORT;
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_B].address.pin = TC0_OC_B_PIN;
-//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC0_OC_B_PORT][(int8_t)TC0_OC_B_PIN];
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_A].address.port = TC0_OC_A_PORT;
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_A].address.pin = TC0_OC_A_PIN;
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC0_OC_A_PORT][(int8_t)TC0_OC_A_PIN];
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_B].address.port = TC0_OC_B_PORT;
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_B].address.pin = TC0_OC_B_PIN;
+//     timer_imps[(int8_t)TC_0].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC0_OC_B_PORT][(int8_t)TC0_OC_B_PIN];
     
 //     /* Timer/Counter 1 */
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_A].address.port = TC1_OC_A_PORT;
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_A].address.pin = TC1_OC_A_PIN;
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC1_OC_A_PORT][(int8_t)TC1_OC_A_PIN];
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_B].address.port = TC1_OC_B_PORT;
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_B].address.pin = TC1_OC_B_PIN;
-//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC1_OC_B_PORT][(int8_t)TC1_OC_B_PIN];
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_A].address.port = TC1_OC_A_PORT;
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_A].address.pin = TC1_OC_A_PIN;
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC1_OC_A_PORT][(int8_t)TC1_OC_A_PIN];
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_B].address.port = TC1_OC_B_PORT;
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_B].address.pin = TC1_OC_B_PIN;
+//     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC1_OC_B_PORT][(int8_t)TC1_OC_B_PIN];
 //     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_C].address.port = TC1_OC_C_PORT;
 //     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_C].address.pin = TC1_OC_C_PIN;
 //     timer_imps[(int8_t)TC_1].timer_pins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC1_OC_C_PORT][(int8_t)TC1_OC_C_PIN];
@@ -758,20 +2594,20 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 //     timer_imps[(int8_t)TC_1].timer_pins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC1_IC_A_PORT][(int8_t)TC1_IC_A_PIN];
     
 //     /* Timer/Counter 2 */
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_A].address.port = TC2_OC_A_PORT;
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_A].address.pin = TC2_OC_A_PIN;
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC2_OC_A_PORT][(int8_t)TC2_OC_A_PIN];
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_B].address.port = TC2_OC_B_PORT;
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_B].address.pin = TC2_OC_B_PIN;
-//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC2_OC_B_PORT][(int8_t)TC2_OC_B_PIN];
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_A].address.port = TC2_OC_A_PORT;
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_A].address.pin = TC2_OC_A_PIN;
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC2_OC_A_PORT][(int8_t)TC2_OC_A_PIN];
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_B].address.port = TC2_OC_B_PORT;
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_B].address.pin = TC2_OC_B_PIN;
+//     timer_imps[(int8_t)TC_2].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC2_OC_B_PORT][(int8_t)TC2_OC_B_PIN];
     
 //      /* Timer/Counter 3 */
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_A].address.port = TC3_OC_A_PORT;
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_A].address.pin = TC3_OC_A_PIN;
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC3_OC_A_PORT][(int8_t)TC3_OC_A_PIN];
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_B].address.port = TC3_OC_B_PORT;
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_B].address.pin = TC3_OC_B_PIN;
-//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC3_OC_B_PORT][(int8_t)TC3_OC_B_PIN];
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_A].address.port = TC3_OC_A_PORT;
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_A].address.pin = TC3_OC_A_PIN;
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC3_OC_A_PORT][(int8_t)TC3_OC_A_PIN];
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_B].address.port = TC3_OC_B_PORT;
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_B].address.pin = TC3_OC_B_PIN;
+//     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC3_OC_B_PORT][(int8_t)TC3_OC_B_PIN];
 //     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_C].address.port = TC3_OC_C_PORT;
 //     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_C].address.pin = TC3_OC_C_PIN;
 //     timer_imps[(int8_t)TC_3].timer_pins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC3_OC_C_PORT][(int8_t)TC3_OC_C_PIN];
@@ -781,12 +2617,12 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 //     timer_imps[(int8_t)TC_3].timer_pins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC3_IC_A_PORT][(int8_t)TC3_IC_A_PIN];
     
 //     /* Timer/Counter 4 */
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_A].address.port = TC4_OC_A_PORT;
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_A].address.pin = TC4_OC_A_PIN;
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC4_OC_A_PORT][(int8_t)TC4_OC_A_PIN];
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_B].address.port = TC4_OC_B_PORT;
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_B].address.pin = TC4_OC_B_PIN;
-//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC4_OC_B_PORT][(int8_t)TC4_OC_B_PIN];
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_A].address.port = TC4_OC_A_PORT;
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_A].address.pin = TC4_OC_A_PIN;
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC4_OC_A_PORT][(int8_t)TC4_OC_A_PIN];
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_B].address.port = TC4_OC_B_PORT;
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_B].address.pin = TC4_OC_B_PIN;
+//     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC4_OC_B_PORT][(int8_t)TC4_OC_B_PIN];
 //     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_C].address.port = TC4_OC_C_PORT;
 //     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_C].address.pin = TC4_OC_C_PIN;
 //     timer_imps[(int8_t)TC_4].timer_pins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC4_OC_C_PORT][(int8_t)TC4_OC_C_PIN];
@@ -796,12 +2632,12 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 //     timer_imps[(int8_t)TC_4].timer_pins[TC_IC_CHANNEL_A].s = &semaphores[(int8_t)TC4_IC_A_PORT][(int8_t)TC4_IC_A_PIN];
     
 //     /* Timer/Counter 5 */
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_A].address.port = TC5_OC_A_PORT;
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_A].address.pin = TC5_OC_A_PIN;
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_A].s = &semaphores[(int8_t)TC5_OC_A_PORT][(int8_t)TC5_OC_A_PIN];
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_B].address.port = TC5_OC_B_PORT;
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_B].address.pin = TC5_OC_B_PIN;
-//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_B].s = &semaphores[(int8_t)TC5_OC_B_PORT][(int8_t)TC5_OC_B_PIN];
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_A].address.port = TC5_OC_A_PORT;
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_A].address.pin = TC5_OC_A_PIN;
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_A].s = &semaphores[(int8_t)TC5_OC_A_PORT][(int8_t)TC5_OC_A_PIN];
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_B].address.port = TC5_OC_B_PORT;
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_B].address.pin = TC5_OC_B_PIN;
+//     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_B].s = &semaphores[(int8_t)TC5_OC_B_PORT][(int8_t)TC5_OC_B_PIN];
 //     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_C].address.port = TC5_OC_C_PORT;
 //     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_C].address.pin = TC5_OC_C_PIN;
 //     timer_imps[(int8_t)TC_5].timer_pins[TC_OC_CHANNEL_C].s = &semaphores[(int8_t)TC5_OC_C_PORT][(int8_t)TC5_OC_C_PIN];

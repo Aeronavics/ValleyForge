@@ -266,6 +266,38 @@ choose_bootloader()
 	return
 }
 
+######################################## FUNCTION #########################################
+###																						###
+### Name:			choose_executables													###
+###																						###
+### Inputs/Outputs:	None																###
+###																						###
+### Purpose:		Asks the user whether or not they want multiple executable files.	###
+###			If yes, the user is asked for their names to populate EXECUTABLES.			###
+###			Otherwise, it is assumed that the component name is the name of the 		###
+###			sole exectuable file.														###
+###																						###
+###########################################################################################
+
+choose_executables() {
+	# Ask if the user wants multiple executable files.
+	echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
+
+	# If they responded YES, then ask for the names of the executables.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		echo -e -n "${GREEN}What are the names of the exectuables? (Enter the names separated by a space) ${NO_COLOUR}"
+		read -e
+		echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
+
+		EXECUTABLES="$REPLY"
+	else
+		# Otherwise, default to one executable with the name of the component.
+		EXECUTABLES="$COMPONENT"
+	fi
+}
+
 ##################################### MINOR FUNCTIONS ####################################
 
 # Add a single key to a configuration file, or modify the key if it already exists.
@@ -796,6 +828,8 @@ push_key ${CONFIG_FILE} "SUBSYSTEM" "\"${NEW_SUBSYSTEM}\""
 push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
+# We create an empty key here because if it is created later, it appears in the wrong place.
+push_key ${CONFIG_FILE} "EXECUTABLES" ""
 
 # TODO - We should actually check if this works.
 
@@ -813,6 +847,20 @@ run_bload_specific_config
 generate_code_config_time $TCPATH/src/$COMPONENT
 
 # POST-NEW-COMPONENT OPTIONS.
+
+# Check if we have been supplied some executable names and that we're not in batch mode.
+if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
+	# Offer the user the opportunity to define some custom exectuable names.
+	choose_executables
+elif [ ! -z $EXECUTABLES ]; then
+	# We've been provided with a list of executables, do nothing.
+	:
+else
+	EXECUTABLES="${COMPONENT_NAME}"
+fi
+
+# Update the config file with the executable files.
+push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
 
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
@@ -837,7 +885,11 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 	# If they responded YES, then create the template files.
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
 		# Create the template files.
-		bash $TCPATH/bld/create/create_files -n $COMPONENT_NAME -c $COMPONENT
+		for EXEC_NAME in $EXECUTABLES
+		do
+			echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
+			bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT
+		done
 	fi
 
 	# Explain to the user what they should do now.

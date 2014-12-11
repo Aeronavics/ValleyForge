@@ -90,6 +90,7 @@
 
 // Include the standard C++ definitions.
 //#include <stddef.h>
+#include <vector>
 
 // Include the hal library.
 #include "hal/hal.hpp"
@@ -104,14 +105,27 @@ class Tc_imp;
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 enum Tc_command_status {TC_CMD_ACK, TC_CMD_NAK};
+enum Tc_timer_size {TC_16BIT, TC_8BIT};
 
 struct Tc_rate
 {
-	Tc_clk_src src;
+	Tc_clk_src src; // enumerate with TC_SRC_INT; which means INTernal Source clock
+						 // the other option would be an EXTernal source clock
 	Tc_prescalar pre;
 };
 
-enum Tc_timer_size {TC_16BIT, TC_8BIT};
+struct Tc_registerTable
+{
+	uint8_t TIMSK_ADDRESS;
+	uint8_t TCCR_A_ADDRESS;
+	uint8_t TCCR_B_ADDRESS;
+	uint8_t TCCR_C_ADDRESS;
+	uint8_t OCR_A_ADDRESS;
+	uint8_t OCR_B_ADDRESS;
+	uint8_t OCR_C_ADDRESS;
+	uint8_t ICR_ADDRESS;
+	uint8_t TCNT_ADDRESS;
+};
 
 struct Tc_value
 {
@@ -146,6 +160,12 @@ struct Tc_value
 	}
 };
 
+struct Tc_pins
+{
+	IO_pin_address address;
+	// we need a semaphore here
+	// POSIX?
+}
 // DEFINE PUBLIC CLASSES.
 
 /**
@@ -158,6 +178,7 @@ struct Tc_value
  * NOTE - The width of the timer register changes across targets; the target specific typedef Tc_value is sized to correspond with the width of the timer register on
  *        each supported target.  Be aware that this means timer overflow may occur at significantly different values across targets.
  */
+
 class Tc
 {
 	public:
@@ -362,19 +383,16 @@ class Tc
 
 	private:
 		// Functions.
-		
 		Tc(void) = delete;	// Poisoned.
-
 		Tc(Tc*) = delete;  // Poisoned.
-
 		Tc(Tc_imp*);
-
 		Tc operator =(Tc const&) = delete;	// Poisoned.
 
 		// Fields.
 
 		// Pointer to the target specific implementation of the timer/counter.
 		Tc_imp* imp;
+		
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
@@ -382,3 +400,4 @@ class Tc
 #endif /*__TC_H__*/
 
 // ALL DONE.
+
