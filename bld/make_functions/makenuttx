@@ -216,7 +216,6 @@ makenuttx_configure_apps()
 		for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
 		do
 			MAIN_FILE=${F#$1/apps/external/${EXECUTABLE}/}
-			echo $MAIN_FILE
 		done
 		if [ -z "$MAIN_FILE" ]; then
 			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
