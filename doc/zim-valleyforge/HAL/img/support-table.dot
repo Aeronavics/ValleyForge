@@ -34,8 +34,8 @@ struct1 [label=<
 	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
-	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
+	<td bgcolor="orange"></td>
 </tr>
 
 <tr><td>Watchdog</td>
@@ -74,8 +74,8 @@ struct1 [label=<
 	<td bgcolor="skyblue"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
-	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
+	<td bgcolor="orange"></td>
 </tr>
 
 <tr><td>I2C</td>
@@ -94,8 +94,8 @@ struct1 [label=<
 	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
-	<td bgcolor="orange"></td>
 	<td bgcolor="gray"></td>
+	<td bgcolor="orange"></td>
 </tr>
 
 <tr><td>ADC</td>
