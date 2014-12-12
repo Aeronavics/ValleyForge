@@ -1,5 +1,4 @@
 ############################################################################
-# apps/examples/hello/Makefile
 #
 #   Copyright (C) 2008, 2010-2013 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -37,38 +36,16 @@
 -include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
-# Application info
+APPNAME = <APP_NAME>
+PRIORITY = <APP_PRIORITY>
+STACKSIZE = <APP_STACK>
 
-# APP_INFO takes the following form
-# APP1NAME = <APP_NAME>
-# PRIORITY = SCHED_PRIORITY_DEFAULT
-# STACKSIZE = 2048
-<APP_INFO>
-
-# These are all the source files that are required by the project that aren't the executable files
-ASRCS = <ASSEMBLY_SOURCE_FILES> 
+ASRCS = <ASSEMBLY_SOURCE_FILES>
 CSRCS = <C_SOURCE_FILES>
+MAINSRC = <APP_MAIN>
 
-# APP_SOURCE is takes the following form:
-# APP1SRC = app1.c
-# APP2SRC = app2.c
-<APP_SOURCE>
-
-# MAIN_SRC is takes the following form:
-# MAINSRC = $(APP1SRC) $(APP2SRC)
-MAINSRC = <MAIN_SOURCE>
-
-# The following two lines do not change.
 AOBJS = $(ASRCS:.S=$(OBJEXT))
 COBJS = $(CSRCS:.c=$(OBJEXT))
-
-
-# APP_OBJS takes the following form:
-# APP1OBJS = $(APP1SRC:.c=$(OBJEXT))
-# APP2OBJS = $(APP2SRC:.c=$(OBJEXT))
-<APP_OBJS>
-
-# The following line does not change.
 MAINOBJ = $(MAINSRC:.c=$(OBJEXT))
 
 SRCS = $(ASRCS) $(CSRCS) $(MAINSRC)
@@ -94,10 +71,8 @@ else
   INSTALL_DIR = $(BIN_DIR)
 endif
 
-# APP_CONFIG_APPNAME takes the following form:
-# APP_CONFIG_APP1 ?= APP1$(EXEEXT)
-# APP1 = $(APP_CONFIG_APP1)
-<APP_CONFIG_APPNAME>
+CONFIG_VALLEYFORGE_<APP_NAME_UPPER>_PROGNAME ?= <APP_NAME>$(EXEEXT)
+PROGNAME = $(CONFIG_VALLEYFORGE_<APP_NAME_UPPER>_PROGNAME)
 
 ROOTDEPPATH = --dep-path .
 
@@ -119,16 +94,12 @@ $(COBJS) $(MAINOBJ): %$(OBJEXT): %.c
 	@touch .built
 
 ifeq ($(CONFIG_BUILD_KERNEL),y)
-# APP_INSTALL takes the following form:
-# $(BIN_DIR)$(DELIM)$(APP1): $(OBJS) $(APP1OBJ)
-#	@echo "LD: $(APP1)"
-#	$(Q) $(LD) $(LDELFFLAGS) $(LDLIBPATH) -o $(INSTALL_DIR)$(DELIM)$(APP1) $(ARCHCRT0OBJ) $(MAINOBJ) $(LDLIBS)
-#	$(Q) $(NM) -u  $(INSTALL_DIR)$(DELIM)$(APP1)
-#
-#	install: $(BIN_DIR)$(DELIM)$(APP1) $(BIN_DIR)$(DELIM)$(APP2)
-<APP_INSTALL_PART1>
+$(BIN_DIR)$(DELIM)$(PROGNAME): $(OBJS) $(MAINOBJ)
+	@echo "LD: $(PROGNAME)"
+	$(Q) $(LD) $(LDELFFLAGS) $(LDLIBPATH) -o $(INSTALL_DIR)$(DELIM)$(PROGNAME) $(ARCHCRT0OBJ) $(MAINOBJ) $(LDLIBS)
+	$(Q) $(NM) -u  $(INSTALL_DIR)$(DELIM)$(PROGNAME)
 
-install: <APP_INSTALL_PART2>
+install: $(BIN_DIR)$(DELIM)$(PROGNAME)
 
 else
 install:
@@ -136,16 +107,10 @@ install:
 endif
 
 ifeq ($(CONFIG_NSH_BUILTIN_APPS),y)
-# APP_CONTEXT takes the following form:
-# $(BUILTIN_REGISTRY)$(DELIM)$(APP1)_main.bdat: $(DEPCONFIG) Makefile
-#	$(call REGISTER,$(APP1),$(PRIORITY),$(STACKSIZE),$(APP1)_main)
-# $(BUILTIN_REGISTRY)$(DELIM)$(APP2)_main.bdat: $(DEPCONFIG) Makefile
-#	$(call REGISTER,$(APP2),$(PRIORITY),$(STACKSIZE),$(APP2)_main)
-#
-# context: $(BUILTIN_REGISTRY)$(DELIM)$(APP1NAME)_main.bdat $(BUILTIN_REGISTRY)$(DELIM)$(APP1NAME)_main.bdat
-<APP_CONTEXT_PART1>
+$(BUILTIN_REGISTRY)$(DELIM)$(APPNAME)_main.bdat: $(DEPCONFIG) Makefile
+	$(call REGISTER,$(APPNAME),$(PRIORITY),$(STACKSIZE),$(APPNAME)_main)
 
-context: <APP_CONTEXT_PART2>
+context: $(BUILTIN_REGISTRY)$(DELIM)$(APPNAME)_main.bdat
 else
 context:
 endif
