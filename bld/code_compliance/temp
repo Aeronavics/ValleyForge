@@ -1,0 +1,24 @@
+#!/bin/bash
+
+##########################################################################################################################
+#This script is for imposing naming conventions in all the files.
+#It checks whether the class and structure names begin with an upper case letter followed by lower case letters.
+#It also checks whether a template name consists of a single upper case letter.
+#If the conditions fail, a warning message is displayed with the line of failure and the word that violates the standards.
+##########################################################################################################################
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+echo "$SCRIPT"
+SCRIPTPATH=`dirname $SCRIPT`
+echo "$SCRIPTPATH"
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+echo "$TCPATH"
+
+value="filename	=	'true'	//If set to true, a warning message is displayed if the file names contain special characters other than '_'."
+temp1=${value#*=}
+start=${temp1#*\'}
+end=${start%\'*}
+echo "$end"
+#echo "temp1 is $temp1"
+#echo "temp2 is $temp2"

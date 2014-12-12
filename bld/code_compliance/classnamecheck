@@ -1,13 +1,11 @@
 #!/bin/bash
 
-
 ##########################################################################################################################
 #This script is for imposing naming conventions in all the files.
 #It checks whether the class and structure names begin with an upper case letter followed by lower case letters.
 #It also checks whether a template name consists of a single upper case letter.
 #If the conditions fail, a warning message is displayed with the line of failure and the word that violates the standards.
 ##########################################################################################################################
-
 
 # Determine what the absolute path to the root of the toolchain is.
 SCRIPT=`readlink -f $0`

@@ -825,6 +825,9 @@ done
 # Now we are done with the actual work, we just have to tidy up.
 echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
 
+# Run the script for code compliance
+bash $TCPATH/bld/code_compliance/overall
+
 # Check if we are supposed to be packing up the compilers after we are finished.
 if [ $POSTPACK ]; then
 	# Pack up the compilers.
