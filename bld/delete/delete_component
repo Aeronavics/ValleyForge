@@ -66,7 +66,7 @@ DEL=
 select DEL in ${COMPONENTS}
 do
 	# Check that the user wasn't a moron.
-	if [  -z "$DEL" -o -z `echo "${COMPONENTS}" | grep "$DEL"` ]; then
+	if [  -z "$DEL" -o -z "$(echo $COMPONENTS | grep \\\<$DEL\\\>)" ]; then
 		# The user is apparently a moron.
 		echo -e "${RED}Invalid choice.\n${NO_COLOUR}"
 
