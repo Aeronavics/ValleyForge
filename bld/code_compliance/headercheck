@@ -1,0 +1,51 @@
+#!/bin/bash
+
+
+################################################################################################################
+#This script is for imposing naming conventions in all the files.
+#Each source file should have a matching header file of the same name with corresponding file extensions.
+#It checks whether each file (C/C++) has a matching header file.
+#If no matching header files are found, a warning message is displayed along with the file name.
+################################################################################################################
+
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+echo -e "------------------------------------------------------------------------------"
+echo -e "Checking for matching headers for cpp files\n"
+for FILE in $(find $TCPATH/ -name "*.cpp"); do
+	filename=$(basename "$FILE")
+	path="${FILE%.*}"
+	temp=${path#/*}
+	echo "temp $temp"
+	filename="${filename%.*}"
+	headerfile=$filename".hpp"
+	cppfile=$filename".cpp"
+	#filename=$(echo "${FILE%%.*}")
+	if [[ ! $(find $TCPATH -type f -name $headerfile) ]]; 
+	then
+		echo "Header file missing for \"$FILE\""
+	fi
+done
+echo -e "Done checking for matching headers for cpp files"
+echo -e "------------------------------------------------------------------------------\n"
+ 
+echo -e "------------------------------------------------------------------------------"
+echo -e "Checking for matching headers for c files\n"
+for FILE in $(find $TCPATH/ -name "*.c"); do
+	filename=$(basename "$FILE")
+	path="${FILE%.*}"
+	filename="${filename%.*}"
+	headerfile=$filename".h"
+	cppfile=$filename".c"
+	#filename=$(echo "${FILE%%.*}")
+	if [[ ! $(find $TCPATH -type f -name $headerfile) ]]; 
+	then
+		echo "Header file missing for \"$FILE\""
+	fi
+done
+echo -e "Done checking for matching headers for c files"
+echo -e "------------------------------------------------------------------------------\n"  

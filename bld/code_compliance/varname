@@ -1,0 +1,153 @@
+#!/bin/bash
+
+
+################################################################################################################
+#This script is for imposing naming conventions for variables in all the files.
+#It checks for the condition whether the variable names are in lower case.
+#If the condition fail, a warning message is thrown denoting the line of failure.
+################################################################################################################
+
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+#This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
+for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+
+#This variable stands for the line number.
+	count=0
+
+#This variable is for checking whether the condition has failed.
+	varcheck=1
+
+	while read line
+	do
+   	 name=$line
+   	 #echo "the line is $name"
+  	 count=$((count+1))
+
+			#This condition is used for ignoring code blocks
+		if [[ "$name" =~ "// INDENT-OFF" ]]; then
+			read line2
+    			count=$((count+1))
+			name2=$line2
+				while [[ "$name2" != "// INDENT-ON" ]] && read line3
+				do
+	    				count=$((count+1))
+					name2=$line3
+				done
+
+		elif [[ $name != [*/]* || "$name" == [,] ]]; then
+
+			case $name in
+
+				#The lines with following words are to be ignored
+				(*for*) ;;
+				(*if*) ;;
+				(*while*) ;;
+				(*==*) ;;
+				(*\&=*) ;;
+				(*\>\>=*) ;;
+				(*/=*) ;;
+				(*\-=*) ;;
+				(*\+=*) ;;
+				(*\|=*) ;;
+				(*void*) ;;
+				(*const*) ;;
+				(*[*) ;;
+				(*#*) ;;
+				(*,*) ;;
+				(*~*) ;;
+				(*\(*) ;;
+				(*!=*) ;;
+				(*^=*) ;;
+				(*\<\<=*) ;;
+				(*class*) ;;
+				(*public*) ;;
+				(*protected*) ;;
+				(*private*) ;;
+				(*case*) ;;
+				(*default*) ;;
+				(*template*) ;;
+				(*struct*) ;;
+				(*union*) ;;
+#				(*typedef*) ;; #####
+				(*enum*) ;;
+#				(*extern*) ;; #####
+#				(*volatile*) ;; ########
+				(*return*) ;;
+				*)
+					if [[ $name =~ \= ]]; then
+						value=${name#* }
+						value2=${value%%=*}
+						value3=${value2#* }
+						
+						if [[ "$value2" =~ "::" ]]; then
+							tempval=${value2#*::}
+							
+							if [[ "$tempval" =~ [^a-z_0-9\ ] ]]; then
+								varcheck=0
+								echo "WARNING: AT line $count - Variable name ($tempval)has upper case letters"
+							fi
+						
+						else 	
+							
+							#This condition is when the string is like "int xyz = 8;"	
+							if [[ "$value3" == "" && "$value2" =~ [^a-z_0-9\ ] ]]; then
+								varcheck=0
+								echo "WARNING: At line $count - Variable name ($value2)has upper case letters"
+
+							#This condition is when a pointer is present in the string. E.g. "int *xyz = qwe"
+							elif [[ "$value3" =~ '*' || "$value2" =~ '*' ]]; then
+								#value4=${value3#*\*}
+								#value5=${value2#*\*}
+								#echo "value4 is $value4 and value5 is $value5"
+								#We remove the * symbol and then analyze whether the string has any upper case letters
+								if [[ "$value4" =~ [^a-z_0-9\ ] || "$value5" =~ [^a-z_0-9\ ] ]]; then
+									varcheck=0
+									echo "WARNING: At Line $count - Variable name ($value2)has upper case letters"
+								fi
+	
+							#This condition is when the string is like "static int xyz = 8;"	
+							elif [[ "$value3" != "" && "$value3" =~ [^a-z_0-9\ ] && "$value2" != "$value3" ]]; then
+								varcheck=0
+								echo "WARNING: AT Line $count - Variable name ($value3) has upper case letters"
+							fi
+						fi
+					
+					else
+						valid='0-9a-zA-Z_ 	:=;'
+						valcase='0-9a-z_ ;'
+						value=${name#* }
+						value2=${value%;*}
+						value3=${value2#* }
+							if [[ "$name" =~ [^$valid] ]]; then
+								:
+							else
+								tempval=${name#* }
+								if [[ "$value3" == "" && "$value2" =~ [^$valcase] ]]; then
+#								if [[ "$tempval" =~ [^$valcase] ]]; then
+									varcheck=0
+									echo "WARNING: AT Line $count - Variable name ($tempval) has upper case letters"
+								
+								elif [[ "$value3" != "" && "$value3" =~ [^$valcase] ]]; then
+									varcheck=0
+									echo "WARNING: At Line $count - Variable name ($value3) has upper case letters"
+								fi
+							fi
+
+					fi		
+				
+				esac
+		fi
+	done < $FILE
+
+	if [[ $varcheck == 0 ]]; then
+		echo -e "\n------------------------------------------------------------------------------"
+		echo "$FILE has errors!!!"
+		echo -e "------------------------------------------------------------------------------\n"
+	fi
+
+done

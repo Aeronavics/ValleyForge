@@ -1,0 +1,227 @@
+#!/bin/bash
+
+
+##########################################################################################################################
+#This script is for imposing naming conventions in all the files.
+#It checks whether the class and structure names begin with an upper case letter followed by lower case letters.
+#It also checks whether a template name consists of a single upper case letter.
+#If the conditions fail, a warning message is displayed with the line of failure and the word that violates the standards.
+##########################################################################################################################
+
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+#[a-zA-Z_]+[ ][a-zA-Z_]+\([a-zA-Z_]+[ *]+[a-zA-Z]+\) regex for function name
+#(\S+)\s*\(\s*\S*\s*\S*(?:\s*\S*,\s*\S*\s+\S*)*\)\s*\/*\s*\S*\n{  regex 2nd test for function calls
+#(\S+)[ ]*\([ ]*\S*[ ]*\S*(?:[ ]*\S*,[ ]*\S*[ ]+\S*)*\)[ ]*\/*[ ]*\S*\n{ regex 3rd working perfect
+
+#This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
+for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+
+#This variable stands for the line number.
+	count=0
+
+#These variables are for checking whether a condition has failed.
+	classnamecheckfail=1
+	structnamecheckfail=1
+	templatenamecheckfail=1
+
+#Read each line of the file
+	while read line
+	do
+    		name=$line
+    		count=$((count+1))
+
+#This condition is used for ignoring code blocks
+			if [[ "$name" =~ "// INDENT-OFF" ]]; then
+				read line2
+	    			count=$((count+1))
+				name2=$line2
+					while [[ "$name2" != "// INDENT-ON" ]] && read line3
+					do
+		    				count=$((count+1))
+						name2=$line3
+					done
+
+#This condition is used for ignoring lines which include comments. 
+			elif [[ "$name" =~ "*" || "$name" =~ "//" ]]; then
+				#If it is a comment line, do nothing
+				:
+
+#This is the required part for checking the names of classes and structures
+			else
+				case "$name" in
+
+				#check for class names whether they start with an upper case letter
+					class*)
+						value=${name#*class } #E.g. This line obtains "XYZ" from string "class XYZ"
+						case ${value:0:1} in  #match with the first character
+							[[:upper:]])
+								#The class name is correct
+ 			        			        ;;
+ 			        			*)
+								classnamecheckfail=0
+ 						                echo -e " WARNING---> at line $count: class name begins with lowercase letter $value"
+ 						                ;;
+						esac
+						;;
+
+					#check for structure names whether they start with an upper case letter. This case is for strings starting with "struct"
+					struct*)
+						value=${name#*struct }
+						if [[ "$name" == "struct" ]]; then
+							:
+#							read line2
+#				    			count=$((count+1))
+#							name2=$line2
+#								while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
+#								do
+#		    							count=$((count+1))
+#									name2=$line3
+#								done
+#							value=${name2#*\}} #get the string after '}' character
+#							tempval=${value:0:1}
+#							if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
+#								value2=${value:1:2}							
+#							else							
+#								value2=${value:0:1}							
+#							fi						
+#							case ${value2:0:1} in
+#								[[:upper:]])
+#									#The structure name is correct
+ #							                ;;
+ #							        *)
+#									structnamecheckfail=0
+ #							                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value "
+ #							                ;;
+#							esac
+						else
+							str=$(echo "${name: -1}") #getting the last character of the string
+							if [[ "$str" == ";" ]]; then
+								value2=$value
+							else
+								value2=$value
+							fi
+
+							case ${value2:0:1} in
+								[[:upper:]])
+									#The structure name is correct
+ 							                ;;
+ 							        *)
+									structnamecheckfail=0
+ 							                echo -e " WARNING---> At line $count Structure name begins with lowercase letter $value2"
+ 							                ;;
+							esac
+						fi
+						;;
+
+					#check for structure names whether they start with an upper case letter. This case is for strings starting with "XYZ struct"
+					(*\ struct*)
+						value=${name#*struct }
+						if [[ "$value" == "$name" ]]; then
+							read line2
+				    			count=$((count+1))
+							name2=$line2
+								while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
+								do
+		    							count=$((count+1))
+									name2=$line3
+								done
+							value=${name2#*\}} #get the string after '}' character
+							tempval=${value:0:1}
+						
+							if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
+								value2=${value:1:2}							
+							else							
+								value2=${value:0:1}							
+							fi						
+
+							case ${value2:0:1} in
+								[[:upper:]])
+									#The structure name is correct
+ 							                ;;
+ 							        *)
+									structnamecheckfail=0
+ 							                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value2 "
+ 							                ;;
+							esac
+						else
+						
+						case ${value:0:1} in
+							[[:upper:]])
+								#The structure name is correct
+ 						                ;;
+ 						        *)
+								structnamecheckfail=0
+ 						                echo -e " WARNING---> At Line $count: Structure name begins with lowercase letter  $value "
+ 						                ;;
+						esac
+						fi
+						;;
+
+					#check for template names whether they have only a single uppercase letter
+					template*) 		
+						value=${name#*template<class }
+						value1=${value%>*}
+						size=${#value1}
+							case ${value:0:1} in
+								[[:upper:]])
+										if [[ $size != 1 ]]; then
+											templatechecknamefail=0
+										fi
+ 							                ;;
+ 							        *)
+									templatechecknamefail=0		        		
+ 			        				        ;;
+							esac
+							if [[ $templatechecknamefail == 0 ]]; then
+								echo -e " WARNING---> At line $count: Template Name has more than single character $name "
+							fi
+						;;
+				esac 
+			fi
+	done < $FILE
+
+	#see if the file has any errors. Print an error message if it has any errors.
+		if [[ $classnamecheckfail != 0 && $structnamecheckfail != 0 && $templatechecknamefail != 0 ]]; then
+			:
+		else
+			echo -e "\n------------------------------------------------------------------------------"
+			echo -e " File \"$FILE\" has errors!!!\n"
+			echo -e "------------------------------------------------------------------------------\n"
+		fi
+done
+
+
+
+
+
+
+#read line2
+#				    		count=$((count+1))
+#						name2=$line2
+#						while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
+#						do
+#		    					count=$((count+1))
+#							name2=$line3
+#						done
+#						value=${name2#*\}} #get the string after '}' character
+#						tempval=${value:0:1}
+#						if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
+#							value2=${value:1:2}							
+#						else							
+##							value2=${value:0:1}							
+#						fi						
+#						case ${value2:0:1} in
+#							[[:upper:]])
+#								#The structure name is correct
+ #						                ;;
+ #						        *)
+#								structnamecheckfail=0
+ #						                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value "
+ #						                ;;
+#						esac
+#						;;#
