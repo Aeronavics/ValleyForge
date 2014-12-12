@@ -1,0 +1,63 @@
+#!/bin/bash
+
+
+################################################################################################################
+#This script is for imposing statement conventions in all the header files (h,hpp).
+#It checks whether the header files have an include guard.
+#If the condition fails, a warning message is displayed with the file name.
+################################################################################################################
+
+
+
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+#This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
+for FILE in $(find $TCPATH/ -name "*.hpp" -o -name "*.h"); do
+linecount=0
+lastoccur=0
+count=0
+endcount=0
+splcount=0
+
+#occurcount=$(grep -cow "#endif" "$FILE")
+#echo "$occurcount"
+#lastoccur=$(cat -n $FILE | grep "#endif" | tail -1 |  cut -f 1)
+#echo "last occr $lastoccur"
+#temp=${lastoccur##* }
+#echo "temp is $temp"
+
+while read line
+do
+name=$line
+count=$((count+1))
+size=${#name}
+#echo "--$name--"
+	if [[ "$name" != ['*']* && "$name" != [/]* && "$name" != "" && $size != 1 && $name != "{" && $name != "}" ]]; then
+		linecount=$((linecount+1))
+		splcount=$count
+		#echo "$count, $name"
+		if [[ "$name" =~ "#endif" ]]; then
+			endcount=$count
+		fi
+		#else
+		#echo "$name"
+	fi
+
+done < $FILE
+#echo "endcount is $endcount"
+#echo "splcount is $splcount"
+if [[ $linecount -gt 0 ]]; then
+if [[ "$splcount" != "$endcount" ]]; then
+echo "EC -> $endcount, SC -> $splcount"
+			echo -e "\n------------------------------------------------------------------------------"
+			echo -e " File \"$FILE\" has errors!!!\n"
+			echo -e "------------------------------------------------------------------------------\n"
+#else
+#echo "success for $FILE"
+fi
+fi
+done

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for FILE in $(find $TCPATH/ -name "*.cpp"-o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+	uncrustify -c my.cfg -f $FILE -o $FILE
+	sed -i 's:\(.*\)/[*]\(.*\)[*]/:\1 // \2:' $FILE #used for replacing single line /*..*/ comments to //
+	sed -i 's/todo[ -: ]*/ TODO - /I' testsample2.cpp #working one
+	sed -i 's/todo  / TODO -/I' $FILE #used for replacing case insensitive todo with TODO
+	sed -i 's/note[ -: ]*/ NOTE - /I' testsample2.cpp #working one
+	sed -i 's/note/ NOTE -/I' $FILE #used for replacing case insensitive note with NOTE
+done

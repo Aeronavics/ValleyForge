@@ -1,0 +1,22 @@
+#!/bin/bash
+
+while read line
+do
+name=$line
+option=${name%=*}
+value=${name#*=}
+if [[ "$value" == "TRUE" || "$value" == "true" ]]; then
+case $option in
+		(*naming*) echo "naming is true" ;;
+		(*commenting*) echo "commenting is true" ;;
+		(*layout*) echo "layout is true" ;;
+		(*filename*) echo "filename is true" ;;
+		*) echo "invalid option for value->\"$value\"" ;;
+esac
+elif [[ "$value" == "false" || "$value" == "FALSE" ]]; then
+:
+else
+echo "invalid value for option->\"$option\""
+fi
+#echo "option is $option, value is $value"
+done < $1

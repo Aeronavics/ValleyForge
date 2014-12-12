@@ -1,5 +1,0 @@
-#!/bin/bash
-
-var="test value"
-value=${var#* }
-echo $value
