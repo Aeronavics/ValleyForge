@@ -116,6 +116,7 @@ gen_nuttx_build()
 	local APP_LOOP_MAX
 	local C_SOURCE_FILES
 	local ASSEMBLY_SOURCE_FILES
+	local CURRENT_EXECUTABLE
 
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
 	APP_PRIORITIES_ARRAY=($PRIORITIES)
@@ -131,36 +132,37 @@ gen_nuttx_build()
 
 	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
 	do
+		# Use a simpler variable name for readability.
+		CURRENT_EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
 		# Create the application directory.
-		mkdir -p $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+		mkdir -p $1/apps/external/${CURRENT_EXECUTABLE}
 		# Move the _main files to their respective directory
-		mv $(find $1/apps/external -iname "*_main*" | grep "${APP_EXECUTABLES_ARRAY[$APP_INDEX]}_main") $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+		mv $(find $1/apps/external -iname "*_main*" | grep "${CURRENT_EXECUTABLE}_main") $1/apps/external/${CURRENT_EXECUTABLE}
 		# Update the external Kconfig file with the new application
-		echo -e "source \"\$APPSDIR/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig\"\n" >> $1/apps/external/Kconfig
+		echo -e "source \"\$APPSDIR/external/${CURRENT_EXECUTABLE}/Kconfig\"\n" >> $1/apps/external/Kconfig
 		# Update the external Make.defs file with the new application
-		#echo -e -n "ifeq(\$(CONFIG_VALLEYFORGE_${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}),y)\nCONFIGURED_APPS += external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}\nendif\n\n" >> $1/apps/external/Make.defs
-		echo -e -n "CONFIGURED_APPS += external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}\n\n" >> $1/apps/external/Make.defs
+		echo -e -n "CONFIGURED_APPS += external/${CURRENT_EXECUTABLE}\n\n" >> $1/apps/external/Make.defs
 
 		# Copy the Kconfig file and Makefile for the application
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
+		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
 		# Update the fields in the Kconfig file
-		sed -i s^"<APP_NAME>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
-		sed -i s^"<APP_NAME_UPPER>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
+		sed -i s^"<APP_NAME>"^"${CURRENT_EXECUTABLE}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
+		sed -i s^"<APP_NAME_UPPER>"^"${CURRENT_EXECUTABLE^^}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
 		# Update the fields in the Makefile
-		sed -i s^"<APP_NAME>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
-		sed -i s^"<APP_NAME_UPPER>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
-		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile		
-		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
-		sed -i s^"<APP_MAIN>"^$(ls $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]} | grep "_main.c")^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<APP_NAME>"^"${CURRENT_EXECUTABLE}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
+		sed -i s^"<APP_NAME_UPPER>"^"${CURRENT_EXECUTABLE^^}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
+		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile		
+		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
+		sed -i s^"<APP_MAIN>"^$(ls $1/apps/external/${CURRENT_EXECUTABLE} | grep "_main.c")^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
 
 		# Find all the C and CPP files in the directory that aren't suffixed by "_main".
-		C_SOURCE_FILES=($(find $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
+		C_SOURCE_FILES=($(find $1/apps/external/${CURRENT_EXECUTABLE} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
 		# Find all the assembly files in the directory.
 		ASSEMBLY_SOURCE_FILES=($(find $1/apps/external -iname '*.s'))
 		# Update the makefile with the source files
-		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
-		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
+		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
 	done
 
 	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
