@@ -63,13 +63,6 @@ makenuttx_armcortex()
 	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
 	EXECUTABLES="${EXECUTABLES:-${COMPONENT_NAME}}"
 
-	# Generate applications for the executables in the project.
-	if ! makenuttx_configure_apps $TCPATH/$TMP_SRC_DIR/$COMPONENT; then
-		# Something went wrong.
-		echo -e "${RED}Unable to generate application configurations for NuttX.\n${NO_COLOUR}"
-		return 1
-	fi
-
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
@@ -106,87 +99,5 @@ makenuttx_armcortex()
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
 	return 0
 }
-
-######################################## FUNCTION #########################################
-###
-### Name:		makenuttx_configure_apps
-###
-### Inputs/Outputs:	None
-###
-### Purpose:	Generates source code and configuration files for NuttX applications,
-###				since the NuttX build system doesn't work with sources files in their
-###				usual locations.  A separate NuttX application will be generated for each
-###				executable in the component.
-###
-###########################################################################################
-
-# NOTE - Because extended globbing is used inside this function, it needs to be enabled for the function DEFINITION as well.
-
-# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
-
-shopt -s extglob
-makenuttx_configure_apps()
-{
-	# Check if the specified location is actually legit.
-	if [ -z "$1" ] || [ ! -d $1 ]; then
-		# The specified location is not a directory.
-		echo -e "${RED}Invalid source location for configuring NuttX applications.\n${NO_COLOUR}"
-		return 1
-	fi
-
-	# Create application configuration files for each executable.
-	echo -e "${CYAN}\tConfiguring NuttX applications for component...\n${NO_COLOUR}"
-
-	# TODO - Don't actually need to make a directory as such, because 'external' can just be a symlink.
-
-	# Create a directory for ValleyForge applications. NuttX expects third party code in an 'external' directory: read the bottom of /apps/README.txt.
-	mkdir $1/apps/external
-
-	# Add the Kconfig entry for the new application directory so that 'make menuconfig' can find it.
-	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
-
-	# Iterate over each of the executables for this component.
-	for EXECUTABLE in $EXECUTABLES
-	do
-		# For each executable, we'll need to build a separate application directory.
-		echo -e "${CYAN}\t\tBuilding NuttX application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
-
-		# Create a directory for the application inside apps/external/.
-		mkdir $1/apps/external/$EXECUTABLE
-
-		# Copy the project application makefile and Kconfig files to the application directory.
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/$EXECUTABLE/Kconfig
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/$EXECUTABLE/Makefile
-		
-		# Update the Kconfig file in apps/external to point to the Kconfig file for this application.
-		echo "source \"\$APPSDIR/external/${EXECUTABLE}/Kconfig\"" >> $1/apps/external/Kconfig
-		
-		# Update the Make.defs file in apps/external to include the ValleyForge applications.
-		echo "#ifeq (\$(CONFIG_VALLEYFORGE_${EXECUTABLE}),y)" >> $1/apps/external/Make.defs
-		echo "CONFIGURED_APPS += external/${EXECUTABLE}" >> $1/apps/external/Make.defs
-		echo "#endif" >> $1/apps/external/Make.defs
-
-		# Enable the application by default.
-		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
-
-		# TODO - This is a temporary solution.  Actually, should use symlinks, or use dependency detection to only copy those files required.
-
-		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
-
-		# Copy the NuttX application files to the new application directory.
-		shopt -s extglob
-		cp -rf $1/!(apps|nuttx) $1/apps/external/$EXECUTABLE
-		shopt -u extglob
-
-		# TODO - Pretty sure this will be broken for multiple executables.
-
-		# Fill the Kconfig file and Makefile with the appropriate information for building the executable.
-		gen_nuttx_app_configuration $1/apps/external/$EXECUTABLE
-	done
-
-	# All done.
-	return 0
-}
-shopt -u extglob
 
 # ALL DONE.

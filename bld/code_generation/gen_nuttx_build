@@ -34,6 +34,11 @@ echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 
 source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
 
+# NOTE - Because extended globbing is used inside this function, it needs to be enabled for the function DEFINITION as well.
+
+# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+shopt -s extglob
 ######################################## FUNCTION #########################################
 ###																						###
 ### Name:		gen_nuttx_build															###
@@ -96,6 +101,80 @@ gen_nuttx_build()
 	mv -f $1/Make.defs $1/nuttx/Make.defs
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
 
+	# Create the ValleyForge application directory. This is called 'external' due to peculiarities with NuttX. Read the bottom of /apps/README.txt for details.
+	#cp -fr ${NUTTX_TEMPLATE_SOURCE}/external $1/apps/external
+	mkdir -p $1/apps/external
+	# Move the NuttX application files to the new ValleyForge application directory.
+	shopt -s extglob
+	mv -f $1/!(apps|nuttx) $1/apps/external/
+	shopt -u extglob
+
+	# Restrict the scope of some variables used in the loop
+	local APP_EXECUTABLES_ARRAY
+	local APP_PRIORITIES_ARRAY
+	local APP_STACKSIZE_ARRAY
+	local APP_LOOP_MAX
+	local C_SOURCE_FILES
+	local ASSEMBLY_SOURCE_FILES
+
+	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
+	APP_PRIORITIES_ARRAY=($PRIORITIES)
+	APP_STACKSIZE_ARRAY=($STACKSIZES)
+	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
+
+	# Assign default values to anything that isn't already assigned a value.
+	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
+	do
+		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
+		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
+	done
+
+	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
+	do
+		# Create the application directory.
+		mkdir -p $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+		# Move the _main files to their respective directory
+		mv $(find $1/apps/external -iname "*_main*" | grep "${APP_EXECUTABLES_ARRAY[$APP_INDEX]}_main") $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+		# Update the external Kconfig file with the new application
+		echo -e "source \"\$APPSDIR/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig\"\n" >> $1/apps/external/Kconfig
+		# Update the external Make.defs file with the new application
+		#echo -e -n "ifeq(\$(CONFIG_VALLEYFORGE_${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}),y)\nCONFIGURED_APPS += external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}\nendif\n\n" >> $1/apps/external/Make.defs
+		echo -e -n "CONFIGURED_APPS += external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}\n\n" >> $1/apps/external/Make.defs
+
+		# Copy the Kconfig file and Makefile for the application
+		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
+		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		# Update the fields in the Kconfig file
+		sed -i s^"<APP_NAME>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
+		sed -i s^"<APP_NAME_UPPER>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Kconfig
+		# Update the fields in the Makefile
+		sed -i s^"<APP_NAME>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<APP_NAME_UPPER>"^"${APP_EXECUTABLES_ARRAY[$APP_INDEX]^^}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile		
+		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<APP_MAIN>"^$(ls $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]} | grep "_main.c")^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+
+		# Find all the C and CPP files in the directory that aren't suffixed by "_main".
+		C_SOURCE_FILES=($(find $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
+		# Find all the assembly files in the directory.
+		ASSEMBLY_SOURCE_FILES=($(find $1/apps/external -iname '*.s'))
+		# Update the makefile with the source files
+		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${APP_EXECUTABLES_ARRAY[$APP_INDEX]}/Makefile
+	done
+
+	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
+	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
+
+	##### CHANGE HERE #####
+
+	# Enable the ValleyForge applications by default.
+	echo -e "\n#\n# ValleyForge\n#" >> $1/nuttx/.config
+	for EXECUTABLE in $EXECUTABLES
+	do
+		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
+	done
+
 	# TODO - This stuff looks target specific.
 
 	# Update the .config file for building on a Linux system.
@@ -110,3 +189,4 @@ gen_nuttx_build()
 	# All done.
 	return 0
 }
+shopt -u extglob
