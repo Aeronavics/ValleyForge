@@ -16,82 +16,116 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		edit_user_config										###
-###															###
-### Author:		Zac Frank											###
-###															###
-### Date Created:	15-11-2011											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		Allows the user to edit their configuration settings.				 		###
-###															###
+###
+### Name:           edit_user_config
+###
+### Author:         Zac Frank
+###
+### Date Created:	15-11-2011
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:		Allows the user to edit project wide configuration settings.
+###
 ###########################################################################################################################
-
-# FIGURE OUT WHERE WE ARE.
-
-# Determine what the absolute path to the root of the toolchain is.
-SCRIPT=`readlink -f $0`
-SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 # DEFINE CONSTANTS.
 
 # Define file names.
 
 USER_CONFIG_FILE="var/config.cfg"
-DEFAULT_USER_CONFIG_FILE="bld/default_user_config.cfg"
-BUILD_CONFIG_FILE="bld/build_configs.cfg"
 
-# Define the colours used for interface output.
+# Import the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
-# Create directories which don't come automatically with the toolchain.
-source $TCPATH/bld/common/create_empty_dirs
+# Import functions for manipulating config files.
+source $TCPATH/bld/common/config_helpers
 
-################################ SCRIPT PROPER STARTS HERE ###############################
+######################################## FUNCTION #########################################
+###
+### Name:		vf_config_ui
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Implements an interactive interface which prompts the user to select from
+###             the range of possible project wide configuration settings to alter.
+###
+###########################################################################################
 
-# Loop continuously until the user exits the script.
-while :
-do
-	# Print the prompt to the user.
-	echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
-	echo -en "\t${UNDERLINED}U${NO_COLOUR}SER Name    ${UNDERLINED}R${NO_COLOUR}ERUN User Setup    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}"
-	
-	# Read a single character input from the user and select the appropriate response.
-	read -s -n 1
-	echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
-	case "$REPLY" in
-		"U" | "u" )
-			# Prompt the user to enter their name.
-			echo -e -n "${GREEN}Please enter your name: ${NO_COLOUR}"
-			read
-			echo -e ""
+vf_config_ui()
+{
+	# Loop continuously until the user exits the script.
+	while :
+	do
+		# Print the prompt to the user.
+		echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
+		echo -en "\t${UNDERLINED}U${NO_COLOUR}SER Name    ${UNDERLINED}R${NO_COLOUR}ERUN Configuration Wizard    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}"
+		
+		# Read a single character input from the user and select the appropriate response.
+		read -s -n 1
+		echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+		case "$REPLY" in
+			"U" | "u" )
+				vf_config_setname
+				break
+				;;
 
-			# Update the user name in the configuration file.
-			sed "s/tc_authname=.*/tc_authname=$REPLY/g" -i $TCPATH/$USER_CONFIG_FILE
-			echo -e "${CYAN}Changed username to $REPLY.\n${NO_COLOUR}"
-			
-			# We're done here.
-			break
-			;;
+			"R" | "r" )
+				vf_config_wizard
+				break
+				;;
 
-		"R" | "r" )
-			# Rerun the 'first time configuration' script.
-			bash ${TCPATH}/bld/other/first_run
+			"Q" | "q" | "X" | "x" )
+				# We're done here.
+				break
+				;;
+		esac
+	done
 
-			# We're done here.
-			break
-			;;
+	# All done.
+	return 0
+}
 
-		"Q" | "q" | "X" | "x" )
-			# We're done here.
-			break
-			;;
-	esac
-done
+######################################## FUNCTION #########################################
+###
+### Name:		vf_config_wizard
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Implements an interactive 'wizard' which prompts the user to configure
+###				various user/project wide configuration settings in one go.  This is
+###				initially called the first time the toolchain is started.
+###
+###########################################################################################
 
-# All done.
-exit 0
+vf_config_wizard()
+{
+	# Prompt for each of the configuration settings in turn.
 
+	vf_config_setname
+
+	# Record that we've now completed the setup process.
+	push_key $TCPATH/$USER_CONFIG_FILE "tc_startup" "done"
+
+	# All done.
+	return 0
+}
+
+##################################### MINOR FUNCTIONS ####################################
+
+vf_config_setname()
+{
+	# Prompt the user to enter their name.
+	echo -e -n "${GREEN}Please enter your name: ${NO_COLOUR}"
+	read
+	echo -e ""
+
+	# Update the user name in the configuration file.
+	push_key $TCPATH/$USER_CONFIG_FILE "tc_authname" "${REPLY}"
+	echo -e "${CYAN}Changed username to $REPLY.\n${NO_COLOUR}"
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.

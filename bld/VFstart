@@ -42,8 +42,6 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
 # Define file names.
 
-USER_CONFIG_FILE="var/config.cfg"
-DEFAULT_USER_CONFIG_FILE="bld/default_user_config.cfg"
 TMP_SRC_DIR="tmp/tmp_src"
 OUTPUT_DIR="bin"
 
@@ -53,14 +51,20 @@ source $TCPATH/bld/common/def_colours
 # Create directories which don't come automatically with the toolchain.
 source $TCPATH/bld/common/create_empty_dirs
 
+# Import functions for performing user configuration.
+source $TCPATH/bld/edit/edit_user_config
+
+# Import functions for manipulating config files.
+source $TCPATH/bld/common/config_helpers
+
 ##################################### MINOR FUNCTIONS ####################################
 
 # Determine the status of the active component.
 check_active_component()
 {
 	# Check if there is an 'active component' specified by the user configuration.
-	CURR=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_curr | cut -d '=' -f 2)
-	if [ "$CURR" == "none" ] || [ -z "$CURR" ]; then
+	CURR=$(pull_key $TCPATH/${USER_CONFIG_FILE} "tc_curr")
+	if [ -z "$CURR" ]; then
 		# Check if there are actually any components listed in the source folder.
 		if [ $(ls -1A $TCPATH/src | wc -l) -eq 0 ]; then
 			# Indicate to the user that there are no source components at the moment.
@@ -83,9 +87,8 @@ check_active_component()
 			echo -e "${YELLOW}The active component doesn't exist. Please set a component to be active using EDIT -> ACTIVATE.\n${NO_COLOUR}"
 		fi
 
-		# Change the active component to 'none'.
-		sed "s/tc_curr=.*/tc_curr=none/g" -i $TCPATH/$USER_CONFIG_FILE
-		CURR="none"
+		# Change the active component to nothing.
+		CURR=
 	else
 		# An active component is set, and actually exists.
 		echo -e "${BOLD_CYAN}Your active component is $CURR.\n${NO_COLOUR}"
@@ -174,18 +177,9 @@ do
 		# Print welcome message.
 		echo -e "${HIGHLIGHT_BLUE}${BOLD}\n ************  Welcome to the ValleyForge Embedded Toolchain Interface  *************${NO_COLOUR}\n"
 
-		# Check if a user configuration file is present.
-		if [ ! -r $TCPATH/$USER_CONFIG_FILE ]; then
-			# The user configuration file is missing, so copy over the default configuration file.
-			echo -e "${CYAN}Creating user configuration file...\n${NO_COLOUR}"
-			cp $TCPATH/$DEFAULT_USER_CONFIG_FILE $TCPATH/$USER_CONFIG_FILE
-
-			# TODO - Should probably check this actually worked.
-		fi
-
 		# Check if this is the first time the toolchain has been used by this user.
-		STARTUP=$(grep -v "#" $TCPATH/$USER_CONFIG_FILE | grep tc_startup | cut -d '=' -f 2)
-		if [ "$STARTUP" == "start" ]; then
+		STARTUP=$(pull_key $TCPATH/${USER_CONFIG_FILE} "tc_startup")
+		if [ -z "$STARTUP" ] || [ "$STARTUP" == "start" ]; then
 			# Print a message to the user.
 			echo -e "${YELLOW}The first time the ValleyForge toolchain is used, some initial configuration is required.\n${NO_COLOUR}"
 
@@ -198,15 +192,15 @@ do
 			case "$REPLY" in
 				"Y" | "y" )
 					# Run the setup script.
-					bash ${TCPATH}/bld/other/first_run
+					vf_config_wizard
 					;;
 				"N" | "n" )
 					# The user doesn't want to run the setup.  So we'll just pretend that it has already been set up.
-					sed "s/tc_startup=.*/tc_startup=notrun/g" -i $TCPATH/$USER_CONFIG_FILE
+					push_key $TCPATH/${USER_CONFIG_FILE} "tc_startup" "notrun"
 					;;
 				"L" | "l" )
 					# The user wants to be reminded later.
-					sed "s/tc_startup=.*/tc_startup=later/g" -i $TCPATH/$USER_CONFIG_FILE
+					push_key $TCPATH/${USER_CONFIG_FILE} "tc_startup" "later"
 					;;
 			esac
 		elif [ "$STARTUP" == "later" ]; then
@@ -427,7 +421,7 @@ do
 
 						# Write the choice of component to file.
 						CURR_SED=`echo $CURR | sed 's/\//\\\\\//g'`
-						sed "s/tc_curr=.*/tc_curr=$CURR_SED/g" -i $TCPATH/$USER_CONFIG_FILE
+						push_key $TCPATH/${USER_CONFIG_FILE} "tc_curr" "$CURR_SED"
 						;;
 
 					"R" | "r" )
@@ -453,7 +447,7 @@ do
 
 					"E" | "e" )
 						# Run the edit script.
-						bash $TCPATH/bld/edit/edit_user_config
+						vf_config_ui
 						;;
 
 					"B" | "b" | "Q" | "q" | "X" | "x" )

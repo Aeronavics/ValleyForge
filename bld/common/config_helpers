@@ -44,9 +44,8 @@ push_key()
 
 	# Check if the specified configuration file exists.
 	if [ ! -f "$1" ]; then
-		# The specified configuration file does not exist.
-		echo -e "${RED}Unable to add key to configuration file '$1'; file does not exist.\n${NO_COLOUR}"
-		return 1
+		# The specified configuration file does not exist, so we create it.
+		touch $1
 	fi
 
 	# Check whether we are just trying to delete a specific key/value pair.
@@ -95,8 +94,7 @@ pull_key()
 
 	# Check if the specified configuration file exists.
 	if [ ! -f "$1" ]; then
-		# The specified configuration file does not exist.
-		echo -e "${RED}Unable to read key from configuration file '$1'; file does not exist.\n${NO_COLOUR}"
+		# The specified configuration file does not exist, so we simply return nothing.
 		return 1
 	fi
 
