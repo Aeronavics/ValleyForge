@@ -43,7 +43,7 @@
 #ifdef CONFIG_BUILD_KERNEL
 int main(int argc, FAR char *argv[])
 #else
-int <<<TC_INSERTS_COMPONENT_NAME_HERE>>>_main(int argc, char *argv[])
+int <<<TC_INSERTS_FILE_BASENAME_HERE>>>(int argc, char *argv[])
 #endif
 {
   printf("Hello, World!!\n");
