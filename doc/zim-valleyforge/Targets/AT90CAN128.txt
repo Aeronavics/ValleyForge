@@ -1,0 +1,64 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-04T15:58:40+13:00
+
+====== AT90CAN128 ======
+Created Thursday 04 December 2014
+
+[[[http://www.atmel.com/Images/doc7679.pdf|Datasheet]]] [[[http://www.atmel.com/devices/at90can128.aspx|Product Page]]]
+The high-performance, low-power Atmel 8-bit AVR RISC-basedmicrocontroller combines 128 KB ISP flash memory, 4KB EEPROM, 4KB SRAM, 53 general purpose I/O lines, 32 general purpose working registers, CAN controller (V2.0A/V2.0B compliant), real time counter, four flexible timer/counters with compare modes and PWM, two USARTs, byte oriented two-wire serial interface, an 8-channel 10-bit A/D converter with optional differential input stage with programmable gain, programmable watchdog timer with internal oscillator, SPI serial port, JTAG test interface (IEEE 1149.1 compliant) for on-chip debugging, and five software selectable power saving modes. The device supports a throughput of 16 MIPS at 16 MHz and operates between 2.7-5.5 volts.
+
+**Flash**		128 KiB
+**EEPROM**	4 KiB
+**SRAM**		4 KiB
+**Pin Count**	64
+**Frequency**	16 MHz
+
+**Timers**		4
+**USART**		2
+**SPI**			1
+**I2C**			1
+**CAN**		1
+**ADC**		8x 10-bit, 15 ksps
+
+===== GPIO =====
+TODO: Description of ports, pins, and allowable config modes
+eg. do the pins support pull-ups? pin-change? interrupts?
+
+===== USART =====
+The ATmega2560 has 2 USARTs available (''USART_0'' and ''USART_1''), and can be configured for Synchronous (SPI-like) and Asynchronous (UART) operating modes. For more information see [[HAL:USART]]
+
+The highest supported baud rate for this target is //fclk/K//, where K is 16 for USART_MODE_ASYNCHRONOUS, 8 for USART_MODE_ASYNCHRONOUS_DOUBLESPEED, and 2 for USART_MODE_SYNCHRONOUS_xxx.
+For the maximum clock of 16MHz, this is 1Mbps for USART_MODE_ASYNCHRONOUS.
+For best results, choose a baud rate //fclk/(K*n)// for some //n//. Eg. at 16MHz, supported baud rates are 1M, 6667K, 5000K, 4000Kbaud, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (K * (floor(fclk / (K * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
+
+Supported frame formats:
+	5 - 9 data bits
+	1 - 2 stop bits
+
+Supported modes:
+	''USART_MODE_ASYNCHRONOUS''			- UART
+	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	- UART, Allows faster baud rates (AVR-specific)
+	''USART_MODE_SYNCHRONOUS_MASTER''		- Chip drives the XCK pin
+	''USART_MODE_SYNCHRONOUS_SLAVE''		- Chip uses the XCK pin for synchronization
+
+Supported parity settings:
+	''USART_PARITY_NONE''
+	''USART_PARITY_EVEN''
+	''USART_PARITY_ODD''
+
+
+===== SPI =====
+TODO: Description of the SPI module and allowable config values
+
+===== I2C =====
+TODO: Description of the I2C module and allowable config values
+
+===== CAN =====
+TODO: Description of the CAN module and allowable config values

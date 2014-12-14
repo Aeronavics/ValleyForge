@@ -16,17 +16,17 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###																														###
-### Name:		gen_nuttx_build																							###
-###																														###
-### Author:		Zane Barker																								###
-###																														###
-### Date Created:	27-11-2014																							###
-###																														###
-### Type:		Bash Script																								###
-###																														###
-### Purpose:		Provides functions which generate code which implements the NuttX platform.		 					###
-###																														###
+###
+### Name:		gen_nuttx_build
+###
+### Author:		Zane Barker
+###
+### Date Created:	27-11-2014
+###
+### Type:		Bash Function Definitions
+###
+### Purpose:		Provides functions which generate code which implements the NuttX platform.
+###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
@@ -34,20 +34,14 @@ echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 
 source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
 
-# NOTE - Because extended globbing is used inside this function, it needs to be enabled for the function DEFINITION as well.
-
-# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
-
-shopt -s extglob
 ######################################## FUNCTION #########################################
-###																						###
-### Name:		gen_nuttx_build															###
-###																						###
-### Inputs/Outputs:	Takes the path to the source location where to place the code.		###
-###																						###
-### Purpose:		Fetches files which implements the NuttX platform. The 				###
-###			fetched files are then integrated with the user's application code.			###
-###																						###
+###
+### Name:		gen_nuttx_build
+###
+### Inputs/Outputs:	Takes the path to the source location where to place the code.
+###
+### Purpose:		Fetches files which implements the NuttX platform.
+###
 ###########################################################################################
 gen_nuttx_build()
 {
@@ -101,82 +95,6 @@ gen_nuttx_build()
 	mv -f $1/Make.defs $1/nuttx/Make.defs
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
 
-	# Create the ValleyForge application directory. This is called 'external' due to peculiarities with NuttX. Read the bottom of /apps/README.txt for details.
-	#cp -fr ${NUTTX_TEMPLATE_SOURCE}/external $1/apps/external
-	mkdir -p $1/apps/external
-	# Move the NuttX application files to the new ValleyForge application directory.
-	shopt -s extglob
-	mv -f $1/!(apps|nuttx) $1/apps/external/
-	shopt -u extglob
-
-	# Restrict the scope of some variables used in the loop
-	local APP_EXECUTABLES_ARRAY
-	local APP_PRIORITIES_ARRAY
-	local APP_STACKSIZE_ARRAY
-	local APP_LOOP_MAX
-	local C_SOURCE_FILES
-	local ASSEMBLY_SOURCE_FILES
-	local CURRENT_EXECUTABLE
-
-	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
-	APP_PRIORITIES_ARRAY=($PRIORITIES)
-	APP_STACKSIZE_ARRAY=($STACKSIZES)
-	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
-
-	# Assign default values to anything that isn't already assigned a value.
-	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
-	do
-		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
-		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
-	done
-
-	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
-	do
-		# Use a simpler variable name for readability.
-		CURRENT_EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
-		# Create the application directory.
-		mkdir -p $1/apps/external/${CURRENT_EXECUTABLE}
-		# Move the _main files to their respective directory
-		mv $(find $1/apps/external -iname "*_main*" | grep "${CURRENT_EXECUTABLE}_main") $1/apps/external/${CURRENT_EXECUTABLE}
-		# Update the external Kconfig file with the new application
-		echo -e "source \"\$APPSDIR/external/${CURRENT_EXECUTABLE}/Kconfig\"\n" >> $1/apps/external/Kconfig
-		# Update the external Make.defs file with the new application
-		echo -e -n "CONFIGURED_APPS += external/${CURRENT_EXECUTABLE}\n\n" >> $1/apps/external/Make.defs
-
-		# Copy the Kconfig file and Makefile for the application
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
-		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-		# Update the fields in the Kconfig file
-		sed -i s^"<APP_NAME>"^"${CURRENT_EXECUTABLE}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
-		sed -i s^"<APP_NAME_UPPER>"^"${CURRENT_EXECUTABLE^^}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Kconfig
-		# Update the fields in the Makefile
-		sed -i s^"<APP_NAME>"^"${CURRENT_EXECUTABLE}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-		sed -i s^"<APP_NAME_UPPER>"^"${CURRENT_EXECUTABLE^^}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile		
-		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-		sed -i s^"<APP_MAIN>"^$(ls $1/apps/external/${CURRENT_EXECUTABLE} | grep "_main.c")^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-
-		# Find all the C and CPP files in the directory that aren't suffixed by "_main".
-		C_SOURCE_FILES=($(find $1/apps/external/${CURRENT_EXECUTABLE} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
-		# Find all the assembly files in the directory.
-		ASSEMBLY_SOURCE_FILES=($(find $1/apps/external -iname '*.s'))
-		# Update the makefile with the source files
-		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${CURRENT_EXECUTABLE}/Makefile
-	done
-
-	# Add the Kconfig entry for the new ValleyForge application directory so that 'make menuconfig' can find it.
-	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
-
-	##### CHANGE HERE #####
-
-	# Enable the ValleyForge applications by default.
-	echo -e "\n#\n# ValleyForge\n#" >> $1/nuttx/.config
-	for EXECUTABLE in $EXECUTABLES
-	do
-		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
-	done
-
 	# TODO - This stuff looks target specific.
 
 	# Update the .config file for building on a Linux system.
@@ -191,4 +109,5 @@ gen_nuttx_build()
 	# All done.
 	return 0
 }
-shopt -u extglob
+
+# ALL DONE.

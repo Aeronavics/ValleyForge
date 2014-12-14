@@ -61,6 +61,9 @@ for f in $TCPATH/bld/code_generation/gen_*; do
 	source "$f"
 done
 
+# Import functions for manipulating config files.
+source $TCPATH/bld/common/config_helpers
+
 # Create directories which don't come automatically with the toolchain.
 source $TCPATH/bld/common/create_empty_dirs
 
@@ -299,84 +302,6 @@ choose_executables() {
 }
 
 ##################################### MINOR FUNCTIONS ####################################
-
-# Add a single key to a configuration file, or modify the key if it already exists.
-push_key()
-{
-	# $1 - Configuration file.
-	# $2 - Key.
-	# $3 - Value.
-	# $4 - Flag indicating whether to concatenate or delete a key instead of assigning it.
-
-	# NOTE - The behaviour of this function when dealing with concatenating or deleting-type keys may not be immediately obvious.
-
-	# TODO - Check if the required fields are actually present.
-
-	# Check if the specified configuration file exists.
-	if [ ! -f "$1" ]; then
-		# The specified configuration file does not exist.
-		echo -e "${RED}Unable to add key to configuration file '$1'; file does not exist.\n${NO_COLOUR}"
-		return 1
-	fi
-
-	# Check whether we are just trying to delete a specific key/value pair.
-	if [ "$4" == "--delete" ]; then
-		# We are deleting a specific key/value pair, rather than inserting a new key, or replacing an existing key.
-
-		# If we can find the exact key/value pair (treating assignment and concatenation the same), then we delete it.
-		sed -r -i "\|\s*${2}=${3}\s*|d" ${1}
-		sed -r -i "\|\s*${2}[+]=${3}\s*|d" ${1}
-
-	# Check whether we should be concatenating this key rather than assigning it.
-	elif [ "$4" == "--concat" ]; then
-		# Because this is a concatenated key, we check if the complete key/value pair already exists, rather than just the key.
-		if [ -z "`cat ${1} | grep -E \"^\s*${2}[+]=${3}$\"`" ]; then
-			# We couldn't already find the key, so we just insert it add the end.
-			echo "${2}+=${3}" >> "${1}"
-		fi
-	
-	# Else this is just a regular assignment.
-	else
-		# Check if the key already exists in the file.
-		if [ -n "`cat ${1} | grep -E \"^\s*${2}=.*$\"`" ]; then
-			# The key already exists, so now we just change its value.
-			sed -r -i "s%^\s*${2}=.*$%${2}=${3}%g" ${1}
-		else
-			# We couldn't already find the key, so we just insert it add the end.
-			echo "${2}=${3}" >> "${1}"
-		fi
-	fi
-
-	# All done.
-	return 0	
-}
-
-# Fetch the value of a single key from a configuration file.  Returns empty if key not found.
-pull_key()
-{
-	# $1 - Configuration file.
-	# $1 - Key.
-
-	# NOTE - This function can be used to get the value of a key without actually loading the key from file.
-
-	# NOTE - However, the behavior in the case of multiple (usually concatenating) keys may not be immediately obvious.
-
-	# TODO - Check if the required fields are actually present.
-
-	# Check if the specified configuration file exists.
-	if [ ! -f "$1" ]; then
-		# The specified configuration file does not exist.
-		echo -e "${RED}Unable to read key from configuration file '$1'; file does not exist.\n${NO_COLOUR}"
-		return 1
-	fi
-
-	# Check if the key is found in the file, and if so, print it out (since you can't return a string in bash).
-	echo `cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2`
-	echo `cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2`
-
-	# All done.
-	return 0
-}
 
 # Do any code generation which is required at config time.
 generate_code_config_time()
@@ -706,12 +631,12 @@ if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 			echo -e "${RED}The component name must not start with a slash (that creates a directory with no name).  Please choose another name.\n${NO_COLOUR}"
 
 		# Check to see if this name is already taken.
-		elif [ ! -z `echo "$COMPONENTS" | grep "$REPLY"` ]; then
+		elif [ -n "$(echo $COMPONENTS | grep \\\<$REPLY\\\>)" ]; then
 			# The name provided is already taken.  Prompt the user to choose an available name.
 			echo -e "${RED}The component '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
 
 		# Check if the component name would be nested INSIDE another component.
-		elif [ -n "$COMPONENTS" -a ! -z "$(echo "$REPLY" | grep "$COMPONENTS")" ]; then
+		elif [ -n "$(for C in $COMPONENTS; do echo $(echo $REPLY | grep $C); done)" ]; then
 			# The nesting passes through another component, which isn't legit.
 			echo -e "${RED}The component cannot be nested INSIDE another component.  Please choose another name.\n${NO_COLOUR}"
 
@@ -758,7 +683,7 @@ source $TCPATH/bld/common/clear_bconf_vars
 source $TCPATH/bld/common/clear_component_vars
 
 # Check if the name component already exists in the list of components.  This is legitimate, because the 'create' script is also used to reconfigure an existing component.
-if [ -n "`echo ${COMPONENTS} | grep ${COMPONENT}`" ]; then
+if [ -n "$(echo \"${COMPONENTS}\" | grep \"^${COMPONENT}\$\")" ]; then
 	# The component already exists, so we're just reconfiguring it.
 	echo -e "${CYAN}Component ${COMPONENT} already exists; the component will be reconfigured.\n${NO_COLOUR}"
 	NEW=

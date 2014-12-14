@@ -4,7 +4,27 @@ Creation-Date: 2014-06-10T14:40:10+12:00
 
 ====== HAL ======
 
-[[+GPIO|GPIO]]
+The Hardware Abstraction Library (HAL) is a collection of modules which can be used to communicate with various hardware peripherals for various supported [[Targets|targets]]. The goal of the HAL is to make using hardware-specific peripherals easy, and portable across different targets with minimal modification.
+
+===== Modules =====
+The HAL modules are documented in the links below, but for complete interface documentation see their respective .hpp headers, which can be found under //res/common/hal///
+
+	[[+GPIO|GPIO]] - General Purpose IO
+	Watchdog
+	EEPROM - Integrated non-volatile memory
+	[[+USART|USART]] - Asynchronous & Synchronous USART interface
+	CAN - Controller Area Network
+	I2C - Inter-Integrated Circuit (Also known as TWI)
+	SPI - Serial Peripheral Interface
+	ADC - Analog to Digital Converter
+	Timer/Counter
+
+===== Support =====
+The HAL is still a work-in-progress. The table below shows which HAL modules are implemented for each supported target.
+
+{{./img/support-table.png?type=diagram}}
+
+{{./img/support-key.png?type=diagram}}
 
 Created Tuesday 10 June 2014
 

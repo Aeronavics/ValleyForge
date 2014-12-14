@@ -1,0 +1,36 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-08T16:06:30+13:00
+
+====== Programming with the STK600 ======
+Created Monday 08 December 2014
+
+The STK600 development platform is used to program AVR chips.
+
+===== Device not programming? Troubleshooting: =====
+
+=== VTarget ===
+If the VTARGET LED doesn't light up, then you will need to re-configure the board and set VTARGET back to its appropriate voltage.
+
+**Linux**
+1. Run the following command to open it in interactive mode:
+	''avrdude -c stk600 -p <part_name> -t''
+2. Enter ''vtarg <voltage>'' to change VTarget (eg. "''vtarg 5''")
+
+See this for more information on interactive mode:
+http://www.nongnu.org/avrdude/user-manual/avrdude_8.html
+
+**Windows**
+1. Install Atmel Studio 6 (If not already installed)
+	AVR Studio does not support the STK600! 
+2. Under //Tools// invoke //Device Programming//
+3. In the dialog that pops up, select the STK600 as the tool, the correct chip you are using, and ISP as the interface and then click Apply.
+4. Go to the //Board Settings// tab, and set VTarget to the appropriate voltage (eg. 5V) and then click write
+5. The VTARGET LED should come on and you should be able to program again
+
+Also check that the clock frequency is set right (usually 16MHz)
+
+=== IO Ports ===
+The ISP pins are connected to the GPIO headers (eg. PORTD).
+If there is anything loading down the ISP pins or shorting them out, the ISP cannot function!
+The LEDs aren't a problem though and can be safely connected.
