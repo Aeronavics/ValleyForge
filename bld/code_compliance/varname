@@ -13,6 +13,9 @@ SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
@@ -73,10 +76,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 				(*template*) ;;
 				(*struct*) ;;
 				(*union*) ;;
-#				(*typedef*) ;; #####
 				(*enum*) ;;
-#				(*extern*) ;; #####
-#				(*volatile*) ;; ########
 				(*return*) ;;
 				*)
 					if [[ $name =~ \= ]]; then
@@ -89,7 +89,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 							
 							if [[ "$tempval" =~ [^a-z_0-9\ ] ]]; then
 								varcheck=0
-								echo "WARNING: AT line $count - Variable name ($tempval)has upper case letters"
+								echo -e "${RED}WARNING: AT line ${CYAN}$count ${RED}- Variable name ${CYAN}$tempval ${RED}has upper case letters${NO_COLOUR}"
 							fi
 						
 						else 	
@@ -97,7 +97,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 							#This condition is when the string is like "int xyz = 8;"	
 							if [[ "$value3" == "" && "$value2" =~ [^a-z_0-9\ ] ]]; then
 								varcheck=0
-								echo "WARNING: At line $count - Variable name ($value2)has upper case letters"
+								echo -e "${RED}WARNING: At line ${CYAN}$count${RED} - Variable name ${CYAN}$value2 ${RED}has upper case letters${NO_COLOUR}"
 
 							#This condition is when a pointer is present in the string. E.g. "int *xyz = qwe"
 							elif [[ "$value3" =~ '*' || "$value2" =~ '*' ]]; then
@@ -107,13 +107,13 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 								#We remove the * symbol and then analyze whether the string has any upper case letters
 								if [[ "$value4" =~ [^a-z_0-9\ ] || "$value5" =~ [^a-z_0-9\ ] ]]; then
 									varcheck=0
-									echo "WARNING: At Line $count - Variable name ($value2)has upper case letters"
+									echo -e "${RED}WARNING: At Line ${CYAN}$count ${RED}- Variable name ${CYAN}$value2 ${RED}has upper case letters${NO_COLOUR}"
 								fi
 	
 							#This condition is when the string is like "static int xyz = 8;"	
 							elif [[ "$value3" != "" && "$value3" =~ [^a-z_0-9\ ] && "$value2" != "$value3" ]]; then
 								varcheck=0
-								echo "WARNING: AT Line $count - Variable name ($value3) has upper case letters"
+								echo -e "${RED}WARNING: AT Line ${CYAN}$count ${RED}- Variable name ${CYAN}$value3 ${RED}has upper case letters${NO_COLOUR}"
 							fi
 						fi
 					
@@ -130,11 +130,11 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 								if [[ "$value3" == "" && "$value2" =~ [^$valcase] ]]; then
 #								if [[ "$tempval" =~ [^$valcase] ]]; then
 									varcheck=0
-									echo "WARNING: AT Line $count - Variable name ($tempval) has upper case letters"
+									echo -e "${RED}WARNING: AT Line ${CYAN}$count ${RED}- Variable name ${CYAN}$tempval${RED} has upper case letters${NO_COLOUR}"
 								
 								elif [[ "$value3" != "" && "$value3" =~ [^$valcase] ]]; then
 									varcheck=0
-									echo "WARNING: At Line $count - Variable name ($value3) has upper case letters"
+									echo -e "${RED}WARNING: At Line ${CYAN}$count ${RED}- Variable name ${CYAN}$value3 ${RED}has upper case letters${NO_COLOUR}"
 								fi
 							fi
 
@@ -145,9 +145,11 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 	done < $FILE
 
 	if [[ $varcheck == 0 ]]; then
-		echo -e "\n------------------------------------------------------------------------------"
-		echo "$FILE has errors!!!"
-		echo -e "------------------------------------------------------------------------------\n"
+		echo -e "\n${YELLOW}File ${CYAN}$FILE ${YELLOW}has errors with variable names!${NO_COLOUR}"
+		echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 	fi
 
 done
+
+echo -e "${BOLD_WHITE}${UNDERLINED}NAMING CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${GREEN}Variable names should be all lower case and underscore separated \nE.g. ${YELLOW}uint16 critter_type = i + 1; \n${NO_COLOUR}" 

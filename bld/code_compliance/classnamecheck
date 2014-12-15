@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 ##########################################################################################################################
 #This script is for imposing naming conventions in all the files.
 #It checks whether the class and structure names begin with an upper case letter followed by lower case letters.
@@ -8,15 +7,13 @@
 #If the conditions fail, a warning message is displayed with the line of failure and the word that violates the standards.
 ##########################################################################################################################
 
-
 # Determine what the absolute path to the root of the toolchain is.
 SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
-#[a-zA-Z_]+[ ][a-zA-Z_]+\([a-zA-Z_]+[ *]+[a-zA-Z]+\) regex for function name
-#(\S+)\s*\(\s*\S*\s*\S*(?:\s*\S*,\s*\S*\s+\S*)*\)\s*\/*\s*\S*\n{  regex 2nd test for function calls
-#(\S+)[ ]*\([ ]*\S*[ ]*\S*(?:[ ]*\S*,[ ]*\S*[ ]+\S*)*\)[ ]*\/*[ ]*\S*\n{ regex 3rd working perfect
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
 
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
@@ -64,7 +61,8 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
  			        			        ;;
  			        			*)
 								classnamecheckfail=0
- 						                echo -e " WARNING---> at line $count: class name begins with lowercase letter $value"
+
+ 						                echo -e "${RED}WARNING: at line ${CYAN}$count${RED}: class name ${CYAN}$value ${RED}begins with lowercase letter ${NO_COLOUR}"
  						                ;;
 						esac
 						;;
@@ -74,30 +72,6 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 						value=${name#*struct }
 						if [[ "$name" == "struct" ]]; then
 							:
-#							read line2
-#				    			count=$((count+1))
-#							name2=$line2
-#								while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
-#								do
-#		    							count=$((count+1))
-#									name2=$line3
-#								done
-#							value=${name2#*\}} #get the string after '}' character
-#							tempval=${value:0:1}
-#							if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
-#								value2=${value:1:2}							
-#							else							
-#								value2=${value:0:1}							
-#							fi						
-#							case ${value2:0:1} in
-#								[[:upper:]])
-#									#The structure name is correct
- #							                ;;
- #							        *)
-#									structnamecheckfail=0
- #							                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value "
- #							                ;;
-#							esac
 						else
 							str=$(echo "${name: -1}") #getting the last character of the string
 							if [[ "$str" == ";" ]]; then
@@ -112,7 +86,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
  							                ;;
  							        *)
 									structnamecheckfail=0
- 							                echo -e " WARNING---> At line $count Structure name begins with lowercase letter $value2"
+ 							                echo -e "${RED}WARNING: At line ${CYAN}$count${RED}: Structure name ${CYAN}$value2 ${RED}begins with lowercase letter ${NO_COLOUR}"
  							                ;;
 							esac
 						fi
@@ -145,7 +119,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
  							                ;;
  							        *)
 									structnamecheckfail=0
- 							                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value2 "
+ 							                echo -e "${RED}WARNING: At line ${CYAN}$count${RED}: Structure name ${CYAN}$value2 ${RED}begins with lowercase letter${NO_COLOUR}"
  							                ;;
 							esac
 						else
@@ -156,7 +130,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
  						                ;;
  						        *)
 								structnamecheckfail=0
- 						                echo -e " WARNING---> At Line $count: Structure name begins with lowercase letter  $value "
+ 						                echo -e "${RED}WARNING: At Line ${CYAN}$count${RED}: Structure name ${CYAN}$value ${RED}begins with lowercase letter${NO_COLOUR}"
  						                ;;
 						esac
 						fi
@@ -178,7 +152,7 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
  			        				        ;;
 							esac
 							if [[ $templatechecknamefail == 0 ]]; then
-								echo -e " WARNING---> At line $count: Template Name has more than single character $name "
+								echo -e "${RED}WARNING: At line ${CYAN}$count${RED}: Template Name ${CYAN}$name ${RED}has more than single character${NO_COLOUR}"
 							fi
 						;;
 				esac 
@@ -189,13 +163,14 @@ for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -na
 		if [[ $classnamecheckfail != 0 && $structnamecheckfail != 0 && $templatechecknamefail != 0 ]]; then
 			:
 		else
-			echo -e "\n------------------------------------------------------------------------------"
-			echo -e " File \"$FILE\" has errors!!!\n"
-			echo -e "------------------------------------------------------------------------------\n"
+			
+			echo -e "\n${YELLOW}File ${CYAN}$FILE ${YELLOW}has errors with class/structure/template names!${NO_COLOUR}"
+			echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
+			
 		fi
 done
-
-
+echo -e "${BOLD_WHITE}${UNDERLINED}NAMING CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${GREEN}Class names should begin with an uppercase letter E.g. ${YELLOW}class Xyz ${GREEN} \nStructure names should also begin with uppercase letters E.g. ${YELLOW}struct int Temp${GREEN}\n Template Names should have only a single UPPERCASE LETTER E.g. ${YELLOW}template <class T>\n${NO_COLOUR}"
 
 
 
@@ -221,7 +196,38 @@ done
  #						                ;;
  #						        *)
 #								structnamecheckfail=0
- #						                echo -e " WARNING---> At line $count: Structure name begins with lowercase letter  $value "
+ #						                echo -e " WARNING: At line $count: Structure name begins with lowercase letter  $value "
  #						                ;;
 #						esac
 #						;;#
+
+#[a-zA-Z_]+[ ][a-zA-Z_]+\([a-zA-Z_]+[ *]+[a-zA-Z]+\) regex for function name
+#(\S+)\s*\(\s*\S*\s*\S*(?:\s*\S*,\s*\S*\s+\S*)*\)\s*\/*\s*\S*\n{  regex 2nd test for function calls
+#(\S+)[ ]*\([ ]*\S*[ ]*\S*(?:[ ]*\S*,[ ]*\S*[ ]+\S*)*\)[ ]*\/*[ ]*\S*\n{ regex 3rd working perfect
+
+
+#possibly inside struct case if [[name = struct ]]
+#							read line2
+#				    			count=$((count+1))
+#							name2=$line2
+#								while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
+#								do
+#		    							count=$((count+1))
+#									name2=$line3
+#								done
+#							value=${name2#*\}} #get the string after '}' character
+#							tempval=${value:0:1}
+#							if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
+#								value2=${value:1:2}							
+#							else							
+#								value2=${value:0:1}							
+#							fi						
+#							case ${value2:0:1} in
+#								[[:upper:]])
+#									#The structure name is correct
+ #							                ;;
+ #							        *)
+#									structnamecheckfail=0
+ #							                echo -e " WARNING: At line $count: Structure name begins with lowercase letter  $value "
+ #							                ;;
+#							esac

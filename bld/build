@@ -449,7 +449,8 @@ EOF
 }
 
 # Tidy up all of the temporary files from building the component.
-tidy_up() {
+tidy_up() 
+{
 	# Now we are done with the actual work, we just have to tidy up.
 	echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
 
@@ -479,8 +480,8 @@ tidy_up() {
 		echo -e "${CYAN}Retaining temporary files.\n${NO_COLOUR}"
 	fi
 
-	# Indicate that we're done.
-	echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+	# All done.
+	return 0
 }
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
@@ -839,5 +840,6 @@ done
 tidy_up
 
 # All done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
 exit 0
 

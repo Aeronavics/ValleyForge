@@ -6,11 +6,12 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 count=0
 check=1
 
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
 
 for FILE in $(find $TCPATH/* -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
 	filename=$(basename "$FILE")
-	echo "$filename"
 	valcase='0-9a-z_.'
 	path="${FILE%.*}"
 	filename="${filename%.*}"
@@ -20,16 +21,18 @@ for FILE in $(find $TCPATH/* -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -n
 		if [[ "$filename" =~ [^$valcase] ]]; then
 			count=$((count+1))
 			check=0
-			echo -e "\n------------------------------------------------------------------------------"
-			echo "WARNING: Filename" $filename "contains special/UPPERCASE characters. Please change it."
-			echo -e "------------------------------------------------------------------------------\n"
+			echo -e "${RED}WARNING: Filename ${YELLOW}$FILE ${RED}contains special/UPPERCASE characters.${NO_COLOUR}"
+			echo -e "${GREEN}--------------------------------------------------------------------------------\n${NO_COLOUR}"
 		fi
 done
 
 if [[ $check == 0 ]]; then
-	echo -e "\n$count file(s) has special characters\n"
+	echo -e "${CYAN}\n${YELLOW}$count ${CYAN}file(s) has special characters\n${NO_COLOUR}"
 elif [[ $check == 1 ]]; then
-	echo "All filenames are valid"
+	echo -e "${GREEN}All filenames are valid${NO_COLOUR}"
 fi
+
+echo -e "${BOLD_WHITE}${UNDERLINED}FILE NAME CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${GREEN}File names should not contain either any special characters other than '_' or UPPERCASE letters or space characters. The second rule is to clear the confusion in the case of system files which are not case sensitive. \nAllowed: E.g. ${YELLOW}temp_xyz ${GREEN}\nNot Allowed: E.g. ${YELLOW}temp_XYZ\n${NO_COLOUR}"
 
 #if [[ $filename =~ " "  ||  $filename =~ "!"  ||  $filename =~ "*"  ||  $filename =~ "|"  ||  $filename =~ "?"  ||  $filename =~ "["  ||  $filename =~ "]"  ||  		$filename =~ "!"  ||  $filename =~ "%"  ||  $filename =~ "\&"  ||  $filename =~ "?"  ||  $filename =~ "/"  ||  $filename =~ "\\"  ||  $filename =~ "$"  ||  			$filename =~ "'"  ||  $filename =~ "\""  ||  $filename =~ ";"  ||  $filename =~ "("  ||  $filename =~ ")"  ||  $filename =~ "^"  ||  $filename =~ ">"  ||  			$filename =~ "<"  ||  $filename =~ ":"  ||  $filename =~ "=" ||  $filename =~ "#" ]] ; then
