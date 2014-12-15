@@ -14,27 +14,29 @@ SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 
-echo -e "------------------------------------------------------------------------------"
-echo -e "Checking for matching headers for cpp files\n"
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+echo -e "${GREEN}------------------------------------------------------------------------------${NO_COLOUR}"
+echo -e "${BOLD_CYAN}Checking for matching headers for cpp files\n${NO_COLOUR}"
 for FILE in $(find $TCPATH/ -name "*.cpp"); do
 	filename=$(basename "$FILE")
 	path="${FILE%.*}"
 	temp=${path#/*}
-	echo "temp $temp"
 	filename="${filename%.*}"
 	headerfile=$filename".hpp"
 	cppfile=$filename".cpp"
 	#filename=$(echo "${FILE%%.*}")
 	if [[ ! $(find $TCPATH -type f -name $headerfile) ]]; 
 	then
-		echo "Header file missing for \"$FILE\""
+		echo -e "${RED}Header file missing for ${CYAN}$FILE${NO_COLOUR}"
 	fi
 done
-echo -e "Done checking for matching headers for cpp files"
-echo -e "------------------------------------------------------------------------------\n"
+echo -e "\n${BOLD_CYAN}Done checking for matching headers for cpp files${NO_COLOUR}"
+echo -e "${GREEN}------------------------------------------------------------------------------\n${NO_COLOUR}"
  
-echo -e "------------------------------------------------------------------------------"
-echo -e "Checking for matching headers for c files\n"
+echo -e "${GREEN}------------------------------------------------------------------------------${NO_COLOUR}"
+echo -e "${BOLD_CYAN}Checking for matching headers for c files\n${NO_COLOUR}"
 for FILE in $(find $TCPATH/ -name "*.c"); do
 	filename=$(basename "$FILE")
 	path="${FILE%.*}"
@@ -44,8 +46,11 @@ for FILE in $(find $TCPATH/ -name "*.c"); do
 	#filename=$(echo "${FILE%%.*}")
 	if [[ ! $(find $TCPATH -type f -name $headerfile) ]]; 
 	then
-		echo "Header file missing for \"$FILE\""
+		echo -e "${RED}Header file missing for ${CYAN}$FILE${NO_COLOUR}"
 	fi
 done
-echo -e "Done checking for matching headers for c files"
-echo -e "------------------------------------------------------------------------------\n"  
+echo -e "\n${BOLD_CYAN}Done checking for matching headers for c files${NO_COLOUR}"
+echo -e "${GREEN}------------------------------------------------------------------------------\n${NO_COLOUR}"
+
+echo -e "${BOLD_WHITE}${UNDERLINED}FILE NAME CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${GREEN}Each source file should have a matching header file of the same name with a proper extension \nE.g. ${YELLOW}class.cpp should have a matching header file class.hpp; \nclass.c should have a matching header file class.h\n${NO_COLOUR}"  

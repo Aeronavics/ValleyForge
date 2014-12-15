@@ -2,7 +2,7 @@
 
 ###########################################################################################################################
 #This script is responsible for reading inputs from the configuration file and running corresponding scripts.
-#If the value for a option is set to true, then the suitable script is run.
+#If the value for an option is set to true, then the suitable script is run.
 #If the user provides an invalid value for an option, an error message is displayed.
 #Likewise, if an invalid option is provided, an error message is displayed.
 ###########################################################################################################################
@@ -11,6 +11,9 @@
 SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
 
 while read line
 do
@@ -46,13 +49,13 @@ do
 				(*layout*) 
 						bash $TCPATH/bld/code_compliance/layout > layout.txt;;
 				*) 
-						echo "invalid option for value->\"$end\"" ;;
+						echo -e "${RED}Invalid option for value ${HIGHLIGHT_BLUE}$end${NO_COLOUR}" ;;
 
 			esac
 		elif [[ "$end" == "false" || "$end" == "FALSE" ]]; then
 			:
 		else
-			echo "invalid value for option -> $option"
+			echo "${RED}Invalid value for option ${HIGHLIGHT_BLUE}$option${NO_COLOUR}"
 		fi
 	fi
 done < $1
