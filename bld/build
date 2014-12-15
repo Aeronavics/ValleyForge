@@ -560,6 +560,13 @@ while true; do
 	shift
 done
 
+#########################################################	CODE COMPLIANCE STARTS	#########################################################
+
+bash $TCPATH/bld/code_compliance/master $TCPATH/bld/code_compliance/code_compliance.cfg
+
+#########################################################	CODE COMPLIANCE ENDS 	#########################################################
+
+
 # If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
 if [ "$NAME" == "all " ]; then  # NOTE - The space is intentional!
 	ALL=1
@@ -824,9 +831,6 @@ done
 
 # Now we are done with the actual work, we just have to tidy up.
 echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
-
-# Run the script for code compliance
-bash $TCPATH/bld/code_compliance/overall
 
 # Check if we are supposed to be packing up the compilers after we are finished.
 if [ $POSTPACK ]; then

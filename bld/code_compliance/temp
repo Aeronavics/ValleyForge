@@ -1,30 +1,22 @@
 #!/bin/bash
+#count=0
+#while read line#
+#do
+#name="/* Setup the correct byte alignment mask for the defined byte alignment. */"
+#count=$((count+1))
+#if [[ "$name" == /* && "$name" == */ ]]; then
+#
+#echo "$name" | sed -i ':r $counts:\(.*\)/[*]\(.*\)[*]/\(.*\):\1\3 //\2:;tr;s://\(.*\)//\(.*\)://\2\1:;tr' $1 #latest working one
+#fi
+#done < $1
 
-##########################################################################################################################
-#This script is for imposing naming conventions in all the files.
-#It checks whether the class and structure names begin with an upper case letter followed by lower case letters.
-#It also checks whether a template name consists of a single upper case letter.
-#If the conditions fail, a warning message is displayed with the line of failure and the word that violates the standards.
-##########################################################################################################################
-
-# Determine what the absolute path to the root of the toolchain is.
 SCRIPT=`readlink -f $0`
-echo "$SCRIPT"
 SCRIPTPATH=`dirname $SCRIPT`
-echo "$SCRIPTPATH"
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
-echo "$TCPATH"
-PROGNAME=${0##*/}
-echo "PROG name is $PROGNAME"
-echo "sadasd"
+
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
-echo -e "${BLUE}HI!!!!${RED}GOOD MORNING${BLUE}BYE${NO_COLOUR}"
+dir=$TCPATH/bld/code_compliance
+#cd $dir
 
-#value="filename	=	'true'	//If set to true, a warning message is displayed if the file names contain special characters other than '_'."
-#temp1=${value#*=}
-#start=${temp1#*\'}
-#end=${start%\'*}
-#echo "$end"
-#echo "temp1 is $temp1"
-#echo "temp2 is $temp2"
+bash $dir/varname | tee $dir/varnamelog.txt
