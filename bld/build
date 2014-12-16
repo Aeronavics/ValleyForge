@@ -574,6 +574,13 @@ while true; do
 	shift
 done
 
+#########################################################	CODE COMPLIANCE STARTS	#########################################################
+
+bash $TCPATH/bld/code_compliance/master $TCPATH/bld/code_compliance/code_compliance.cfg
+
+#########################################################	CODE COMPLIANCE ENDS 	#########################################################
+
+
 # If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
 if [ "$NAME" == "all " ]; then  # NOTE - The space is intentional!
 	ALL=1

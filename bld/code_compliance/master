@@ -1,0 +1,216 @@
+#!/bin/bash
+
+###########################################################################################################################
+#This script is responsible for reading inputs from the configuration file and running corresponding scripts.
+#If the value for an option is set to true, then the suitable script is run.
+#If the user provides an invalid value for an option, an error message is displayed.
+#Likewise, if an invalid option is provided, an error message is displayed.
+###########################################################################################################################
+
+
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+dir=$TCPATH/bld/code_compliance
+status=0
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+while read line2
+do
+name2=$line2
+name2=${name2^^}
+	if [[ $name2 =~ "=" && $name2 =~ "CODE_COMPLIANCE" ]]; then
+		option2=${name2%=*}
+		value2=${name2#*=}
+		start2=${value2#*\'}
+		end2=${start2%\'*}
+		status=$end2
+	elif [[ $name2 =~ "=" && $name2 =~ "OUTPUT" ]]; then
+		option2=${name2%=*}
+		value2=${name2#*=}
+		start2=${value2#*\'}
+		end2=${start2%\'*}
+		output=$end2
+	fi
+done < $1
+
+if [[ "$status" == "TRUE" ]]; then
+
+	while read line
+	do
+	name=$line
+	name=${name^^}
+
+		if [[ $name =~ "=" ]]; then
+
+			option=${name%=*}
+			value=${name#*=}
+			start=${value#*\'}
+			end=${start%\'*}
+
+
+			if [[ $output == "TEXTFILE" ]]; then
+	
+				if [[ "$end" == "TRUE" ]]; then
+	
+				case $option in
+	
+					VARIABLENAME*) 
+							bash $dir/varname > $dir/varnamelog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/varnamelog.txt 
+							;;
+	
+					CLASSSTRUCTNAME*) 
+							bash $dir/classnamecheck > $dir/classnamechecklog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/classnamechecklog.txt 
+							;;
+
+					CONSTNAME*) 
+							bash $dir/constcheck > $dir/constchecklog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/constchecklog.txt
+							;;
+
+					FUNCNAME*) 
+							bash $dir/funcnamecheck > $dir/funcnamechecklog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/funcnamechecklog.txt				
+							;;
+
+					FILECOMPLETE*) 
+							bash $dir/filecomplete > $dir/filecompletelog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
+							;;
+
+					HEADERGUARD*) 
+							bash $dir/headerguard > $dir/headerguardlog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/headerguardlog.txt
+							;;
+
+					FILENAME*) 
+							bash $dir/filenamesplchar > $dir/filenamesplcharlog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filenamesplcharlog.txt
+							;;
+
+					HEADERFILECHECK*) 
+							bash $dir/headercheck > $dir/headerchecklog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
+							;;
+
+					LAYOUT*) 
+							bash $dir/layout > $dir/layoutlog.txt
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/layoutlog.txt
+							;;
+
+					CODE_COMPLIANCE*)
+							;;
+
+					OUTPUT*)
+							;;
+
+					*) 
+							echo -e "${RED}Invalid option for value ${CYAN}$end${NO_COLOUR}" ;;
+	
+				esac
+				
+
+				elif [[ "$end" == "FALSE" ]]; then
+					:
+
+				elif [[ "$end" == "TEXTFILE" || "$end" == "CONSOLE" ]]; then
+					:
+
+				else
+					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+				fi
+
+			elif [[ $output == "CONSOLE" ]]; then
+
+				if [[ "$end" == "TRUE" ]]; then
+	
+				case $option in
+	
+					VARIABLENAME*) 
+							bash $dir/varname ;;
+					CLASSSTRUCTNAME*) 
+							bash $dir/classnamecheck ;;
+					CONSTNAME*) 
+							bash $dir/constcheck ;;
+					FUNCNAME*) 
+							bash $dir/funcnamecheck ;;
+					FILECOMPLETE*) 
+							bash $dir/filecomplete ;;
+					HEADERGUARD*) 
+							bash $dir/headerguard ;;
+					FILENAME*) 
+							bash $dir/filenamesplchar ;;
+					HEADERFILECHECK*) 
+							bash $dir/headercheck ;;
+					LAYOUT*) 
+							bash $dir/layout ;;
+					CODE_COMPLIANCE*)
+							;;
+					OUTPUT*)
+							;;
+					*) 
+							echo -e "${RED}Invalid option $option for value ${CYAN}$end${NO_COLOUR}" ;;
+	
+				esac
+
+				elif [[ "$end" == "FALSE" ]]; then
+					:
+
+				else
+					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+				fi
+
+			elif [[ $output == "BOTH" ]]; then
+
+				if [[ "$end" == "TRUE" ]]; then
+	
+				case $option in
+	
+					VARIABLENAME*) 
+							bash $dir/varname | tee $dir/varnamelog.txt ;;
+					CLASSSTRUCTNAME*) 
+							bash $dir/classnamecheck | tee $dir/classnamechecklog.txt ;;
+					CONSTNAME*) 
+							bash $dir/constcheck | tee $dir/constchecklog.txt ;;
+					FUNCNAME*) 
+							bash $dir/funcnamecheck | tee $dir/funcnamechecklog.txt ;;
+					FILECOMPLETE*) 
+							bash $dir/filecomplete | tee $dir/filecompletelog.txt ;;
+					HEADERGUARD*) 
+							bash $dir/headerguard | tee $dir/headerguardlog.txt ;;
+					FILENAME*) 
+							bash $dir/filenamesplchar | tee $dir/filenamesplcharlog.txt ;;
+					HEADERFILECHECK*) 
+							bash $dir/headercheck | tee $dir/headerchecklog.txt ;;
+					LAYOUT*) 
+							bash $dir/layout | tee $dir/layoutlog.txt ;;
+					CODE_COMPLIANCE*)
+							;;
+					OUTPUT*)
+							;;
+					*) 
+							echo -e "${RED}Invalid option $option for value ${CYAN}$end${NO_COLOUR}" ;;
+	
+				esac
+
+				elif [[ "$end" == "FALSE" ]]; then
+					:
+
+				else
+					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+				fi
+			fi
+		fi
+	done < $1
+if [[ $output == "TEXTFILE" ]]; then
+echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is stored as a text file in '/ValleyForge/bld/code_compliance/ directory'${NO_COLOUR}\n"
+fi
+if [[ $output == "CONSOLE" ]]; then
+echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is printed in the console${NO_COLOUR}\n"
+fi
+
+fi	
