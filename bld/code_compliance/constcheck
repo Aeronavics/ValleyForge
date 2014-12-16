@@ -16,6 +16,8 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+echo -e "${RED}ERROR(S) IN CONSTANT NAMES in directory ${CYAN}$1\n${NO_COLOUR}"
+
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
@@ -63,11 +65,13 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 	done < $FILE
 
 	if [[ $constcheck == 0 ]]; then
-		echo -e "\n${YELLOW}File ${CYAN}$FILE ${YELLOW}has errors with constant names!${NO_COLOUR}"
+		echo -e "\n${YELLOW}WARNING: ${CYAN}$FILE ${YELLOW}has errors with constant names!${NO_COLOUR}"
 		echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 	fi
 
 done
 
-echo -e "${BOLD_WHITE}${UNDERLINED}NAMING CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${BOLD_WHITE}${UNDERLINED}CONSTANT NAMING CONVENTIONS:${NO_COLOUR}"
 echo -e "${GREEN}Constant names should not have any lowercase letters E.g. ${YELLOW}const XYZ ${GREEN} \n${NO_COLOUR}"
+echo -e "${GREEN}--------------------------------------------------------------------------------${NO_COLOUR}"
+echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"

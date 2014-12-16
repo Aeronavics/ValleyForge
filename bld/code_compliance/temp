@@ -1,12 +1,12 @@
 #!/bin/bash
 #count=0
-#while read line#
+#while read line
 #do
-#name="/* Setup the correct byte alignment mask for the defined byte alignment. */"
+#name=$line
 #count=$((count+1))
 #if [[ "$name" == /* && "$name" == */ ]]; then
-#
-#echo "$name" | sed -i ':r $counts:\(.*\)/[*]\(.*\)[*]/\(.*\):\1\3 //\2:;tr;s://\(.*\)//\(.*\)://\2\1:;tr' $1 #latest working one
+#echo "$count, $name"
+#echo "$name" | sed -i ''"$count"'s:\(.*\)/[*]\(.*\)[*]/:\1 // \2:' $1 #latest working one
 #fi
 #done < $1
 
@@ -19,4 +19,19 @@ source $TCPATH/bld/common/def_colours
 dir=$TCPATH/bld/code_compliance
 #cd $dir
 
-bash $dir/varname | tee $dir/varnamelog.txt
+#bash $dir/varname | tee $dir/varnamelog.txt
+
+#echo "$name" | sed -i ':r s:\(.*\)/[*]\(.*\)[*]/\(.*\):\1\3 //\2:;tr;s://\(.*\)//\(.*\)://\2\1:;tr'
+count1=0
+
+while read line
+do
+name=$line
+count1=$((count1+1))
+#if [[ "$name" == /* && "$name" == */ ]]; then
+#echo "$count1:$line"
+#sed ''"$count1"'/'
+if [[ $name =~ '/	' ]]; then
+echo "$name"
+fi
+done < $1

@@ -12,22 +12,19 @@ SCRIPT=`readlink -f $0`
 SCRIPTPATH=`dirname $SCRIPT`
 TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 dir=$TCPATH/bld/code_compliance
-status=0
+
 
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
+
+echo "VF Code Compliance Tests: $(date)" > $3
+echo "" >> $3
 
 while read line2
 do
 name2=$line2
 name2=${name2^^}
-	if [[ $name2 =~ "=" && $name2 =~ "CODE_COMPLIANCE" ]]; then
-		option2=${name2%=*}
-		value2=${name2#*=}
-		start2=${value2#*\'}
-		end2=${start2%\'*}
-		status=$end2
-	elif [[ $name2 =~ "=" && $name2 =~ "OUTPUT" ]]; then
+	if [[ $name2 =~ "=" && $name2 =~ "OUTPUT" ]]; then
 		option2=${name2%=*}
 		value2=${name2#*=}
 		start2=${value2#*\'}
@@ -36,7 +33,6 @@ name2=${name2^^}
 	fi
 done < $2
 
-if [[ "$status" == "TRUE" ]]; then
 
 	while read line
 	do
@@ -58,48 +54,48 @@ if [[ "$status" == "TRUE" ]]; then
 				case $option in
 	
 					VARIABLENAME*) 
-							bash $dir/varname $1 > $dir/varnamelog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/varnamelog.txt 
+							bash $dir/varname $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3 
 							;;
 	
 					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck $1 > $dir/classnamechecklog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/classnamechecklog.txt 
+							bash $dir/classnamecheck $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3 
 							;;
 
 					CONSTNAME*) 
-							bash $dir/constcheck $1 > $dir/constchecklog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/constchecklog.txt
+							bash $dir/constcheck $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					FUNCNAME*) 
-							bash $dir/funcnamecheck $1 > $dir/funcnamechecklog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/funcnamechecklog.txt				
+							bash $dir/funcnamecheck $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					FILECOMPLETE*) 
-							bash $dir/filecomplete $1 > $dir/filecompletelog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
+							bash $dir/filecomplete $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					HEADERGUARD*) 
-							bash $dir/headerguard $1 > $dir/headerguardlog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/headerguardlog.txt
+							bash $dir/headerguard $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					FILENAME*) 
-							bash $dir/filenamesplchar $1 > $dir/filenamesplcharlog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filenamesplcharlog.txt
+							bash $dir/filenamesplchar $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					HEADERFILECHECK*) 
-							bash $dir/headercheck $1 > $dir/headerchecklog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
+							bash $dir/headercheck $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					LAYOUT*) 
-							bash $dir/layout $1 > $dir/layoutlog.txt
-							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/layoutlog.txt
+							bash $dir/layout $1 >> $3 2> /dev/null
+							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $3
 							;;
 
 					CODE_COMPLIANCE*)
@@ -109,7 +105,7 @@ if [[ "$status" == "TRUE" ]]; then
 							;;
 
 					*) 
-							echo -e "${RED}Invalid option for value ${CYAN}$end${NO_COLOUR}" ;;
+							echo -e "${RED}Invalid option ${CYAN}$option ${RED}for value ${CYAN}$end${NO_COLOUR}" ;;
 	
 				esac
 				
@@ -121,7 +117,7 @@ if [[ "$status" == "TRUE" ]]; then
 					:
 
 				else
-					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+					echo -e "${RED}Invalid value ${CYAN}$end ${RED}for option ${CYAN}$option${NO_COLOUR}"
 				fi
 
 			elif [[ $output == "CONSOLE" ]]; then
@@ -130,30 +126,30 @@ if [[ "$status" == "TRUE" ]]; then
 	
 				case $option in
 	
-					VARIABLENAME*) 
-							bash $dir/varname $1 ;;
-					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck $1 ;;
-					CONSTNAME*) 
-							bash $dir/constcheck $1 ;;
-					FUNCNAME*) 
-							bash $dir/funcnamecheck $1 ;;
-					FILECOMPLETE*) 
-							bash $dir/filecomplete $1 ;;
-					HEADERGUARD*) 
-							bash $dir/headerguard $1 ;;
-					FILENAME*) 
-							bash $dir/filenamesplchar $1 ;;
-					HEADERFILECHECK*) 
-							bash $dir/headercheck $1 ;;
-					LAYOUT*) 
-							bash $dir/layout $1 ;;
-					CODE_COMPLIANCE*)
-							;;
-					OUTPUT*)
-							;;
+					VARIABLENAME*) 		bash $dir/varname $1 ;;
+							
+					CLASSSTRUCTNAME*) 	bash $dir/classnamecheck $1 ;;
+							
+					CONSTNAME*) 		bash $dir/constcheck $1 ;;
+							
+					FUNCNAME*)		bash $dir/funcnamecheck $1 ;;
+							
+					FILECOMPLETE*) 		bash $dir/filecomplete $1 ;;
+							
+					HEADERGUARD*) 		bash $dir/headerguard $1 ;;
+							
+					FILENAME*) 		bash $dir/filenamesplchar $1 ;;
+							
+					HEADERFILECHECK*) 	bash $dir/headercheck $1 ;;
+							
+					LAYOUT*) 		bash $dir/layout $1 ;;
+							
+					CODE_COMPLIANCE*) 	;;
+							
+					OUTPUT*) 		;;
+							
 					*) 
-							echo -e "${RED}Invalid option $option for value ${CYAN}$end${NO_COLOUR}" ;;
+								echo -e "${RED}Invalid option ${CYAN}$option ${RED}for value ${CYAN}$end${NO_COLOUR}" ;;
 	
 				esac
 
@@ -161,7 +157,7 @@ if [[ "$status" == "TRUE" ]]; then
 					:
 
 				else
-					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+					echo -e "${RED}Invalid value ${CYAN}$end ${RED}for option ${CYAN}$option${NO_COLOUR}"
 				fi
 
 			elif [[ $output == "BOTH" ]]; then
@@ -170,30 +166,30 @@ if [[ "$status" == "TRUE" ]]; then
 	
 				case $option in
 	
-					VARIABLENAME*) 
-							bash $dir/varname $1 | tee $dir/varnamelog.txt ;;
-					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck $1 | tee $dir/classnamechecklog.txt ;;
-					CONSTNAME*) 
-							bash $dir/constcheck $1 | tee $dir/constchecklog.txt ;;
-					FUNCNAME*) 
-							bash $dir/funcnamecheck $1 | tee $dir/funcnamechecklog.txt ;;
-					FILECOMPLETE*) 
-							bash $dir/filecomplete $1 | tee $dir/filecompletelog.txt ;;
-					HEADERGUARD*) 
-							bash $dir/headerguard $1 | tee $dir/headerguardlog.txt ;;
-					FILENAME*) 
-							bash $dir/filenamesplchar $1 | tee $dir/filenamesplcharlog.txt ;;
-					HEADERFILECHECK*) 
-							bash $dir/headercheck $1 | tee $dir/headerchecklog.txt ;;
-					LAYOUT*) 
-							bash $dir/layout $1 | tee $dir/layoutlog.txt ;;
-					CODE_COMPLIANCE*)
-							;;
-					OUTPUT*)
-							;;
+					VARIABLENAME*) 		bash $dir/varname $1 | tee -a $3 ;;
+							
+					CLASSSTRUCTNAME*) 	bash $dir/classnamecheck $1 | tee -a $3 ;;
+							
+					CONSTNAME*)		bash $dir/constcheck $1 | tee -a $3 ;;
+							
+					FUNCNAME*) 		bash $dir/funcnamecheck $1 | tee -a $3 ;;
+							
+					FILECOMPLETE*)		bash $dir/filecomplete $1 | tee -a $3 ;;
+							
+					HEADERGUARD*) 		bash $dir/headerguard $1 | tee -a $3 ;;
+							
+					FILENAME*) 		bash $dir/filenamesplchar $1 | tee -a $3 ;;
+							
+					HEADERFILECHECK*) 	bash $dir/headercheck $1 | tee -a $3 ;;
+							
+					LAYOUT*) 		bash $dir/layout $1 | tee -a $3 ;;
+							
+					CODE_COMPLIANCE*) 	;;
+							
+					OUTPUT*) 		;;
+							
 					*) 
-							echo -e "${RED}Invalid option $option for value ${CYAN}$end${NO_COLOUR}" ;;
+								echo -e "${RED}Invalid option ${CYAN}$option ${RED}for value ${CYAN}$end${NO_COLOUR}" ;;
 	
 				esac
 
@@ -201,42 +197,40 @@ if [[ "$status" == "TRUE" ]]; then
 					:
 
 				else
-					echo -e "${RED}Invalid value for option ${CYAN}$option${NO_COLOUR}"
+					echo -e "${RED}Invalid value ${CYAN}$end ${RED}for option ${CYAN}$option${NO_COLOUR}"
 				fi
 			fi
 		fi
 	done < $2
 if [[ $output == "TEXTFILE" ]]; then
-echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is stored as a text file in '/ValleyForge/bld/code_compliance/ directory'${NO_COLOUR}\n"
+echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is stored as a text file in $3 ${NO_COLOUR}\n"
 fi
 if [[ $output == "CONSOLE" ]]; then
 echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is printed in the console${NO_COLOUR}\n"
 fi
 
-fi	
 
 # TODO - Just write to the correct location in the first place, would avoid the need to do this.
 
 # Try to fix up the output files.
-echo "VF Code Compliance Tests: $(date)" > $3
-echo "" >> $3
-cat $dir/varnamelog.txt >> $3 2> /dev/null
-cat $dir/classnamechecklog.txt >> $3 2> /dev/null
-cat $dir/constchecklog.txt >> $3 2> /dev/null
-cat $dir/funcnamechecklog.txt >> $3 2> /dev/null
-cat $dir/filecompletelog.txt >> $3 2> /dev/null
-cat $dir/headerguardlog.txt >> $3 2> /dev/null
-cat $dir/filenamesplcharlog.txt >> $3 2> /dev/null
-cat $dir/headerchecklog.txt >> $3 2> /dev/null
-cat $dir/layoutlog.txt >> $3 2> /dev/null
-rm $dir/varnamelog.txt  2> /dev/null
-rm $dir/classnamechecklog.txt 2> /dev/null
-rm $dir/constchecklog.txt 2> /dev/null
-rm $dir/funcnamechecklog.txt 2> /dev/null
-rm $dir/filecompletelog.txt 2> /dev/null
-rm $dir/headerguardlog.txt 2> /dev/null
-rm $dir/filenamesplcharlog.txt 2> /dev/null
-rm $dir/headerchecklog.txt 2> /dev/null
-rm $dir/layoutlog.txt 2> /dev/null
+
+#cat $dir/varnamelog.txt >> $3 2> /dev/null
+#cat $dir/classnamechecklog.txt >> $3 2> /dev/null
+#cat $dir/constchecklog.txt >> $3 2> /dev/null
+#cat $dir/funcnamechecklog.txt >> $3 2> /dev/null
+#cat $dir/filecompletelog.txt >> $3 2> /dev/null
+#cat $dir/headerguardlog.txt >> $3 2> /dev/null
+#cat $dir/filenamesplcharlog.txt >> $3 2> /dev/null
+#cat $dir/headerchecklog.txt >> $3 2> /dev/null
+#cat $dir/layoutlog.txt >> $3 2> /dev/null
+#rm $dir/varnamelog.txt  2> /dev/null
+#rm $dir/classnamechecklog.txt 2> /dev/null
+#rm $dir/constchecklog.txt 2> /dev/null
+#rm $dir/funcnamechecklog.txt 2> /dev/null
+#rm $dir/filecompletelog.txt 2> /dev/null
+#rm $dir/headerguardlog.txt 2> /dev/null
+#rm $dir/filenamesplcharlog.txt 2> /dev/null
+#rm $dir/headerchecklog.txt 2> /dev/null
+#rm $dir/layoutlog.txt 2> /dev/null
 
 exit 0

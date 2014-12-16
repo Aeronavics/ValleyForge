@@ -18,6 +18,8 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
+echo -e "${RED}ERROR(S) IN HEADER GUARDS in directory ${CYAN}$1\n${NO_COLOUR}"
+
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $1 -name "*.hpp" -o -name "*.h"); do
 linecount=0
@@ -55,7 +57,7 @@ done < $FILE
 #echo "splcount is $splcount"
 if [[ $linecount -gt 0 ]]; then
 if [[ "$splcount" != "$endcount" ]]; then
-		echo -e "\n${YELLOW}File ${CYAN}$FILE ${YELLOW}has errors with header guards!!${NO_COLOUR}"
+		echo -e "\n${YELLOW}WARNING: ${CYAN}$FILE ${YELLOW}has errors with header guards!!${NO_COLOUR}"
 		echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 #else
 #echo "success for $FILE"
@@ -63,6 +65,8 @@ fi
 fi
 done
 
-echo -e "${BOLD_WHITE}${UNDERLINED}STATEMENT CONVENTIONS:\n${NO_COLOUR}"
+echo -e "${BOLD_WHITE}${UNDERLINED}HEADER GUARD CONVENTIONS:${NO_COLOUR}"
 echo -e "${GREEN}Header files must contain an include guard. This is to avoid compilation errors that result due to multiple inclusions of the same header file.${NO_COLOUR}\n"
+echo -e "${GREEN}--------------------------------------------------------------------------------${NO_COLOUR}"
+echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 
