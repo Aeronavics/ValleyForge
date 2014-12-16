@@ -57,6 +57,9 @@ source $TCPATH/bld/other/setup_compilers
 # Define the functions used to set up any vendor sources.
 source $TCPATH/bld/other/setup_vendorsources
 
+# Import functions for code compliance testing.
+source $TCPATH/bld/code_compliance/compliance_checks
+
 # Define the functions used to actually build components.
 for f in $TCPATH/bld/make_functions/make*; do
 	source "$f"
@@ -341,6 +344,23 @@ generic_precompile()
 	# Fetch the HAL library files.  This is done after other preprocessing, since the HAL is preprocessed separately.
 	get_hal
 
+	# Check if we are supposed to run compliance checks before building.
+	if [ $VF_EN_COMPLIANCE_CHECKS ]; then
+		# Create an output directory to put results into.
+		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+
+		# Run code compliance checks.
+		echo -e "${CYAN}Checking code compliance...\n${NO_COLOUR}"
+		if ! compliance_check_directory $TCPATH/src/$COMPONENT $TCPATH/$OUTPUT_DIR/$COMPONENT/compliance_results.txt; then
+			# Code compliance tests failed with errors, so we abort this component.
+			echo -e "${RED}Code compliance tests failed.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			return 1
+		fi
+	else
+		# We're skipping all the code compliance checks.
+		echo -e "${YELLOW}Not running code compliance checks.\n${NO_COLOUR}"
+	fi
+
 	# All done.
 	return 0
 }
@@ -437,6 +457,7 @@ Parameters:
 Options:
 	-h --help			Show this message.
 	-a --all			Build all components.
+	-c --check			Run code compliance checks before building each component.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Build the bootloader for each component as well.
 	-f --filesystem			Build the filesystem for each component as well. (Where appropriate.)
@@ -502,11 +523,12 @@ BUILD_BOOTLOADER=
 BUILD_FILESYSTEM=
 NOHAL=
 POSTPACK=
+VF_EN_COMPLIANCE_CHECKS=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
 SHORTOPTS="harbfpcn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,postpack,clean,nohal,name:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -541,11 +563,9 @@ while true; do
 			# Select 'pack up compilers, post build'.
 			POSTPACK=1
 			;;
-		-c|--clean)
-			# Remind the user that there is no 'clean' option here.
-			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
-			echo -e "To retain files built during compilation, use the 'retain' option.\n${NO_COLOUR}"
-			exit 0		
+		-c|--check)
+			# Select 'run code compliance checks'.
+			VF_EN_COMPLIANCE_CHECKS=1
 			;;
 		-n|--name)
 			# Specify the name of the component to build.
@@ -573,13 +593,6 @@ while true; do
 	# Advance on to the next parameter.
 	shift
 done
-
-#########################################################	CODE COMPLIANCE STARTS	#########################################################
-
-bash $TCPATH/bld/code_compliance/master $TCPATH/bld/code_compliance/code_compliance.cfg
-
-#########################################################	CODE COMPLIANCE ENDS 	#########################################################
-
 
 # If the provided name was 'all', then set the ALL variable even if the '-a' option wasn't given.
 if [ "$NAME" == "all " ]; then  # NOTE - The space is intentional!

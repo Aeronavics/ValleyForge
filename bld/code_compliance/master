@@ -34,7 +34,7 @@ name2=${name2^^}
 		end2=${start2%\'*}
 		output=$end2
 	fi
-done < $1
+done < $2
 
 if [[ "$status" == "TRUE" ]]; then
 
@@ -58,47 +58,47 @@ if [[ "$status" == "TRUE" ]]; then
 				case $option in
 	
 					VARIABLENAME*) 
-							bash $dir/varname > $dir/varnamelog.txt
+							bash $dir/varname $1 > $dir/varnamelog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/varnamelog.txt 
 							;;
 	
 					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck > $dir/classnamechecklog.txt
+							bash $dir/classnamecheck $1 > $dir/classnamechecklog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/classnamechecklog.txt 
 							;;
 
 					CONSTNAME*) 
-							bash $dir/constcheck > $dir/constchecklog.txt
+							bash $dir/constcheck $1 > $dir/constchecklog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/constchecklog.txt
 							;;
 
 					FUNCNAME*) 
-							bash $dir/funcnamecheck > $dir/funcnamechecklog.txt
+							bash $dir/funcnamecheck $1 > $dir/funcnamechecklog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/funcnamechecklog.txt				
 							;;
 
 					FILECOMPLETE*) 
-							bash $dir/filecomplete > $dir/filecompletelog.txt
+							bash $dir/filecomplete $1 > $dir/filecompletelog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
 							;;
 
 					HEADERGUARD*) 
-							bash $dir/headerguard > $dir/headerguardlog.txt
+							bash $dir/headerguard $1 > $dir/headerguardlog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/headerguardlog.txt
 							;;
 
 					FILENAME*) 
-							bash $dir/filenamesplchar > $dir/filenamesplcharlog.txt
+							bash $dir/filenamesplchar $1 > $dir/filenamesplcharlog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filenamesplcharlog.txt
 							;;
 
 					HEADERFILECHECK*) 
-							bash $dir/headercheck > $dir/headerchecklog.txt
+							bash $dir/headercheck $1 > $dir/headerchecklog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/filecompletelog.txt
 							;;
 
 					LAYOUT*) 
-							bash $dir/layout > $dir/layoutlog.txt
+							bash $dir/layout $1 > $dir/layoutlog.txt
 							sed -r -i "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" $dir/layoutlog.txt
 							;;
 
@@ -131,23 +131,23 @@ if [[ "$status" == "TRUE" ]]; then
 				case $option in
 	
 					VARIABLENAME*) 
-							bash $dir/varname ;;
+							bash $dir/varname $1 ;;
 					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck ;;
+							bash $dir/classnamecheck $1 ;;
 					CONSTNAME*) 
-							bash $dir/constcheck ;;
+							bash $dir/constcheck $1 ;;
 					FUNCNAME*) 
-							bash $dir/funcnamecheck ;;
+							bash $dir/funcnamecheck $1 ;;
 					FILECOMPLETE*) 
-							bash $dir/filecomplete ;;
+							bash $dir/filecomplete $1 ;;
 					HEADERGUARD*) 
-							bash $dir/headerguard ;;
+							bash $dir/headerguard $1 ;;
 					FILENAME*) 
-							bash $dir/filenamesplchar ;;
+							bash $dir/filenamesplchar $1 ;;
 					HEADERFILECHECK*) 
-							bash $dir/headercheck ;;
+							bash $dir/headercheck $1 ;;
 					LAYOUT*) 
-							bash $dir/layout ;;
+							bash $dir/layout $1 ;;
 					CODE_COMPLIANCE*)
 							;;
 					OUTPUT*)
@@ -171,23 +171,23 @@ if [[ "$status" == "TRUE" ]]; then
 				case $option in
 	
 					VARIABLENAME*) 
-							bash $dir/varname | tee $dir/varnamelog.txt ;;
+							bash $dir/varname $1 | tee $dir/varnamelog.txt ;;
 					CLASSSTRUCTNAME*) 
-							bash $dir/classnamecheck | tee $dir/classnamechecklog.txt ;;
+							bash $dir/classnamecheck $1 | tee $dir/classnamechecklog.txt ;;
 					CONSTNAME*) 
-							bash $dir/constcheck | tee $dir/constchecklog.txt ;;
+							bash $dir/constcheck $1 | tee $dir/constchecklog.txt ;;
 					FUNCNAME*) 
-							bash $dir/funcnamecheck | tee $dir/funcnamechecklog.txt ;;
+							bash $dir/funcnamecheck $1 | tee $dir/funcnamechecklog.txt ;;
 					FILECOMPLETE*) 
-							bash $dir/filecomplete | tee $dir/filecompletelog.txt ;;
+							bash $dir/filecomplete $1 | tee $dir/filecompletelog.txt ;;
 					HEADERGUARD*) 
-							bash $dir/headerguard | tee $dir/headerguardlog.txt ;;
+							bash $dir/headerguard $1 | tee $dir/headerguardlog.txt ;;
 					FILENAME*) 
-							bash $dir/filenamesplchar | tee $dir/filenamesplcharlog.txt ;;
+							bash $dir/filenamesplchar $1 | tee $dir/filenamesplcharlog.txt ;;
 					HEADERFILECHECK*) 
-							bash $dir/headercheck | tee $dir/headerchecklog.txt ;;
+							bash $dir/headercheck $1 | tee $dir/headerchecklog.txt ;;
 					LAYOUT*) 
-							bash $dir/layout | tee $dir/layoutlog.txt ;;
+							bash $dir/layout $1 | tee $dir/layoutlog.txt ;;
 					CODE_COMPLIANCE*)
 							;;
 					OUTPUT*)
@@ -205,7 +205,7 @@ if [[ "$status" == "TRUE" ]]; then
 				fi
 			fi
 		fi
-	done < $1
+	done < $2
 if [[ $output == "TEXTFILE" ]]; then
 echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is stored as a text file in '/ValleyForge/bld/code_compliance/ directory'${NO_COLOUR}\n"
 fi
@@ -214,3 +214,29 @@ echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the 
 fi
 
 fi	
+
+# TODO - Just write to the correct location in the first place, would avoid the need to do this.
+
+# Try to fix up the output files.
+echo "VF Code Compliance Tests: $(date)" > $3
+echo "" >> $3
+cat $dir/varnamelog.txt >> $3 2> /dev/null
+cat $dir/classnamechecklog.txt >> $3 2> /dev/null
+cat $dir/constchecklog.txt >> $3 2> /dev/null
+cat $dir/funcnamechecklog.txt >> $3 2> /dev/null
+cat $dir/filecompletelog.txt >> $3 2> /dev/null
+cat $dir/headerguardlog.txt >> $3 2> /dev/null
+cat $dir/filenamesplcharlog.txt >> $3 2> /dev/null
+cat $dir/headerchecklog.txt >> $3 2> /dev/null
+cat $dir/layoutlog.txt >> $3 2> /dev/null
+rm $dir/varnamelog.txt  2> /dev/null
+rm $dir/classnamechecklog.txt 2> /dev/null
+rm $dir/constchecklog.txt 2> /dev/null
+rm $dir/funcnamechecklog.txt 2> /dev/null
+rm $dir/filecompletelog.txt 2> /dev/null
+rm $dir/headerguardlog.txt 2> /dev/null
+rm $dir/filenamesplcharlog.txt 2> /dev/null
+rm $dir/headerchecklog.txt 2> /dev/null
+rm $dir/layoutlog.txt 2> /dev/null
+
+exit 0

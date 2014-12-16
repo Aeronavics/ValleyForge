@@ -1,0 +1,75 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           compliance_checks
+###
+### Author:         Edwin Hayes
+###
+### Date Created:	16-12-2014
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:        Provides functions to perform code compliance tests.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported top level code compliance functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_directory
+###
+### Inputs/Outputs:	Path to the directory containing source file to check.
+###					Path to the file to write compliance results to.
+###
+### Purpose:	Performs code compliance checks on all the source files in the specified
+###				directory.
+###
+###				At the moment, this is essentially just a wrapper for Ravi's scripts.
+###
+###########################################################################################
+
+compliance_check_directory()
+{
+	# Check if the specified location is actually legit.
+	if [ ! -d "$1" ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location to test for code compliance.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if the specified location is actually legit.
+	if [ ! -n "$2" ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid output location for code compliance results.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# TODO - Put whatever here.
+
+	bash $TCPATH/bld/code_compliance/master $1 $TCPATH/bld/code_compliance/config_files/code_compliance.cfg $2
+
+	# NOTE - Don't put anything in here; we need the return value from the script below.
+
+	# Return whatever the status code was.
+	return $?
+}
+
+# ALL DONE.

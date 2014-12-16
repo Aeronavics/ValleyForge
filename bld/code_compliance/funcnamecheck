@@ -19,7 +19,7 @@ TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
 source $TCPATH/bld/common/def_colours
 
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
-for FILE in $(find $TCPATH/ -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
 	funcnamecheck=1
 	count=0

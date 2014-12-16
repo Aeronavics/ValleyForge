@@ -19,7 +19,7 @@ source $TCPATH/bld/common/def_colours
 
 echo -e "${GREEN}------------------------------------------------------------------------------${NO_COLOUR}"
 echo -e "${BOLD_CYAN}Checking for matching headers for cpp files\n${NO_COLOUR}"
-for FILE in $(find $TCPATH/ -name "*.cpp"); do
+for FILE in $(find $1 -name "*.cpp"); do
 	filename=$(basename "$FILE")
 	path="${FILE%.*}"
 	temp=${path#/*}
@@ -37,7 +37,7 @@ echo -e "${GREEN}---------------------------------------------------------------
  
 echo -e "${GREEN}------------------------------------------------------------------------------${NO_COLOUR}"
 echo -e "${BOLD_CYAN}Checking for matching headers for c files\n${NO_COLOUR}"
-for FILE in $(find $TCPATH/ -name "*.c"); do
+for FILE in $(find $1 -name "*.c"); do
 	filename=$(basename "$FILE")
 	path="${FILE%.*}"
 	filename="${filename%.*}"
