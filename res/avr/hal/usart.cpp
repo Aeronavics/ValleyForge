@@ -109,6 +109,9 @@ void Usart_imp::enable(void)
 
 	// Enable interrupts
 	*registers.UCSRB |= _BV(TXCIE_BIT) | _BV(RXCIE_BIT);
+
+	// NOTE - UDRE is not enabled until it is required,
+	// as it will immediately trigger the UDRE interrupt.
 }
 
 void Usart_imp::disable(void)
@@ -243,7 +246,7 @@ Usart_io_status Usart_imp::transmit_buffer(uint8_t* data, size_t size)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done)
+Usart_io_status Usart_imp::transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done, void *p)
 {
 	if (!transmitter_ready())
 		return USART_IO_BUSY;
@@ -254,6 +257,7 @@ Usart_io_status Usart_imp::transmit_buffer_async(uint8_t* data, size_t size, usa
 	async_tx.size = size;
 	async_tx.index = 0;
 	async_tx.cb_done = cb_done;
+	async_tx.cb_p = p;
 	async_tx.active = true;
 
 	// The UDR ISR will be called as soon as this is enabled,
@@ -280,7 +284,7 @@ Usart_io_status Usart_imp::transmit_string(char *string, size_t max_len)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done)
+Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done, void *p)
 {
 	if (!transmitter_ready())
 		return USART_IO_BUSY;
@@ -291,6 +295,7 @@ Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, u
 	async_tx.size = max_len;
 	async_tx.index = 0;
 	async_tx.cb_done = cb_done;
+	async_tx.cb_p = p;
 	async_tx.active = true;
 
 	// The UDR ISR will be called as soon as this is enabled,
@@ -365,7 +370,7 @@ Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done)
+Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done, void *p)
 {
 	if (async_rx.active)
 		return USART_IO_BUSY;
@@ -375,6 +380,7 @@ Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, usar
 	async_rx.size = size;
 	async_rx.index = 0;
 	async_rx.cb_done = cb_done;
+	async_rx.cb_p = p;
 	async_rx.active = true;
 
 	// The RX interrupt will take over from here
@@ -395,7 +401,7 @@ void Usart_imp::disable_interrupts(void)
 	rx_isr_enabled = false;
 }
 
-Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback_t callback)
+Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback_t callback, void* p)
 {
 	switch (type)
 	{
@@ -404,8 +410,8 @@ Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback
 			if (tx_isr != NULL)
 				return USART_INT_INUSE;
 
+			tx_isr_p = p;
 			tx_isr = callback;
-			tx_isr_enabled = true;
 			break;
 		};
 
@@ -414,8 +420,8 @@ Usart_int_status Usart_imp::attach_interrupt(Usart_interrupt_type type, callback
 			if (rx_isr != NULL)
 				return USART_INT_INUSE;
 
+			rx_isr_p = p;
 			rx_isr = callback;
-			rx_isr_enabled = true;
 			break;
 		};
 
@@ -438,6 +444,7 @@ Usart_int_status Usart_imp::detach_interrupt(Usart_interrupt_type type)
 		{
 			// NOTE - No need to check if it's already cleared.
 			tx_isr = NULL;
+			tx_isr_p = NULL;
 			tx_isr_enabled = false;
 			break;
 		};
@@ -445,6 +452,7 @@ Usart_int_status Usart_imp::detach_interrupt(Usart_interrupt_type type)
 		case USART_INT_RX_COMPLETE:
 		{
 			rx_isr = NULL;
+			rx_isr_p = NULL;
 			rx_isr_enabled = false;
 			break;
 		};
@@ -654,17 +662,17 @@ void Usart_imp::isr_receive_byte(void)
 				if (error_status != USART_ERR_NONE)
 				{
 					Usart_error_status error = (Usart_error_status) data;
-					async_rx.cb_done(error, NULL, 0);
+					async_rx.cb_done(async_rx.cb_p, error, NULL, 0);
 				}
 				else
 				{
-					async_rx.cb_done(USART_ERR_NONE, async_rx.buffer, async_rx.index);
+					async_rx.cb_done(async_rx.cb_p, USART_ERR_NONE, async_rx.buffer, async_rx.index);
 				}
 			}
 
 			// Call the user ISR to tell that data has finished being received
 			if (rx_isr && rx_isr_enabled)
-				rx_isr();
+				rx_isr(rx_isr_p);
 		}
 	}
 
@@ -672,7 +680,7 @@ void Usart_imp::isr_receive_byte(void)
 	else
 	{
 		if (rx_isr && rx_isr_enabled)
-			rx_isr();
+			rx_isr(rx_isr_p);
 
 		// Make sure the byte is read to clear the interrupt flag!
 		// If this is not done, it affects the UDRE interrupt ???
@@ -728,11 +736,11 @@ void Usart_imp::isr_transmit_ready(void)
 
 			// Inform the user the data has been sent
 			if (async_tx.cb_done != NULL)
-				async_tx.cb_done(USART_ERR_NONE);
+				async_tx.cb_done(async_tx.cb_p, USART_ERR_NONE);
 
 			// Call the user ISR to indicate the transmitter is free to send more data
 			if (tx_isr && tx_isr_enabled)
-				tx_isr();
+				tx_isr(tx_isr_p);
 		}
 	}
 	// Only process user ISR if no async operations are running
@@ -742,7 +750,7 @@ void Usart_imp::isr_transmit_ready(void)
 		// The callback should return a bool, which should be set to true
 		// when the user has no more data to send.
 		if (tx_isr && tx_isr_enabled)
-			tx_isr();
+			tx_isr(tx_isr_p);
 
 		// Explicitly clear the UDRIE flag in case they didn't load more data
 		set_udrie(false);
@@ -762,8 +770,8 @@ void Usart_imp::isr_transmit_ready(void)
  * This class overrides the behaviour in Usart_imp to make the LIN
  * peripheral function as a UART.
  *
- * The LIN-UART has restricted functionality, and only supports:
- * 8 data bits, odd/even/no parity, 1 stop bits, asynchronous operation only.
+ * The LIN-UART has restricted functionality, and only supports
+ * 8 data bits, odd/even/no parity, and 1 stop bit
  */
 
 Lin_imp::Lin_imp(Usart_channel channel, Usart_pins pins)
@@ -1262,9 +1270,9 @@ void Usart::disable_interrupts()
 	imp->enable_interrupts();
 }
 
-Usart_int_status Usart::attach_interrupt(Usart_interrupt_type type, callback_t callback)
+Usart_int_status Usart::attach_interrupt(Usart_interrupt_type type, callback_t callback, void *p)
 {
-	return imp->attach_interrupt(type, callback);
+	return imp->attach_interrupt(type, callback, p);
 }
 
 Usart_int_status Usart::detach_interrupt(Usart_interrupt_type type)

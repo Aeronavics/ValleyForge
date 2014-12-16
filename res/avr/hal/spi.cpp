@@ -54,10 +54,10 @@
  * Structure to contain the GPIO pin addresses that represent the peripheral pins for all the SPI channels.
  */
 typedef struct SPI_PINS {
-	IO_pin_address miso;
-	IO_pin_address mosi;
-	IO_pin_address sck;
-	IO_pin_address ss;
+	IO_pin_address miso_address;
+	IO_pin_address mosi_address;
+	IO_pin_address sck_address;
+	IO_pin_address ss_address;
 } Spi_pins;
 
 // DECLARE IMPORTED GLOBAL VARIABLES
@@ -82,7 +82,7 @@ void initialise_SPI(void);
 class Spi_imp
 {
 public:
-	Spi_imp(Spi_channel channel, Spi_pins pins);
+	Spi_imp(Spi_channel channel, Spi_pins pins, volatile uint8_t* xDR);
 	~Spi_imp();
 
 	void bind(void);
@@ -98,16 +98,16 @@ public:
 	virtual Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
 
 	virtual int16_t transfer(uint8_t tx_data);
-	virtual Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL);
+	virtual Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = nullptr, spi_data_callback_t done = nullptr, void *p = nullptr);
 	virtual Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
-	virtual Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL);
+	virtual Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = nullptr, void *p = nullptr);
 
 	virtual bool transfer_busy(void);
 	virtual Spi_io_status get_status(void);
 
 	void enable_interrupts(void);
 	void disable_interrupts(void);
-	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback);
+	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p = nullptr);
 	Spi_int_status detach_interrupt(Spi_interrupt_type interrupt);
 
 public: // Public Fields
@@ -118,11 +118,15 @@ public: // Public Fields
 	Spi_slave_select_mode ss_mode;
 	IO_pin_address ss_pin;
 
+	// The data register. Refers to SPDR for Spi_imp, and UDRn for Usartspi_imp
+	volatile uint8_t* xDR;
+
 	void set_ss(bool ss_enabled);
 
 public: // Asynchronous Interrupt Handling
 
 	callback_t stc_isr;
+	void *stc_isr_p;
 	bool stc_isr_enabled;
 
 	void isr_transfer_complete();
@@ -136,7 +140,12 @@ public: // Asynchronous Interrupt Handling
 		size_t size;
 		size_t index;
 
+		#ifdef USE_SPI_USART
+		size_t tx_index; // For MSPIM
+		#endif
+
 		spi_data_callback_t cb_done;
+		void *cb_p;
 	} async;
 
 protected:
@@ -184,6 +193,9 @@ public:
 
 	// Fields
 	uint16_t ubrr; // delayed ubrr
+
+	static void isr_receive_byte(void *p);
+	static void isr_transmit_ready(void *p);
 };
 
 #endif
@@ -192,13 +204,13 @@ public:
 
 
 
-Spi_imp::Spi_imp(Spi_channel channel, Spi_pins pins)
-	: channel(channel), pins(pins)
+Spi_imp::Spi_imp(Spi_channel channel, Spi_pins pins, volatile uint8_t* xDR)
+	: channel(channel), pins(pins), xDR(xDR)
 {
 	this->stc_isr = NULL;
 	this->stc_isr_enabled = false;
 
-	this->ss_pin = pins.ss;
+	this->ss_pin = pins.ss_address;
 	this->ss_mode = SPI_SS_NONE;
 }
 
@@ -216,10 +228,10 @@ void Spi_imp::unbind(void)
 
 void Spi_imp::enable(void)
 {
-	Gpio_pin mosi(pins.mosi);
-	Gpio_pin miso(pins.miso);
-	Gpio_pin sck(pins.sck);
-	Gpio_pin ss(pins.ss);
+	Gpio_pin mosi(pins.mosi_address);
+	Gpio_pin miso(pins.miso_address);
+	Gpio_pin sck(pins.sck_address);
+	Gpio_pin ss(pins.ss_address);
 
 	// Enable GPIO inputs depending on master/slave mode
 	if (this->setup_mode == SPI_MASTER)
@@ -398,7 +410,7 @@ Spi_config_status Spi_imp::set_slave_select(Spi_slave_select_mode mode, IO_pin_a
 		// Use the SS pin defined by target_config.hpp
 		case SPI_SS_HARDWARE:
 		{
-			this->ss_pin = this->pins.ss;
+			this->ss_pin = this->pins.ss_address;
 			break;
 		};
 
@@ -434,7 +446,7 @@ int16_t Spi_imp::transfer(uint8_t tx_data)
 
 	set_ss(true); // Pull SS low
 
-	SPDR = tx_data;
+	*xDR = tx_data;
 
 	while (transfer_busy())
 	{
@@ -443,10 +455,10 @@ int16_t Spi_imp::transfer(uint8_t tx_data)
 
 	set_ss(false);
 
-	return SPDR;
+	return *xDR;
 }
 
-Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done)
+Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p)
 {
 	// Master: Should initiate a transfer and return immediately, calling done callback when rx_data is valid.
 	// Slave: Should tell the transceiver that we're expecting some data, and it should call the done callback when data is received
@@ -460,12 +472,13 @@ Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_dat
 	async.rx_data = rx_data;
 	async.tx_data = NULL;
 	async.cb_done = done;
+	async.cb_p = p;
 	async.active = true;
 
 	set_ss(true); // The interrupt will reset this
 
 	// Start the transfer
-	SPDR = tx_data;
+	*xDR = tx_data;
 
 	return SPI_IO_SUCCESS;
 }
@@ -487,14 +500,14 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 	// In slave mode, this will wait for the master to transfer 'size' bytes.
 	for (size_t i = 0; i < size; i++)
 	{
-		SPDR = *tx_data++;
+		*xDR = *tx_data++;
 
 		while (transfer_busy())
 		{
 			// Wait
 		}
 
-		uint8_t rx = SPDR;
+		uint8_t rx = *xDR;
 
 		if (rx_data != NULL)
 		{
@@ -507,7 +520,7 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 	return SPI_IO_SUCCESS;
 }
 
-Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done)
+Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done, void *p)
 {
 	if (size == 0)
 		return SPI_IO_FAILED;
@@ -521,12 +534,13 @@ Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data,
 	async.rx_data = rx_data;
 	async.tx_data = tx_data;
 	async.cb_done = done;
+	async.cb_p = p;
 	async.active = true;
 
 	set_ss(true); // The interrupt will reset this
 
 	// Start the transfer
-	SPDR = tx_data[0];
+	*xDR = tx_data[0];
 
 	return SPI_IO_SUCCESS;
 }
@@ -555,14 +569,49 @@ void Spi_imp::disable_interrupts(void)
 	stc_isr_enabled = false;
 }
 
-Spi_int_status Spi_imp::attach_interrupt(Spi_interrupt_type interrupt, callback_t callback)
+Spi_int_status Spi_imp::attach_interrupt(Spi_interrupt_type interrupt_type, callback_t callback, void *p)
 {
-	return SPI_INT_FAILED;
+	switch (interrupt_type)
+	{
+		case SPI_INT_TRANSFER_COMPLETE:
+		{
+			if (stc_isr != NULL)
+				return SPI_INT_EXISTS;
+
+			stc_isr_p = p;
+			stc_isr = callback;
+			break;
+		};
+
+		default:
+			return SPI_INT_FAILED;
+	}
+
+	return SPI_INT_SUCCESS;
 }
 
-Spi_int_status Spi_imp::detach_interrupt(Spi_interrupt_type interrupt)
+Spi_int_status Spi_imp::detach_interrupt(Spi_interrupt_type interrupt_type)
 {
-	return SPI_INT_FAILED;
+	cli();
+
+	switch (interrupt_type)
+	{
+		case SPI_INT_TRANSFER_COMPLETE:
+		{
+			stc_isr_enabled = false;
+			stc_isr = NULL;
+			break;
+		};
+
+		default:
+		{
+			sei();
+			return SPI_INT_FAILED;
+		}
+	}
+
+	sei();
+	return SPI_INT_SUCCESS;
 }
 
 void Spi_imp::set_ss(bool ss_enabled)
@@ -578,7 +627,7 @@ void Spi_imp::isr_transfer_complete()
 {
 	if (async.active)
 	{
-		uint8_t rx = SPDR; // Clear the RX buffer
+		uint8_t rx = *xDR; // Clear the RX buffer
 
 		// Receive
 		if (async.rx_data != NULL)
@@ -597,19 +646,19 @@ void Spi_imp::isr_transfer_complete()
 			set_ss(false);
 
 			if (async.cb_done != NULL)
-				async.cb_done(SPI_IO_SUCCESS, async.rx_data, async.size);
+				async.cb_done(async.cb_p, SPI_IO_SUCCESS, async.rx_data, async.size);
 		}
 		else if (async.tx_data != NULL)
 		{
 			// Still more data to transmit
-			SPDR = async.tx_data[async.index];
+			*xDR = async.tx_data[async.index];
 		}
 	}
 	else
 	{
 		// Not currently processing any async communications
 		if (stc_isr != NULL && stc_isr_enabled)
-			stc_isr();
+			stc_isr(stc_isr_p);
 	}
 }
 
@@ -627,15 +676,23 @@ void Spi_imp::isr_transfer_complete()
  */
 
 Usartspi_imp::Usartspi_imp(Spi_channel channel, Usart_imp *usart_imp)
-	: Spi_imp(channel, {})
+	: Spi_imp(channel, {}, usart_imp->registers.UDR)
 {
 	this->usart_imp = usart_imp;
 
 	// Use the pins defined by the USART HAL module
-	pins.miso = usart_imp->pins.rx_address;
-	pins.mosi = usart_imp->pins.tx_address;
-	pins.sck = usart_imp->pins.xck_address;
+	pins.miso_address = usart_imp->pins.rx_address;
+	pins.mosi_address = usart_imp->pins.tx_address;
+	pins.sck_address = usart_imp->pins.xck_address;
 	// No SS pin
+
+
+	// Attach interrupts
+	// NOTE - Because there can be multiple instances of Usartspi_imp, the callback
+	// must be a static function. We pass in a reference to 'this' so the callback can
+	// use it.
+	//usart_imp->attach_interrupt(USART_INT_TX_COMPLETE, Usartspi_imp::isr_receive_byte, this);
+	//usart_imp->attach_interrupt(USART_INT_RX_COMPLETE, Usartspi_imp::isr_transmit_ready, this);
 }
 
 
@@ -657,8 +714,10 @@ void Usartspi_imp::enable(void)
 {
 	*usart_imp->registers.UBRR = 0;
 
+	usart_imp->enable_interrupts();
+
 	// Configure XCK as output, for master mode
-	Gpio_pin xck = Gpio_pin(pins.sck);
+	Gpio_pin xck = Gpio_pin(pins.sck_address);
 	xck.set_mode(GPIO_OUTPUT_PP);
 
 	// Enable the transceivers
@@ -671,6 +730,8 @@ void Usartspi_imp::enable(void)
 
 void Usartspi_imp::disable(void)
 {
+	usart_imp->disable_interrupts();
+
 	// NOTE - UBRR must be set to 0 before configuring
 	*usart_imp->registers.UBRR = 0;
 
@@ -791,40 +852,190 @@ Spi_config_status Usartspi_imp::set_slave_select(Spi_slave_select_mode mode, IO_
 
 int16_t Usartspi_imp::transfer(uint8_t tx_data)
 {
-	// TODO
-	return -1;
+	// NOTE - When transmitting a byte you must also read a byte
+
+	while (!usart_imp->transmitter_ready())
+	{
+		// Wait for empty transmit buffer
+	}
+
+	set_ss(true);
+
+	*xDR = tx_data;
+
+	while (!usart_imp->receiver_has_data())
+	{
+		// Wait for data to be shifted
+	}
+
+	set_ss(false);
+
+	return *xDR;
 }
 
 Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done)
 {
-	// TODO
-	return SPI_IO_FAILED;
+	if (transfer_busy())
+		return SPI_IO_BUSY;
+
+	// Tell async handler we're expecting one byte
+	async.index = 0;
+	async.tx_index = 0;
+	async.size = 1;
+	async.rx_data = rx_data;
+	async.tx_data = NULL;
+	async.cb_done = done;
+	async.active = true;
+
+	set_ss(true); // The interrupt will reset this
+
+	// Start the transfer
+	*xDR = tx_data;
+	usart_imp->set_udrie(true);
+
+	return SPI_IO_SUCCESS;
 }
 
 Spi_io_status Usartspi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
 {
-	// TODO
-	return SPI_IO_FAILED;
+	if (tx_data == NULL)
+		return SPI_IO_FAILED;
+
+	// Safety net (in case an async transfer was initiated beforehand)
+	while (!usart_imp->transmitter_ready())
+	{
+		// Wait for empty transmit buffer
+	}
+
+	set_ss(true);
+
+	// In master mode, this will transfer 'size' bytes.
+	// In slave mode, this will wait for the master to transfer 'size' bytes.
+	for (size_t i = 0; i < size; i++)
+	{
+		*xDR  = *tx_data++;
+
+		while (!usart_imp->receiver_has_data())
+		{
+			// Wait for data to be shifted
+		}
+
+		uint8_t rx = *xDR;
+
+		if (rx_data != NULL)
+		{
+			*rx_data++ = (uint8_t)rx;
+		}
+	}
+
+	set_ss(false);
+
+	return SPI_IO_SUCCESS;
 }
 
 Spi_io_status Usartspi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done)
 {
-	// TODO
-	return SPI_IO_FAILED;
+	if (size == 0)
+		return SPI_IO_FAILED;
+
+	if (transfer_busy())
+		return SPI_IO_BUSY;
+
+	// Tell async handler we're expecting one byte
+	async.index = 0;
+	async.tx_index = 0;
+	async.size = size;
+	async.rx_data = rx_data;
+	async.tx_data = tx_data;
+	async.cb_done = done;
+	async.active = true;
+
+	set_ss(true); // The interrupt will reset this
+
+	// Start the transfer
+	*xDR = tx_data[0];
+	usart_imp->set_udrie(true);
+
+	return SPI_IO_SUCCESS;
 }
 
 bool Usartspi_imp::transfer_busy(void)
 {
-	// TODO
-	return false;
+	//TODO: Not sure how exactly these bits compare to SPI
+	return (bit_read(*usart_imp->registers.UCSRA, UDRE_BIT) != 1)
+		|| (bit_read(*usart_imp->registers.UCSRA, RXC_BIT) != 1)
+		|| (async.active);
 }
 
 Spi_io_status Usartspi_imp::get_status(void)
 {
-	// TODO
-	return SPI_IO_FAILED;
+	return SPI_IO_SUCCESS; // There are no error flags
 }
 
+// Static class functions
+
+void Usartspi_imp::isr_receive_byte(void *p)
+{
+	// To avoid having to define multiple ISR handlers for each Usartimp implementation,
+	// we instead define a static method which accepts a pointer to the instance itself.
+	Usartspi_imp *imp = static_cast<Usartspi_imp*>(p);
+
+	// Store the byte
+	if (imp->async.active)
+	{
+		uint8_t rx = *imp->xDR;
+
+		if (imp->async.rx_data != NULL)
+		{
+			imp->async.rx_data[imp->async.index] = rx;
+		}
+
+		imp->async.index++;
+
+		if (imp->async.index >= imp->async.size)
+		{
+			// Finished transferring bytes
+			// NOTE: UDRE will probably be called once more, so ignore it when it comes.
+
+			imp->async.active = false;
+
+			imp->set_ss(false);
+
+			if (imp->async.cb_done != NULL)
+				imp->async.cb_done(imp->async.cb_p, SPI_IO_SUCCESS, imp->async.rx_data, imp->async.size);
+
+			// Data is transmitted in the UDR interrupt.
+		}
+	}
+}
+
+void Usartspi_imp::isr_transmit_ready(void *p)
+{
+	// NOTE - I think this is called immediately after isr_receive_byte(), but I'm not certain.
+	Usartspi_imp *imp = static_cast<Usartspi_imp*>(p);
+
+	// Send next byte
+	if (imp->async.active)
+	{
+		// NOTE - this is incremented before we send more data,
+		// since one byte has already been sent before UDR was enabled.
+		imp->async.tx_index++;
+
+		if (imp->async.tx_index < imp->async.size)
+		{
+			// Still more data to transfer
+			if (imp->async.tx_data != NULL)
+			{
+				*imp->xDR = imp->async.tx_data[imp->async.tx_index];
+			}
+		}
+		else
+		{
+			// Finished
+			imp->usart_imp->set_udrie(false);
+		}
+	}
+}
 
 #endif
 
@@ -832,23 +1043,20 @@ Spi_io_status Usartspi_imp::get_status(void)
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-// NOTE - As far as I'm aware, AVRs have only one main SPI module.
-//  However other SPIs may be available through the USART on some chips.
-
 static Spi_imp spi_imp = Spi_imp(
 	SPI_0,
 	(Spi_pins) {
-		.miso = _IOADDR(SPI0_MISO_PORT, SPI0_MISO_PIN),
-		.mosi = _IOADDR(SPI0_MOSI_PORT, SPI0_MOSI_PIN),
-		.sck  = _IOADDR(SPI0_SCK_PORT, SPI0_SCK_PIN),
-		.ss   = _IOADDR(SPI0_SS_PORT, SPI0_SS_PIN),
-	}
+		.miso_address = _IOADDR(SPI0_MISO_PORT, SPI0_MISO_PIN),
+		.mosi_address = _IOADDR(SPI0_MOSI_PORT, SPI0_MOSI_PIN),
+		.sck_address  = _IOADDR(SPI0_SCK_PORT, SPI0_SCK_PIN),
+		.ss_address   = _IOADDR(SPI0_SS_PORT, SPI0_SS_PIN),
+	},
+	&SPDR
 );
 
 #ifdef USE_SPI_USART
 
 #ifdef USE_USART0
-//extern Usart_imp usart0_imp;
 static Usartspi_imp usartspi0_imp = Usartspi_imp(
 	USARTSPI_0,
 	&usart0_imp
@@ -1000,9 +1208,9 @@ void Spi::disable_interrupts(void)
 	imp->disable_interrupts();
 }
 
-Spi_int_status Spi::attach_interrupt(Spi_interrupt_type interrupt, callback_t callback)
+Spi_int_status Spi::attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p)
 {
-	return imp->attach_interrupt(interrupt, callback);
+	return imp->attach_interrupt(interrupt, callback, p);
 }
 
 Spi_int_status Spi::detach_interrupt(Spi_interrupt_type interrupt)
@@ -1019,7 +1227,3 @@ ISR(SPI_STC_vect)
 {
 	spi_imp.isr_transfer_complete();
 }
-
-//TODO - How do we share the USART-SPI interrupts from the USART module??
-
-// ALL DONE.

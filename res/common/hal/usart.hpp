@@ -163,8 +163,8 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
-typedef void(*usartrx_callback_t)(Usart_error_status, uint8_t* buffer, size_t received_bytes);
-typedef void(*usarttx_callback_t)(Usart_error_status);
+typedef void(*usartrx_callback_t)(void *p, Usart_error_status, uint8_t* buffer, size_t received_bytes);
+typedef void(*usarttx_callback_t)(void *p, Usart_error_status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -376,10 +376,11 @@ class Usart
 		 * Enables an interrupt to be be associated with a USART connection.
 		 *
 		 * @param interrupt		One of the possible interrupt sources that are available.
-		 * @param ISRptr		Pointer to the user-defined ISR.
+		 * @param callback		Pointer to the user-defined ISR. Accepts one void* parameter
+		 * @param p				Pointer to user data, to be passed to the callback
 		 * @return Zero for success, non-zero for failure.
 		 */
-		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback);
+		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback, void *p = nullptr);
 
 		/**
 		 * Detaches an interrupt handler from a particular interrupt event source associated with this USART channel.

@@ -80,8 +80,6 @@ enum Spi_io_status {SPI_IO_SUCCESS = 0, SPI_IO_FAILED = -1, SPI_IO_BUSY = -3, SP
 // SPI interrupt configuration status
 enum Spi_int_status {SPI_INT_SUCCESS = 0, SPI_INT_EXISTS = -1, SPI_INT_NOINT = -2, SPI_INT_FAILED = -3};
 
-enum Spi_interrupt_type {SPI_INT_TODO}; // TODO - Interrupts. Should these be put into target_config.hpp?
-
 
 // Specifies master/slave mode
 enum Spi_setup_mode
@@ -100,7 +98,7 @@ enum Spi_data_mode
 };
 
 
-enum Spi_interrupt_types
+enum Spi_interrupt_type
 {
 	SPI_INT_TRANSFER_COMPLETE,	// The transfer has completed
 };
@@ -113,7 +111,7 @@ enum Spi_slave_select_mode
 };
 
 
-typedef void (*spi_data_callback_t)(Spi_io_status status, uint8_t *rx_data, size_t size);
+typedef void (*spi_data_callback_t)(void *p, Spi_io_status status, uint8_t *rx_data, size_t size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -291,10 +289,11 @@ public:
 	 * Enables an interrupt to be be associated with a SPI connection.
 	 *
 	 * @param interrupt		One of the possible interrupt sources that are available.
-	 * @param ISRptr		Pointer to the user-defined ISR.
+	 * @param callback		Pointer to the user-defined ISR. Accepts one void* parameter
+	 * @param p				Pointer to user data, to be passed to the callback
 	 * @return 				The status of the operation
 	 */
-	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback);
+	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p = nullptr);
 
 	/**
 	 * Detaches an interrupt handler from a particular interrupt event source associated with this SPI channel.

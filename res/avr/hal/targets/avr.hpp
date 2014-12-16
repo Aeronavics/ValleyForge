@@ -51,7 +51,12 @@
 #define __TARGET_AVR_H__
 
 /* Generic Types */
-typedef void(*callback_t)(void);
+
+// Generic callback
+typedef void(*callback_t)(void *p);
+
+// NOTE - It's good design to include a void* pointer that the user
+// can use to send state to the callback function.
 
 /* Macros */
 

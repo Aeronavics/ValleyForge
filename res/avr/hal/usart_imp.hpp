@@ -65,11 +65,11 @@ public:
 
 	virtual Usart_io_status transmit_buffer(uint8_t* data, size_t size);
 
-	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = NULL);
+	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = nullptr, void *p = nullptr);
 
 	virtual Usart_io_status transmit_string(char *string, size_t max_len);
 
-	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = NULL);
+	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = nullptr, void *p = nullptr);
 
 
 	virtual int16_t receive_byte(void);
@@ -79,14 +79,14 @@ public:
 
 	virtual Usart_io_status receive_buffer(uint8_t *buffer, size_t size);
 
-	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done);
+	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done, void *p = nullptr);
 
 
 	virtual void enable_interrupts(void);
 
 	virtual void disable_interrupts(void);
 
-	virtual Usart_int_status attach_interrupt(Usart_interrupt_type type, callback_t callback);
+	virtual Usart_int_status attach_interrupt(Usart_interrupt_type type, callback_t callback, void* p = nullptr);
 
 	virtual Usart_int_status detach_interrupt(Usart_interrupt_type type);
 
@@ -116,12 +116,13 @@ public:  //// Asynchronous Interrupt Handling ////
 	// The TX isr is called whenever the transmitter has finished transmitting,
 	// and there is no more data to send.
 	callback_t tx_isr;
+	void *tx_isr_p;
+	bool tx_isr_enabled;
 
 	// The RX isr is called whenever something has been received.
 	// If an _async() call is active, this is called when it finishes.
 	callback_t rx_isr;
-
-	bool tx_isr_enabled;
+	void *rx_isr_p;
 	bool rx_isr_enabled;
 
 	// State machines used for asynchronous communications
@@ -136,6 +137,7 @@ public:  //// Asynchronous Interrupt Handling ////
 		Usart_async_mode mode;
 
 		usarttx_callback_t cb_done;
+		void *cb_p;
 	} async_tx;
 
 	struct
@@ -147,6 +149,7 @@ public:  //// Asynchronous Interrupt Handling ////
 		size_t index;
 
 		usartrx_callback_t cb_done;
+		void *cb_p;
 	} async_rx;
 
 
@@ -179,8 +182,8 @@ protected:
  * This class overrides the behaviour in Usart_imp to make the LIN
  * peripheral function as a UART.
  *
- * The LIN-UART has restricted functionality, and only supports:
- * 8 data bits, odd/even/no parity, 1 stop bits, asynchronous operation only.
+ * The LIN-UART has restricted functionality, and only supports
+ * 8 data bits, odd/even/no parity, and 1 stop bit
  */
 class Lin_imp : public Usart_imp
 {
