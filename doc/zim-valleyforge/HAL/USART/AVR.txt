@@ -36,3 +36,13 @@ Supported parity settings:
 	''USART_PARITY_NONE''
 	''USART_PARITY_EVEN''
 	''USART_PARITY_ODD''
+
+
+=== Asynchronous Communication ===
+(Aka. non-blocking communication)
+Because the AVR doesn't have DMA, asynchronous communications are performed using interrupts and an internal state machine. This incurs some overhead for each byte sent, so it may not be possible to use the USART at very high baud rates.
+
+IMPORTANT: You MUST enable global interrupts for asynchronous communications to work! ie, you must call sei() before you can use any of the async methods.
+
+
+

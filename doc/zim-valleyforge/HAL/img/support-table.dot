@@ -69,7 +69,7 @@ struct1 [label=<
 </tr>
 
 <tr><td>SPI</td>
-	<td bgcolor="orange"></td>
+	<td bgcolor="orange">Needs Testing</td>
 	<td bgcolor="forestgreen"></td>
 	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>

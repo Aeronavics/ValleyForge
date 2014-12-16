@@ -30,7 +30,11 @@ Pins are automatically configured by the library so you should not be manually c
 
 ===== USART-SPI (MSPIM) =====
 On certain targets (eg. the [[Targets:ATmega2560|ATmega2560]]) the USART peripherals can also be used as a master SPI.
-This is different to Synchronous USART in that you can configure the clock polarity/phase (SPI data mode) and MSB/LSB first formats, much like the native SPI peripheral.
+This is different to Synchronous USART in that it does not include the start/stop/parity bits, and you can configure the clock polarity/phase (SPI data mode) and MSB/LSB first formats.
+
+Note that the MSPIM has a few advantages over the native SPI peripheral:
+1. The speed can be configured with much finer control (instead of being limited to distinct divider values)
+2. Because of TX buffering, the MSPIM can transmit bytes back-to-back with no delay. This is not possible with the native SPI peripheral. This is true for both transfer() and transfer_async().
 
 === GPIO Pins ===
 In MSPIM mode the RX pin becomes MISO, the TX pin becomes MOSI, and the XCK pin becomes SCK. There is no hardware SS pin so you must provide one to ''set_slave_select()'' or do it yourself!
@@ -43,3 +47,10 @@ In order to use the USART-SPI, bind a new Spi() object and pass in USARTSPI_x wh
 ''Spi spi = Spi::bind(USARTSPI_0);''
 
 When using a USART for SPI, it cannot be used by the USART HAL module, and vise-versa!
+
+=== Asynchronous Communication ===
+(Aka. non-blocking communication)
+Because the AVR doesn't have DMA, asynchronous communications are performed using interrupts and an internal state machine. This incurs some overhead for each byte sent, so it may not be possible to use the SPI at very high speeds.
+
+IMPORTANT: You MUST enable global interrupts for asynchronous communications to work! ie, you must call sei() before you can use any of the async methods.
+
