@@ -61,22 +61,32 @@
 	#error "HAL not supported for this target"
 #endif
 
+
+
+
 enum Gpio_mode
 {
-	GPIO_OUTPUT,		// Push-pull output
-	GPIO_INPUT,			// Digital input
+	GPIO_OUTPUT,			// Push-pull output
+	GPIO_INPUT,				// Digital input
 
-	GPIO_INPUT_PD,		// Input with pull-down enabled
-	GPIO_INPUT_PU,		// Input with pull-up enabled
-	GPIO_OUTPUT_OD,		// Open-drain output
-	GPIO_INPUT_AN,		// Analog input
+	GPIO_OUTPUT_OPENDRAIN,	// Open-drain output
+	GPIO_INPUT_ANALOG,		// Analog input
+
+	// (INTERNAL USE)
+	GPIO_HWFUNC,			// Hardware peripheral override (set automatically by the HAL module)
 };
 
-// Drive modes
-#define GPIO_DRIVE_2MA 0 // TODO
-#define GPIO_DRIVE_4MA 0
-#define GPIO_DRIVE_8MA 0
-#define GPIO_DRIVE_LIMIT_SLEW 0
+// The above GPIO modes can be combined with the following flags:
+// (Using a bitwise OR)
+#define GPIO_FLAG_DRIVE_2MA 0x0000 // (Default)
+#define GPIO_FLAG_DRIVE_4MA 0x0010
+#define GPIO_FLAG_DRIVE_8MA 0x0020
+#define GPIO_FLAG_DRIVE_8MA_SC 0x0030 // 8mA slew rate limited
+
+#define GPIO_FLAG_PULLUP	0x0100
+#define GPIO_FLAG_PULLDOWN	0x0200
+#define GPIO_FLAG_OPENDRAIN 0x0400	// GPIO_OUTPUT only.
+
 
 
 #endif // __TARGET_CONFIG_H__
