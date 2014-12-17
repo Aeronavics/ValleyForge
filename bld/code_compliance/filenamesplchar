@@ -39,4 +39,3 @@ echo -e "${GREEN}File names should not contain either any special characters oth
 echo -e "${GREEN}--------------------------------------------------------------------------------${NO_COLOUR}"
 echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}" 
 
-#if [[ $filename =~ " "  ||  $filename =~ "!"  ||  $filename =~ "*"  ||  $filename =~ "|"  ||  $filename =~ "?"  ||  $filename =~ "["  ||  $filename =~ "]"  ||  		$filename =~ "!"  ||  $filename =~ "%"  ||  $filename =~ "\&"  ||  $filename =~ "?"  ||  $filename =~ "/"  ||  $filename =~ "\\"  ||  $filename =~ "$"  ||  			$filename =~ "'"  ||  $filename =~ "\""  ||  $filename =~ ";"  ||  $filename =~ "("  ||  $filename =~ ")"  ||  $filename =~ "^"  ||  $filename =~ ">"  ||  			$filename =~ "<"  ||  $filename =~ ":"  ||  $filename =~ "=" ||  $filename =~ "#" ]] ; then

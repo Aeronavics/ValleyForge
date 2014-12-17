@@ -24,14 +24,21 @@ dir=$TCPATH/bld/code_compliance
 #echo "$name" | sed -i ':r s:\(.*\)/[*]\(.*\)[*]/\(.*\):\1\3 //\2:;tr;s://\(.*\)//\(.*\)://\2\1:;tr'
 count1=0
 
-while read line
-do
-name=$line
-count1=$((count1+1))
+#while read line
+#do
+#name=$line
+#count1=$((count1+1))
 #if [[ "$name" == /* && "$name" == */ ]]; then
 #echo "$count1:$line"
 #sed ''"$count1"'/'
-if [[ $name =~ '/	' ]]; then
-echo "$name"
+#if [[ "$name" =~ ["\\"] ]]; then
+#echo "$count1: $name"
+#fi
+#done < $1
+
+
+if [[ $(cat $1 | pcregrep -M '\\\n') ]]; then
+echo "success"
+else
+echo "failure"
 fi
-done < $1

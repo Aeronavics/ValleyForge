@@ -209,28 +209,4 @@ if [[ $output == "CONSOLE" ]]; then
 echo -e "\n${BOLD_GREEN}Code Compliance has been successfully completed and the output is printed in the console${NO_COLOUR}\n"
 fi
 
-
-# TODO - Just write to the correct location in the first place, would avoid the need to do this.
-
-# Try to fix up the output files.
-
-#cat $dir/varnamelog.txt >> $3 2> /dev/null
-#cat $dir/classnamechecklog.txt >> $3 2> /dev/null
-#cat $dir/constchecklog.txt >> $3 2> /dev/null
-#cat $dir/funcnamechecklog.txt >> $3 2> /dev/null
-#cat $dir/filecompletelog.txt >> $3 2> /dev/null
-#cat $dir/headerguardlog.txt >> $3 2> /dev/null
-#cat $dir/filenamesplcharlog.txt >> $3 2> /dev/null
-#cat $dir/headerchecklog.txt >> $3 2> /dev/null
-#cat $dir/layoutlog.txt >> $3 2> /dev/null
-#rm $dir/varnamelog.txt  2> /dev/null
-#rm $dir/classnamechecklog.txt 2> /dev/null
-#rm $dir/constchecklog.txt 2> /dev/null
-#rm $dir/funcnamechecklog.txt 2> /dev/null
-#rm $dir/filecompletelog.txt 2> /dev/null
-#rm $dir/headerguardlog.txt 2> /dev/null
-#rm $dir/filenamesplcharlog.txt 2> /dev/null
-#rm $dir/headerchecklog.txt 2> /dev/null
-#rm $dir/layoutlog.txt 2> /dev/null
-
 exit 0

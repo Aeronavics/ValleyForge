@@ -28,42 +28,33 @@ count=0
 endcount=0
 splcount=0
 
-#occurcount=$(grep -cow "#endif" "$FILE")
-#echo "$occurcount"
-#lastoccur=$(cat -n $FILE | grep "#endif" | tail -1 |  cut -f 1)
-#echo "last occr $lastoccur"
-#temp=${lastoccur##* }
-#echo "temp is $temp"
+	while read line
+	do
+	name=$line
+	count=$((count+1))
+	size=${#name}
 
-while read line
-do
-name=$line
-count=$((count+1))
-size=${#name}
-#echo "--$name--"
-	if [[ "$name" != ['*']* && "$name" != [/]* && "$name" != "" && $size != 1 && $name != "{" && $name != "}" ]]; then
-		linecount=$((linecount+1))
-		splcount=$count
-		#echo "$count, $name"
-		if [[ "$name" =~ "#endif" ]]; then
-			endcount=$count
+		if [[ "$name" != ['*']* && "$name" != [/]* && "$name" != "" && $size != 1 && $name != "{" && $name != "}" ]]; then
+			linecount=$((linecount+1))
+			splcount=$count
+
+			if [[ "$name" =~ "#endif" ]]; then
+				endcount=$count
+			fi
+
 		fi
-		#else
-		#echo "$name"
-	fi
 
-done < $FILE
-#echo "endcount is $endcount"
-#echo "splcount is $splcount"
-if [[ $linecount -gt 0 ]]; then
-if [[ "$splcount" != "$endcount" ]]; then
-		echo -e "\n${YELLOW}WARNING: ${CYAN}$FILE ${YELLOW}has errors with header guards!!${NO_COLOUR}"
-		echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
-#else
-#echo "success for $FILE"
-fi
-fi
-done
+	done < $FILE
+
+		if [[ $linecount -gt 0 ]]; then
+
+			if [[ "$splcount" != "$endcount" ]]; then
+				echo -e "\n${YELLOW}WARNING: ${CYAN}$FILE ${YELLOW}has errors with header guards!!${NO_COLOUR}"
+				echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
+			fi
+
+		fi
+	done
 
 echo -e "${BOLD_WHITE}${UNDERLINED}HEADER GUARD CONVENTIONS:${NO_COLOUR}"
 echo -e "${GREEN}Header files must contain an include guard. This is to avoid compilation errors that result due to multiple inclusions of the same header file.${NO_COLOUR}\n"

@@ -101,35 +101,30 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 					
 						value=${name#* }
 						if [[ "$value" == "$name" ]]; then
-						:
-						else
-						if [[ "$value" == ":" ]]; then
 							:
 						else
-
-							valbef=${value%\(*}
-							if [[ "$valbef" =~ "," ]]; then
-							:
+							if [[ "$value" == ":" ]]; then
+								:
 							else
-							funcname=${valbef##*::}
-							classname=${valbef%::*}
-							valcase='a-z0-9_ '
-							if [[ "$funcname" =~ ":" || "$funcname" =~ ")" || "$funcname" =~ "(" ]]; then
-							:
-							else					
-								if [[ $funcname != $classname ]]; then
-
-									if [[ "$funcname" =~ [^$valcase] ]]; then
-									
-									        echo -e "${RED}WARNING: At Line ${CYAN}$count, $funcname ${RED}has uppercase letters.${NO_COLOUR}"
-										funcnamecheck=0
-
+								valbef=${value%\(*}
+								if [[ "$valbef" =~ "," ]]; then
+									:
+								else
+								funcname=${valbef##*::}
+								classname=${valbef%::*}
+								valcase='a-z0-9_ '
+									if [[ "$funcname" =~ ":" || "$funcname" =~ ")" || "$funcname" =~ "(" ]]; then
+										:
+									else					
+										if [[ $funcname != $classname ]]; then
+											if [[ "$funcname" =~ [^$valcase] ]]; then
+											        echo -e "${RED}WARNING: At Line ${CYAN}$count, $funcname ${RED}has uppercase letters.${NO_COLOUR}"
+												funcnamecheck=0
+											fi
+										fi
 									fi
-									
 								fi
 							fi
-							fi
-						fi
 						fi
 						;;
 				
@@ -139,36 +134,31 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 						value=${name#* }
 						valbef=${value%\(*}
 						if [[ "$value" == "$name" ]]; then
-						:
+							:
 						else
-						if [[ "$valbef" =~ "," ]]; then
-						:
-						else
-						valcase2='a-z0-9_'
-							if [[ "$valbef" =~ [^$valcase2] ]]; then
-							valbef2=${valbef#* }
-					
+							if [[ "$valbef" =~ "," ]]; then
+								:
 							else
-							valbef2=$valbef
+								valcase2='a-z0-9_'
+								if [[ "$valbef" =~ [^$valcase2] ]]; then
+									valbef2=${valbef#* }				
+								else
+									valbef2=$valbef
 					
+								fi
+								valcase='a-z0-9_'
+								if [[ "$valbef2" =~ ":" || "$valbef2" =~ ")" || "$valbef2" =~ "(" ]]; then
+									:
+								else
+									if [[ "$valbef2" =~ [^$valcase] ]]; then
+
+										echo -e "${RED}WARNING: At Line ${CYAN}$count, $valbef2 ${RED}has uppercase letters.${NO_COLOUR}"
+										funcnamecheck=0
+									fi
+								fi
 							fi
-					
-						valcase='a-z0-9_'
-						if [[ "$valbef2" =~ ":" || "$valbef2" =~ ")" || "$valbef2" =~ "(" ]]; then
-						:
-						else
-						if [[ "$valbef2" =~ [^$valcase] ]]; then
-
-							echo -e "${RED}WARNING: At Line ${CYAN}$count, $valbef2 ${RED}has uppercase letters.${NO_COLOUR}"
-							funcnamecheck=0
-
-						fi
-						fi
-						fi
 						fi
 					esac
-						
-				
 			fi
 		fi
 	done < $FILE

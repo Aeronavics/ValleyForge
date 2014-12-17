@@ -23,13 +23,13 @@ echo -e "${RED}ERROR(S) IN FILE COMPLETION COMMENTS in directory ${CYAN}$1\n${NO
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
-string=$(tail -1 $FILE | head -1)
-if [[ $string != "// ALL DONE." ]]; then
+	string=$(tail -1 $FILE | head -1)
+	if [[ $string != "// ALL DONE." ]]; then
 
+		echo -e "${RED}\nWARNING: ALL DONE comment is missing at the end of ${CYAN}$FILE${RED} ${NO_COLOUR}"
+		echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 
-	echo -e "${RED}\nWARNING: ALL DONE comment is missing at the end of ${CYAN}$FILE${RED} ${NO_COLOUR}"
-	echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
-fi
+	fi
 done
 
 echo -e "${GREEN}Please check if the above file(s) is/are complete. If complete, add ${CYAN}// ALL DONE.${GREEN} to the last line of the file.\n${NO_COLOUR}"
