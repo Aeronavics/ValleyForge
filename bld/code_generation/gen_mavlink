@@ -106,6 +106,15 @@ gen_mavlink()
 	echo -e "${CYAN}\tBuilding MAVlink protocol files...\n${NO_COLOUR}"
 	export PYTHONPATH="${PYTHONPATH}:${VENDOR_MAVLINK_LOCAL}"
 	make -C ${GEN_CACHE} -f Makefile_mavlink all
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check if we actually generated some code.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}\tMAVlink code generation failed.\n${NO_COLOUR}"
+		return 1
+	fi
 	echo -e ""
 
 	# Copy the generated code into the source tree.
