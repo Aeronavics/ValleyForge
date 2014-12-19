@@ -28,6 +28,11 @@ IMPORTANT:
 If in master mode, do NOT configure the SS pin as an input, or the SPI peripheral will treat it as a multi-master detection input which the SPI HAL library cannot handle!
 Pins are automatically configured by the library so you should not be manually configuring them anyway.
 
+=== Overhead ===
+If using a high SPI speed (eg. SPI_DIV_2), there may be significant overhead in the HAL routines between byte transfers. The time it takes for ''transfer()'' to execute may be 2-5x higher than the time it takes for the actual byte!
+
+For best performance consider using ''transfer_buffer()'', and ''transfer_buffer_async()'' over single byte transfers, though on the AVR ''transfer_buffer()'' (blocking) has the best performance (when using SPI_0). This is because the AVR does not have any buffering in its hardware SPI peripheral! (Unlike MSPIM)
+
 ===== USART-SPI (MSPIM) =====
 On certain targets (eg. the [[Targets:ATmega2560|ATmega2560]]) the USART peripherals can also be used as a master SPI.
 This is different to Synchronous USART in that it does not include the start/stop/parity bits, and you can configure the clock polarity/phase (SPI data mode) and MSB/LSB first formats.

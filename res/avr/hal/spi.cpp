@@ -148,6 +148,8 @@ public: // Asynchronous Interrupt Handling
 		void *cb_p;
 	} async;
 
+	volatile bool busy; // For blocking comms
+
 protected:
 	Spi_imp(void);	// Poisoned.
 	Spi_imp(Usart_imp*);	// Poisoned.
@@ -212,6 +214,9 @@ Spi_imp::Spi_imp(Spi_channel channel, Spi_pins pins, volatile uint8_t* xDR)
 
 	this->ss_pin = pins.ss_address;
 	this->ss_mode = SPI_SS_NONE;
+
+	async.active = false;
+	busy = false;
 }
 
 Spi_imp::~Spi_imp() { }
@@ -245,6 +250,9 @@ void Spi_imp::enable(void)
 		// switches to slave mode and generates an interrupt.
 		// For more information see the chip's datasheet.
 		ss.set_mode(GPIO_OUTPUT_PP);
+
+		// Clear SS (Either hardware or software SS) to disable the slave
+		set_ss(false);
 	}
 	else // SPI_SLAVE
 	{
@@ -266,6 +274,9 @@ void Spi_imp::enable(void)
 void Spi_imp::disable(void)
 {
 	// Would it make sense to disable the GPIO pins here?
+
+	// Clear SS to disable the slave
+	set_ss(false);
 
 	bit_write(SPCR, SPE, 0);	// Disable transceiver
 	bit_write(SPCR, SPIE, 0);	// Disable interrupt
@@ -417,8 +428,17 @@ Spi_config_status Spi_imp::set_slave_select(Spi_slave_select_mode mode, IO_pin_a
 		// Use the provided SS pin
 		case SPI_SS_SOFTWARE:
 		{
-			// NOTE: The user must configure this pin as an input.
 			this->ss_pin = software_ss_pin;
+			Gpio_pin ss(software_ss_pin);
+
+			if (this->setup_mode == SPI_MASTER)
+			{
+				ss.set_mode(GPIO_OUTPUT_PP);
+			}
+			else
+			{
+				ss.set_mode(GPIO_INPUT_FL);
+			}
 			break;
 		};
 
@@ -439,21 +459,26 @@ int16_t Spi_imp::transfer(uint8_t tx_data)
 	// Slave: Should block until the remote master shifts in enough data (and tx_data is fully shifted out)
 
 	// Safety net (in case an async transfer was initiated beforehand)
-	while (transfer_busy())
+	while (async.active)
 	{
 		// Wait
 	}
 
+	//bit_write(SPCR, SPIE, 0);
 	set_ss(true); // Pull SS low
+	busy = true;
 
 	*xDR = tx_data;
 
+	// Use two busy flags, since SPIF is automatically cleared when using interrupts.
+	// TODO: This takes longer to be cleared when using interrupts than without (7.1us longer). Possibly ISR latency?
 	while (transfer_busy())
 	{
 		// Wait
 	}
 
 	set_ss(false);
+	//bit_write(SPCR, SPIE, 1);
 
 	return *xDR;
 }
@@ -463,7 +488,7 @@ Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_dat
 	// Master: Should initiate a transfer and return immediately, calling done callback when rx_data is valid.
 	// Slave: Should tell the transceiver that we're expecting some data, and it should call the done callback when data is received
 
-	if (transfer_busy())
+	if (async.active)
 		return SPI_IO_BUSY;
 
 	// Tell async handler we're expecting one byte
@@ -474,6 +499,8 @@ Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_dat
 	async.cb_done = done;
 	async.cb_p = p;
 	async.active = true;
+
+	sei(); // Ensure interrupts are enabled
 
 	set_ss(true); // The interrupt will reset this
 
@@ -489,12 +516,16 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 		return SPI_IO_FAILED;
 
 	// Safety net (in case an async transfer was initiated beforehand)
-	while (transfer_busy())
+	while (async.active)
 	{
 		// Wait
 	}
 
-	set_ss(true);
+	// Disable SPI interrupt so we can poll SPIF (for efficiency)
+	bit_write(SPCR, SPIE, 0);
+
+	set_ss(true); // TODO: Should SS be strobed for every byte, or just the whole buffer?
+	busy = true;
 
 	// In master mode, this will transfer 'size' bytes.
 	// In slave mode, this will wait for the master to transfer 'size' bytes.
@@ -502,7 +533,7 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 	{
 		*xDR = *tx_data++;
 
-		while (transfer_busy())
+		while (bit_read(SPSR, SPIF) == 0)
 		{
 			// Wait
 		}
@@ -516,6 +547,7 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 	}
 
 	set_ss(false);
+	bit_write(SPCR, SPIE, 1);
 
 	return SPI_IO_SUCCESS;
 }
@@ -525,7 +557,7 @@ Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data,
 	if (size == 0)
 		return SPI_IO_FAILED;
 
-	if (transfer_busy())
+	if (async.active)
 		return SPI_IO_BUSY;
 
 	// Tell async handler we're expecting one byte
@@ -536,6 +568,8 @@ Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data,
 	async.cb_done = done;
 	async.cb_p = p;
 	async.active = true;
+
+	sei();
 
 	set_ss(true); // The interrupt will reset this
 
@@ -550,7 +584,7 @@ bool Spi_imp::transfer_busy(void)
 	// The SPI module is currently shifting data.
 	// rx_data is not yet valid, and tx_data cannot be written.
 
-	return (bit_read(SPSR, SPIF) == 0) || (async.active);
+	return (busy && (bit_read(SPSR, SPIF) == 0)) || (async.active);
 }
 
 Spi_io_status Spi_imp::get_status(void)
@@ -625,6 +659,10 @@ void Spi_imp::set_ss(bool ss_enabled)
 
 void Spi_imp::isr_transfer_complete()
 {
+	busy = false;
+
+	// TODO: Async transfers have quite a bit of overhead
+
 	if (async.active)
 	{
 		uint8_t rx = *xDR; // Clear the RX buffer

@@ -197,7 +197,7 @@ public:
 	 * @param  mode			The slave select operating mode
 	 * @return 				The status of the operation
 	 */
-	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
+	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin = {});
 
 	/**
 	 * Shift one byte through the SPI, blocking until the transfer has completed.
