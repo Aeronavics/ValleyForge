@@ -29,8 +29,36 @@
 ###
 ###########################################################################################################################
 
+# Import all the files which look like they might contain functions which actually check things.
+for f in $TCPATH/bld/code_compliance/checkfuncs_*; do
+	source "$f"
+done
+
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported top level code compliance functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_load_config
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Load code compliance configuration settings from file.  For now, the path
+###             to load is hard coded in, but actually, it should take this from the user
+###             configuration file.
+###
+###########################################################################################
+
+compliance_load_config()
+{
+	# For how, just hard code the path.
+	CODE_COMPLIANCE_CONFIG="$TCPATH/bld/code_compliance/config_files/code_compliance.cfg"
+	echo -e "${CYAN}Loading code compliance configuration from: ${CODE_COMPLIANCE_CONFIG}\n${NO_COLOUR}"
+	source ${CODE_COMPLIANCE_CONFIG}
+
+	# All done.
+	return 0
+}
 
 ######################################## FUNCTION #########################################
 ###
@@ -62,14 +90,131 @@ compliance_check_directory()
 		return 1
 	fi
 
-	# TODO - Put whatever here.
+	# Record the output file.
+	COMPLIANCE_OUTPUT_FILEPATH=$2
 
-	bash $TCPATH/bld/code_compliance/master $1 $TCPATH/bld/code_compliance/config_files/code_compliance.cfg $2
+	# Initially, the number of errors or warnings is zero.
+	COMPLIANCE_NUM_ERRORS=0
+	COMPLIANCE_NUM_WARNINGS=0
 
-	# NOTE - Don't put anything in here; we need the return value from the script below.
+	# Here, we've got tests which are performed on individual source files.
 
-	# Return whatever the status code was.
-	return $?
+	# Create a list of checks which are available.
+	CHECKS=`declare -F | grep -o -e "declare -f compliance_check_file_.*" | grep -o -e "compliance_check_file_.*"`
+
+	# Check if at least one type of check if available.
+	if [ -z "${CHECKS}" ]; then
+		# There aren't any checks to perform.
+		echo -e "${YELLOW}No code compliance checks seem to be available.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Since it's easier to have the results ordered by file, iterate over the candidate files first.
+	for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+		# Iterate over each of the checks.
+		for CHECK in ${CHECKS}; do
+			# Test if this check is actually enabled in our current configuration.
+			if ! compliance_lookup_test ${CHECK}; then
+				# Perform the check.
+				${CHECK} ${FILE}
+			fi
+		done
+	done
+
+	# Check whether any error were reported.
+	if [ ${COMPLIANCE_NUM_ERRORS} -gt 0 ]; then
+		# At least one error occurred, so we return indicating there is a problem.
+		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_ERRORS} errors, and ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check whether any warnings were reported.
+	if [ ${COMPLIANCE_NUM_WARNINGS} -gt 0 ]; then
+		# At least one warning occurred, so we print a message, but return that everything seemed ok.
+		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Else return that the checks went ok.
+	echo -e "${CYAN}Code compliance testing complete.\n${NO_COLOUR}"
+	return 0
+}
+
+##################################### MINOR FUNCTIONS ####################################
+
+compliance_lookup_test()
+{
+	#
+	#	Lookup whether a specific compliance test is enabled.
+	#
+	#	$1 - The name of the test.
+	#
+
+	KEY=$(eval "echo \"\${COMPLIANCE_EN_$1}\"")
+	if [ "${KEY}" == "ERROR" ]; then
+		return 2
+	elif [ "${KEY}" == "WARNING" ]; then
+		return 1
+	fi
+
+	# Else, the test is disabled.
+	return 0
+}
+
+compliance_fail_file()
+{
+	# All done.
+	return 0
+}
+
+compliance_pass_file()
+{
+	# All done.
+	return 0
+}
+
+compliance_fail_line()
+{
+	#
+	#	$1 - The name of the test which has failed.
+	#	$2 - Filename where the failure appears.
+	#	$3 - Line number where the failure appears.
+	#	$4 - String describing the error.
+	#
+
+	# Look up the appropriate behaviour for this test.
+	compliance_lookup_test $1
+	if [ $? -eq 2 ]; then
+		# The failure should generate an error.
+
+		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
+			echo -e "${RED}\tCompliance error: $2 line $3: $4${NO_COLOUR}"
+		fi
+
+		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
+			echo -e "Compliance error: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+		fi
+
+		((COMPLIANCE_NUM_ERRORS++))
+
+	elif [ $? -eq 1 ]; then
+		# The failure should generate a warning.
+
+		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
+			echo -e "${YELLOW}\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
+		fi
+
+		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
+			echo -e "Compliance warning: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+		fi
+
+		((COMPLIANCE_NUM_WARNINGS++))
+
+	fi
+	# Else, the test wasn't even enabled, so why does it matter that it failed?  Why did we even run the test?
+
+	# All done.
+	return 0
 }
 
 # ALL DONE.

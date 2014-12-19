@@ -636,6 +636,16 @@ fi
 
 # BUILD THE COMPONENTS ONE BY ONE.
 
+# Check if we are supposed to run compliance checks before building.
+if [ $VF_EN_COMPLIANCE_CHECKS ]; then
+	# Load the correct code compliance configuration.
+	if ! compliance_load_config; then
+		# Something went wrong, so we just tell the user and exit.
+		echo -e "${RED}Unable to load code compliance configuration.\n${NO_COLOUR}"
+		exit 0
+	fi
+fi
+
 # Parse the build configurations file.
 source $TCPATH/bld/common/load_build_configs
 
