@@ -1,0 +1,57 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-19T12:44:29+13:00
+
+====== Usage ======
+Created Friday 19 December 2014
+
+=== Usage ===
+Summaries of the Timer/ Counter units to each target board can be found in the links below:
+
+	(Link to each target device summary)
+
+The mode of operation/ behaviour of the Timer/ Counter and the output compare pins, is defined by the combination of the waveform generation mode (WGM02:0) and compare output mode [[(COMnx1:0)]] bits.
+
+The wavefrom generation mode bitts affect the counting sequence of the Timer/ Counter. Whereas the COM1:0 bits control whether the PWM output generated should be inverted or not.
+
+For non PWM modes the COMnx1:0 bits control whether the output should be set, cleared, or toggled at a compare match. 
+
+== Initialisation ==
+
+Functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean variable can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
+
+== Example ==
+‎
+	‭''thasidoh ;asd fkasj;dl fisadj; fkljasd;lfjlasdk;j flk;asdjfkl;sjdkajs;dlk j;as''
+	
+	
+
+	''Tc timer0_pre1(TC_0);		// Creates an Instance of Timer/ Counter 0''
+	''Tc_rate timer0_rate;''
+	''timer0_rate.pre = TC_PRE_1;''
+	''timer0_rate.src = TC_SRC_INT;''
+	
+	''timer0_pre1.initialise();''
+	''timer0_pre1.set_rate(timer0_rate);''
+
+
+=== Prescalar ===
+All synchronous Timer/ Counters share the same prescaler module, but the Timer/Counters can ahve different prescaler settings. The prescaled clock has a frequency  of either {{./equation.png?type=equation}},  {{./equation001.png?type=equation}}, {{./equation002.png?type=equation}}, {{./equation003.png?type=equation}}.
+
+Also, prescale of 1 can be given to operate at the clock frequency equal to system clock frequency.
+
+=== Setting the mode ===
+
+This is the grunt of the timer/ counter code. Each timer and counter can be given a range of different operating modes. The list of operating modes can be seen here
+
+[ add wave generation modes ]
+
+Within each wave generation mode, there are also channel modes to configure the pin behaviour of the timer/counter. 
+
+== Example ==
+
+=== Writing to the pin ===
+
+== Example ==
+
+=== Interrupts ===
