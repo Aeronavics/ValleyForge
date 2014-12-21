@@ -1,0 +1,239 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           checkfuncs_varname
+###
+### Author:         Ravi Shankar
+###
+### Date Created:	19-12-2014
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:        Implements code compliance tests: tests for variable name validity.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_varname
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:	Tests a single C/CPP source or header file for valid variable names.
+###
+###########################################################################################
+
+compliance_check_file_varname()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Define internal functions.
+
+	check_line()
+	{
+		#
+		#	$1 The content of the line in question.
+		#	$2 The line number we are up to.
+		#
+
+		# TODO - What does this regex match?
+
+		# We only care about lines which are [something].
+		if [[ $1 != [*/]* || "$1" == [,] ]]; then
+
+			# TODO - This is probably really fragile.  Instead, would be better to specifically match those lines which contain a variable declaration.
+
+			case $1 in
+				# Lines with following form are ignored.
+				(*for*) ;;
+				(*if*) ;;
+				(*while*) ;;
+				(*==*) ;;
+				(*\&=*) ;;
+				(*\>\>=*) ;;
+				(*/=*) ;;
+				(*\-=*) ;;
+				(*\+=*) ;;
+				(*\|=*) ;;
+				(*void*) ;;
+				(*const*) ;;
+				(*[*) ;;
+				(*#*) ;;
+				(*,*) ;;
+				(*~*) ;;
+				(*\(*) ;;
+				(*!=*) ;;
+				(*^=*) ;;
+				(*\<\<=*) ;;
+				(*class*) ;;
+				(*public*) ;;
+				(*protected*) ;;
+				(*private*) ;;
+				(*case*) ;;
+				(*default*) ;;
+				(*template*) ;;
+				(*struct*) ;;
+				(*union*) ;;
+				(*enum*) ;;
+				(*return*) ;;
+				*)
+					# TODO - Fix this up, it's impossible to understand at the moment, with 'value', 'value2', 'value3' etc.
+
+					# TODO - Also, at least one of these bits accidentally adds a space character to the variable name: "G" becomes "G ".
+
+					# TODO - Also, declarations without initialisation ("int tHiS_is_Wrong;") don't seem to be tested?
+
+					if [[ $1 =~ \= ]]; then
+						value=${1#* }
+						value2=${value%%=*}
+						value3=${value2#* }
+							
+						if [[ "$value2" =~ "::" ]]; then
+							tempval=${value2#*::}
+								
+							if [[ "$tempval" =~ [^a-z_0-9\ ] ]]; then
+								ERROR="$tempval contains upper case characters."
+								return 1
+							fi
+							
+						else 	
+							# This condition is when the string is like "int xyz = 8;"	
+							if [[ "$value3" == "" && "$value2" =~ [^a-z_0-9\ ] ]]; then
+								ERROR="$value2 contains upper case characters."
+								return 1
+							# This condition is when a pointer is present in the string. E.g. "int* xyz = qwe"
+							elif [[ "$value3" =~ '*' || "$value2" =~ '*' ]]; then
+								# We remove the * symbol and then analyze whether the string has any upper case letters.
+								if [[ "$value4" =~ [^a-z_0-9\ ] || "$value5" =~ [^a-z_0-9\ ] ]]; then
+									ERROR="$value2 contains upper case characters."
+									return 1
+								fi
+
+							# This condition is when the string is like "static int xyz = 8;"	
+							elif [[ "$value3" != "" && "$value3" =~ [^a-z_0-9\ ] && "$value2" != "$value3" ]]; then
+								ERROR="$value3 contains upper case characters."
+								return 1
+							fi
+						fi
+						
+					else
+						valid='0-9a-zA-Z_ 	:=;'
+						valcase='0-9a-z_ ;'
+						value=${1#* }
+						value2=${value%;*}
+						value3=${value2#* }
+						if [[ "$1" =~ [^$valid] ]]; then
+							:
+						else
+							tempval=${1#* }
+							if [[ "$value3" == "" && "$value2" =~ [^$valcase] ]]; then
+								if [[ "$tempval" =~ [^$valcase] ]]; then
+									ERROR="$tempval contains upper case characters."
+									return 1
+									
+								elif [[ "$value3" != "" && "$value3" =~ [^$valcase] ]]; then
+									ERROR="$value3 contains upper case characters."
+									return 1
+								fi
+							fi
+						fi
+					fi
+					;;
+			esac
+		fi
+
+		# The line seems ok, so return zero.
+		return 0
+	}
+
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	# Initially, we are checking.
+	local CHECKS_EN=1
+
+	while read LINE
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+  		if [ ${CHECKS_EN} ]; then
+  			# Check to see whether this line disables checking temporarily.
+  			if [[ "$LINE" =~ "// INDENT-OFF" ]]; then
+  				CHECKS_EN=
+  				continue
+  			fi
+
+  			# Ok, so now we actually want to check this line for compliance.
+			if ! check_line "$LINE" $LINE_NUM; then
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_varname" $1 $LINE_NUM "Non-compliant variable name: $ERROR"
+
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+  		else
+  			# TODO - I think that we should count up the number of lines that are disabled, and maybe alarm if the number gets too high.
+
+  			# TODO - And probably also report the number of disabled lines.
+
+  			# TODO - Finally, this weird delimiter should be replaced with a pragma?
+
+  			# Checking is temporarily disabled, so all we do is see if this line enables them again.
+  			if [[ "$LINE" =~ "// INDENT-ON" ]]; then
+  				# Enable checking again.
+  				CHECKS_EN=1
+  			fi
+  		fi
+
+	done < $FILE
+
+	if [ ! ${CHECKS_OK} ]; then
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_varname" $1 "This file contains a non-compliant variable name."
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_get_rules_varname
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Prints out a summary of the code compliance rules for the varname test.
+###
+###########################################################################################
+
+compliance_get_rules_varname()
+{
+	echo "varname:"
+	echo "\tVariable names which contain upper case characters will fail."
+	echo "\tThe check may be toggled on/off with \"// INDENT-ON\" and \"// INDENT-OFF\"."
+	echo ""
+}
+
+# ALL DONE.

@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           varname
+### Name:           checkfuncs_constname
 ###
 ### Author:         Ravi Shankar
 ###
@@ -25,94 +25,21 @@
 ###
 ### Type:           Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for variable name validity.
+### Purpose:        Implements code compliance tests: tests for constant name validity.
 ###
 ###########################################################################################################################
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_master
+### Name:		compliance_check_file_constname
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file using Ravi's legacy checks.
+### Purpose:	Tests a single C/CPP source or header file for valid constant names.
 ###
 ###########################################################################################
 
-compliance_check_file_master()
-{
-	# TODO - Currently, output just goes directly to console.  Should switch to use "compliance_fail_line" for output instead.
-
-	# TODO - Once all of these tests have been moved into functions, then this function will be obsolete and can be removed.
-
-	if [ -n "${COMPLIANCE_LEGACY_layout}" ]; then
-		source $TCPATH/bld/code_compliance/layout $1
-	fi
-
-#	if [ -n "${COMPLIANCE_LEGACY_variablename}" ]; then
-#		source $TCPATH/bld/code_compliance/varname $1
-#	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_classstructname}" ]; then
-		source $TCPATH/bld/code_compliance/classnamecheck $1
-	fi
-
-#	if [ -n "${COMPLIANCE_LEGACY_constname}" ]; then
-#		source $TCPATH/bld/code_compliance/constcheck $1
-#	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_funcname}" ]; then
-		source $TCPATH/bld/code_compliance/funcnamecheck $1
-	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_filecomplete}" ]; then
-		source $TCPATH/bld/code_compliance/filecomplete $1
-	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_headerguard}" ]; then
-		source $TCPATH/bld/code_compliance/headerguard $1
-	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_filename}" ]; then
-		source $TCPATH/bld/code_compliance/filenamesplchar $1
-	fi
-
-	if [ -n "${COMPLIANCE_LEGACY_headerfilecheck}" ]; then
-		source $TCPATH/bld/code_compliance/headercheck $1
-	fi
-
-	# All done.
-	return 0
-}
-
-######################################## FUNCTION #########################################
-###
-### Name:		compliance_get_rules_master
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:	Prints out a summary of the code compliance rules for the master test.
-###
-###########################################################################################
-
-compliance_get_rules_master()
-{
-	echo "master:"
-	echo "\tLumps together all of the checks implemented by Ravi which are currently queued by the 'master' script."
-	echo ""
-}
-
-######################################## FUNCTION #########################################
-###
-### Name:		compliance_check_file_thinger
-###
-### Inputs/Outputs:	Path to the file to test.
-###
-### Purpose:	Tests a single C/CPP source or header file to see if it is going to blow!
-###
-###########################################################################################
-
-compliance_check_file_thinger()
+compliance_check_file_constname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -126,10 +53,27 @@ compliance_check_file_thinger()
 		#	$2 The line number we are up to.
 		#
 
-		# Check if this line is going to explode.
-		if [[ "$1" =~ "// Kill me now!" ]]; then
-			# The line is going to explode, so return non-zero.
-			return 1
+		# TODO - What does this regex match?  And why nested like this?
+
+		if [[ "$1" != *[\(\)]* ]]; then
+			if [[ $1 != [*/]* ]]; then
+				if [[ $1 == const* ]]; then
+
+					# TODO - Fix this up, it's impossible to understand at the moment, with 'value', 'value2', 'value3' etc.
+
+					# TODO - Also, at least one of these bits accidentally adds a space character to the variable name: "G" becomes "G ".
+
+					value=${1#* } #retrieves "Uint16 MAX_NO = 16" from const Uint16 MAX_NO =16
+					value1=${value#* } #retrieves "MAX_NO = 16" from Uint16 MAX_NO =16
+					value2=${value1%=*} #retrieves "MAX_NO" from MAX_NO =16
+					size=${#value2}
+
+					if [[ "$value2" =~ [^A-Z_\ ] ]]; then
+						ERROR="$value2 contains lower case characters."
+						return 1
+					fi
+				fi
+			fi
 		fi
 
 		# The line seems ok, so return zero.
@@ -160,7 +104,7 @@ compliance_check_file_thinger()
   			# Ok, so now we actually want to check this line for compliance.
 			if ! check_line "$LINE" $LINE_NUM; then
 				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_thinger" $1 $LINE_NUM "This line causes an explosion!"
+				compliance_fail_line "compliance_check_file_constname" $1 $LINE_NUM "Non-compliant constant name: $ERROR"
 
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
@@ -184,7 +128,7 @@ compliance_check_file_thinger()
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_thinger" $1 "This file contains something that explodes."
+		compliance_fail_file "compliance_check_file_constname" $1 "This file contains a non-compliant constant name."
 	fi
 
 	# All done.
@@ -193,18 +137,18 @@ compliance_check_file_thinger()
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_get_rules_thinger
+### Name:		compliance_get_rules_constname
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the thinger.
+### Purpose:	Prints out a summary of the code compliance rules for the constname test.
 ###
 ###########################################################################################
 
-compliance_get_rules_thinger()
+compliance_get_rules_constname()
 {
-	echo "thinger:"
-	echo "\tLines which contain \"// Kill me now!\" will fail."
+	echo "constname:"
+	echo "\tConstant names which contain lower case characters will fail."
 	echo "\tThe check may be toggled on/off with \"// INDENT-ON\" and \"// INDENT-OFF\"."
 	echo ""
 }
