@@ -23,7 +23,7 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 #This variable stands for the line number.
 	count=0
 
-#These variables are for checking whether a condition has failed.
+#These variables are for checking whether a condition has failed. If set to 0, it denotes that there has been an error.
 	classnamecheckfail=1
 	structnamecheckfail=1
 	templatenamecheckfail=1
@@ -75,12 +75,14 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 						if [[ "$name" == "struct" ]]; then
 							:
 						else
-							str=$(echo "${name: -1}") #getting the last character of the string
-							if [[ "$str" == ";" ]]; then
-								value2=$value
-							else
-								value2=$value
-							fi
+							#getting the last character of the string
+							str=$(echo "${name: -1}") 
+value2=$value
+#							if [[ "$str" == ";" ]]; then
+#								value2=$value
+#							else
+#								value2=$value
+#							fi
 
 							case ${value2:0:1} in
 								[[:upper:]])
@@ -172,7 +174,7 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 		fi
 done
 echo -e "${BOLD_WHITE}${UNDERLINED}CLASS/STRUCT/TEMPLATE NAMING CONVENTIONS:${NO_COLOUR}"
-echo -e "${GREEN}Class names should begin with an uppercase letter E.g. ${YELLOW}class Xyz ${GREEN} \nStructure names should also begin with uppercase letters E.g. ${YELLOW}struct int Temp${GREEN}\nTemplate Names should have only a single UPPERCASE LETTER E.g. ${YELLOW}template <class T>\n${NO_COLOUR}"
+echo -e "${GREEN}Class names should begin with an uppercase letter E.g. ${YELLOW}class Xyz ${GREEN} \nStructure names should also begin with uppercase letters E.g. ${YELLOW}struct int Temp${GREEN}\nTemplate Names should have only a single UPPERCASE LETTER E.g. ${YELLOW}template<class T>\n${NO_COLOUR}"
 echo -e "${GREEN}--------------------------------------------------------------------------------${NO_COLOUR}"
 echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 
