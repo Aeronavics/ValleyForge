@@ -98,7 +98,7 @@ gen_mavlink()
 	cp -f ${TCPATH}/bld/code_generation/Makefile_mavlink ${GEN_CACHE}
 
 	# Update the working makefile with the appropriate values for this component.
-	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
+	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/tools/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
 	sed -ri "s^(MAVLINK_DEFINITIONS *= *)BUILD_INSERTS_MAVLINK_DEFINITIONS_HERE(\\s.*)?^\1${DEFINITIONS}\2^" ${GEN_CACHE}/Makefile_mavlink
 	sed -ri "s^(MAVLINK_SANDPIT *= *)BUILD_INSERTS_MAVLINK_SANDPIT_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}\2^" ${GEN_CACHE}/Makefile_mavlink
 
