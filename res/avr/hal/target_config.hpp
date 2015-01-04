@@ -60,13 +60,13 @@
 // NOTE - Headers are hard-coded into the build script!
 
 #if defined(__AVR_ATmega2560__)
-	#include "targets/atmega2560.hpp"
+	#include "target_config_atmega2560.hpp"
 
 #elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
-	#include "targets/atmega64c1.hpp"
+	#include "target_config_atmega64c1.hpp"
 
 #elif defined (__AVR_AT90CAN128__)
-	#include "targets/at90can.hpp"
+	#include "target_config_at90can.hpp"
 
 #else
 	#error "No peripheral definition for this configuration."	
@@ -74,7 +74,7 @@
 
 // DEFINITIONS WHICH ARE COMMON TO ALL AVR ARCHITECTURE TARGETS.
 
-#include "targets/avr.hpp"
+#include "target_config_avr.hpp"
 
 // TODO - Define this in the build script?
 #define F_CPU				16000000UL

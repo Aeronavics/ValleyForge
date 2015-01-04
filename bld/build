@@ -179,28 +179,32 @@ get_hal()
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.cpp $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
-	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 
-	# Copy chip-specific target headers required by target_config.hpp
-	# TODO - Would be nice to not have to do this (Maybe make the script automatically copy #included files?)
-	mkdir -p $OUTPATH/targets
-	cp $TCPATH/$HAL_SOURCE_PATH/targets/*.hpp $OUTPATH/targets/
+	# Copy target specific configuration files.
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config.* $OUTPATH
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config_*.* $OUTPATH 2>/dev/null
 
 	# Only import each particular peripheral if it is enabled in the configuration.
 
 	# Iterate through the items in the enabled HAL peripherals list.
 	for PERIPHERAL in $HAL_EN_LIST; do
-		# Copy the corresponding files over.
+		# Copy the corresponding interface files over.
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hs $OUTPATH 2>/dev/null
+
+		# Copy the corresponding implementation files over.
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hs $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.cpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
-		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null	
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.c $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.cpp $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.s $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.o $OUTPATH 2>/dev/null
 	done
 
 	# Preprocess the imported files.
@@ -631,6 +635,16 @@ if [ $ALL ]; then
 fi
 
 # BUILD THE COMPONENTS ONE BY ONE.
+
+# Check if we are supposed to run compliance checks before building.
+if [ $VF_EN_COMPLIANCE_CHECKS ]; then
+	# Load the correct code compliance configuration.
+	if ! compliance_load_config; then
+		# Something went wrong, so we just tell the user and exit.
+		echo -e "${RED}Unable to load code compliance configuration.\n${NO_COLOUR}"
+		exit 0
+	fi
+fi
 
 # Parse the build configurations file.
 source $TCPATH/bld/common/load_build_configs
