@@ -262,8 +262,8 @@ shopt -u extglob
 find_source_dependencies_recursive() {
 	local DEPENDENCIES
 
-	# Use gcc to detect the local .h dependencies, remove the object file reference, swap all instance of .h for .c and remove any instances of $1.
-	DEPENDENCIES=$(gcc -MM ${1} | sed "s^.*: ^^g" | sed "s^\\.h^\\.c^g" | sed "s^${1}^^g")
+	# Use gcc to detect the local .h dependencies, remove the object file reference, convert assembly headers into assembly filenames, swap all remaining instances of .h for .c and remove any instances of $1.
+	DEPENDENCIES=$(gcc -MM ${1} | sed "s^.*: ^^g" | sed "s^\\.hs^\\.s^g" | sed "s^\\.h^\\.c^g" | sed "s^${1}^^g")
 	# Add each dependency to the list and search of any dependencies of its own.
 	for WORD in $DEPENDENCIES; do
 		SRC_STRING="${WORD} $SRC_STRING"
