@@ -70,8 +70,6 @@ makenuttx_armcortex()
 		return 1
 	fi
 
-	exit 0
-
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
@@ -186,9 +184,11 @@ makenuttx_configure_apps()
 		# Figure out what the main source file for this application is.
 		shopt -s extglob nullglob
 		MAIN_FILE=
-		for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
+		# for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
+		for F in $(ls $1/${EXECUTABLE}_main.@(c|cpp))
 		do
-			MAIN_FILE=${F#$1/apps/external/${EXECUTABLE}/}
+			# Remove the preceeding path name
+			MAIN_FILE=${F##*/}
 		done
 		if [ -z "$MAIN_FILE" ]; then
 			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
@@ -226,7 +226,7 @@ makenuttx_configure_apps()
 		for SRC in $SRC_STRING; do
 			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
 		done
-		find $1 -maxdepth 1 -iname "${MAIN_FILE}" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
+		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
 
 		shopt -u extglob
 
