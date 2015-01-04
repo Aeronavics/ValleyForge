@@ -53,7 +53,7 @@ It is important that you choose the same mode as the other device!
 
 === Slave Select ===
 The SPI module can be configured to automatically drive the SS pin. Three modes are provided:
-	''SPI_SS_SOFTWARE'' - Use the provided SS pin. Must be configured as an output.
+	''SPI_SS_SOFTWARE'' - Use the provided SS pin. The pin is automatically configured as an output.
 	''SPI_SS_HARDWARE'' - Use the hardware SS pin, if available. Not all targets support this.
 	''SPI_SS_NONE'' - Don't drive the SS pin, you must drive it yourself. Useful if you want fine grain control over the SS pin, or have multiple slave devices.
 
@@ -193,6 +193,7 @@ void test()
 	// then rx_data should contain {1, 2, 3, 4, 5} (not {0, 1, 2, 3, 4})
 }
 '''
+
 
 ===== Support =====
 To see full hardware support, see [[HAL|Support]]

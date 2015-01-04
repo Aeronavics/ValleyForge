@@ -102,7 +102,7 @@ struct IO_pin_address
 };
 
 // Macro for convenience. Usage:
-//   IO_pin_address pinaddr = _IOPADDR(PORT_A, PIN_0);
+//   IO_pin_address pinaddr = _IOADDR(PORT_A, PIN_0);
 #define _IOADDR(port, pin) ((IO_pin_address){port, pin})
 #endif
 

@@ -94,20 +94,21 @@ public:
 	virtual Spi_config_status configure(Spi_setup_mode setup_mode, Spi_data_mode data_mode, Spi_frame_format frame_format);
 	virtual Spi_config_status set_mode(Spi_setup_mode mode);
 	virtual Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format);
-	virtual Spi_config_status set_speed(int16_t divider);
+	virtual Spi_config_status set_speed(int16_t speed);
+	virtual Spi_config_status set_speed(Spi_clock_divider divider);
 	virtual Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
 
 	virtual int16_t transfer(uint8_t tx_data);
-	virtual Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = nullptr, spi_data_callback_t done = nullptr, void *p = nullptr);
-	virtual Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
-	virtual Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = nullptr, void *p = nullptr);
+	virtual Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p);
+	virtual Spi_io_status transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data);
+	virtual Spi_io_status transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p);
 
 	virtual bool transfer_busy(void);
 	virtual Spi_io_status get_status(void);
 
 	void enable_interrupts(void);
 	void disable_interrupts(void);
-	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p = nullptr);
+	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p);
 	Spi_int_status detach_interrupt(Spi_interrupt_type interrupt);
 
 public: // Public Fields
@@ -186,9 +187,9 @@ public:
 	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
 
 	int16_t transfer(uint8_t tx_data);
-	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL);
-	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
-	Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL);
+	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p);
+	Spi_io_status transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data);
+	Spi_io_status transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p);
 
 	bool transfer_busy(void);
 	Spi_io_status get_status(void);
@@ -245,7 +246,7 @@ void Spi_imp::enable(void)
 		miso.set_mode(GPIO_INPUT_FL);
 		sck.set_mode(GPIO_OUTPUT_PP);
 
-		// NOTE - You should not configure SS as an input in master mode.
+		// NOTE - You should not configure Hardware SS as an input in master mode.
 		// If it's an input and it's pulled low, the SPI peripheral
 		// switches to slave mode and generates an interrupt.
 		// For more information see the chip's datasheet.
@@ -260,7 +261,7 @@ void Spi_imp::enable(void)
 		miso.set_mode(GPIO_OUTPUT_PP);
 		sck.set_mode(GPIO_INPUT_FL);
 
-		// NOTE: SS must be pulled low before the SPI module will shift any data!!
+		// NOTE: Hardware SS must be pulled low before the SPI module will shift any data!!
 		ss.set_mode(GPIO_INPUT_FL);
 
 		// NOTE: If SS is pulled high, then MISO is overridden to be an input.
@@ -305,6 +306,7 @@ Spi_config_status Spi_imp::configure(Spi_setup_mode setup_mode, Spi_data_mode da
 
 Spi_config_status Spi_imp::set_mode(Spi_setup_mode mode)
 {
+	// Put the SPI peripheral into master or slave mode
 	switch (mode)
 	{
 		case SPI_MASTER:
@@ -324,6 +326,13 @@ Spi_config_status Spi_imp::set_mode(Spi_setup_mode mode)
 	}
 
 	this->setup_mode = mode;
+
+	// Ensure the SS pin is configured correctly for the new mode
+	if (this->ss_mode == SPI_SS_HARDWARE || this->ss_mode == SPI_SS_SOFTWARE)
+	{
+		Gpio_pin ss(this->ss_pin);
+		ss.set_mode((this->setup_mode == SPI_MASTER) ? GPIO_OUTPUT_PP : GPIO_INPUT_FL);
+	}
 
 	return SPI_CFG_SUCCESS;
 }
@@ -395,7 +404,13 @@ Spi_config_status Spi_imp::set_data_config(Spi_data_mode data_mode, Spi_frame_fo
 	return SPI_CFG_SUCCESS;
 }
 
-Spi_config_status Spi_imp::set_speed(int16_t divider)
+Spi_config_status Spi_imp::set_speed(int16_t speed)
+{
+	// The AVR only supports a fixed number of SPI speeds.
+	return SPI_CFG_FAILED;
+}
+
+Spi_config_status Spi_imp::set_speed(Spi_clock_divider divider)
 {
 	// The AVR only supports a fixed number of SPI speeds,
 	// defined in the enum Spi_clock_speed as clock postscaler settings.
@@ -429,16 +444,6 @@ Spi_config_status Spi_imp::set_slave_select(Spi_slave_select_mode mode, IO_pin_a
 		case SPI_SS_SOFTWARE:
 		{
 			this->ss_pin = software_ss_pin;
-			Gpio_pin ss(software_ss_pin);
-
-			if (this->setup_mode == SPI_MASTER)
-			{
-				ss.set_mode(GPIO_OUTPUT_PP);
-			}
-			else
-			{
-				ss.set_mode(GPIO_INPUT_FL);
-			}
 			break;
 		};
 
@@ -448,6 +453,13 @@ Spi_config_status Spi_imp::set_slave_select(Spi_slave_select_mode mode, IO_pin_a
 
 		default:
 			return SPI_CFG_FAILED;
+	}
+
+	// Ensure the output is configured
+	if (mode == SPI_SS_HARDWARE || mode == SPI_SS_SOFTWARE)
+	{
+		Gpio_pin ss(this->ss_pin);
+		ss.set_mode((this->setup_mode == SPI_MASTER) ? GPIO_OUTPUT_PP : GPIO_INPUT_FL);
 	}
 
 	return SPI_CFG_SUCCESS;
@@ -471,7 +483,7 @@ int16_t Spi_imp::transfer(uint8_t tx_data)
 	*xDR = tx_data;
 
 	// Use two busy flags, since SPIF is automatically cleared when using interrupts.
-	// TODO: This takes longer to be cleared when using interrupts than without (7.1us longer). Possibly ISR latency?
+	// NOTE: This takes longer to be cleared when using interrupts than without (7.1us longer). Possibly ISR latency?
 	while (transfer_busy())
 	{
 		// Wait
@@ -510,7 +522,7 @@ Spi_io_status Spi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_dat
 	return SPI_IO_SUCCESS;
 }
 
-Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
+Spi_io_status Spi_imp::transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data)
 {
 	if (tx_data == NULL)
 		return SPI_IO_FAILED;
@@ -552,7 +564,7 @@ Spi_io_status Spi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_
 	return SPI_IO_SUCCESS;
 }
 
-Spi_io_status Spi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done, void *p)
+Spi_io_status Spi_imp::transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p)
 {
 	if (size == 0)
 		return SPI_IO_FAILED;
@@ -661,7 +673,7 @@ void Spi_imp::isr_transfer_complete()
 {
 	busy = false;
 
-	// TODO: Async transfers have quite a bit of overhead
+	// NOTE: Async transfers have quite a bit of overhead
 
 	if (async.active)
 	{
@@ -911,7 +923,7 @@ int16_t Usartspi_imp::transfer(uint8_t tx_data)
 	return *xDR;
 }
 
-Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done)
+Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p)
 {
 	if (transfer_busy())
 		return SPI_IO_BUSY;
@@ -923,6 +935,7 @@ Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, sp
 	async.rx_data = rx_data;
 	async.tx_data = NULL;
 	async.cb_done = done;
+	async.cb_p = p;
 	async.active = true;
 
 	set_ss(true); // The interrupt will reset this
@@ -934,7 +947,7 @@ Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, sp
 	return SPI_IO_SUCCESS;
 }
 
-Spi_io_status Usartspi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
+Spi_io_status Usartspi_imp::transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data)
 {
 	if (tx_data == NULL)
 		return SPI_IO_FAILED;
@@ -971,7 +984,7 @@ Spi_io_status Usartspi_imp::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, 
 	return SPI_IO_SUCCESS;
 }
 
-Spi_io_status Usartspi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done)
+Spi_io_status Usartspi_imp::transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p)
 {
 	if (size == 0)
 		return SPI_IO_FAILED;
@@ -986,6 +999,7 @@ Spi_io_status Usartspi_imp::transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_
 	async.rx_data = rx_data;
 	async.tx_data = tx_data;
 	async.cb_done = done;
+	async.cb_p = p;
 	async.active = true;
 
 	set_ss(true); // The interrupt will reset this
@@ -1201,6 +1215,11 @@ Spi_config_status Spi::set_speed(int16_t speed)
 	return imp->set_speed(speed);
 }
 
+Spi_config_status Spi::set_speed(Spi_clock_divider divider)
+{
+	return imp->set_speed(divider);
+}
+
 Spi_config_status Spi::set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin)
 {
 	return imp->set_slave_select(mode, software_ss_pin);
@@ -1211,19 +1230,19 @@ int16_t Spi::transfer(uint8_t tx_data)
 	return imp->transfer(tx_data);
 }
 
-Spi_io_status Spi::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done)
+Spi_io_status Spi::transfer_async(uint8_t tx_data, uint8_t *rx_data, spi_data_callback_t done, void *p)
 {
-	return imp->transfer_async(tx_data, rx_data, done);
+	return imp->transfer_async(tx_data, rx_data, done, p);
 }
 
-Spi_io_status Spi::transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size)
+Spi_io_status Spi::transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data)
 {
-	return imp->transfer_buffer(tx_data, rx_data, size);
+	return imp->transfer_buffer(size, rx_data, tx_data);
 }
 
-Spi_io_status Spi::transfer_buffer_async(uint8_t *tx_block, uint8_t *rx_block, size_t size, spi_data_callback_t done)
+Spi_io_status Spi::transfer_buffer_async(size_t size, uint8_t *tx_block, uint8_t *rx_block, spi_data_callback_t done, void *p)
 {
-	return imp->transfer_buffer_async(tx_block, rx_block, size, done);
+	return imp->transfer_buffer_async(size, tx_block, rx_block, done, p);
 }
 
 bool Spi::transfer_busy(void)

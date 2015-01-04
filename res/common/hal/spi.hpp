@@ -110,15 +110,20 @@ enum Spi_slave_select_mode
 	SPI_SS_SOFTWARE,	// Use the provided SS pin automatically
 };
 
+enum Spi_frame_format;
+
+/**
+ * Available SPI clock dividers are defined in the target specific configuration header.  This takes the form of an enum similar to that shown below.
+ *
+ *		enum Spi_clock_divider {SPI_DIV_1, SPI_DIV_2};
+ *
+ */
 
 typedef void (*spi_data_callback_t)(void *p, Spi_io_status status, uint8_t *rx_data, size_t size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 class Spi_imp;
-
-enum Spi_frame_format;
-//enum Spi_clock_speed;		// Different targets may restrict clock speeds depending on the hardware.
 
 // DEFINE PUBLIC CLASSES.
 
@@ -187,12 +192,13 @@ public:
 	 * @return 				The status of the operation
 	 */
 	Spi_config_status set_speed(int16_t speed);
+	Spi_config_status set_speed(Spi_clock_divider divider);
 
 	/**
 	 * Configures slave select (SS) pin functionality,
 	 * if available on the chip.
 	 *
-	 * SPI must be configured for slave mode!
+	 * SPI must be configured for master mode!
 	 *
 	 * @param  mode			The slave select operating mode
 	 * @return 				The status of the operation
@@ -210,7 +216,6 @@ public:
 	 */
 	int16_t transfer(uint8_t tx_data);
 
-	// Return immediately, transfer data in background. Optional callback
 	/**
 	 * Shift one byte through the SPI asynchronously in the background.
 	 * Ensure transfer_busy() is false before calling!
@@ -223,10 +228,11 @@ public:
 	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
 	 * @param done 			Optional callback to be executed when the transmission is completed
 	 * 						Callback must have the following signature:
-	 * 							void callback(Spi_io_status status, uint8_t *rx_block, size_t received_bytes);
+	 * 							void callback(void *p, Spi_io_status status, uint8_t *rx_data, size_t size);
+	 * @param p				Pointer to user data to be passed to the callback. Optional.
 	 * @return 				The status of the operation
 	 */
-	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = NULL, spi_data_callback_t done = NULL);
+	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data = nullptr, spi_data_callback_t done = nullptr, void *p = nullptr);
 
 	/**
 	 * Shift a chunk of data through the SPI, blocking until the transfer has completed.
@@ -234,12 +240,12 @@ public:
 	 *
 	 * rx_data is optional. If NULL, received data will be discarded.
 	 *
+	 * @param size 			The number of bytes to transfer
 	 * @param tx_data 		Buffer to be transmitted
 	 * @param rx_data 		Optional buffer to store received data to
-	 * @param size 			The number of bytes to transfer
 	 * @return 				The status of the operation
 	 */
-	Spi_io_status transfer_buffer(uint8_t *tx_data, uint8_t *rx_data, size_t size);
+	Spi_io_status transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data = nullptr);
 
 	/**
 	 * Shift a chunk of data through the SPI, asynchronously.
@@ -249,15 +255,16 @@ public:
 	 * rx_data is optional. If NULL, received data will be discarded.
 	 * the done callback is also optional, and will be executed when the transfer is completed.
 	 *
+	 * @param size 			The number of bytes to transfer
 	 * @param tx_data 		Buffer to be transmitted
 	 * @param rx_data 		Optional buffer to store received data to
-	 * @param size 			The number of bytes to transfer
 	 * @param done 			Optional callback to be executed when the transmission is completed.
 	 * 						Callback must have the following signature:
-	 * 							void callback(Spi_io_status status, uint8_t *rx_block, size_t received_bytes);
+	 * 							void callback(void *p, Spi_io_status status, uint8_t *rx_data, size_t size);
+	 * @param p				Pointer to user data to be passed to the callback. Optional.
 	 * @return 				The status of the operation
 	 */
-	Spi_io_status transfer_buffer_async(uint8_t *tx_data, uint8_t *rx_data, size_t size, spi_data_callback_t done = NULL);
+	Spi_io_status transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, spi_data_callback_t done = nullptr, void *p = nullptr);
 
 	/**
 	 * Indicates whether the SPI is currently transferring something
@@ -290,7 +297,7 @@ public:
 	 *
 	 * @param interrupt		One of the possible interrupt sources that are available.
 	 * @param callback		Pointer to the user-defined ISR. Accepts one void* parameter
-	 * @param p				Pointer to user data, to be passed to the callback
+	 * @param p				Pointer to user data to be passed to the callback. Optional.
 	 * @return 				The status of the operation
 	 */
 	Spi_int_status attach_interrupt(Spi_interrupt_type interrupt, callback_t callback, void *p = nullptr);

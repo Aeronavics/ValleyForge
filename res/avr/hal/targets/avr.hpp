@@ -123,7 +123,7 @@ enum Spi_frame_format
 	SPI_LSB_FIRST,
 };
 
-enum Spi_clock_speed
+enum Spi_clock_divider
 {
 	// SPI2X, SPR1, SPR0
 	SPI_DIV_2 = 0b100,
