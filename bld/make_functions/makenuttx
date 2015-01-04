@@ -70,6 +70,8 @@ makenuttx_armcortex()
 		return 1
 	fi
 
+	exit 0
+
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
@@ -156,9 +158,10 @@ makenuttx_configure_apps()
 	local EXECUTABLE
 	local MAIN_FILE
 
+	# EXECUTABLES, APP_PRIORITIES and APP_STACKSIZES are provided in the .cfg file in the same way as the executable names.
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
-	APP_PRIORITIES_ARRAY=($PRIORITIES)	# TODO - Where does this come from?
-	APP_STACKSIZE_ARRAY=($STACKSIZES)	# TODO - Where does this come from?
+	APP_PRIORITIES_ARRAY=($APP_PRIORITIES)
+	APP_STACKSIZE_ARRAY=($APP_STACKSIZES)
 	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
 
 	# TODO - Why does this iteration happen separately?
@@ -175,6 +178,23 @@ makenuttx_configure_apps()
 	do
 		# Use a simpler variable name for readability.
 		EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+
+		# TODO - Hopefully we don't need to do this retardedness forever.
+
+		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+		# Figure out what the main source file for this application is.
+		shopt -s extglob nullglob
+		MAIN_FILE=
+		for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
+		do
+			MAIN_FILE=${F#$1/apps/external/${EXECUTABLE}/}
+		done
+		if [ -z "$MAIN_FILE" ]; then
+			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
+			return 1
+		fi
+		shopt -u extglob nullglob
 
 		# For each executable, we'll need to build a separate application directory.
 		echo -e "${CYAN}\t\tBuilding NuttX application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
@@ -197,31 +217,18 @@ makenuttx_configure_apps()
 		# Enable the application by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
 
-		# TODO - This is a temporary solution.  Actually, should use symlinks, or use dependency detection to only copy those files required.
+		find_main_dependencies $1 $(ls $1 | grep ${EXECUTABLE}_main.c)
 
 		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
 
 		# Copy the NuttX application files to the new application directory.
 		shopt -s extglob
-		cp -rf $1/!(apps|nuttx) $1/apps/external/$EXECUTABLE
-		shopt -u extglob
-
-		# TODO - Hopefully we don't need to do this retardedness forever.
-
-		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
-
-		# Figure out what the main source file for this application is.
-		shopt -s extglob nullglob
-		MAIN_FILE=
-		for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
-		do
-			MAIN_FILE=${F#$1/apps/external/${EXECUTABLE}/}
+		for SRC in $SRC_STRING; do
+			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
 		done
-		if [ -z "$MAIN_FILE" ]; then
-			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
-			return 1
-		fi
-		shopt -u extglob nullglob
+		find $1 -maxdepth 1 -iname "${MAIN_FILE}" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
+
+		shopt -u extglob
 
 		# Copy in the template Kconfig file and Makefile for the application.
 		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${EXECUTABLE}/Kconfig
@@ -237,18 +244,8 @@ makenuttx_configure_apps()
 		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile		
 		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile
 		sed -i s^"<APP_MAIN>"^"${MAIN_FILE}"^g $1/apps/external/${EXECUTABLE}/Makefile
-
-		# TODO - To be replaced with the toolchain's dependency detection functionality.
-
-		# Find all the C and CPP files in the directory that aren't suffixed by "_main".
-		C_SOURCE_FILES=($(find $1/apps/external/${EXECUTABLE} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
-
-		# Find all the assembly files in the directory.
-		ASSEMBLY_SOURCE_FILES=($(find $1/apps/external -iname '*.s'))
-
-		# Update the makefile with the source files
-		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<C_SOURCE_FILES>"^"${CSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
 
 		# Enable the ValleyForge applications by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
@@ -259,5 +256,45 @@ makenuttx_configure_apps()
 	return 0
 }
 shopt -u extglob
+
+
+# $1 The name of the main file
+find_source_dependencies_recursive() {
+	local DEPENDENCIES
+
+	# Use gcc to detect the local .h dependencies, remove the object file reference, swap all instance of .h for .c and remove any instances of $1.
+	DEPENDENCIES=$(gcc -MM ${1} | sed "s^.*: ^^g" | sed "s^\\.h^\\.c^g" | sed "s^${1}^^g")
+	# Add each dependency to the list and search of any dependencies of its own.
+	for WORD in $DEPENDENCIES; do
+		SRC_STRING="${WORD} $SRC_STRING"
+		find_source_dependencies_recursive $WORD
+	done
+}
+
+# $1 The directory the files exist in
+# $2 The name of the main file
+find_main_dependencies() {
+	pushd $1 >/dev/null
+
+	echo -e "${CYAN}\t\t\tDetecting source files....\n${NO_COLOUR}"
+	SRC_STRING=
+	ASRCS=
+	CSRCS=
+	# Find the source files required to build the application
+	find_source_dependencies_recursive $2
+
+	# Split up the assembly and C/CPP files
+	for SRC in $SRC_STRING; do
+		if [[ ${SRC} == *.s ]]; then
+			ASRCS="$SRC $ASRCS"
+		else
+			CSRCS="$SRC $CSRCS"
+		fi
+	done
+	echo -e "${CYAN}\t\t\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
+	echo -e "${CYAN}\t\t\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
+
+	popd >/dev/null
+}
 
 # ALL DONE.
