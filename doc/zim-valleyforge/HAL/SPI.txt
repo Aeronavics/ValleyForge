@@ -120,10 +120,16 @@ The use of asynchronous functions should be preferred if performance is importan
 	
 Because asynchronous functions return immediately, you should always check the return type to see if it returned SPI_IO_BUSY. Alternatively you should check the status flag ''transfer_busy()'' before calling the functions.
 
+Asynchronous transfers provide a callback which accepts a function with the following signature:
+'''
+void callback(void *context, Spi_io_status status)
+'''
+''status'' will be ''SPI_IO_SUCCESS'' if the operation succeeded, or some error code otherwise.
+
 ===== Interrupts =====
 One interrupt is provided, which is called whenever a data transfer has completed.
 	''SPI_INT_TRANSFER_COMPLETE''
-TODO: Not sure how this interrupt is useful.
+
 
 ===== Examples =====
 **Simple Blocking Transfer**
@@ -161,7 +167,7 @@ void test()
 
 **Simple Asynchronous Transfer (Callback)**
 '''
-void spi_callback(Spi_io_status status, uint8_t *rx_data, size_t size)
+void spi_callback(void *context, Spi_io_status status)
 {
 	// The received byte is now in rx_data[0], and size = 1
 }

@@ -106,8 +106,11 @@ struct IO_pin_address
 #define _IOADDR(port, pin) ((IO_pin_address){port, pin})
 #endif
 
-// Generic ISR callback.
-typedef void (*voidFuncPtr)(void);
+// Generic ISR callback
+typedef void (*IsrHandler)(void);
+
+// Preferred callback type - Callbacks should always have a way to pass in user data
+typedef void (*Callback)(void *context);
 
 // INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
 

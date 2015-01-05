@@ -110,11 +110,17 @@ The USART library provides asynchronous communication functions, which return im
 
 Because asynchronous functions return immediately, you should always check the return type to see if it returned USART_IO_BUSY. Alternatively you should check the status flags ''transmitter_ready()'' or ''receiver_has_data()'' before calling the functions.
 
+Asynchronous transfers provide a callback which accepts a function with the following signature:
+'''
+void callback(void *context, Usart_error_status status)
+'''
+''status'' will be ''USART_ERR_NONE'' if the operation succeeded, or some error code otherwise.
+
 ===== Interrupts =====
 The USART library allows you to register interrupt service routines, which are called by the CPU when specific events happen.
 The exact interrupts provided will vary between devices, but generally it will support some form of interrupt which triggers when a byte of data is received, or when the transmitter becomes available to send more data.
 
-When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes.
+When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes. This can be used as an alternative to callbacks on the transfer functions themselves.
 
 IMPORTANT - Only one callback can be registered for each interrupt type.
 
@@ -159,10 +165,18 @@ int main(void)
 #define RX_LEN 16
 
 static uint8_t rx_buffer[RX_LEN];
+static size_t rx_size = RX_LEN;
 
-void data_received(Usart_error_type error, uint8_t* buffer, size_t size)
+void data_received(void *context, Usart_error_type error)
 {
-	// Do something with the data here...
+	if (error == USART_ERR_SUCCESS)
+	{
+		
+'''
+''// Do something with the data here...''
+'''
+		do_something(rx_data, rx_size);
+	}
 
 	// Start listening again
 	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)

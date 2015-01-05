@@ -1,6 +1,3 @@
-
-
-
 // A structure containing the register definitions for a single USART channel.
 typedef struct
 {
@@ -65,11 +62,11 @@ public:
 
 	virtual Usart_io_status transmit_buffer(uint8_t* data, size_t size);
 
-	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, usarttx_callback_t cb_done = nullptr, void *p = nullptr);
+	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, Usart_Data_Callback cb_done, void *context);
 
 	virtual Usart_io_status transmit_string(char *string, size_t max_len);
 
-	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = nullptr, void *p = nullptr);
+	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Data_Callback cb_done, void *context);
 
 
 	virtual int16_t receive_byte(void);
@@ -79,14 +76,14 @@ public:
 
 	virtual Usart_io_status receive_buffer(uint8_t *buffer, size_t size);
 
-	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done, void *p = nullptr);
+	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done, void *context);
 
 
 	virtual void enable_interrupts(void);
 
 	virtual void disable_interrupts(void);
 
-	virtual Usart_int_status attach_interrupt(Usart_interrupt_type type, callback_t callback, void* p = nullptr);
+	virtual Usart_int_status attach_interrupt(Usart_interrupt_type type, Callback callback, void *context);
 
 	virtual Usart_int_status detach_interrupt(Usart_interrupt_type type);
 
@@ -115,13 +112,13 @@ public:  //// Asynchronous Interrupt Handling ////
 
 	// The TX isr is called whenever the transmitter has finished transmitting,
 	// and there is no more data to send.
-	callback_t tx_isr;
+	Callback tx_isr;
 	void *tx_isr_p;
 	bool tx_isr_enabled;
 
 	// The RX isr is called whenever something has been received.
 	// If an _async() call is active, this is called when it finishes.
-	callback_t rx_isr;
+	Callback rx_isr;
 	void *rx_isr_p;
 	bool rx_isr_enabled;
 
@@ -136,7 +133,7 @@ public:  //// Asynchronous Interrupt Handling ////
 
 		Usart_async_mode mode;
 
-		usarttx_callback_t cb_done;
+		Usart_Data_Callback cb_done;
 		void *cb_p;
 	} async_tx;
 
@@ -148,7 +145,7 @@ public:  //// Asynchronous Interrupt Handling ////
 		size_t size;
 		size_t index;
 
-		usartrx_callback_t cb_done;
+		Usart_Data_Callback cb_done;
 		void *cb_p;
 	} async_rx;
 

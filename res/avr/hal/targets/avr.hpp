@@ -52,12 +52,6 @@
 
 /* Generic Types */
 
-// Generic callback
-typedef void(*callback_t)(void *p);
-
-// NOTE - It's good design to include a void* pointer that the user
-// can use to send state to the callback function.
-
 /* Macros */
 
 #define TOTAL_PINS	(NUM_PORTS * PINS_PER_PORT)

@@ -222,7 +222,7 @@ class Gpio_pin
  		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return Return code representing whether operation was successful
 		 */
-		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
+		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, IsrHandler callback);
 		
 		/**
 		 * Disable an interrupt for the pin.

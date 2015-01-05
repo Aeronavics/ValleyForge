@@ -108,7 +108,7 @@ class Tc_imp
 
 		Tc_command_status stop(void);
 
-		Tc_command_status enable_tov_interrupt(void (*callback)(void));
+		Tc_command_status enable_tov_interrupt(IsrHandler callback);
 
 		Tc_command_status disable_tov_interrupt(void);
 
@@ -116,7 +116,7 @@ class Tc_imp
 
 		Tc_command_status enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode);
 
-		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, void (*callback)(void));
+		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback);
 
 		Tc_command_status disable_oc_interrupt(Tc_oc_channel channel);
 
@@ -919,7 +919,7 @@ Tc_command_status Tc::stop(void)
 	return imp->stop();
 }
 
-Tc_command_status Tc::enable_tov_interrupt(void (*callback)(void))
+Tc_command_status Tc::enable_tov_interrupt(IsrHandler callback)
 {
 	return imp->enable_tov_interrupt(callback);
 }
@@ -939,7 +939,7 @@ Tc_command_status Tc::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mod
 	return imp->enable_oc_channel(channel, mode);
 }
 
-Tc_command_status Tc::enable_oc_interrupt(Tc_oc_channel channel, void (*callback)(void))
+Tc_command_status Tc::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback)
 {
 	return imp->enable_oc_interrupt(channel, callback);
 }
@@ -964,7 +964,7 @@ Tc_command_status Tc::enable_ic(Tc_ic_channel channel, Tc_ic_mode mode)
 	return imp->enable_ic(channel, mode);
 }
 
-Tc_command_status Tc::enable_ic_interrupt(Tc_ic_channel channel, void (*callback)(void))
+Tc_command_status Tc::enable_ic_interrupt(Tc_ic_channel channel, IsrHandler callback)
 {
 	return imp->enable_ic_interrupt(channel, callback);
 }
@@ -1430,7 +1430,7 @@ Tc_command_status Tc_imp::stop(void)
 	return TC_CMD_NAK;
 }
 
-Tc_command_status Tc_imp::enable_tov_interrupt(void (*callback)(void))
+Tc_command_status Tc_imp::enable_tov_interrupt(IsrHandler callback)
 {
 	// TODO - Requires testing.
 	// void (*ISRptr)(void)
@@ -1672,7 +1672,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 	return TC_CMD_NAK;
 }
 
-Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, void (*callback)(void))
+Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback)
 {
 	// TODO - Requires testing.
 	switch (timer_number)
@@ -2509,7 +2509,7 @@ Tc_command_status Tc_imp::enable_ic(Tc_ic_channel channel, Tc_ic_mode mode)
 	return TC_CMD_NAK;
 }
 
-Tc_command_status Tc_imp::enable_ic_interrupt(Tc_ic_channel channel, void (*callback)(void))
+Tc_command_status Tc_imp::enable_ic_interrupt(Tc_ic_channel channel, IsrHandler callback)
 {
 	// TODO - This.
 // /**
