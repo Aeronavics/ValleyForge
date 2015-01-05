@@ -773,22 +773,21 @@ generate_code_config_time $TCPATH/src/$COMPONENT
 
 # POST-NEW-COMPONENT OPTIONS.
 
-# Check if we have been supplied some executable names and that we're not in batch mode.
-if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
-	# Offer the user the opportunity to define some custom executable names.
-	choose_executables
-elif [ ! -z $EXECUTABLES ]; then
-	# We've been provided with a list of executables, do nothing.
-	:
-else
-	EXECUTABLES="${COMPONENT_NAME}"
-fi
-
-# Update the config file with the executable files.
-push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
-
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
+	# Check if we have been supplied some executable names and that we're not in batch mode.
+	if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
+		# Offer the user the opportunity to define some custom executable names.
+		choose_executables
+		# Update the config file with the executable files.
+		push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
+	elif [ ! -z $EXECUTABLES ]; then
+		# We've been provided with a list of executables, do nothing.
+		:
+	else
+		EXECUTABLES="${COMPONENT_NAME}"
+	fi
+
 	# Ask if the user wants to set this as the current component.
 	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
 	read -n 1
@@ -809,11 +808,28 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 
 	# If they responded YES, then create the template files.
 	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		# Prompt the user to select a file type.
+		echo -e "${GREEN}Please choose which file type to create:${NO_COLOUR}"
+		# Create a menu of choices and have the user select one.
+		select TYPE in C CPP
+		do
+			# Check if the selected file type is actually valid.
+			TYPE=$(echo "C CPP" | grep -w -o "$TYPE")
+			if [ -z "$TYPE" ]; then
+				# The selected file type was not in the list of supported types, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected file type $TYPE.\n${NO_COLOUR}"
+				break
+			fi
+		done
+
 		# Create the template files.
 		for EXEC_NAME in $EXECUTABLES
 		do
 			echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
-			bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT
+			bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT -t "$TYPE" -b
 		done
 	fi
 
