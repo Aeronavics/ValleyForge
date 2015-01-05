@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_constname
+### Name:           checkfuncs_classnamecheck
 ###
 ### Author:         Ravi Shankar
 ###
@@ -25,55 +25,105 @@
 ###
 ### Type:           Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for constant name validity.
+### Purpose:        Implements code compliance tests: tests for class, structure and template name validity.
 ###
 ###########################################################################################################################
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_constname
+### Name:		compliance_check_file_classnamecheck
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid constant names.
+### Purpose:	Tests a single C/CPP source or header file for valid class, structure and template names.
 ###
 ###########################################################################################
 
-compliance_check_file_constname()
+compliance_check_file_classnamecheck()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-
+	pattern='[}]+[ ]*[a-zA-Z0-9]+;+'
 	# Define internal functions.
-
+	echo >&2 "inside $FILE"
 	check_line()
 	{
-		#
-		#	$1 The content of the line in question.
-		#	$2 The line number we are up to.
-		#
+	
+		#This condition is used for ignoring lines which include comments. 
+		if [[ "$1" =~ ^/.*|^\*.* ]]; then
+		#If it is a comment line, do nothing
+			return 0
+		
+		#This part is for checking structure names that come in the format "} XYZ;"
+		elif [[ $1 =~ $pattern ]]; then
 
-		if ! [[ $1 == "/"* || "$1" == "*"* ]]; then
+			str_word=${1#\}*}
 
-				if [[ $1 == const* ]]; then
+			if [[ ${str_word:0:1} == " " ]]; then
+				str_firstchar=${str_word:0:2}
+			else
+				str_firstchar=${str_word:0:1}
+			fi 
+		
+			if [[ "$str_firstchar" =~ [a-z] ]]; then
+				ERROR="structure name $str_word doesn't begin with an uppercase letter."
+				return 1	
+			fi
 
-					str_type=${1#* } #retrieves "Uint16 MAX_NO = 16" from const Uint16 MAX_NO =16
-					str_temp=${str_type#* } #retrieves "MAX_NO = 16" from Uint16 MAX_NO =16
-					str_constname=${str_temp%=*} #retrieves "MAX_NO" from MAX_NO =16
-					size=${#str_constname}
+		#This part is for checking structure names that come in the format "struct int XYZ;"
+		elif [[ "$1" =~ ";" && "$1" =~ "struct" ]]; then
+			
+			str_word=${1%\;*}
+			str_structname=${str_word##* }
 
-					if [[ "$str_constname" =~ [a-z] ]]; then
-						ERROR="$str_constname contains lower case characters."
+			if [[ ${str_structname:0:1} =~ [a-z] ]]; then
+				ERROR="structure name $str_structname doesn't begin with an uppercase letter."
+				return 1
+			fi
+
+		#This is the required part for checking the names of classes and structures
+		else
+			case "$1" in
+	
+			#check for class names whether they start with an upper case letter
+			class*)
+				value=${1#*class } #E.g. This line obtains "XYZ" from string "class XYZ"
+				case ${value:0:1} in  #match with the first character
+					[[:upper:]])
+						#The class name is correct
+						return 0
+ 		       			        ;;
+ 		       			*)
+						ERROR="class name $value begins with lowercase letters."
 						return 1
-					fi
-				fi
+				                ;;
+				esac
+				;;
+	
+			#check for template names whether they have only a single uppercase letter
+			template*) 		
+				value=${1#*template<class }
+				value1=${value%>*}
+				size=${#value1}
+				case ${value:0:1} in
+					[[:upper:]])
+						if [[ $size != 1 ]]; then
+							ERROR="template name $value has more than one uppercase letter."
+							return 1
+						fi
+ 				                ;;
+ 				        *)
+						ERROR="$value contains lowercase letters."
+						return 1		        		
+ 					        ;;
+				esac
+			;;
+			esac 
 		fi
-
-		# The line seems ok, so return zero.
-		return 0
+	return 0
 	}
 
-	# Need to keep track of the line number we are up to.
+# Need to keep track of the line number we are up to.
 	local LINE_NUM=
 
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
@@ -85,7 +135,6 @@ compliance_check_file_constname()
 	#variable for counting the number of lines disabled.
 	local DISABLED_LINE_COUNT=0
 
-
 	while read LINE
 	do
 		# Increment the line number.
@@ -94,6 +143,7 @@ compliance_check_file_constname()
   		if [ ${CHECKS_EN} ]; then
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+				
   				CHECKS_EN=
   				continue
   			fi
@@ -101,14 +151,16 @@ compliance_check_file_constname()
   			# Ok, so now we actually want to check this line for compliance.
 			if ! check_line "$LINE" $LINE_NUM; then
 				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_constname" $1 $LINE_NUM "Non-compliant constant name: $ERROR"
-
+				
+				compliance_fail_line "compliance_check_file_classnamecheck" $1 $LINE_NUM "Non-compliant class/structure/template name: $ERROR"
+		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
+
 			fi
 
   		else
-	
+
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
@@ -121,6 +173,7 @@ compliance_check_file_constname()
 	done < $FILE
 
 
+	
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	#Check if the number of lines disabled is lesser than the threshold
@@ -128,10 +181,9 @@ compliance_check_file_constname()
 		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
 	fi   
 
-
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_constname" $1 "This file contains a non-compliant constant name."
+		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains a non-compliant class/structure/template name."
 	fi
 
 	# All done.
@@ -140,18 +192,18 @@ compliance_check_file_constname()
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_get_rules_constname
+### Name:		compliance_get_rules_classnamecheck
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the constname test.
+### Purpose:	Prints out a summary of the code compliance rules for the classnamecheck test.
 ###
 ###########################################################################################
 
-compliance_get_rules_constname()
+compliance_get_rules_classnamecheck()
 {
-	echo "constname:"
-	echo "\tConstant names which contain lower case characters will fail."
+	echo "classnamecheck:"
+	echo "\tClass and structure names which begin with a lower case character will fail. Also, Template names should contain only a single uppercase letter."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }

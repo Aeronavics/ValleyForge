@@ -28,14 +28,39 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 	structnamecheckfail=1
 	templatenamecheckfail=1
 
+pattern='[}]+[ ]*[a-zA-Z0-9]+;+'
 #Read each line of the file
 	while read line
 	do
     		name=$line
     		count=$((count+1))
 
+			if [[ $name =~ $pattern ]]; then
+				#echo "$name"
+				str=${name#\}*}
+				str_first=${str:0:1}
+				#echo "--$str_first--"
+				
+				if [[ ${str:0:1} == " " ]]; then
+					str_first=${str:0:2}
+				else
+					str_first=${str:0:1}
+				fi 
+		
+				if [[ "$str_first" =~ [a-z] ]]; then
+					echo "WARNING: At line $count, $str begins with lowercase letter"
+				
+				fi
+
+			elif [[ "$name" =~ ";" && "$name" =~ "struct" ]]; then
+				str=${name%\;*}
+				str2=${str##* }
+				if [[ ${str2:0:1} =~ [a-z] ]]; then
+					echo "WARNING: AT line $count, $str2 for $name begins with lowercase letter"
+				fi
+	
 #This condition is used for ignoring code blocks
-			if [[ "$name" =~ "// INDENT-OFF" ]]; then
+			elif [[ "$name" =~ "// INDENT-OFF" ]]; then
 				read line2
 	    			count=$((count+1))
 				name2=$line2
@@ -67,77 +92,6 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
  						                echo -e "${RED}WARNING: at line ${CYAN}$count${RED}: class name ${CYAN}$value ${RED}begins with lowercase letter ${NO_COLOUR}"
  						                ;;
 						esac
-						;;
-
-					#check for structure names whether they start with an upper case letter. This case is for strings starting with "struct"
-					struct*)
-						value=${name#*struct }
-						if [[ "$name" == "struct" ]]; then
-							:
-						else
-							#getting the last character of the string
-							str=$(echo "${name: -1}") 
-value2=$value
-#							if [[ "$str" == ";" ]]; then
-#								value2=$value
-#							else
-#								value2=$value
-#							fi
-
-							case ${value2:0:1} in
-								[[:upper:]])
-									#The structure name is correct
- 							                ;;
- 							        *)
-									structnamecheckfail=0
- 							                echo -e "${RED}WARNING: At line ${CYAN}$count${RED}: Structure name ${CYAN}$value2 ${RED}begins with lowercase letter ${NO_COLOUR}"
- 							                ;;
-							esac
-						fi
-						;;
-
-					#check for structure names whether they start with an upper case letter. This case is for strings starting with "XYZ struct"
-					(*\ struct*)
-						value=${name#*struct }
-						if [[ "$value" == "$name" ]]; then
-							read line2
-				    			count=$((count+1))
-							name2=$line2
-								while [[ "$name2" != [}]* ]] && read line3 #loop until end of structure is reached
-								do
-		    							count=$((count+1))
-									name2=$line3
-								done
-							value=${name2#*\}} #get the string after '}' character
-							tempval=${value:0:1}
-						
-							if [[ "$tempval" == " " ]]; then #check if the obtained string contains spaces. Modify "value2" accordingly.
-								value2=${value:1:2}							
-							else							
-								value2=${value:0:1}							
-							fi						
-
-							case ${value2:0:1} in
-								[[:upper:]])
-									#The structure name is correct
- 							                ;;
- 							        *)
-									structnamecheckfail=0
- 							                echo -e "${RED}WARNING: At line ${CYAN}$count${RED}: Structure name ${CYAN}$value2 ${RED}begins with lowercase letter${NO_COLOUR}"
- 							                ;;
-							esac
-						else
-						
-						case ${value:0:1} in
-							[[:upper:]])
-								#The structure name is correct
- 						                ;;
- 						        *)
-								structnamecheckfail=0
- 						                echo -e "${RED}WARNING: At Line ${CYAN}$count${RED}: Structure name ${CYAN}$value ${RED}begins with lowercase letter${NO_COLOUR}"
- 						                ;;
-						esac
-						fi
 						;;
 
 					#check for template names whether they have only a single uppercase letter

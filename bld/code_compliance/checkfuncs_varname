@@ -44,37 +44,43 @@ compliance_check_file_varname()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 	# Define internal functions.
-	echo >&2 "inside $FILE"
+
 	check_line()
 	{
 		#
 		#	$1 The content of the line in question.
 		#	$2 The line number we are up to.
 		#
-		
-		pattern="([a-zA-Z0-9_* ])+[ 	]+[a-zA-Z0-9_]+[= a-zA-Z0-9_:&]*;[\n]*" #Regex with allowed characters
+
+		#Regex pattern for finding variable declarations
+		pattern="([a-zA-Z0-9_* ])+[ 	]+[a-zA-Z0-9_]+[= a-zA-Z0-9_:&]*\[*[a-zA-Z0-9_]*\]*;[\n]*" 
+
+		#temp variable which sould not be empty at the beginning
 		indiv_string="just text"
-		comma=","
-		if [[ $1 == "/"* || "$1" == "*"* ]]; then
-			
+
+		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" ]]; then			
 			return 0
-		elif [[ $1 =~ $comma ]]; then
+
+		elif [[ $1 =~ "," ]]; then
 			strcount=0
+
 			while [[ $indiv_string != "" ]];
 			do
 				strcount=$((strcount+1))
 				indiv_string=`echo "$1" | cut -d ' ' -f $strcount`
+
 				if [[ $indiv_string =~ "," || $indiv_string =~ ";" && ! $indiv_string =~ "(" ]]; then
+
 					if [[ "$indiv_string" =~ [A-Z] ]]; then
 						ERROR="$indiv_string -contains upper case characters."
-
 						return 1
 					fi
 				fi
 			done
 
 		else
-			if [[ $1 =~ $pattern && ! $1 =~ "return" ]]; then
+			
+				if [[ $1 =~ $pattern && ! $1 =~ "return" ]]; then
 
 					#Condition to check for variables with initialisation
 					if [[ $1 =~ \= ]]; then
@@ -88,7 +94,7 @@ compliance_check_file_varname()
 							varname=${str_bef_eq#*::}
 										
 							#Check if variable name contains uppercase or other special characters.	
-							if [[ "$varname" =~ [^a-z_0-9\ ] ]]; then
+							if [[ "$varname" =~ [A-Z] ]]; then
 								ERROR="$varname --contains upper case characters."
 
 								return 1
@@ -97,13 +103,13 @@ compliance_check_file_varname()
 						else 	
 							# This condition is when the string is like "int xyz = 8;"
 				
-							if [[ "$str_varname" == "" && "$str_bef_eq" =~ [^a-z_0-9\ ] ]]; then
+							if [[ "$str_varname" == "" && "$str_bef_eq" =~ [A-Z] ]]; then
 								ERROR="$str_bef_eq ---contains upper case characters."
 
 								return 1
 			
 							# This condition is when the string is like "static int xyz = 8;"	
-							elif [[ "$str_varname" != "" && "$str_varname" =~ [^a-z_0-9\ ] && "$str_bef_eq" != "$str_varname" ]]; then
+							elif [[ "$str_varname" != "" && "$str_varname" =~ [A-Z] && "$str_bef_eq" != "$str_varname" ]]; then
 								ERROR="$str_varname ----contains upper case characters."
 
 								return 1
@@ -113,12 +119,12 @@ compliance_check_file_varname()
 					#Condition to check for variables without initialisation
 					else
 						
-							valcase='0-9a-z_ ;'
+							#valcase='0-9a-z_ ;'
 							str_bef_colon=${1%;*}
 							str_aft_space=${str_bef_colon##* }
 #							varname=${str_aft_space%;*}
-						
-								if [[ "$str_aft_space" =~ [^$valcase] ]]; then
+							
+								if [[ "$str_aft_space" =~ [A-Z] ]]; then
 										ERROR="$str_aft_space -----contains upper case characters."
 	
 										return 1
@@ -140,6 +146,7 @@ compliance_check_file_varname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
+	#variable for counting the number of lines disabled.
 	local DISABLED_LINE_COUNT=0
 
 	while read LINE
@@ -167,13 +174,8 @@ compliance_check_file_varname()
 			fi
 
   		else
-  			# TODO - I think that we should count up the number of lines that are disabled, and maybe alarm if the number gets too high.
 
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
-
-  			# TODO - And probably also report the number of disabled lines.
-
-  			# TODO - Finally, this weird delimiter should be replaced with a pragma?
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
@@ -184,8 +186,11 @@ compliance_check_file_varname()
 
 	done < $FILE
 
-	#Check if the 
+
+	
 	local LINE_THRESH=$((LINE_NUM/10))
+	
+	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
 	fi   
@@ -213,7 +218,7 @@ compliance_get_rules_varname()
 {
 	echo "varname:"
 	echo "\tVariable names which contain upper case characters will fail."
-	echo "\tThe check may be toggled on/off with \"// INDENT-ON\" and \"// INDENT-OFF\"."
+	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }
 
