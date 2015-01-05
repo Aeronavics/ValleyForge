@@ -82,7 +82,7 @@ compliance_check_file_constname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
-	#variable for counting the number of lines disabled.
+	# Variable for counting the number of lines disabled.
 	local DISABLED_LINE_COUNT=0
 
 

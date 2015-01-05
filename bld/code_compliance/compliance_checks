@@ -116,7 +116,7 @@ compliance_check_directory()
 			# Test if this check is actually enabled in our current configuration.
 			if ! compliance_lookup_test ${CHECK}; then
 				# Perform the check.
-				echo "check is performed ${CHECK}"
+				echo -e "${CYAN}\tPerforming check: ${CHECK}${NO_COLOUR}"
 				${CHECK} ${FILE}
 			fi
 		done
