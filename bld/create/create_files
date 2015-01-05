@@ -229,7 +229,7 @@ elif [ -z $TYPE ] && [ $BATCHMODE ]; then
 	exit 1
 
 # Check if we're been told to create an invalid type of file.
-elif ( ! $TYPE == "C" ) && ( ! $TYPE == "CPP"); then
+elif [ ! $TYPE == "C" ] && [ ! $TYPE == "CPP" ]; then
 	# An invalid file type was specified.
 	echo -e "${RED}Invalid file type ($TYPE). Use either 'C' or 'CPP'.\n${NO_COLOUR}"
 	exit 1
