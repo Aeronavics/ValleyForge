@@ -43,94 +43,10 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 					name2=$line3
 				done
 			#This condition is used for ignoring lines which include comments. 
-		elif [[ "$name" =~ "*" || "$name" =~ "//" ]]; then
-			#If it is a comment line, do nothing
-			:
+		elif ! [[ "$name" =~ ^/.*|^\*.* || "$name" =~ \#.* ]]; then
 
-		else
-			
-			#Continue if the line has '()' characters in it.
-			if [[ $name =~ [()] ]]; then 
-
-				#Check for keywords which eliminate the possibility of the line being a function
-				case $name in 
-
-					(*for*) ;;
-
-					(*case*) ;;
-
-					(*-\>*) ;;
-
-					(*\<*) ;;
-
-					(*\>*) ;;
-
-					(*while*) ;;
-
-					(*volatile*) ;;
-				
-					(*if*) ;;
-
-					(*{*) ;;
-
-					(*__*) ;;
-
-					(*ISR*) ;;
-
-					(*switch*) ;;
-
-					(*main*) ;;
-
-					(*//*) ;;
-
-					(*\(\(*) ;;
-
-					(*return*) ;;
-
-					(*template*) ;;
-
-					(*=*) ;;
-
-					(*#*) ;;
-
-					(*\;*) ;;
-
-					(*\~*) ;;
-					
-					(*::*) 
-					
-						value=${name#* }
-						if [[ "$value" == "$name" ]]; then
-							:
-						else
-							if [[ "$value" == ":" ]]; then
-								:
-							else
-								valbef=${value%\(*}
-								if [[ "$valbef" =~ "," ]]; then
-									:
-								else
-								funcname=${valbef##*::}
-								classname=${valbef%::*}
-								valcase='a-z0-9_ '
-									if [[ "$funcname" =~ ":" || "$funcname" =~ ")" || "$funcname" =~ "(" ]]; then
-										:
-									else					
-										if [[ $funcname != $classname ]]; then
-											if [[ "$funcname" =~ [^$valcase] ]]; then
-											        echo -e "${RED}WARNING: At Line ${CYAN}$count, $funcname ${RED}has uppercase letters.${NO_COLOUR}"
-												funcnamecheck=0
-											fi
-										fi
-									fi
-								fi
-							fi
-						fi
-						;;
-				
-
-						*) 
-					
+			if [[ "$name" =~ $pattern ]]; then
+			echo "$name matches pattern"
 						value=${name#* }
 						valbef=${value%\(*}
 						if [[ "$value" == "$name" ]]; then
@@ -158,7 +74,6 @@ for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.
 								fi
 							fi
 						fi
-					esac
 			fi
 		fi
 	done < $FILE

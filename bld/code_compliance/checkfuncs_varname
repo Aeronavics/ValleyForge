@@ -43,7 +43,6 @@ compliance_check_file_varname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-
 	# Define internal functions.
 
 	check_line()
@@ -53,10 +52,10 @@ compliance_check_file_varname()
 		#	$2 The line number we are up to.
 		#
 
-		# Regex pattern for finding variable declarations.
+		#Regex pattern for finding variable declarations
 		pattern="([a-zA-Z0-9_* ])+[ 	]+[a-zA-Z0-9_]+[= a-zA-Z0-9_:&]*\[*[a-zA-Z0-9_]*\]*;[\n]*" 
 
-		# Temp variable which should not be empty at the beginning.
+		#temp variable which sould not be empty at the beginning
 		indiv_string="just text"
 
 		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" ]]; then			
@@ -80,57 +79,60 @@ compliance_check_file_varname()
 			done
 
 		else
-			if [[ $1 =~ $pattern && ! $1 =~ "return" ]]; then
-				# Condition to check for variables with initialisation.
-				if [[ $1 =~ \= ]]; then
-						
-					str_aft_space=${1#* } 		#To obtain the string after " " E.g. static int xyz = 9 --> int xyz = 9
-					str_bef_eq=${str_aft_space%%=*} #To obtain the string before "=" sign E.g. int xyz = 9 --> int xyz
-					str_varname=${str_bef_eq#* } 	#To obtain the string after " " E.g. int xyz --> xyz
-						
-					#Check if the string contains "::" characters. 	
-					if [[ "$str_bef_eq" =~ "::" ]]; then
-						varname=${str_bef_eq#*::}
-										
-						#Check if variable name contains uppercase or other special characters.	
-						if [[ "$varname" =~ [A-Z] ]]; then
-							ERROR="$varname --contains upper case characters."
-
-							return 1
-						fi
-							
-					else
-						# This condition is when the string is like "int xyz = 8;"
-				
-						if [[ "$str_varname" == "" && "$str_bef_eq" =~ [A-Z] ]]; then
-							ERROR="$str_bef_eq ---contains upper case characters."
-
-							return 1
 			
-						# This condition is when the string is like "static int xyz = 8;"	
-						elif [[ "$str_varname" != "" && "$str_varname" =~ [A-Z] && "$str_bef_eq" != "$str_varname" ]]; then
-							ERROR="$str_varname ----contains upper case characters."
+				if [[ $1 =~ $pattern && ! $1 =~ "return" ]]; then
 
-							return 1
-						fi
-					fi
+					#Condition to check for variables with initialisation
+					if [[ $1 =~ \= ]]; then
+						
+						str_aft_space=${1#* } 		#To obtain the string after " " E.g. static int xyz = 9 --> int xyz = 9
+						str_bef_eq=${str_aft_space%%=*} #To obtain the string before "=" sign E.g. int xyz = 9 --> int xyz
+						str_varname=${str_bef_eq#* } 	#To obtain the string after " " E.g. int xyz --> xyz
+						
+						#Check if the string contains "::" characters. 	
+						if [[ "$str_bef_eq" =~ "::" ]]; then
+							varname=${str_bef_eq#*::}
+										
+							#Check if variable name contains uppercase or other special characters.	
+							if [[ "$varname" =~ [A-Z] ]]; then
+								ERROR="$varname --contains upper case characters."
 
-				# Condition to check for variables without initialisation.
-				else				
-					#valcase='0-9a-z_ ;'
-					str_bef_colon=${1%;*}
-					str_aft_space=${str_bef_colon##* }
-#					varname=${str_aft_space%;*}
+								return 1
+							fi
 							
-					if [[ "$str_aft_space" =~ [A-Z] ]]; then
-						ERROR="$str_aft_space -----contains upper case characters."
+						else 	
+							# This condition is when the string is like "int xyz = 8;"
+				
+							if [[ "$str_varname" == "" && "$str_bef_eq" =~ [A-Z] ]]; then
+								ERROR="$str_bef_eq ---contains upper case characters."
 
-						return 1
-					fi						
-				fi
+								return 1
+			
+							# This condition is when the string is like "static int xyz = 8;"	
+							elif [[ "$str_varname" != "" && "$str_varname" =~ [A-Z] && "$str_bef_eq" != "$str_varname" ]]; then
+								ERROR="$str_varname ----contains upper case characters."
+
+								return 1
+							fi
+						fi
+
+					#Condition to check for variables without initialisation
+					else
+						
+							#valcase='0-9a-z_ ;'
+							str_bef_colon=${1%;*}
+							str_aft_space=${str_bef_colon##* }
+#							varname=${str_aft_space%;*}
+							
+								if [[ "$str_aft_space" =~ [A-Z] ]]; then
+										ERROR="$str_aft_space -----contains upper case characters."
+	
+										return 1
+								fi
+						
+					fi
 			fi
 		fi
-		
 		# The line seems ok, so return zero.
 		return 0
 	}
@@ -144,10 +146,9 @@ compliance_check_file_varname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
-	# Variable for counting the number of lines disabled.
+	#variable for counting the number of lines disabled.
 	local DISABLED_LINE_COUNT=0
 
-	# Iterate over each of the lines in the file.
 	while read LINE
 	do
 		# Increment the line number.
@@ -185,13 +186,13 @@ compliance_check_file_varname()
 
 	done < $FILE
 
-	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+
+	
 	local LINE_THRESH=$((LINE_NUM/10))
 	
-	# Check if the number of lines disabled is lesser than the threshold.
+	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
-		CHECKS_OK=
+		compliance_fail_line "exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then

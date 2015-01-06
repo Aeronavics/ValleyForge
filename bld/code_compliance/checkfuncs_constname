@@ -125,8 +125,12 @@ compliance_check_file_constname()
 	
 	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+<<<<<<< Updated upstream
 		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
 		CHECKS_OK=
+=======
+		compliance_fail_line "exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
+>>>>>>> Stashed changes
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
