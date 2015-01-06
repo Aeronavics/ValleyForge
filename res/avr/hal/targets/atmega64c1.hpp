@@ -147,8 +147,7 @@ static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
 #define USARTLIN_RX_PORT		PORT_D
 #define USARTLIN_RX_PIN			PIN_4
 
-// TODO - What modes does LIN actually support?
-enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS, USART_MODE_ASYNCHRONOUS_DOUBLESPEED, USART_MODE_SYNCHRONOUS_MASTER, USART_MODE_SYNCHRONOUS_SLAVE};
+enum Usart_setup_mode {USART_MODE_ASYNCHRONOUS};
 
 // Specify which USART channels to support
 enum Usart_channel {USART_0};

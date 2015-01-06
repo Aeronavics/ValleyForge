@@ -55,7 +55,9 @@
 	#error "USART0 conflicts with LIN-USART peripheral"
 #endif
 
-
+#if defined(USE_USART0)
+	#define USE_USART
+#endif
 
 ////// Usart_imp Implementation //////
 
@@ -487,6 +489,7 @@ Usart_error_status Usart_imp::get_errors(void)
 
 Usart_config_status Usart_imp::set_mode(Usart_setup_mode mode)
 {
+#ifdef USE_USART
 	switch (mode)
 	{
 		case USART_MODE_ASYNCHRONOUS:
@@ -530,10 +533,14 @@ Usart_config_status Usart_imp::set_mode(Usart_setup_mode mode)
 	this->mode = mode;
 
 	return USART_CFG_SUCCESS;
+#else
+	return USART_CFG_FAILED;
+#endif
 }
 
 Usart_config_status Usart_imp::set_framing(uint8_t data_bits, Usart_parity parity, uint8_t stop_bits)
 {
+#ifdef USE_USART
 	// Data bits
 	if ((data_bits < 5) || (data_bits > 9))
 		return USART_CFG_INVALID_DATA_BITS;
@@ -588,10 +595,14 @@ Usart_config_status Usart_imp::set_framing(uint8_t data_bits, Usart_parity parit
 	}
 
 	return USART_CFG_SUCCESS;
+#else
+	return USART_CFG_FAILED;
+#endif
 }
 
 Usart_config_status Usart_imp::set_baud_rate(uint32_t baud_rate)
 {
+#ifdef USE_USART
 	// Calculate the Baud value required for the user provided Baud rate
 	// Baud value = F_CPU			- 1
 	// 		     --------------------
@@ -622,6 +633,9 @@ Usart_config_status Usart_imp::set_baud_rate(uint32_t baud_rate)
 	*registers.UBRR = (uint16_t)ubrr;
 
 	return USART_CFG_SUCCESS;
+#else
+	return USART_CFG_FAILED;
+#endif
 }
 
 
