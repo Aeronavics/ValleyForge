@@ -47,7 +47,7 @@
  *  @section Description
  *  In order to use the Hardware Abstraction Library, some aspects need to be set up beforehand. There are also some
  *  functions that are relevant to all modules, such as global interrupts, and are therefore placed in this separate
- *  hal.h header file.
+ *  hal.hpp header file.
  * 
  *  @section Example
  * 
@@ -90,6 +90,9 @@
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
 
 // DEFINE PUBLIC MACROS.
+
+#define F_CPU <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000UL
+
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 

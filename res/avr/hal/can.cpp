@@ -47,7 +47,7 @@
 
 // DEFINE PRIVATE MACROS.
 
-#define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>	// Replaces the need to use the <<< syntax to get clock speed	
+#define CLK_MHZ F_CPU // See hal.hpp
 
 #define ENABLE_TOUT_LOOP  1000000;						// Controller enable timeout.
 
