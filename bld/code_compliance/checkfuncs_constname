@@ -85,7 +85,7 @@ compliance_check_file_constname()
 	# Variable for counting the number of lines disabled.
 	local DISABLED_LINE_COUNT=0
 
-
+	# Iterate over each of the lines in the file.
 	while read LINE
 	do
 		# Increment the line number.
@@ -120,14 +120,14 @@ compliance_check_file_constname()
 
 	done < $FILE
 
-
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
+		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
+		CHECKS_OK=
 	fi   
-
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.

@@ -111,12 +111,14 @@ compliance_check_directory()
 
 	# Since it's easier to have the results ordered by file, iterate over the candidate files first.
 	for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+		echo -e "${CYAN}\tChecking file: ${FILE}${NO_COLOUR}"
+
 		# Iterate over each of the checks.
 		for CHECK in ${CHECKS}; do
 			# Test if this check is actually enabled in our current configuration.
 			if ! compliance_lookup_test ${CHECK}; then
 				# Perform the check.
-				echo -e "${CYAN}\tPerforming check: ${CHECK}${NO_COLOUR}"
+				echo -e "${CYAN}\t\tPerforming check: ${CHECK}${NO_COLOUR}"
 				${CHECK} ${FILE}
 			fi
 		done
@@ -190,7 +192,7 @@ compliance_fail_line()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${RED}\t\tCompliance error: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
@@ -203,7 +205,7 @@ compliance_fail_line()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${YELLOW}\t\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then

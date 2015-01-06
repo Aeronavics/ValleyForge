@@ -145,6 +145,7 @@ compliance_check_file_thinger()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
+	# Iterate over each of the lines in the file.
 	while read LINE
 	do
 		# Increment the line number.
@@ -152,7 +153,7 @@ compliance_check_file_thinger()
 
   		if [ ${CHECKS_EN} ]; then
   			# Check to see whether this line disables checking temporarily.
-  			if [[ "$LINE" =~ "// INDENT-OFF" ]]; then
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
   				CHECKS_EN=
   				continue
   			fi
@@ -167,20 +168,26 @@ compliance_check_file_thinger()
 			fi
 
   		else
-  			# TODO - I think that we should count up the number of lines that are disabled, and maybe alarm if the number gets too high.
 
-  			# TODO - And probably also report the number of disabled lines.
-
-  			# TODO - Finally, this weird delimiter should be replaced with a pragma?
+  			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
-  			if [[ "$LINE" =~ "// INDENT-ON" ]]; then
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
   				# Enable checking again.
   				CHECKS_EN=1
   			fi
   		fi
 
 	done < $FILE
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local LINE_THRESH=$((LINE_NUM/10))
+	
+	# Check if the number of lines disabled is lesser than the threshold.
+	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
+		CHECKS_OK=
+	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
