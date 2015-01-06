@@ -295,6 +295,8 @@ choose_executables() {
 		echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
 		EXECUTABLES="$REPLY"
+		# Update the config file with the executable files.
+		push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
 	else
 		# Otherwise, default to one executable with the name of the component.
 		EXECUTABLES="$COMPONENT"
@@ -753,8 +755,6 @@ push_key ${CONFIG_FILE} "SUBSYSTEM" "\"${NEW_SUBSYSTEM}\""
 push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
-# We create an empty key here because if it is created later, it appears in the wrong place.
-push_key ${CONFIG_FILE} "EXECUTABLES" ""
 
 # TODO - We should actually check if this works.
 
@@ -762,6 +762,15 @@ push_key ${CONFIG_FILE} "EXECUTABLES" ""
 
 # Run any required target/platform specific config.
 run_bconf_specific_config
+
+# Check if we have been supplied some executable names and that we're not in batch mode.
+if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ] && [ $NEW ]; then
+	# Offer the user the opportunity to define some custom executable names.
+	choose_executables
+else
+	# Only one executable. Do nothing.
+	:
+fi
 
 # Run any required bootloader specific config.
 run_bload_specific_config
@@ -775,19 +784,6 @@ generate_code_config_time $TCPATH/src/$COMPONENT
 
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
-	# Check if we have been supplied some executable names and that we're not in batch mode.
-	if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
-		# Offer the user the opportunity to define some custom executable names.
-		choose_executables
-		# Update the config file with the executable files.
-		push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
-	elif [ ! -z $EXECUTABLES ]; then
-		# We've been provided with a list of executables, do nothing.
-		:
-	else
-		EXECUTABLES="${COMPONENT_NAME}"
-	fi
-
 	# Ask if the user wants to set this as the current component.
 	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
 	read -n 1
