@@ -357,7 +357,7 @@ class Usart
 		 * @param size			The number of bytes to receive
 		 * @param cb_done		Optional callback to be executed when the buffer has been fully received, or an error has occurred.
 		 * 						Callback must have the following signature:
-		 * 							void callback(void *context, Usart_io_status status, uint8_t *rx_data, size_t received_bytes);
+		 * 							void callback(void *context, Usart_io_status status);
 		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return 				The status of the operation
 		 */

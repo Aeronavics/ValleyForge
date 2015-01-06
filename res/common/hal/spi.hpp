@@ -207,9 +207,12 @@ public:
 
 	/**
 	 * Shift one byte through the SPI, blocking until the transfer has completed.
+	 * In slave mode, this function will block until the master device clocks
+	 * one byte of data through the interface.
 	 *
 	 * rx_data is optional. If NULL, received data will be discarded.
 	 *
+	 * @warning				Method blocks until one byte of data is clocked through the interface
 	 * @param tx_data 		Byte to be transmitted
 	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
 	 * @return 				The status of the operation
@@ -228,7 +231,7 @@ public:
 	 * @param rx_data 		Optional pointer to a variable which will be updated with the received byte
 	 * @param done 			Optional callback to be executed when the transmission is completed
 	 * 						Callback must have the following signature:
-	 * 							void callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size);
+	 * 							void callback(void *context, Spi_io_status status);
 	 * @param context		Pointer to user data to be passed to the callback. Optional.
 	 * @return 				The status of the operation
 	 */
@@ -237,9 +240,12 @@ public:
 	/**
 	 * Shift a chunk of data through the SPI, blocking until the transfer has completed.
 	 * Both buffers must have at least 'size' bytes allocated!
+	 * In slave mode, this function will block until the master device clocks
+	 * 'size' bytes through the interface.
 	 *
 	 * rx_data is optional. If NULL, received data will be discarded.
 	 *
+	 * @warning				Method blocks until 'size' bytes are clocked through the interface
 	 * @param size 			The number of bytes to transfer
 	 * @param tx_data 		Buffer to be transmitted
 	 * @param rx_data 		Optional buffer to store received data to
@@ -260,7 +266,7 @@ public:
 	 * @param rx_data 		Optional buffer to store received data to
 	 * @param done 			Optional callback to be executed when the transmission is completed.
 	 * 						Callback must have the following signature:
-	 * 							void callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size);
+	 * 							void callback(void *context, Spi_io_status status);
 	 * @param context		Pointer to user data to be passed to the callback. Optional.
 	 * @return 				The status of the operation
 	 */

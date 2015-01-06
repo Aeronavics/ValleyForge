@@ -48,7 +48,7 @@ enum FM_BANK_MODE {BANK_NN, BANK_FF, BANK_FM};	//represents de-activated, filter
 
 bool can_filter_init_mode = false;
 
-volatile static voidFuncPtr intFunc[NUM_BUF][NB_INT];
+volatile static IsrHandler intFunc[NUM_BUF][NB_INT];
 volatile CAN_BUF interrupt_service_buffer;
 
 Can_filter filters[MAX_NUM_FIL];
@@ -263,7 +263,7 @@ void Can_buffer::disable_interrupt(void)
 	
 }
 
-void Can_buffer::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
+void Can_buffer::attach_interrupt(CAN_INT_NAME interrupt, IsrHandler callback)
 {
 	
 }
@@ -455,7 +455,7 @@ class Can_tree
 		 * @param  userFunc		The handler for this interrupt event
 		 * @return Nothing.
 		 */
-		 void attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void));
+		 void attach_interrupt(CAN_INT_NAME interrupt, IsrHandler callback);
 		
 		/**
 		 * Detach interrupt to CAN channel
@@ -749,12 +749,12 @@ void Can::disable_buffer_interrupt(CAN_BUF buffer_name)
 
 }
 
-void Can::attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, void (*userFunc)(void))
+void Can::attach_interrupt(CAN_BUF buffer_name, CAN_INT_NAME interrupt, IsrHandler callback)
 {
 
 }
 
-void Can::attach_interrupt(CAN_INT_NAME interrupt, void (*userFunc)(void))
+void Can::attach_interrupt(CAN_INT_NAME interrupt, IsrHandler callback)
 {
 
 }

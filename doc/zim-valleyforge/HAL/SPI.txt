@@ -178,7 +178,7 @@ void test()
 	uint8_t tx = 0x32;
 	static uint8_t rx; // Variable must be valid for the entire transfer
 	
-	if (spi.transfer_async(tx, &rx, spi_callback) != SPI_IO_SUCCESS) {
+	if (spi.transfer_async(tx, &rx, &spi_callback) != SPI_IO_SUCCESS) {
 		// Handle error
 	}
 }
@@ -191,7 +191,7 @@ void test()
 	uint8_t tx_data[5] = {1, 2, 3, 4, 5};
 	uint8_t rx_data[5];
 	
-	if (spi.transfer_buffer(tx_data, rx_data) != SPI_IO_SUCCESS) {
+	if (spi.transfer_buffer(5, tx_data, rx_data) != SPI_IO_SUCCESS) {
 		// Handle error
 	}
 	

@@ -125,7 +125,7 @@ When using buffer/string asynchronous communications, interrupts are also called
 IMPORTANT - Only one callback can be registered for each interrupt type.
 
 ===== Examples =====
-**A simple echo demo**
+**A simple echo demo using blocking communications**
 
 '''
 #include <hal/usart.hpp>
@@ -157,7 +157,7 @@ int main(void)
 '''
 
 
-**Implementing asynchronous communications**
+**Implementing asynchronous communications using callbacks**
 
 '''
 #include <hal/usart.hpp>
@@ -169,17 +169,17 @@ static size_t rx_size = RX_LEN;
 
 void data_received(void *context, Usart_error_type error)
 {
+	// The Usart HAL object was passed in through the context parameter
+	Usart *usart = static_cast<Usart*>(context);
+
 	if (error == USART_ERR_SUCCESS)
 	{
-		
-'''
-''// Do something with the data here...''
-'''
+		// Do something with the data here...
 		do_something(rx_data, rx_size);
 	}
 
 	// Start listening again
-	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	if (usart->receive_buffer_async(rx_buffer, RX_LEN, &data_received, context) != USART_IO_SUCCESS)
 	{
 		// An error occurred, do something about it here...
 	}
@@ -196,7 +196,7 @@ int main(void)
 	usart.enable();
 
 	// Start listening for 16 bytes of data
-	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	if (usart.receive_buffer_async(rx_buffer, RX_LEN, &data_received, &usart) != USART_IO_SUCCESS)
 	{
 		// An error occurred
 		return -1;
