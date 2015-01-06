@@ -1,0 +1,219 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           varname
+###
+### Author:         Ravi Shankar
+###
+### Date Created:	19-12-2014
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:        Implements code compliance tests: tests for variable name validity.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_master
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:	Tests a single C/CPP source or header file using Ravi's legacy checks.
+###
+###########################################################################################
+
+compliance_check_file_master()
+{
+	# TODO - Currently, output just goes directly to console.  Should switch to use "compliance_fail_line" for output instead.
+
+	# TODO - Once all of these tests have been moved into functions, then this function will be obsolete and can be removed.
+
+	if [ -n "${COMPLIANCE_LEGACY_layout}" ]; then
+		source $TCPATH/bld/code_compliance/layout $1
+	fi
+
+#	if [ -n "${COMPLIANCE_LEGACY_variablename}" ]; then
+#		source $TCPATH/bld/code_compliance/varname $1
+#	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_classstructname}" ]; then
+		source $TCPATH/bld/code_compliance/classnamecheck $1
+	fi
+
+#	if [ -n "${COMPLIANCE_LEGACY_constname}" ]; then
+#		source $TCPATH/bld/code_compliance/constcheck $1
+#	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_funcname}" ]; then
+		source $TCPATH/bld/code_compliance/funcnamecheck $1
+	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_filecomplete}" ]; then
+		source $TCPATH/bld/code_compliance/filecomplete $1
+	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_headerguard}" ]; then
+		source $TCPATH/bld/code_compliance/headerguard $1
+	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_filename}" ]; then
+		source $TCPATH/bld/code_compliance/filenamesplchar $1
+	fi
+
+	if [ -n "${COMPLIANCE_LEGACY_headerfilecheck}" ]; then
+		source $TCPATH/bld/code_compliance/headercheck $1
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_get_rules_master
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Prints out a summary of the code compliance rules for the master test.
+###
+###########################################################################################
+
+compliance_get_rules_master()
+{
+	echo "master:"
+	echo "\tLumps together all of the checks implemented by Ravi which are currently queued by the 'master' script."
+	echo ""
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_thinger
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:	Tests a single C/CPP source or header file to see if it is going to blow!
+###
+###########################################################################################
+
+compliance_check_file_thinger()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Define internal functions.
+
+	check_line()
+	{
+		#
+		#	$1 The content of the line in question.
+		#	$2 The line number we are up to.
+		#
+
+		# Check if this line is going to explode.
+		if [[ "$1" =~ "// Kill me now!" ]]; then
+			# The line is going to explode, so return non-zero.
+			return 1
+		fi
+
+		# The line seems ok, so return zero.
+		return 0
+	}
+
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	# Initially, we are checking.
+	local CHECKS_EN=1
+
+	# Iterate over each of the lines in the file.
+	while read LINE
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+  		if [ ${CHECKS_EN} ]; then
+  			# Check to see whether this line disables checking temporarily.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+  				CHECKS_EN=
+  				continue
+  			fi
+
+  			# Ok, so now we actually want to check this line for compliance.
+			if ! check_line "$LINE" $LINE_NUM; then
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_thinger" $1 $LINE_NUM "This line causes an explosion!"
+
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+  		else
+
+  			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
+
+  			# Checking is temporarily disabled, so all we do is see if this line enables them again.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+  				# Enable checking again.
+  				CHECKS_EN=1
+  			fi
+  		fi
+
+	done < $FILE
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local LINE_THRESH=$((LINE_NUM/10))
+	
+	# Check if the number of lines disabled is lesser than the threshold.
+	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
+		CHECKS_OK=
+	fi   
+
+	if [ ! ${CHECKS_OK} ]; then
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_thinger" $1 "This file contains something that explodes."
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_get_rules_thinger
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Prints out a summary of the code compliance rules for the thinger.
+###
+###########################################################################################
+
+compliance_get_rules_thinger()
+{
+	echo "thinger:"
+	echo "\tLines which contain \"// Kill me now!\" will fail."
+	echo "\tThe check may be toggled on/off with \"// INDENT-ON\" and \"// INDENT-OFF\"."
+	echo ""
+}
+
+# ALL DONE.

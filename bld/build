@@ -57,6 +57,9 @@ source $TCPATH/bld/other/setup_compilers
 # Define the functions used to set up any vendor sources.
 source $TCPATH/bld/other/setup_vendorsources
 
+# Import functions for code compliance testing.
+source $TCPATH/bld/code_compliance/compliance_checks
+
 # Define the functions used to actually build components.
 for f in $TCPATH/bld/make_functions/make*; do
 	source "$f"
@@ -176,28 +179,32 @@ get_hal()
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.cpp $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.s $OUTPATH 2>/dev/null
 	cp $TCPATH/$HAL_SOURCE_PATH/hal.o $OUTPATH 2>/dev/null
-	cp $TCPATH/$HAL_SOURCE_PATH/target_config.hpp $OUTPATH
 
-	# Copy chip-specific target headers required by target_config.hpp
-	# TODO - Would be nice to not have to do this (Maybe make the script automatically copy #included files?)
-	mkdir -p $OUTPATH/targets
-	cp $TCPATH/$HAL_SOURCE_PATH/targets/*.hpp $OUTPATH/targets/
+	# Copy target specific configuration files.
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config.* $OUTPATH
+	cp $TCPATH/$HAL_SOURCE_PATH/target_config_*.* $OUTPATH 2>/dev/null
 
 	# Only import each particular peripheral if it is enabled in the configuration.
 
 	# Iterate through the items in the enabled HAL peripherals list.
 	for PERIPHERAL in $HAL_EN_LIST; do
-		# Copy the corresponding files over.
+		# Copy the corresponding interface files over.
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_HEADER_PATH/$PERIPHERAL.hs $OUTPATH 2>/dev/null
+
+		# Copy the corresponding implementation files over.
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.h $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.hs $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.c $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.cpp $OUTPATH 2>/dev/null
 		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.s $OUTPATH 2>/dev/null
-		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null	
+		cp $TCPATH/$HAL_SOURCE_PATH/$PERIPHERAL.o $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.c $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.cpp $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.s $OUTPATH 2>/dev/null
+		cp $TCPATH/$HAL_SOURCE_PATH/${PERIPHERAL}_*.o $OUTPATH 2>/dev/null
 	done
 
 	# Preprocess the imported files.
@@ -341,6 +348,23 @@ generic_precompile()
 	# Fetch the HAL library files.  This is done after other preprocessing, since the HAL is preprocessed separately.
 	get_hal
 
+	# Check if we are supposed to run compliance checks before building.
+	if [ $VF_EN_COMPLIANCE_CHECKS ]; then
+		# Create an output directory to put results into.
+		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+
+		# Run code compliance checks.
+		echo -e "${CYAN}Checking code compliance...\n${NO_COLOUR}"
+		if ! compliance_check_directory $TCPATH/src/$COMPONENT $TCPATH/$OUTPUT_DIR/$COMPONENT/compliance_results.txt; then
+			# Code compliance tests failed with errors, so we abort this component.
+			echo -e "${RED}Code compliance tests failed.  Skipping component $COMPONENT.\n${NO_COLOUR}"
+			return 1
+		fi
+	else
+		# We're skipping all the code compliance checks.
+		echo -e "${YELLOW}Not running code compliance checks.\n${NO_COLOUR}"
+	fi
+
 	# All done.
 	return 0
 }
@@ -437,6 +461,7 @@ Parameters:
 Options:
 	-h --help			Show this message.
 	-a --all			Build all components.
+	-c --check			Run code compliance checks before building each component.
 	-r --retain			Retain temporary files at completion of script.
 	-b --bootloader			Build the bootloader for each component as well.
 	-f --filesystem			Build the filesystem for each component as well. (Where appropriate.)
@@ -449,7 +474,8 @@ EOF
 }
 
 # Tidy up all of the temporary files from building the component.
-tidy_up() {
+tidy_up() 
+{
 	# Now we are done with the actual work, we just have to tidy up.
 	echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
 
@@ -479,8 +505,8 @@ tidy_up() {
 		echo -e "${CYAN}Retaining temporary files.\n${NO_COLOUR}"
 	fi
 
-	# Indicate that we're done.
-	echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
+	# All done.
+	return 0
 }
 
 ################################ SCRIPT PROPER STARTS HERE ###############################
@@ -501,11 +527,12 @@ BUILD_BOOTLOADER=
 BUILD_FILESYSTEM=
 NOHAL=
 POSTPACK=
+VF_EN_COMPLIANCE_CHECKS=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
 SHORTOPTS="harbfpcn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,postpack,clean,nohal,name:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -540,11 +567,9 @@ while true; do
 			# Select 'pack up compilers, post build'.
 			POSTPACK=1
 			;;
-		-c|--clean)
-			# Remind the user that there is no 'clean' option here.
-			echo -e "${RED}\nThis script automatically cleans temporary files upon completion.\n" 
-			echo -e "To retain files built during compilation, use the 'retain' option.\n${NO_COLOUR}"
-			exit 0		
+		-c|--check)
+			# Select 'run code compliance checks'.
+			VF_EN_COMPLIANCE_CHECKS=1
 			;;
 		-n|--name)
 			# Specify the name of the component to build.
@@ -610,6 +635,16 @@ if [ $ALL ]; then
 fi
 
 # BUILD THE COMPONENTS ONE BY ONE.
+
+# Check if we are supposed to run compliance checks before building.
+if [ $VF_EN_COMPLIANCE_CHECKS ]; then
+	# Load the correct code compliance configuration.
+	if ! compliance_load_config; then
+		# Something went wrong, so we just tell the user and exit.
+		echo -e "${RED}Unable to load code compliance configuration.\n${NO_COLOUR}"
+		exit 0
+	fi
+fi
 
 # Parse the build configurations file.
 source $TCPATH/bld/common/load_build_configs
@@ -839,5 +874,6 @@ done
 tidy_up
 
 # All done.
+echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
 exit 0
 

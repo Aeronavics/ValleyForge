@@ -3,3 +3,20 @@
 # see misc/tools/kconfig-language.txt.
 #
 
+config VALLEYFORGE_<APP_NAME_UPPER>
+	bool "\"<APP_NAME>\" example"
+	default n
+	---help---
+		Enable the \"<APP_NAME>\" application
+
+if VALLEYFORGE_<APP_NAME_UPPER>
+
+config VALLEYFORGE_<APP_NAME_UPPER>_PROGNAME
+	string "Program name"
+	default "<APP_NAME>"
+	depends on BUILD_KERNEL
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+endif

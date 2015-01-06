@@ -98,7 +98,7 @@ gen_mavlink()
 	cp -f ${TCPATH}/bld/code_generation/Makefile_mavlink ${GEN_CACHE}
 
 	# Update the working makefile with the appropriate values for this component.
-	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
+	sed -ri "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/tools/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
 	sed -ri "s^(MAVLINK_DEFINITIONS *= *)BUILD_INSERTS_MAVLINK_DEFINITIONS_HERE(\\s.*)?^\1${DEFINITIONS}\2^" ${GEN_CACHE}/Makefile_mavlink
 	sed -ri "s^(MAVLINK_SANDPIT *= *)BUILD_INSERTS_MAVLINK_SANDPIT_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}\2^" ${GEN_CACHE}/Makefile_mavlink
 
@@ -106,6 +106,15 @@ gen_mavlink()
 	echo -e "${CYAN}\tBuilding MAVlink protocol files...\n${NO_COLOUR}"
 	export PYTHONPATH="${PYTHONPATH}:${VENDOR_MAVLINK_LOCAL}"
 	make -C ${GEN_CACHE} -f Makefile_mavlink all
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check if we actually generated some code.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}\tMAVlink code generation failed.\n${NO_COLOUR}"
+		return 1
+	fi
 	echo -e ""
 
 	# Copy the generated code into the source tree.

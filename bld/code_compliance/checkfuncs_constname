@@ -1,0 +1,159 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           checkfuncs_constname
+###
+### Author:         Ravi Shankar
+###
+### Date Created:	19-12-2014
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:        Implements code compliance tests: tests for constant name validity.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_constname
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:	Tests a single C/CPP source or header file for valid constant names.
+###
+###########################################################################################
+
+compliance_check_file_constname()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Define internal functions.
+
+	check_line()
+	{
+		#
+		#	$1 The content of the line in question.
+		#	$2 The line number we are up to.
+		#
+
+		if ! [[ $1 == "/"* || "$1" == "*"* ]]; then
+
+				if [[ $1 == const* ]]; then
+
+					str_type=${1#* } #retrieves "Uint16 MAX_NO = 16" from const Uint16 MAX_NO =16
+					str_temp=${str_type#* } #retrieves "MAX_NO = 16" from Uint16 MAX_NO =16
+					str_constname=${str_temp%=*} #retrieves "MAX_NO" from MAX_NO =16
+					size=${#str_constname}
+
+					if [[ "$str_constname" =~ [a-z] ]]; then
+						ERROR="$str_constname contains lower case characters."
+						return 1
+					fi
+				fi
+		fi
+
+		# The line seems ok, so return zero.
+		return 0
+	}
+
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	# Initially, we are checking.
+	local CHECKS_EN=1
+
+	# Variable for counting the number of lines disabled.
+	local DISABLED_LINE_COUNT=0
+
+	# Iterate over each of the lines in the file.
+	while read LINE
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+  		if [ ${CHECKS_EN} ]; then
+  			# Check to see whether this line disables checking temporarily.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+  				CHECKS_EN=
+  				continue
+  			fi
+
+  			# Ok, so now we actually want to check this line for compliance.
+			if ! check_line "$LINE" $LINE_NUM; then
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_constname" $1 $LINE_NUM "Non-compliant constant name: $ERROR"
+
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+  		else
+	
+			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
+
+  			# Checking is temporarily disabled, so all we do is see if this line enables them again.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+  				# Enable checking again.
+  				CHECKS_EN=1
+  			fi
+  		fi
+
+	done < $FILE
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local LINE_THRESH=$((LINE_NUM/10))
+	
+	#Check if the number of lines disabled is lesser than the threshold
+	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+		compliance_fail_line "COMPLIANCE_EN_exception_limits" $1 -1 "A suspiciously high number of lines (${DISABLED_LINE_COUNT}) have compliance testing disabled."
+		CHECKS_OK=
+	fi   
+
+	if [ ! ${CHECKS_OK} ]; then
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_constname" $1 "This file contains a non-compliant constant name."
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_get_rules_constname
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Prints out a summary of the code compliance rules for the constname test.
+###
+###########################################################################################
+
+compliance_get_rules_constname()
+{
+	echo "constname:"
+	echo "\tConstant names which contain lower case characters will fail."
+	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
+	echo ""
+}
+
+# ALL DONE.

@@ -1,0 +1,31 @@
+#!/bin/bash
+count=0
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+dir=$TCPATH/bld/code_compliance/config_files
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+echo -e "${RED}LAYOUT CONVENTIONS ${CYAN}$1\n${NO_COLOUR}"
+
+DISABLED_LINE_COUNT=21
+LINE_NUM=98
+result=$((LINE_NUM/4))
+echo $result
+if [[ $result < $DISABLED_LINE_COUNT ]]; then
+echo "less"
+else
+echo "great"
+fi
+#echo "----$val1"
+
+#echo "$val2-----"
+	#sed -i ':r s:\(.*\)/[*]\(.*\)[*]/\(.*\):\1\3 //\2:;tr;s://\(.*\)//\(.*\)://\2\1:;tr' $FILE #latest working one
+	#sed -i 's:\(.*\)/[*]\(.*\)[*]/:\1 // \2:' $FILE #used for replacing single line /*..*/ comments to //
+	#sed -i 's:(.*)/[*](.*)[*]/:\1 // \2:' $FILE #used for replacing single line /*..*/ comments to //
+	#sed -i 's/todo  / TODO -/I' $FILE #used for replacing case insensitive todo with TODO
+	#sed -i 's/note/ NOTE -/I' $FILE #used for replacing case insensitive note with NOTE

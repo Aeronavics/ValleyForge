@@ -16,17 +16,17 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###																														###
-### Name:		gen_nuttx_build																							###
-###																														###
-### Author:		Zane Barker																								###
-###																														###
-### Date Created:	27-11-2014																							###
-###																														###
-### Type:		Bash Script																								###
-###																														###
-### Purpose:		Provides functions which generate code which implements the NuttX platform.		 					###
-###																														###
+###
+### Name:		gen_nuttx_build
+###
+### Author:		Zane Barker
+###
+### Date Created:	27-11-2014
+###
+### Type:		Bash Function Definitions
+###
+### Purpose:		Provides functions which generate code which implements the NuttX platform.
+###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
@@ -35,14 +35,13 @@ echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
 
 ######################################## FUNCTION #########################################
-###																						###
-### Name:		gen_nuttx_build															###
-###																						###
-### Inputs/Outputs:	Takes the path to the source location where to place the code.		###
-###																						###
-### Purpose:		Fetches files which implements the NuttX platform. The 				###
-###			fetched files are then integrated with the user's application code.			###
-###																						###
+###
+### Name:		gen_nuttx_build
+###
+### Inputs/Outputs:	Takes the path to the source location where to place the code.
+###
+### Purpose:		Fetches files which implements the NuttX platform.
+###
 ###########################################################################################
 gen_nuttx_build()
 {
@@ -110,3 +109,5 @@ gen_nuttx_build()
 	# All done.
 	return 0
 }
+
+# ALL DONE.

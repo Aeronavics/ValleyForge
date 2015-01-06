@@ -67,12 +67,11 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
 #include "hal/hal.hpp"
 #include "hal/gpio.hpp"
-#include "hal/usart.hpp"
-#include "hal/targets/avr.hpp"
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 // DEFINE PRIVATE MACROS.
 
