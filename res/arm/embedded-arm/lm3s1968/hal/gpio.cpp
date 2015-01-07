@@ -39,15 +39,9 @@
 #include <hal/hal.hpp>
 #include <hal/gpio.hpp>
 
-#include <lm3s1968.h> // TODO: Remove when done developing
 #include <hw_memmap.h>
 #include <hw_types.h>
 #include <hw_gpio.h>
-
-// Increase pin access performance by disabling any pin mode checks
-// (which are usually unnecessary since the harwdare protects against invalid writes anyway).
-// Uncomment to disable checks
-#define DISABLE_CHECKS
 
 // Don't need a an imp class here; it adds unnecessary overhead.
 class Gpio_pin_imp { };
@@ -108,10 +102,6 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 	volatile uint32_t *pdr = (volatile uint32_t *)(gpio_base + GPIO_O_PDR);			// Pull-down resistor (0: Disabled, 1: Enabled)
 	volatile uint32_t *den = (volatile uint32_t *)(gpio_base + GPIO_O_DEN);			// Digital mode (0: Analog, 1: Digital)
 
-
-	//pin_mode = GPIO_OUTPUT;
-	//drive_mode = 0;
-	//extra_mode = 0;
 
 	switch (pin_mode)
 	{
@@ -226,12 +216,10 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 
 Gpio_input_state Gpio_pin::read(void)
 {
-#ifndef DISABLE_CHECKS
 	// Check we're not reading an output
 	Gpio_mode mode = pin_modes[pin_address.port][pin_address.pin];
 	if (mode != GPIO_INPUT && mode != GPIO_INPUT_ANALOG)
 		return GPIO_I_ERROR;
-#endif
 
 	// Optimized GPIO pin access
 	// This code uses a special feature of the Stellaris MCU where the memory offset
@@ -247,12 +235,10 @@ Gpio_input_state Gpio_pin::read(void)
 
 Gpio_io_status Gpio_pin::write(Gpio_output_state value)
 {
-#ifndef DISABLE_CHECKS
-	// Check we're not writing an input (1.9us)
+	// Check we're not writing an input
 	Gpio_mode mode = pin_modes[pin_address.port][pin_address.pin];
 	if (mode != GPIO_OUTPUT && mode != GPIO_OUTPUT_OPENDRAIN)
 		return GPIO_ERROR;
-#endif
 
 	// Optimized GPIO pin access
 	// This code uses a special feature of the Stellaris MCU where the memory offset
