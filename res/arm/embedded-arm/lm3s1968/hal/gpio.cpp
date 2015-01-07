@@ -31,6 +31,8 @@
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
+#include <stdint.h>
+
 #include "target_config.hpp"
 #include "bittwiddling.h"
 
@@ -42,6 +44,11 @@
 #include <hw_types.h>
 #include <hw_gpio.h>
 
+// Increase pin access performance by disabling any pin mode checks
+// (which are usually unnecessary since the harwdare protects against invalid writes anyway).
+// Uncomment to disable checks
+#define DISABLE_CHECKS
+
 // Don't need a an imp class here; it adds unnecessary overhead.
 class Gpio_pin_imp { };
 
@@ -51,7 +58,7 @@ static Gpio_mode pin_modes[NUM_PORTS][NUM_PINS];
 
 
 // Store the GPIO base addresses for each GPIO port
-static uint32_t gpio_base_addresses[NUM_PORTS] = { GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTC_BASE, GPIO_PORTD_BASE, GPIO_PORTE_BASE, GPIO_PORTF_BASE, GPIO_PORTH_BASE };
+static uint32_t gpio_base_addresses[NUM_PORTS] = { GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTC_BASE, GPIO_PORTD_BASE, GPIO_PORTE_BASE, GPIO_PORTF_BASE, GPIO_PORTG_BASE, GPIO_PORTH_BASE };
 
 
 
@@ -101,6 +108,10 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 	volatile uint32_t *pdr = (volatile uint32_t *)(gpio_base + GPIO_O_PDR);			// Pull-down resistor (0: Disabled, 1: Enabled)
 	volatile uint32_t *den = (volatile uint32_t *)(gpio_base + GPIO_O_DEN);			// Digital mode (0: Analog, 1: Digital)
 
+
+	//pin_mode = GPIO_OUTPUT;
+	//drive_mode = 0;
+	//extra_mode = 0;
 
 	switch (pin_mode)
 	{
@@ -215,34 +226,52 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 
 Gpio_input_state Gpio_pin::read(void)
 {
+#ifndef DISABLE_CHECKS
 	// Check we're not reading an output
 	Gpio_mode mode = pin_modes[pin_address.port][pin_address.pin];
 	if (mode != GPIO_INPUT && mode != GPIO_INPUT_ANALOG)
 		return GPIO_I_ERROR;
+#endif
 
-	uint32_t gpio_base = gpio_base_addresses[pin_address.port];
+	// Optimized GPIO pin access
+	// This code uses a special feature of the Stellaris MCU where the memory offset
+	// also masks out which pins are modified, allowing a pin to be read or written in
+	// a single access.
 
-	// Use special mask-addressing to access the pin value (see the datasheet)
-	return (HWREG(gpio_base + (GPIO_O_DATA + (pin_address.pin << 2))) != 0) ?
-		GPIO_I_HIGH : GPIO_I_LOW;
+	// Since there is only one bit masked, we can just check it as if it was a boolean
+	// and then return an appropriate value.
+
+	return HWREG(gpio_base_addresses[pin_address.port] + GPIO_O_DATA + ((1<<pin_address.pin)<<2))
+		? GPIO_I_HIGH : GPIO_I_LOW;
 }
 
 Gpio_io_status Gpio_pin::write(Gpio_output_state value)
 {
-	// Check we're not writing an input
+#ifndef DISABLE_CHECKS
+	// Check we're not writing an input (1.9us)
 	Gpio_mode mode = pin_modes[pin_address.port][pin_address.pin];
 	if (mode != GPIO_OUTPUT && mode != GPIO_OUTPUT_OPENDRAIN)
 		return GPIO_ERROR;
+#endif
 
-	uint32_t gpio_base = gpio_base_addresses[pin_address.port];
+	// Optimized GPIO pin access
+	// This code uses a special feature of the Stellaris MCU where the memory offset
+	// also masks out which pins are modified, allowing a pin to be read or written in
+	// a single access.
+
+	// Since there is only one bit masked, we can just write 0xFFFFFFFF
+	// instead of having to calculate the actual pin value. Only the
+	// bit specified by pin_address.pin will actually be modified.
 
 	if (value == GPIO_O_TOGGLE)
 	{
-		HWREG(gpio_base + (GPIO_O_DATA + (pin_address.pin << 2))) = ~HWREG(pin_address.port + (GPIO_O_DATA + (pin_address.pin << 2)));
+		HWREG(gpio_base_addresses[pin_address.port] + GPIO_O_DATA + ((1<<pin_address.pin)<<2))
+			^= 0xFFFFFFFF;
 	}
 	else
 	{
-		HWREG(gpio_base + (GPIO_O_DATA + (pin_address.pin << 2))) = (value & 1);  // &1 for safety.
+		HWREG(gpio_base_addresses[pin_address.port] + GPIO_O_DATA + ((1<<pin_address.pin)<<2))
+			= (value) ? 0xFFFFFFFF : 0x00000000;
 	}
 
 	return GPIO_SUCCESS;

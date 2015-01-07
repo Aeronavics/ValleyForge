@@ -51,6 +51,10 @@ pin.configure(GPIO_OUTPUT | GPIO_FLAG_DRIVE_8MA | GPIO_FLAG_OPENDRAIN);
 pin.configure(GPIO_INPUT);
 '''
 	
+**Performance:**
+There is always some tradeoff in performance when abstracting away hardware functionality, but the performance hit is usually worth it for the increased abstraction. In most cases this performance hit is negligible, and for a typical GPIO write on the LM3S1968, the HAL implementation is only 4x slower than raw hardware access.
+
+However care should be taken to avoid repeatedly configuring a Gpio_pin object as this can incur quite a performance hit. (As it needs to check all the provided values and configure necessary registers one by one). If you need performance out of the GPIO HAL library, you should only create and configure the Gpio_pin object once outside of the critical loop.
 
 ===== UART =====
 TODO: Description of the UART module and allowable config values
