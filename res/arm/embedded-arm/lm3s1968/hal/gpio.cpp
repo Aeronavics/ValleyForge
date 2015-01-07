@@ -32,22 +32,23 @@
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 #include "target_config.hpp"
-#include "hw_memmap.h"
-#include "hw_types.h"
-#include "hw_gpio.h"
 #include "bittwiddling.h"
 
-#include <stdio.h>
 #include <hal/hal.hpp>
 #include <hal/gpio.hpp>
-#include <io.h>
 
-// Don't need a an imp class here.
+#include <lm3s1968.h> // TODO: Remove when done developing
+#include <hw_memmap.h>
+#include <hw_types.h>
+#include <hw_gpio.h>
+
+// Don't need a an imp class here; it adds unnecessary overhead.
 class Gpio_pin_imp { };
 
 
 // The currently configured mode for all GPIO pins
 static Gpio_mode pin_modes[NUM_PORTS][NUM_PINS];
+
 
 // Store the GPIO base addresses for each GPIO port
 static uint32_t gpio_base_addresses[NUM_PORTS] = { GPIO_PORTA_BASE, GPIO_PORTB_BASE, GPIO_PORTC_BASE, GPIO_PORTD_BASE, GPIO_PORTE_BASE, GPIO_PORTF_BASE, GPIO_PORTH_BASE };
@@ -71,12 +72,13 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 	{
 		// Enable the GPIO peripheral clock, and wait at least 3 clock cycles
 		bit_set(SYSCTL_RCGC2_R, pin_address.port);
-
-		// TODO: Wait 3 clock cycles
+		nop();
+		nop();
+		nop();
 	}
 
 	// The provided mode can contain multiple options (bitwise ORed together)
-	Gpio_mode pin_mode = (mode & 0x000F);
+	Gpio_mode pin_mode = (Gpio_mode)(mode & 0x000F);
 	unsigned int drive_mode = (mode & 0x00F0);	// Drive strength
 	unsigned int extra_mode = (mode & 0x0F00); 	// Pull down/up, etc.
 
@@ -207,6 +209,8 @@ Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 	// Set the global pin mode
 	// Note that the extra flags are not stored in this.
 	pin_modes[pin_address.port][pin_address.pin] = pin_mode;
+
+	return GPIO_SUCCESS;
 }
 
 Gpio_input_state Gpio_pin::read(void)

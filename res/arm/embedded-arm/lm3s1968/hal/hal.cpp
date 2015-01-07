@@ -33,7 +33,7 @@
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
 
-#include <io.h>
+#include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
 // DEFINE PRIVATE MACROS.
 
@@ -53,6 +53,7 @@ void int_on(void)
 bool int_off(void)
 {
 	// TODO
+	return false;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.

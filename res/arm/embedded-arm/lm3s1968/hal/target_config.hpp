@@ -87,6 +87,9 @@ enum Gpio_mode
 #define GPIO_FLAG_PULLDOWN	0x0200
 #define GPIO_FLAG_OPENDRAIN 0x0400	// GPIO_OUTPUT only.
 
+// For backwards compatibility
+#define GPIO_OUTPUT_PP GPIO_OUTPUT	// PL = Push-pull. ie. regular output
+#define GPIO_INPUT_FL GPIO_INPUT	// FL = Floating. ie. regular input
 
 
 #endif // __TARGET_CONFIG_H__
