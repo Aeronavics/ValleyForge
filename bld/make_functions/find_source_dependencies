@@ -1,0 +1,91 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:			find_source_dependencies
+###
+### Author:			Zane Barker
+###
+### Date Created:	08-01-2015
+###
+### Type:			Bash Script
+###
+### Purpose:		Finds the list of .c/.cpp/.s files that are required depended on
+###
+###########################################################################################################################
+
+
+######################################## FUNCTION ####################################################
+###
+### Name:			find_source_dependencies
+###
+### Inputs/Outputs:	1. The directory containing the file which is being examined for dependencies.
+###					2. The name of the file which is being examined for dependencies.
+###
+### Purpose:		Finds the list of .c/.cpp/.s source files that are required depended on to
+###					compile a given file.
+###
+######################################################################################################
+
+find_source_dependencies() {
+	pushd $1 >/dev/null
+
+	echo -e "${CYAN}\t\t\tDetecting source files....\n${NO_COLOUR}"
+	SRC_STRING=
+	ASRCS=
+	CSRCS=
+	# Find the source files required to build the application
+	find_source_dependencies_recursive $2
+
+	# Split up the assembly and C/CPP files
+	for SRC in $SRC_STRING; do
+		if [[ ${SRC} == *.s ]]; then
+			ASRCS="$SRC $ASRCS"
+		else
+			CSRCS="$SRC $CSRCS"
+		fi
+	done
+	echo -e "${CYAN}\t\t\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
+	echo -e "${CYAN}\t\t\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
+
+	popd >/dev/null
+}
+
+######################################## FUNCTION ####################################################
+###
+### Name:			find_source_dependencies_recursive
+###
+### Inputs/Outputs:	1. The name of the file which is being examined for dependencies.
+###
+### Purpose:		Recusively examines each source file that is found to discover any nested
+###					dependencies.
+###
+######################################################################################################
+
+find_source_dependencies_recursive() {
+	local DEPENDENCIES
+
+	# Use gcc to detect the local .h dependencies, remove the object file reference, convert assembly headers into assembly filenames, swap all remaining instances of .h for .c and remove any instances of $1.
+	DEPENDENCIES=$(gcc -MM ${1} | sed "s^.*: ^^g" | sed "s^\\.hs^\\.s^g" | sed "s^\\.h^\\.c^g" | sed "s^${1}^^g")
+	# Add each dependency to the list and search of any dependencies of its own.
+	for WORD in $DEPENDENCIES; do
+		SRC_STRING="${WORD} $SRC_STRING"
+		find_source_dependencies_recursive $WORD
+	done
+}
+
