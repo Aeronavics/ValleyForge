@@ -43,7 +43,6 @@ compliance_check_file_varname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-	# Define internal functions.
 
 	check_line()
 	{
@@ -65,109 +64,121 @@ compliance_check_file_varname()
 		#temp variable which should not be empty at the beginning
 		indiv_string="just text"
 
-		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" || "$1" =~ "return" || "$1" =~ "struct" ]]; then			
+		#Condition to avoid comment lines and false positives with pattern similar to variable declarations and initialisations.
+		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" || "$1" =~ "return" || "$1" =~ "struct" || "$1" =~ "class" ]]; then			
 			return 0
 
-		#This is for lines which have multiple variables e.g. int a, b, c; Also single variable declarations e.g. int a;
+		#Condition to match lines which have multiple variables e.g. int a, b, c; Also single variable declarations e.g. int a;
 		elif [[ $1 =~ $pattern_declar ]]; then
 			strcount=0
 
+			#Loop to get the strings before actual variable name
 			while [[ $indiv_string != "" ]];
 			do
 				strcount=$((strcount+1))
 				indiv_string=`echo "$1" | cut -d ' ' -f $strcount`
 
+				#If the string contains "," or ";", it is a variable name
 				if [[ $indiv_string =~ "," || $indiv_string =~ ";" && ! $indiv_string =~ "(" ]]; then
 
+					#Condition to check the presence of array variables.
+					if [[ $indiv_string =~ "[" ]]; then
+						indiv_string=${indiv_string%[*}
+					fi
+
+					#Condition to check for variable name's validity
 					if [[ "$indiv_string" =~ [A-Z] ]]; then
-						ERROR="$indiv_string -contains upper case characters."
+						ERROR="$indiv_string contains upper case characters."
 
 						return 1
 					fi
 				fi
 			done
 
-		
+		#Condition to detect where a single line contains both declarations and initialisations. (To avoid confusions)
 		elif [[ $1 =~ $pattern_both && ! $1 =~ $pattern_declar && ! $1 =~ $pattern_init ]]; then
-
 			ERROR="$1 contains both variable declarations and initialisations"		
 
 			return 1
 
-		#This is for lines with variable initialisation as in int a=90;
+		#Condition to match lines with variable initialisation as in int a=90;
 		elif [[ $1 =~ $pattern_init ]]; then 
 
-			#Condition to check for variables with initialisation
-			if [[ $1 =~ \= && ! $1 =~ "," ]]; then
-						
+			#Condition to check for initialisation of single variable.
+			if [[ $1 =~ \= && ! $1 =~ "," ]]; then			
 				indiv_string="adsasd"
 				first_str=${1%=*}
 				strcount=0
 				
+				#Loop to get the strings before actual variable name
 				while [[ $indiv_string != "" ]];
 				do
 					strcount=$((strcount+1))
 					indiv_string=`echo "$first_str" | cut -d ' ' -f $strcount`
 
+					#Condition to obtain the required variable name
 					if [[ $indiv_string != "" ]]; then
 						req_str=$indiv_string
 					fi
 						
 				done
 
+				#Condition to check for variable name's validity
 				if [[ "$req_str" =~ [A-Z] ]]; then
-					ERROR="$req_str --contains upper case characters."
+					ERROR="$req_str contains upper case characters."
 					return 1
 				fi
-				
-				elif [[ $1 =~ \= && $1 =~ "," ]]; then
 
-					#temp variable which should not be empty at the beginning
-					indiv_string1="just text"
-					strcount1=0
+			#Condition to check for initialisation of multiple variables.
+			elif [[ $1 =~ \= && $1 =~ "," ]]; then
 
-					while [[ $indiv_string != "" ]];
-					do
-						strcount1=$((strcount1+1))
-						indiv_string=`echo "$1" | cut -d ',' -f $strcount1`
+				#temp variable which should not be empty at the beginning
+				indiv_string1="just text"
+				strcount1=0
+
+				while [[ $indiv_string != "" ]];
+				do
+					strcount1=$((strcount1+1))
+					indiv_string=`echo "$1" | cut -d ',' -f $strcount1`
 						
-						#This is to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
-						if [[ $strcount1 == "1" ]]; then
-							first_str=${indiv_string%=*}
-							strcount=0
+					#Condition to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
+					if [[ $strcount1 == "1" ]]; then
+						first_str=${indiv_string%=*}
+						strcount=0
 				
-							while [[ $indiv_string1 != "" ]];
-							do
-								strcount=$((strcount+1))
-								indiv_string1=`echo "$first_str" | cut -d ' ' -f $strcount`
+						while [[ $indiv_string1 != "" ]];
+						do
+							strcount=$((strcount+1))
+							indiv_string1=`echo "$first_str" | cut -d ' ' -f $strcount`
 
-								if [[ $indiv_string1 != "" ]]; then
-									req_str=$indiv_string1
-								fi
-							
-							done
-
-							if [[ "$req_str" =~ [A-Z] ]]; then
-								ERROR="$req_str ---contains upper case characters."
-
-								return 1
+							if [[ $indiv_string1 != "" ]]; then
+								req_str=$indiv_string1
 							fi
+							
+						done
 
+						#Condition to check for variable name's validity
+						if [[ "$req_str" =~ [A-Z] ]]; then
+							ERROR="$req_str contains upper case characters."
+
+							return 1
 						fi
+
+					#Condition to match the latter parts of the string which are similiar. E.g. static int a = 0, "temp = 90, temp2 = 8;"  
+					else
 
 						str_var=${indiv_string%=*}
 
-						if [[ $str_var =~ "," || $str_var =~ ";" && ! $str_var =~ "(" ]]; then
+						#Condition to check for variable name's validity
+						if [[ "$str_var" =~ [A-Z] ]]; then
+							ERROR="$str_var contains upper case characters."
 
-							if [[ "$str_var" =~ [A-Z] ]]; then
-								ERROR="$str_var ----contains upper case characters."
-
-								return 1
-							fi
+							return 1
 						fi
-					done				
-				fi
+					fi	
+				done				
 			fi
+		fi
 
 		# The line seems ok, so return zero.
 		return 0
@@ -228,12 +239,12 @@ compliance_check_file_varname()
 	
 	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_line "exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
+		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_varname" $1 "This file contains a non-compliant variable name."
+		compliance_fail_file "compliance_check_file_varname" $1 "This file contains non-compliant variable name(s)."
 	fi
 
 	# All done.

@@ -1,0 +1,156 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           checkfuncs_headerguard
+###
+### Author:         Ravi Shankar
+###
+### Date Created:	08-01-2015
+###
+### Type:           Bash Function Definitions
+###
+### Purpose:        Implements code compliance tests: tests for include guards in header files.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_headerguard
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:	Tests a single C/CPP header file for include guards.
+###
+###########################################################################################
+
+compliance_check_file_headerguard()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	if [[ $FILE =~ ".hpp" || $FILE =~ ".h" ]]; then
+
+		linecount=0
+		lastoccur=0
+		count=0
+		endcount=0
+		splcount=0
+		endif_count=0
+		ifndef_count=0
+
+		# Need to keep track of the line number we are up to.
+		local LINE_NUM=
+
+		# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+		local CHECKS_OK=1
+
+		# Initially, we are checking.
+		local CHECKS_EN=1
+
+		#variable for counting the number of lines disabled.
+		local DISABLED_LINE_COUNT=0
+
+		while read LINE
+		do
+			# Increment the line number.
+  			((LINE_NUM++))
+			name=$LINE
+			size=${#name}
+
+  			if [ ${CHECKS_EN} ]; then
+  				# Check to see whether this line disables checking temporarily.
+  				if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+				
+  					CHECKS_EN=
+  					continue
+  				fi
+
+				if [[ "$name" != ['*']* && "$name" != [/]* && "$name" != "" && $size != 1 && $name != "{" && $name != "}" ]]; then
+					
+					linecount=$((linecount+1))
+					splcount=$LINE_NUM
+
+					if [[ "$name" =~ "#endif" ]]; then
+						endcount=$LINE_NUM
+						endif_count=$((endif_count+1))
+					fi
+
+					if [[ "$name" =~ "#ifndef" || "$name" =~ "#if" ]]; then
+						ifndef_count=$((ifndef_count+1))
+					fi
+			fi
+
+
+  			else
+	
+				DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
+
+  				# Checking is temporarily disabled, so all we do is see if this line enables them again.
+  				if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+  					# Enable checking again.
+  					CHECKS_EN=1
+  				fi
+  			fi
+
+		done < $FILE
+
+
+		if [[ $linecount -gt 0 ]]; then
+
+			if [[ "$splcount" != "$endcount" || "$ifndef_count" != "$endif_count" ]]; then
+				CHECKS_OK=
+			fi
+
+		fi
+
+		local LINE_THRESH=$((LINE_NUM/10))
+	
+		#Check if the number of lines disabled is lesser than the threshold
+		if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+			compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+		fi   
+
+		if [ ! ${CHECKS_OK} ]; then
+			# Report that the file has failed.
+			compliance_fail_file "compliance_check_file_headerguard" $1 "This file contains violations of conventions in include guards."
+		fi
+
+	# All done.
+	fi
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_get_rules_headerguard
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:	Prints out a summary of the code compliance rules for the headerguard test.
+###
+###########################################################################################
+
+compliance_get_rules_headerguard()
+{
+	echo "headerguard:"
+	echo "\tAll C++ anc C header files should contain header guards."
+	echo ""
+}
+
+# ALL DONE.

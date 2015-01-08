@@ -22,11 +22,14 @@ echo -e "${RED}ERROR(S) IN HEADER GUARDS in directory ${CYAN}$1\n${NO_COLOUR}"
 
 #This for loop is responsible for looping through all files with required file formats (.c, .cpp, .h, .hpp, .pde) in the ValleyForge directory
 for FILE in $(find $1 -name "*.hpp" -o -name "*.h"); do
+echo $FILE
 linecount=0
 lastoccur=0
 count=0
 endcount=0
 splcount=0
+endif_count=0
+ifndef_count=0
 
 	while read line
 	do
@@ -40,15 +43,22 @@ splcount=0
 
 			if [[ "$name" =~ "#endif" ]]; then
 				endcount=$count
+				endif_count=$((endif_count+1))
 			fi
+
+			if [[ "$name" =~ "#ifndef" || "$name" =~ "#if" ]]; then
+				
+				ifndef_count=$((ifndef_count+1))
+			fi
+			
 
 		fi
 
 	done < $FILE
 
 		if [[ $linecount -gt 0 ]]; then
-
-			if [[ "$splcount" != "$endcount" ]]; then
+echo "splcount is $splcount, endcount is $endcount"
+			if [[ "$splcount" != "$endcount" || "$ifndef_count" != "$endif_count" ]]; then
 				echo -e "\n${YELLOW}WARNING: ${CYAN}$FILE ${YELLOW}has errors with header guards!!${NO_COLOUR}"
 				echo -e "${GREEN}--------------------------------------------------------------------------------\n\n${NO_COLOUR}"
 			fi

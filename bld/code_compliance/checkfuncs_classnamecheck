@@ -43,28 +43,32 @@ compliance_check_file_classnamecheck()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
+	
+	#Regex pattern to match structure names
 	pattern='[}]+[ ]*[a-zA-Z0-9]+;+'
+
 	# Define internal functions.
-	echo >&2 "inside $FILE"
+
 	check_line()
 	{
 	
-		#This condition is used for ignoring lines which include comments. 
+		#Condition used for ignoring lines which include comments. 
 		if [[ "$1" =~ ^/.*|^\*.* ]]; then
 		#If it is a comment line, do nothing
 			return 0
 		
-		#This part is for checking structure names that come in the format "} XYZ;"
+		#Condition for checking structure names that come in the format "} XYZ;"
 		elif [[ $1 =~ $pattern ]]; then
-
 			str_word=${1#\}*}
 
+			#Condition to obtain the first character of the structure name considering space between braces and name.
 			if [[ ${str_word:0:1} == " " ]]; then
 				str_firstchar=${str_word:0:2}
 			else
 				str_firstchar=${str_word:0:1}
 			fi 
 		
+			#Condition to check for lowercase letters
 			if [[ "$str_firstchar" =~ [a-z] ]]; then
 				ERROR="structure name $str_word doesn't begin with an uppercase letter."
 				return 1	
@@ -76,6 +80,7 @@ compliance_check_file_classnamecheck()
 			str_word=${1%\;*}
 			str_structname=${str_word##* }
 
+			#Condition to check for lowercase letters
 			if [[ ${str_structname:0:1} =~ [a-z] ]]; then
 				ERROR="structure name $str_structname doesn't begin with an uppercase letter."
 				return 1
@@ -86,34 +91,39 @@ compliance_check_file_classnamecheck()
 			case "$1" in
 	
 			#check for class names whether they start with an upper case letter
-			class*)
-				value=${1#*class } #E.g. This line obtains "XYZ" from string "class XYZ"
-				case ${value:0:1} in  #match with the first character
-					[[:upper:]])
-						#The class name is correct
-						return 0
- 		       			        ;;
- 		       			*)
-						ERROR="class name $value begins with lowercase letters."
-						return 1
-				                ;;
-				esac
+			*class*)
+
+				if [[ $1 =~ "friend" ]]; then
+					#This line obtains "XYZ" from string "class XYZ"
+					str_name=${1#*class }
+					#match with the first character 
+					case ${str_name:0:1} in  
+						[[:upper:]])
+							#The class name is correct
+							return 0
+ 			       			        ;;
+ 			       			*)
+							ERROR="class name $str_name begins with lowercase letters."
+							return 1
+					                ;;
+					esac
+				fi
 				;;
 	
 			#check for template names whether they have only a single uppercase letter
 			template*) 		
-				value=${1#*template<class }
-				value1=${value%>*}
-				size=${#value1}
-				case ${value:0:1} in
+				str_name=${1#*template<class }
+				case ${str_name:0:1} in
 					[[:upper:]])
 						if [[ $size != 1 ]]; then
-							ERROR="template name $value has more than one uppercase letter."
+							ERROR="template name $str_name has more than one uppercase letter."
+
 							return 1
 						fi
  				                ;;
  				        *)
-						ERROR="$value contains lowercase letters."
+						ERROR="$str_name contains lowercase letters."
+
 						return 1		        		
  					        ;;
 				esac
@@ -123,7 +133,7 @@ compliance_check_file_classnamecheck()
 	return 0
 	}
 
-# Need to keep track of the line number we are up to.
+	# Need to keep track of the line number we are up to.
 	local LINE_NUM=
 
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
@@ -178,12 +188,12 @@ compliance_check_file_classnamecheck()
 	
 	#Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_line "exception_limits" $1 $DISABLED_LINE_COUNT "A suspiciously high number of lines have compliance testing disabled."
+		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains a non-compliant class/structure/template name."
+		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains non-compliant class/structure/template name(s)."
 	fi
 
 	# All done.

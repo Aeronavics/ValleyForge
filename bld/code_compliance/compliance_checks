@@ -93,6 +93,9 @@ compliance_check_directory()
 	# Record the output file.
 	COMPLIANCE_OUTPUT_FILEPATH=$2
 
+	# Record the input directory in a variable to be used by compliance scripts
+	COMPLIANCE_INPUT_DIRECTORY=$1
+
 	# Initially, the number of errors or warnings is zero.
 	COMPLIANCE_NUM_ERRORS=0
 	COMPLIANCE_NUM_WARNINGS=0
@@ -116,7 +119,7 @@ compliance_check_directory()
 			# Test if this check is actually enabled in our current configuration.
 			if ! compliance_lookup_test ${CHECK}; then
 				# Perform the check.
-				echo "check is performed ${CHECK}"
+				#echo "check is performed ${CHECK}"
 				${CHECK} ${FILE}
 			fi
 		done

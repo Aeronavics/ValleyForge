@@ -17,58 +17,76 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_filenamesplchar
+### Name:           checkfuncs_headercheck
 ###
 ### Author:         Ravi Shankar
 ###
-### Date Created:	06-01-2015
+### Date Created:	08-01-2015
 ###
 ### Type:           Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for file name's validity.
+### Purpose:        Implements code compliance tests: tests for corresponding header files.
 ###
 ###########################################################################################################################
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_filenamesplchar
+### Name:		compliance_check_file_headercheck
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file's name for validity.
+### Purpose:	Tests a single C/CPP source file for a matching header file.
 ###
 ###########################################################################################
 
-compliance_check_file_filenamesplchar()
+compliance_check_file_headercheck()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-	echo >&2 "inside $FILE"
-	filename=$(basename "$1")
-	valcase='0-9a-z_.'
-	path="${FILE%.*}"
-	filename="${filename%.*}"
 
-		if [[ "$filename" =~ [^$valcase] ]]; then
-			compliance_fail_file "compliance_check_file_filenamesplchar" $1 "This file's name contains invalid characters"	
+	#Extract the filename from the entire path
+	filename_ext=$(basename "$1")
+
+	#Condition to check if the file is a "C++" or "C" file.
+	if [[ $filename_ext =~ ".cpp" || $filename_ext =~ ".c" ]]; then
+		
+		#Extract the filename alone without the extension
+		filename="${filename_ext%.*}"
+
+		#Condition to match C++ file
+		if [[ $filename_ext =~ ".cpp" ]]; then
+			headerfile=$filename".hpp"
+
+		#Condition to match C file
+		elif [[ $filename_ext =~ ".c" ]]; then
+			headerfile=$filename".h"
 		fi
+		
+		#Condition to check if the file has a matching header file.
+		if [[ ! $(find $COMPLIANCE_INPUT_DIRECTORY -type f -name $headerfile) ]]; then
+			compliance_fail_file "compliance_check_file_headercheck" $1 "This file doesn't have a matching header"
+
+		fi
+
+	fi
+
 	return 0
 }
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_get_rules_filenamesplchar
+### Name:		compliance_get_rules_headercheck
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the filenamesplchar test.
+### Purpose:	Prints out a summary of the code compliance rules for the headercheck test.
 ###
 ###########################################################################################
 
-compliance_get_rules_filenamesplchar()
+compliance_get_rules_headercheck()
 {
-	echo "filenamesplchar:"
-	echo "\tFile names should not contain space characters or special characters other than underscore or uppercase letters"
+	echo "headercheck:"
+	echo "\tAll C++ anc C files should have a correspinding header file."
 	echo ""
 }
 
