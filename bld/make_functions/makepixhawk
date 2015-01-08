@@ -57,6 +57,36 @@ makepixhawk_armcortex()
 		return 1
 	fi
 
+	# Check if the USB Device Configuration file exists. If it is missing, it is likely the rest of the build environment is not configured correctly either.
+	type genromfs >/dev/null 2>&1
+	if [ -e "/etc/udev/rules.d/10-px4.rules" ]; then
+		# The system is not configured to build the Pixhawk Firmware
+		echo -e "${YELLOW}System is not properly configured for a Pixhawk build.\n${NO_COLOUR}"
+
+		# Prompt the user.
+		echo -ne "${GREEN}Would you like to automatically configure the build environment now?\n${NO_COLOUR}"
+		echo -e "${GREEN}NOTE: This process requires elevated priviledges. You will be prompted for a sudo-capable password.\n${NO_COLOUR}"
+
+		# Read a single character input and select the appropriate response.
+		read -s -n 1
+		echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+		case "$REPLY" in
+			"Y" | "y" )
+				# Run the configuration script
+				makepixhawk_configure_environment
+				;;
+			"N" | "n" )
+				# The user does not want to automatically configure the environment, so we'll quit.
+				exit 0
+				;;
+			* )
+				# Unexpected response. Terminating script.
+				echo -e "${RED}Unexpect response. Terminating script.\n${NO_COLOUR}"
+				exit 1
+				;;
+		esac
+	fi
+
 	# TODO - Unpacking the compiler won't help, because at the moment Pixhawk won't use the version we unpack.
 
 	# Set up the native compiler.
@@ -173,7 +203,7 @@ makepixhawk_configure_apps()
 		shopt -u extglob nullglob
 
 		# For each executable, we'll need to build a separate application directory.
-		echo -e "${CYAN}\t\tBuilding NuttX application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
+		echo -e "${CYAN}\t\tBuilding Pixhawk application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
 
 		# Create a directory for the application inside Firmware/src/modules.
 		mkdir $1/Firmware/src/modules/$EXECUTABLE
@@ -182,7 +212,7 @@ makepixhawk_configure_apps()
 
 		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
 
-		# Copy the NuttX application files to the new application directory.
+		# Copy the Pixhawk application files to the new application directory.
 		shopt -s extglob
 		for SRC in $SRC_STRING; do
 			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/Firmware/src/modules/$EXECUTABLE
@@ -212,5 +242,62 @@ makepixhawk_configure_apps()
 	return 0
 }
 shopt -u extglob
+
+######################################## FUNCTION #########################################
+###
+### Name:			makepixhawk_configure_environment
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Performs the necessary tasks to configure the system for building
+###					the Pixhawk firmware.
+###					This only works on machines running Ubuntu.
+###
+###########################################################################################
+
+makepixhawk_configure_environment()
+{
+	if [ -z "$(uname -a | grep "Ubuntu")" ]; then
+		echo -e "${RED}OS is not Ubuntu. Cannot configure build environment automatically.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	echo -e "${CYAN}Configuring the Build Environment.\n${NO_COLOUR}"
+
+	echo -e "${CYAN}Installing the necessary packages.\n${NO_COLOUR}"
+
+	sudo apt-get update
+	sudo apt-get install python-serial python-argparse openocd flex bison libncurses5-dev autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev genromfs git wget
+
+	sudo apt-get install ia32-libs-multiarch
+	if [ $? != 0 ]; then
+		sudo apt-get install libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386
+	fi
+
+	echo -e "${CYAN}Configuring USB Device Configuration.\n${NO_COLOUR}"
+
+	echo -e "# All 3D Robotics (includes PX4) devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"26AC\", GROUP=\"plugdev\"\n \
+	# FTDI (and Black Magic Probe) Devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"0483\", GROUP=\"plugdev\"\n \
+	# Olimex Devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"15ba\", GROUP=\"plugdev\"\n" > $HOME/rule.tmp
+	sudo mv $HOME/rule.tmp /etc/udev/rules.d/10-px4.rules
+	sudo restart udev
+
+	echo -e "${CYAN}Registering GCC with Pixhawk Build System.\n${NO_COLOUR}"
+	#https://pixhawk.org/dev/toolchain_installation_lin#arm_toolchain_for_all_linux_distros
+	pushd .
+	cd ~
+	wget https://launchpadlibrarian.net/186124160/gcc-arm-none-eabi-4_8-2014q3-20140805-linux.tar.bz2
+	tar -jxf gcc-arm-none-eabi-4_8-2014q3-20140805-linux.tar.bz2
+	exportline="export PATH=$HOME/gcc-arm-none-eabi-4_8-2014q3/bin:\$PATH"
+	if grep -Fxq "$exportline" ~/.bashrc; then echo "nothing to do" ; else echo $exportline >> ~/.bashrc; fi
+	. ~/.bashrc
+	popd
+
+	echo -e "${CYAN}\nBuild Environment Configured. Please log out and log in again to complete the process.\n${NO_COLOUR}"
+	exit 0
+}
 
 # ALL DONE.
