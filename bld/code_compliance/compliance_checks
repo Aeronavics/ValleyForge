@@ -118,12 +118,25 @@ compliance_check_directory()
 	# Check if at least one type of check if available.
 	if [ -z "${CHECKS}" ]; then
 		# There aren't any checks to perform.
-		echo -e "${YELLOW}No code compliance checks seem to be available.\n${NO_COLOUR}"
+		echo -e "${YELLOW}\tNo code compliance checks seem to be available.\n${NO_COLOUR}"
 		return 0
 	fi
 
+	# Construct a string with any required prune statements for files that should not be checked.
+	COMPLIANCE_MASK_STRING=
+	if [ -n "${COMPLIANCE_MASK}" ]; then
+		echo -e "${YELLOW}\tNot checking some files according to mask: ${COMPLIANCE_MASK}\n${NO_COLOUR}"
+		for COMPLIANCE_MASK_WORD in ${COMPLIANCE_MASK}; do
+			COMPLIANCE_MASK_STRING+=" -wholename $1/${COMPLIANCE_MASK_WORD} -prune -o"
+		done
+	fi
+
 	# Since it's easier to have the results ordered by file, iterate over the candidate files first.
-	for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
+	for FILE in $(find $1 ${COMPLIANCE_MASK_STRING} -name "*.cpp" -print \
+												 -o -name "*.hpp" -print \
+												 -o -name "*.c" -print \
+												 -o -name "*.h" -print \
+												 -o -name "*.pde" -print); do
 		echo -e "${CYAN}\tChecking code compliance: ${FILE}"
 
 		# Iterate over each of the checks.
@@ -140,19 +153,19 @@ compliance_check_directory()
 	# Check whether any error were reported.
 	if [ ${COMPLIANCE_NUM_ERRORS} -gt 0 ]; then
 		# At least one error occurred, so we return indicating there is a problem.
-		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_ERRORS} errors, and ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${RED}${COMPLIANCE_NUM_ERRORS} errors${CYAN}, and ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 1
 	fi
 
 	# Check whether any warnings were reported.
 	if [ ${COMPLIANCE_NUM_WARNINGS} -gt 0 ]; then
 		# At least one warning occurred, so we print a message, but return that everything seemed ok.
-		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 0
 	fi
 
 	# Else return that the checks went ok.
-	echo -e "\n${CYAN}Code compliance testing complete.\n${NO_COLOUR}"
+	echo -e "\n${CYAN}\tCode compliance testing complete.\n${NO_COLOUR}"
 	return 0
 }
 
