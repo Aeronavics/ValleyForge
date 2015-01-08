@@ -180,7 +180,7 @@ compliance_check_file_constname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
-	# Variable for counting the number of lines disabled.
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
 	# Iterate over each of the lines in the file.

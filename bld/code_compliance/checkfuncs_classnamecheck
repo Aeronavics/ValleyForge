@@ -183,7 +183,7 @@ compliance_check_file_classnamecheck()
 	done < $FILE
 
 
-	
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	#Check if the number of lines disabled is lesser than the threshold
