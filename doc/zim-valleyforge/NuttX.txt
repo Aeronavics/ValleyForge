@@ -1,0 +1,7 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-07T07:55:13+13:00
+
+====== NuttX ======
+
+[[NuttX]] is the real-time operating system that the Pixhawk autopilot system runs on. It is designed to comply with POSIX and ANSI standards and runs on a range of different microcontrollers (from 8-bit ATmega cores to 32-bit ARM cores). A complete list of the supported devices can be found [[http://www.nuttx.org/Documentation/NuttX.html#platforms|here]].
