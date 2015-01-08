@@ -45,6 +45,9 @@ VENDOR_FREERTOS_REMOTE="http://sourceforge.net/projects/freertos/files/latest/do
 VENDOR_NUTTX_LOCAL=${TCPATH}/res/vendor/nuttx
 VENDOR_NUTTX_REMOTE="git://git.code.sf.net/p/nuttx/git"
 
+VENDOR_PIXHAWK_LOCAL=${TCPATH}/res/vendor/pixhawk
+VENDOR_PIXHAWK_REMOTE="https://github.com/PX4/Firmware"
+
 VENDOR_LM4TOOLS_LOCAL=${TCPATH}/res/vendor/lm4tools
 VENDOR_LM4TOOLS_REMOTE="https://github.com/utzig/lm4tools.git"
 
@@ -167,6 +170,54 @@ unpack_nuttx()
 			popd >/dev/null
 		fi
 	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###																						###
+### NAME:		unpack_pixhawk															###
+###																						###
+### Inputs/Outputs:	None.																###
+###																						###
+### Purpose:		Checks if the Pixhawk vendor source is available for use, and		###
+###			if not, sets it up ready to go.												###
+###																						###
+###########################################################################################
+
+unpack_pixhawk()
+{
+	# Check if the Pixhawk source has been downloaded already
+	if [ ! -d ${VENDOR_PIXHAWK_LOCAL} ]; then
+		# We need to download the source before we can use it
+		echo -e "${CYAN}\tDownloading the Pixhawk vendor source...\n${NO_COLOUR}"
+		git clone ${VENDOR_PIXHAWK_REMOTE} ${VENDOR_PIXHAWK_LOCAL}
+		echo -e ""
+	else
+		# Check if the directory is not actually a git repository, which would indicate something bad.
+		if [ ! -d ${VENDOR_PIXHAWK_LOCAL}/.git ]; then
+			# The directory isn't a git repository, so something is very wrong.
+			echo -e "${RED}The directory ${VENDOR_PIXHAWK_LOCAL} is not a git repository. Cannot unpack Pixhawk source.\n${NO_COLOUR}"
+			return 1
+		else
+			# The repository already exists, so just need to make sure it is up to date.
+			echo -e "${CYAN}\tUpdating the Pixhawk vendor source...\n${NO_COLOUR}"
+			pushd ${VENDOR_PIXHAWK_LOCAL} >/dev/null
+			git pull
+			echo -e ""
+			popd >/dev/null
+		fi
+	fi
+
+	# Update the git submodules
+	echo -e "${CYAN}Updating the Pixhawk submodules.\n${NO_COLOUR}"
+	pushd "$VENDOR_PIXHAWK_LOCAL" >/dev/null
+	git submodule init
+	git submodule update
+	popd >/dev/null
 
 	# TODO - Test that now the required files actually exist.
 
