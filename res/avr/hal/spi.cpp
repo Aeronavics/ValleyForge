@@ -701,7 +701,7 @@ void Spi_imp::isr_transfer_complete()
 			set_ss(false);
 
 			if (async.cb_done != NULL)
-				async.cb_done(async.cb_p, SPI_IO_SUCCESS);
+				async.cb_done(async.cb_p, SPI_IO_SUCCESS, async.rx_data, async.size);
 		}
 		else if (async.tx_data != NULL)
 		{
@@ -1059,7 +1059,7 @@ void Usartspi_imp::isr_receive_byte(void *p)
 			imp->set_ss(false);
 
 			if (imp->async.cb_done != NULL)
-				imp->async.cb_done(imp->async.cb_p, SPI_IO_SUCCESS);
+				imp->async.cb_done(imp->async.cb_p, SPI_IO_SUCCESS, imp->async.rx_data, imp->async.size);
 
 			// Data is transmitted in the UDR interrupt.
 		}

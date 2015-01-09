@@ -62,11 +62,11 @@ public:
 
 	virtual Usart_io_status transmit_buffer(uint8_t* data, size_t size);
 
-	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, Usart_Data_Callback cb_done, void *context);
+	virtual Usart_io_status transmit_buffer_async(uint8_t* data, size_t size, Usart_Transmit_Callback cb_done, void *context);
 
 	virtual Usart_io_status transmit_string(char *string, size_t max_len);
 
-	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Data_Callback cb_done, void *context);
+	virtual Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Transmit_Callback cb_done, void *context);
 
 
 	virtual int16_t receive_byte(void);
@@ -76,7 +76,7 @@ public:
 
 	virtual Usart_io_status receive_buffer(uint8_t *buffer, size_t size);
 
-	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done, void *context);
+	virtual Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Receive_Callback cb_done, void *context);
 
 
 	virtual void enable_interrupts(void);
@@ -133,7 +133,7 @@ public:  //// Asynchronous Interrupt Handling ////
 
 		Usart_async_mode mode;
 
-		Usart_Data_Callback cb_done;
+		Usart_Transmit_Callback cb_done;
 		void *cb_p;
 	} async_tx;
 
@@ -145,7 +145,7 @@ public:  //// Asynchronous Interrupt Handling ////
 		size_t size;
 		size_t index;
 
-		Usart_Data_Callback cb_done;
+		Usart_Receive_Callback cb_done;
 		void *cb_p;
 	} async_rx;
 

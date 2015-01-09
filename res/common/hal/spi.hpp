@@ -119,7 +119,7 @@ enum Spi_frame_format;
  *
  */
 
-typedef void (*Spi_Data_Callback)(void *p, Spi_io_status status);
+typedef void (*Spi_Data_Callback)(void *context, Spi_io_status status, uint8_t *rx_data, size_t size);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 

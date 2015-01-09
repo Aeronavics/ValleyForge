@@ -164,7 +164,8 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
 // Callback for asynchronous data transfers
-typedef void (*Usart_Data_Callback)(void *context, Usart_error_status status);
+typedef void (*Usart_Receive_Callback)(void *context, Usart_error_status status, uint8_t *rx_data, size_t size);
+typedef void (*Usart_Transmit_Callback)(void *context, Usart_error_status status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -285,7 +286,7 @@ class Usart
 		 * 							void callback(void *context, Usart_io_status status);
 		 * @return 				The status of the operation
 		 */
-		Usart_io_status transmit_buffer_async(uint8_t* buffer, size_t size, Usart_Data_Callback cb_done = nullptr, void *context = nullptr);
+		Usart_io_status transmit_buffer_async(uint8_t* buffer, size_t size, Usart_Transmit_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Transmits a null-terminated string of variable length up to max_len bytes, via the
@@ -314,7 +315,7 @@ class Usart
 		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return				The status of the operation
 		 */
-		Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Data_Callback cb_done = nullptr, void *context = nullptr);
+		Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Transmit_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Read a byte from the receive buffer, blocking if not yet available.
@@ -361,7 +362,7 @@ class Usart
 		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return 				The status of the operation
 		 */
-		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done = nullptr, void *context = nullptr);
+		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Receive_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Enable interrupt generation by this USART channel.

@@ -248,7 +248,7 @@ Usart_io_status Usart_imp::transmit_buffer(uint8_t* data, size_t size)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::transmit_buffer_async(uint8_t* data, size_t size, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart_imp::transmit_buffer_async(uint8_t* data, size_t size, Usart_Transmit_Callback cb_done, void *context)
 {
 	if (!transmitter_ready())
 		return USART_IO_BUSY;
@@ -286,7 +286,7 @@ Usart_io_status Usart_imp::transmit_string(char *string, size_t max_len)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart_imp::transmit_string_async(char *string, size_t max_len, Usart_Transmit_Callback cb_done, void *context)
 {
 	if (!transmitter_ready())
 		return USART_IO_BUSY;
@@ -372,7 +372,7 @@ Usart_io_status Usart_imp::receive_buffer(uint8_t *buffer, size_t size)
 	return USART_IO_SUCCESS;
 }
 
-Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart_imp::receive_buffer_async(uint8_t *data, size_t size, Usart_Receive_Callback cb_done, void *context)
 {
 	if (async_rx.active)
 		return USART_IO_BUSY;
@@ -673,7 +673,7 @@ void Usart_imp::isr_receive_byte(void)
 			// Inform the user the data has been received
 			if (async_rx.cb_done)
 			{
-				async_rx.cb_done(async_rx.cb_p, error_status);
+				async_rx.cb_done(async_rx.cb_p, error_status, async_rx.buffer, async_rx.size);
 			}
 
 			// Call the user ISR to tell that data has finished being received
@@ -1231,7 +1231,7 @@ Usart_io_status Usart::transmit_buffer(uint8_t *data, size_t size)
 	return imp->transmit_buffer(data, size);
 }
 
-Usart_io_status Usart::transmit_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart::transmit_buffer_async(uint8_t *data, size_t size, Usart_Transmit_Callback cb_done, void *context)
 {
 	return imp->transmit_buffer_async(data, size, cb_done, context);
 }
@@ -1241,7 +1241,7 @@ Usart_io_status Usart::transmit_string(char *data, size_t max_len)
 	return imp->transmit_string(data, max_len);
 }
 
-Usart_io_status Usart::transmit_string_async(char *data, size_t max_len, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart::transmit_string_async(char *data, size_t max_len, Usart_Transmit_Callback cb_done, void *context)
 {
 	return imp->transmit_string_async(data, max_len, cb_done, context);
 }
@@ -1261,7 +1261,7 @@ Usart_io_status Usart::receive_buffer(uint8_t *data, size_t size)
 	return imp->receive_buffer(data, size);
 }
 
-Usart_io_status Usart::receive_buffer_async(uint8_t *data, size_t size, Usart_Data_Callback cb_done, void *context)
+Usart_io_status Usart::receive_buffer_async(uint8_t *data, size_t size, Usart_Receive_Callback cb_done, void *context)
 {
 	return imp->receive_buffer_async(data, size, cb_done, context);
 }

@@ -112,9 +112,13 @@ Because asynchronous functions return immediately, you should always check the r
 
 Asynchronous transfers provide a callback which accepts a function with the following signature:
 '''
-void callback(void *context, Usart_error_status status)
+For TX: void callback(void *context, Usart_error_status status)
+For RX: void callback(void *context, Usart_error_status status, uint8_t *rx_data, size_t size)
 '''
 ''status'' will be ''USART_ERR_NONE'' if the operation succeeded, or some error code otherwise.
+''*rx_data'' will point to the rx buffer provided to the transfer buffer (which may be null), and ''size'' will contain the total number of received bytes.
+
+It is recommended that you make use of *context to pass user data, to avoid excessive use of global variables. For example, you could pass ''this'' or a pointer to a struct which contains local state.
 
 ===== Interrupts =====
 The USART library allows you to register interrupt service routines, which are called by the CPU when specific events happen.
@@ -164,10 +168,8 @@ int main(void)
 
 #define RX_LEN 16
 
-static uint8_t rx_buffer[RX_LEN];
-static size_t rx_size = RX_LEN;
-
-void data_received(void *context, Usart_error_type error)
+// Note that this callback does not use any global variables
+void data_received(void *context, Usart_error_type error, uint8_t *rx_data, size_t rx_size)
 {
 	// The Usart HAL object was passed in through the context parameter
 	Usart *usart = static_cast<Usart*>(context);
@@ -179,7 +181,7 @@ void data_received(void *context, Usart_error_type error)
 	}
 
 	// Start listening again
-	if (usart->receive_buffer_async(rx_buffer, RX_LEN, &data_received, context) != USART_IO_SUCCESS)
+	if (usart->receive_buffer_async(rx_data, RX_LEN, &data_received, context) != USART_IO_SUCCESS)
 	{
 		// An error occurred, do something about it here...
 	}
@@ -187,6 +189,8 @@ void data_received(void *context, Usart_error_type error)
 
 int main(void)
 {
+	static uint8_t rx_buffer[RX_LEN];
+
 	Usart usart = Usart::bind(USART_0);
 	if (usart.configure(USART_MODE_ASYNCHRONOUS, 9600) != USART_CFG_SUCCESS)
 	{

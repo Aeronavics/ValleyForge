@@ -82,7 +82,7 @@ my_ss.write(GPIO_O_HIGH); // Inactive
 '''
 
 
-The functionality of the SS pin in slave mode depends on the target. For the [[SPI:AVR|AVR]], the SS pin is forced to be an input and must be pulled low before it will shift any data! This cannot be disabled.
+The functionality of the hardware SS pin in slave mode depends on the target. For the [[SPI:AVR|AVR]], the hardware SS pin is forced to be an input and must be pulled low before it will shift any data! This cannot be disabled.
 
 ===== Errors & Status Flags =====
 ''transfer_busy()''
@@ -107,7 +107,7 @@ Error codes should be respected, as it may indicate framing or parity errors. (T
 ===== Asynchronous Communication =====
 The SPI library provides asynchronous communication functions, which return immediately and transfer data in the background using either interrupts or DMA. You must use callbacks to handle asynchronous data, since the data could appear at any time. Care must be taken when sharing global data in the callbacks to prevent concurrency issues, as the callback is executed directly from the interrupt service routine.
 
-The use of asynchronous functions should be preferred if performance is important!
+The use of asynchronous functions should be preferred if CPU time is important! (ie, other tasks need to run without being blocked). Asynchronous transfers may be slower than blocking (if using interrupts), or faster than blocking (if using DMA). The implementation depends on the target, so check the target-specific notes to determine which method it uses.
 
 **The following functions are provided:**
 ''transfer_byte_async()''
@@ -122,14 +122,18 @@ Because asynchronous functions return immediately, you should always check the r
 
 Asynchronous transfers provide a callback which accepts a function with the following signature:
 '''
-void callback(void *context, Spi_io_status status)
+void callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size)
 '''
 ''status'' will be ''SPI_IO_SUCCESS'' if the operation succeeded, or some error code otherwise.
+''*rx_data'' will point to the rx buffer provided to the transfer buffer (which may be null), and ''size'' will contain the total number of shifted bytes.
+
+It is recommended that you make use of *context to pass user data, to avoid excessive use of global variables. For example, you could pass ''this'' or a pointer to a struct which contains local state.
 
 ===== Interrupts =====
 One interrupt is provided, which is called whenever a data transfer has completed.
 	''SPI_INT_TRANSFER_COMPLETE''
 
+Currently there is no way to transfer data using ISRs.
 
 ===== Examples =====
 **Simple Blocking Transfer**
@@ -153,21 +157,29 @@ void test()
 {
 	// Assumes SPI is properly configured
 	uint8_t tx = 0x32;
-	uint8_t rx;
-	
+	uint8_t rx = 0x00;
+
+	// Start an initial transfer
 	if (spi.transfer_async(tx, &rx) != SPI_IO_SUCCESS) {
 		// Handle error
 	}
 	
-	while (spi.transfer_busy()) continue;
-	
-	// The received byte is now in rx
+	while (true) {
+		if (!spi.transfer_busy()) {
+			// tx has been transmitted, and rx now contains the received byte
+
+			// Start a new transfer
+			if (spi.transfer_async(tx, &rx) != SPI_IO_SUCCESS) {
+				// Handle error
+			}
+		}
+	}
 }
 '''
 
 **Simple Asynchronous Transfer (Callback)**
 '''
-void spi_callback(void *context, Spi_io_status status)
+void spi_callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size)
 {
 	// The received byte is now in rx_data[0], and size = 1
 }
