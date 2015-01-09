@@ -421,9 +421,6 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 			}
 			#endif
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_2 :   // Clear Timer on Compare Match mode, WGM2:0 = 2, TOP = OCRnA
@@ -452,9 +449,6 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 			}
 			#endif
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << OCIEA_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_3 : // Fast PWM, WGM2:0 = 3, TOP = 0xFF
@@ -481,8 +475,6 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 			}
 			#endif
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_4 : // Reserved
@@ -506,8 +498,6 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 			#endif
 			#ifdef __AVR_AT90CAN128__
@@ -533,8 +523,6 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 			#endif
 			#ifdef __AVR_AT90CAN128__
@@ -556,10 +544,7 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 		case TC_OC_NONE : // Normal Operation, clears any waveform generation mode WGM2:0 = 0, TOP = 0xFFFF/ 0xFF
 		{
       /* Disable the output compare interrupts */
-      *table.TIMSK_ADDRESS &= ~(1 << TOIE_BIT);
-      *table.TIMSK_ADDRESS &= ~(1 << OCIEA_BIT);   //
-      *table.TIMSK_ADDRESS &= ~(1 << OCIEB_BIT);   // Used each time PWM T/C reaches TOP/BOTTOM, it triggers OCIE. We now don't want this.
-      *table.TIMSK_ADDRESS &= ~(1 << OCIEC_BIT);   //
+      *table.TIMSK_ADDRESS = 0x00;
 
 			/* Reset the timer counter mode back to NORMAL */
 			*table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
@@ -573,9 +558,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_B_ADDRESS &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_2 : // PWM 9-bit, Phase Correct mode WGM2:0 = 2, TOP = 0x01FF
@@ -584,18 +566,12 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_B_ADDRESS &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_3 : // PWM 10-bit, Phase Correct mode WGM2:0 = 3, TOP = 0x03FF
 		{
       *table.TCCR_B_ADDRESS &= (~(1 << WGM3_BIT) & ~(1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 
 			return TC_CMD_ACK;
 		}
@@ -604,9 +580,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
       *table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
 			*table.TCCR_B_ADDRESS &= ~(1 << WGM3_BIT);
 			*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
-
-      /* Enable the pin interrupt on channel A */
-      *table.TIMSK_ADDRESS |= (1 << OCIEA_BIT);
 
 			return TC_CMD_ACK;
 		}
@@ -617,9 +590,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
 			*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_6 : // Fast PWM 9-bit, WGM2:0 = 6, TOP = 0x01FF
@@ -629,9 +599,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 			*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_7 : // Fast PWM 10-bit, WGM2:0 = 7, TOP = 0x03FF
@@ -640,9 +607,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
 			*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_8 : // PWM, Phase and Frequency Correct mode WGM2:0 = 8, TOP = ICRn
@@ -650,9 +614,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
       *table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
 			*table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
 			*table.TCCR_B_ADDRESS |= (1 << WGM3_BIT);
-
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 
 			return TC_CMD_ACK;
 		}
@@ -663,9 +624,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
       *table.TCCR_B_ADDRESS |= (1 << WGM3_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_10 : // PWM, Phase Correct mode WGM2:0 = 10, TOP = ICRn
@@ -675,9 +633,6 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_B_ADDRESS |= (1 << WGM3_BIT);
 			*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_11 : // PWM, Phase Correct mode WGM2:0 = 11, TOP = OCRnA
@@ -686,18 +641,12 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_B_ADDRESS |= (1 << WGM3_BIT);
 			*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_12 : // Clear Timer on Compare match mode, WGM2:0 = 12, TOP = ICRnA
 		{
       *table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
 			*table.TCCR_B_ADDRESS |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
-
-      /* Enable the pin interrupt on channel A */
-      *table.TIMSK_ADDRESS |= (1 << OCIEA_BIT);
 
 			return TC_CMD_ACK;
 		}
@@ -711,18 +660,12 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table) //
 			*table.TCCR_B_ADDRESS |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-
 			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_15 : // Fast PWM, WGM2:0 = 15, TOP = OCRnA
 		{
 			*table.TCCR_B_ADDRESS |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
-
-      /* Enable the output compare interrupts */
-      *table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 
 			return TC_CMD_ACK;
 		}
@@ -1560,12 +1503,27 @@ Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 	{
 		case TC_16BIT :
 		{
-			return enable_oc_16bit(mode, imp_register_table);
+			if (enable_oc_16bit(mode, imp_register_table) == TC_CMD_NAK)
+      {
+        return TC_CMD_NAK;
+      }
+      if (mode != TC_OC_MODE_13 || mode != TC_OC_MODE_12 || mode != TC_OC_MODE_4 || mode != TC_OC_NONE)
+      {
+        *imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
+        return TC_CMD_ACK;
+      }
 		}
 		case TC_8BIT :
 		{
-
-			return enable_oc_8bit(timer_number, mode, imp_register_table);
+			if (enable_oc_8bit(timer_number, mode, imp_register_table) == TC_CMD_NAK)
+      {
+        return TC_CMD_NAK;
+      }
+      if (mode % 2 == 1) // PWM modes require Timer Overflow Interrupt mask to be enabled.
+      {
+        *imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
+        return TC_CMD_ACK;
+      }
 		}
 		default :
 		{
@@ -1578,7 +1536,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 {
 	// TODO -	Requires testing.
   Gpio_pin pins(pin_address[channel].address);
-  if (pins.set_mode(GPIO_OUTPUT_PP) == TC_CMD_NAK)
+  if (pins.set_mode(GPIO_OUTPUT_PP) == GPIO_ERROR)
   {
     return TC_CMD_NAK;
   }
@@ -1922,6 +1880,9 @@ Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
     /* Switch the process of disabling output compare interrupts depending on which timer is used for
   	 * implementation
   	 */
+
+  *imp_register_table.TIMSK_ADDRESS &= ~(1 << TOIE_BIT);
+
   	switch (channel)
   	{
     	case TC_OC_A:

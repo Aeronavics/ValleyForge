@@ -39,12 +39,12 @@ Functions which the user calls to manipulate the Timer/ Counter unit to the desi
 
 It is highly advised that the user should read over the use of each Timer/ Counter modes of operation before testing code. The abstraction of each mode can be found in the Usage section of the Timer/ Counter sub page.
 
+== Public Target Dependent Information ==
+AVR micro controllers share very similar functional structures but do have several differences which are important to know when interfacing with. The links below will take you to the target specific characteristics.
+
+
 ==== Implementation Status ====
 
 Testing.
-Normal operating mode - All done
-Clear Timer on Compare Match (CTC) mode - pin Interrupt requires testing
-Phase Correct PWM - Set up both TOV and OCIE interrupt. Then testing.
-Phase and Frequency Correct PWM - Set up both TOV and OCIE interrupt. Then testing.
-
+8-bit Timer/Counter PWM generation does not work.
 Input Capture Unit - Most likely, incomplete. Do Testing
