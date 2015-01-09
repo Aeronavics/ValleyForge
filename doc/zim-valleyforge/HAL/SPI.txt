@@ -133,7 +133,7 @@ It is recommended that you make use of *context to pass user data, to avoid exce
 One interrupt is provided, which is called whenever a data transfer has completed.
 	''SPI_INT_TRANSFER_COMPLETE''
 
-Currently there is no way to transfer data using ISRs.
+NOTE: If no interrupt is registered, then any slave reads to the device will return 0x00. If an interrupt is registered, the ISR handler MUST load data into the SPI module or any slave reads will be undefined (as there is currently no way for the HAL to know if the ISR handler loaded data or not). For the [[HAL:SPI:AVR|AVR]], slave reads in this situation will be equal to whatever was transmitted last.
 
 ===== Examples =====
 **Simple Blocking Transfer**

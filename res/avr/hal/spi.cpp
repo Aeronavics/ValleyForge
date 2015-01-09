@@ -700,6 +700,8 @@ void Spi_imp::isr_transfer_complete()
 
 			set_ss(false);
 
+			*xDR = 0x00; // If any unhandled data is shifted in slave mode, it should be 0x00.
+
 			if (async.cb_done != NULL)
 				async.cb_done(async.cb_p, SPI_IO_SUCCESS, async.rx_data, async.size);
 		}
@@ -714,6 +716,8 @@ void Spi_imp::isr_transfer_complete()
 		// Not currently processing any async communications
 		if (stc_isr != NULL && stc_isr_enabled)
 			stc_isr(stc_isr_p);
+		else
+			*xDR = 0x00; // If no ISR handler is registered, make sure the register is loaded with 0x00
 	}
 }
 
