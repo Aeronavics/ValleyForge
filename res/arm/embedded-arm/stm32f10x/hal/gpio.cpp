@@ -114,9 +114,14 @@ Gpio_pin::Gpio_pin(Gpio_pin_imp* implementation)
 	return;
 }
 
+Gpio_pin::~Gpio_pin(void)
+{
+	// Nothing to do here.
+}
+
 Gpio_io_status Gpio_pin::set_mode(Gpio_mode mode)
 {
-	return (imp->set_mode(pin_address, mode));
+	return imp->set_mode(pin_address, mode);
 }
 
 Gpio_io_status Gpio_pin::write(Gpio_output_state value)
@@ -126,17 +131,7 @@ Gpio_io_status Gpio_pin::write(Gpio_output_state value)
 
 Gpio_input_state Gpio_pin::read(void)
 {
-	return (imp->read(pin_address));
-}
-
-Gpio_pin Gpio_pin::grab(IO_pin_address address)
-{
-	// Enable peripheral clock.
-	RCC->APB2ENR |= (1<<(address.port + 2));
-
-	Gpio_pin new_gpio_pin = Gpio_pin(&gpio_pin_imp);
-	new_gpio_pin.pin_address = address;
-	return new_gpio_pin;
+	return imp->read(pin_address);
 }
 
 Gpio_pin::Gpio_pin(IO_pin_address address)

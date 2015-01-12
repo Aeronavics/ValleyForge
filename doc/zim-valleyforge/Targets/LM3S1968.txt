@@ -1,0 +1,70 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-17T11:13:22+13:00
+
+====== LM3S1968 ======
+Created Wednesday 17 December 2014
+
+[[[http://www.ti.com/lit/ds/symlink/lm3s1968.pdf|Datasheet]]][[[http://www.ti.com/product/lm3s1968|Product Page]]]
+The Stellaris® LM3S1968 microcontroller is based on the ARM® Cortex™-M3 controller core operating at up to 50 MHz, with 256 kB flash and 64 kB SRAM. The LM3S1968 also features real-time industrial connectivity, with 2 SSI / SPI controllers, 2 I2C interfaces, and 3 UARTs. The LM3S1968 microcontroller also features advanced motion control features, including 6 motion-control PWM outputs with dead-band, two quadrature encoder inputs for precise position monitoring, and 1 fault protection inputs for low-latency shutdown. The microcontroller also features intelligent analog capability, including 3 analog comparators and 8 channels of highly accurate 10-bit analog-to-digital conversion - with the ability to sample at speeds of 1M samples per second. Finally, the LM3S1968 microcontroller provides a 24-bit systick timer, 4 32-bit or 8 16-bit general-purpose timers, a watchdog timer, a battery-backed hibernation module with RTC and 256 bytes of non-volatile state-saving memory, a low drop-out voltage regulator so that only one supply voltage is required, brown-out reset, power-on reset controller, and up to 52 GPIOs.
+
+**Flash**		256 KiB
+**EEPROM**	None
+**SRAM**		64 KiB
+**Pin Count**	100
+**Frequency**	50 MHz
+
+**GPIO**		52 (8 ports)
+**Timers**		4 (configurable as 2x16bit or 1x32bit)
+**UART**		3
+**SPI**			2
+**I2C**			2 (100kbps & 400kbps speeds)
+**CAN**		None
+**ADC**		8 ch, 10 bit, 1Msps
+
+**Other Features**
+PWM, Quadrature Encoder (QEI), Analog Comparators, Hibernation control, Hardware systick timer
+
+===== GPIO =====
+The chip has 8 ports, available as PORT_A through to PORT_H. Each port has up to 8 pins, though some may have less.
+On power-on reset, all pins except JTAG/SWD are tri-stated (GPIO_INPUT) by default. All GPIO pins except AINx analog pins are 5V tolerant. If a GPIO pin is used by a peripheral, it cannot be read or written unless re-configured back to normal GPIO functionality.
+
+Pins can be configured for the following modes:
+	''GPIO_OUTPUT''	 	Push pull
+	''GPIO_OUTPUT_OPENDRAIN''	Open-drain
+	''GPIO_INPUT''		Digital input
+	''GPIO_INPUT_ANALOG''	Analog input
+
+The above modes can be combined with the following flags (using a bitwise OR):
+	''GPIO_FLAG_DRIVE_2MA''	2mA drive output (default if not specified)
+	''GPIO_FLAG_DRIVE_4MA''	4mA drive output
+	''GPIO_FLAG_DRIVE_8MA''	8mA drive output
+	''GPIO_FLAG_DRIVE_8MA_SC''	8mA drive output, slew rate limited
+
+	''GPIO_FLAG_PULLUP''	Enable pull-up resistor
+	''GPIO_FLAG_PULLDOWN''	Enable pull-down resistor
+	''GPIO_FLAG_OPENDRAIN''	Use open-drain outputs (Automatically set when using GPIO_OUTPUT_OPENDRAIN)
+
+**Example:**
+'''
+pin.configure(GPIO_OUTPUT | GPIO_FLAG_DRIVE_8MA | GPIO_FLAG_OPENDRAIN);
+pin.configure(GPIO_INPUT);
+'''
+	
+**Performance:**
+There is always some tradeoff in performance when abstracting away hardware functionality, but the performance hit is usually worth it for the increased abstraction. In most cases this performance hit is negligible, and for a typical GPIO write on the LM3S1968, the HAL implementation is only 4x slower than raw hardware access.
+
+However care should be taken to avoid repeatedly configuring a Gpio_pin object as this can incur quite a performance hit. (As it needs to check all the provided values and configure necessary registers one by one). If you need performance out of the GPIO HAL library, you should only create and configure the Gpio_pin object once outside of the critical loop.
+
+===== UART =====
+TODO: Description of the UART module and allowable config values
+
+===== SPI =====
+TODO: Description of the SPI (SSI) module and allowable config values
+
+===== I2C =====
+TODO: Description of the I2C module and allowable config values
+
+===== CAN =====
+This target does not support CAN.
+

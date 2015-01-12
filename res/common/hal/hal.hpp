@@ -85,6 +85,7 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 #include "target_config.hpp"	// Include target specific configuration.
+#include "startup.h"			// Tell ValleyForge to include startup.c when building
 
 // Include the STDINT fixed width types.
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
@@ -97,7 +98,6 @@
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // General structure for handling IO pin addresses.
-#ifndef __linux__
 struct IO_pin_address
 {
 	port_t port;
@@ -107,7 +107,6 @@ struct IO_pin_address
 // Macro for convenience. Usage:
 //   IO_pin_address pinaddr = _IOADDR(PORT_A, PIN_0);
 #define _IOADDR(port, pin) ((IO_pin_address){port, pin})
-#endif
 
 // Generic ISR callback
 typedef void (*IsrHandler)(void);
@@ -136,6 +135,8 @@ void int_on(void);
  * @return State of interrupts prior to disabling.
  */
 bool int_off(void);
+
+#define nop() asm volatile ("nop")
 
 #endif /*__HAL_H__*/
 
