@@ -76,8 +76,5 @@
 
 #include "target_config_avr.hpp"
 
-// TODO - Define this in the build script?
-#define F_CPU				16000000UL
-
 #endif /*__TARGET_CONFIG_H__*/
 

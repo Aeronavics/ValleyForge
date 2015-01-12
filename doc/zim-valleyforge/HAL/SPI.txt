@@ -1,0 +1,223 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-10T16:11:25+13:00
+
+====== SPI ======
+Created Wednesday 10 December 2014
+
+The Serial Peripheral Interface (SPI) module provides a portable interface for communicating with SPI based devices.
+
+Additional target-specific information:
+	* [[SPI:AVR]]
+
+===== Configuration =====
+Most targets support both Master and Slave modes, and a number of operating modes (Mode 0 to 3) which specifies clock polarity and phase. Certain targets may support additional configuration settings such as MSB/LSB first, number of data bits, etc. but this is not guaranteed.
+
+By default, the SPI module is disabled, and must be configured before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
+
+**Master Initialization Example**
+'''
+Spi spi = Spi::bind(SPI_0);
+spi.set_mode(SPI_MASTER);
+spi.set_data_config(SPI_MODE_0, SPI_MSB_FIRST);  // Sample on leading rising edge of clock
+
+// Configuration settings for masters
+spi.set_speed(2000000); 
+spi.set_slave_select(SPI_SS_HARDWARE);
+
+spi.enable();
+'''
+
+**Slave Initialization Example**
+'''
+Spi spi = Spi::bind(SPI_0);
+spi.set_mode(SPI_SLAVE);
+spi.set_data_config(SPI_MODE_0, SPI_MSB_FIRST); // Must match the master's settings!
+spi.enable();
+'''
+
+It's good practice to check the result of the configuration to make sure it actually succeeded, or you may get confused as to why the SPI doesn't seem to be working as it should.
+
+NOTE: Some targets (such as [[SPI:AVR|AVR]]) may not support integer clock speeds, and may instead provide an enum with allowable speeds or clock divisors.
+
+NOTE: If using high SPI speeds, it is recommended that you use the ''trasfer_buffer()'' or ''transfer_buffer_async()'' methods, as they will execute faster and with less overhead than repeated calls to ''transfer()''. At the highest speed, ''transfer()'' may take up to 10x longer than the actual data transmission!
+
+=== SPI Modes ===
+The SPI operating mode (SPI_MODE_x) defines how the SPI module samples/outputs data with respect to the clock edge. The four operating modes are outlined below:
+{{../img/spi-mode-a.png}}
+
+{{../img/spi-mode-b.png}}
+In the above timing charts, data is sampled by the receiver at the dashed line, and is changed by the transmitter on the adjacent edge. It is valid for both master and slave SPI operation.
+
+It is important that you choose the same mode as the other device!
+
+=== Slave Select ===
+The SPI module can be configured to automatically drive the SS pin. Three modes are provided:
+	''SPI_SS_SOFTWARE'' - Use the provided SS pin. The pin is automatically configured as an output.
+	''SPI_SS_HARDWARE'' - Use the hardware SS pin, if available. Not all targets support this.
+	''SPI_SS_NONE'' - Don't drive the SS pin, you must drive it yourself. Useful if you want fine grain control over the SS pin, or have multiple slave devices.
+
+NOTE - This is only applicable for SPI_MASTER mode!
+
+When using SPI_SS_SOFTWARE or SPI_SS_HARDWARE, the SPI HAL library controls the output of the pin automatically for each transfer. The SS pin is brought low at the beginning of every transfer (byte or buffer), and is kept low until the end of the transfer.
+**Example**
+'''
+// NOTE - Pin is automatically configured and set high
+spi.set_slave_select(SPI_SS_HARDWARE);
+// or
+spi.set_slave_select(SPI_SS_SOFTWARE, _IOADDR(PORT_B, PIN_0));
+'''
+
+When using SPI_SS_NONE, the HAL library does not control the SS pin (even if the chip has a hardware one), and you should control it yourself. Use this when you need finer control over the SS pin, or want to control multiple slave devices.
+**Example**
+'''
+spi.set_slave_select(SPI_SS_NONE);
+Gpio_pin my_ss(_IOADDR(PORT_B, PIN_0));
+my_ss.set_mode(GPIO_OUTPUT);
+my_ss.write(GPIO_O_HIGH); // Inactive
+...
+my_ss.write(GPIO_O_LOW); // Active
+spi.transfer(data);
+my_ss.write(GPIO_O_HIGH); // Inactive
+'''
+
+
+The functionality of the hardware SS pin in slave mode depends on the target. For the [[SPI:AVR|AVR]], the hardware SS pin is forced to be an input and must be pulled low before it will shift any data! This cannot be disabled.
+
+===== Errors & Status Flags =====
+''transfer_busy()''
+True if the SPI module is currently transferring data, whether blocking or asynchronous.
+
+===== Blocking Communication =====
+The default communication functions are blocking, ie, they will not return until the data transfer is finished.
+This makes it easier to implement complex communications, but starves the CPU of valuable cycles when it could be doing something else.
+If CPU time is important, consider using the asynchronous communication functions below.
+
+See the examples at the bottom of this page to see how to implement blocking communication.
+
+**The following functions are provided:**
+''transfer_byte()''
+	Shifts a single byte, waiting until the transfer is completed. You can transmit 0x00 to perform a read-only operation (if the slave supports it).
+	
+''transfer_buffer()''
+	Shifts a block of data of fixed size, waiting until the transfer is completed. Both rx_data and tx_data are optional, but at least one must be provided. If only tx_data is provided, any received data will be thrown away. If only rx_data is provided, 0x00 will be transmitted (and received data will be recorded).
+
+Error codes should be respected, as it may indicate framing or parity errors. (Though not all chips support detection of errors!)
+
+===== Asynchronous Communication =====
+The SPI library provides asynchronous communication functions, which return immediately and transfer data in the background using either interrupts or DMA. You must use callbacks to handle asynchronous data, since the data could appear at any time. Care must be taken when sharing global data in the callbacks to prevent concurrency issues, as the callback is executed directly from the interrupt service routine.
+
+The use of asynchronous functions should be preferred if CPU time is important! (ie, other tasks need to run without being blocked). Asynchronous transfers may be slower than blocking (if using interrupts), or faster than blocking (if using DMA). The implementation depends on the target, so check the target-specific notes to determine which method it uses.
+
+**The following functions are provided:**
+''transfer_byte_async()''
+	Shifts a single byte, returning immediately. Returns USART_IO_BUSY if the module is currently transmitting/receiving data. The callback is called when the transfer has completed.
+	Alternatively, you can check transfer_busy() to determine when rx_data is valid.
+
+''transfer_buffer_async()''
+	Shifts a block of data of fixed size, returning immediately. Like ''transfer_buffer()'', tx_data and rx_data are optional.
+	The provided callback is called when the operation has completed. Alternatively, you can check ''transfer_busy()'' to determine when rx_data is valid.
+	
+Because asynchronous functions return immediately, you should always check the return type to see if it returned SPI_IO_BUSY. Alternatively you should check the status flag ''transfer_busy()'' before calling the functions.
+
+Asynchronous transfers provide a callback which accepts a function with the following signature:
+'''
+void callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size)
+'''
+''status'' will be ''SPI_IO_SUCCESS'' if the operation succeeded, or some error code otherwise.
+''*rx_data'' will point to the rx buffer provided to the transfer buffer (which may be null), and ''size'' will contain the total number of shifted bytes.
+
+It is recommended that you make use of *context to pass user data, to avoid excessive use of global variables. For example, you could pass ''this'' or a pointer to a struct which contains local state.
+
+===== Interrupts =====
+One interrupt is provided, which is called whenever a data transfer has completed.
+	''SPI_INT_TRANSFER_COMPLETE''
+
+NOTE: If no interrupt is registered, then any slave reads to the device will return 0x00. If an interrupt is registered, the ISR handler MUST load data into the SPI module or any slave reads will be undefined (as there is currently no way for the HAL to know if the ISR handler loaded data or not). For the [[HAL:SPI:AVR|AVR]], slave reads in this situation will be equal to whatever was transmitted last.
+
+===== Examples =====
+**Simple Blocking Transfer**
+''void test()''
+''{''
+''	// Assumes the SPI is properly configured''
+''	uint8_t tx = 0x32;''
+
+''	uint16_t rx = spi.transfer(tx);''
+''	if (rx < 0) {''
+''		// Handle error''
+''	}''
+''	else {''
+''		// The received data is now in (uint8_t)rx''
+''	}''
+''}''
+
+**Simple Asynchronous Tranfer (Polling)**
+'''
+void test()
+{
+	// Assumes SPI is properly configured
+	uint8_t tx = 0x32;
+	uint8_t rx = 0x00;
+
+	// Start an initial transfer
+	if (spi.transfer_async(tx, &rx) != SPI_IO_SUCCESS) {
+		// Handle error
+	}
+	
+	while (true) {
+		if (!spi.transfer_busy()) {
+			// tx has been transmitted, and rx now contains the received byte
+
+			// Start a new transfer
+			if (spi.transfer_async(tx, &rx) != SPI_IO_SUCCESS) {
+				// Handle error
+			}
+		}
+	}
+}
+'''
+
+**Simple Asynchronous Transfer (Callback)**
+'''
+void spi_callback(void *context, Spi_io_status status, uint8_t *rx_data, size_t size)
+{
+	// The received byte is now in rx_data[0], and size = 1
+}
+
+void test()
+{
+	// Assumes SPI is properly configured
+	uint8_t tx = 0x32;
+	static uint8_t rx; // Variable must be valid for the entire transfer
+	
+	if (spi.transfer_async(tx, &rx, &spi_callback) != SPI_IO_SUCCESS) {
+		// Handle error
+	}
+}
+'''
+
+**Blocking transfer of a buffer**
+'''
+void test()
+{
+	uint8_t tx_data[5] = {1, 2, 3, 4, 5};
+	uint8_t rx_data[5];
+	
+	if (spi.transfer_buffer(5, tx_data, rx_data) != SPI_IO_SUCCESS) {
+		// Handle error
+	}
+	
+	// If you've looped SDO & SDI together (MOSI & MISO), 
+	// then rx_data should contain {1, 2, 3, 4, 5} (not {0, 1, 2, 3, 4})
+}
+'''
+
+
+===== Support =====
+To see full hardware support, see [[HAL|Support]]
+
+[*] [[Targets:ATmega2560|ATmega2560]] family
+[*] [[Targets:AT90CAN128|AT90CAN128]] family
+[*] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]]
+
+The SPI AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp

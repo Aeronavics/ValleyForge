@@ -219,10 +219,10 @@ class Gpio_pin
 		 * @endcode
 		 *
 		 * @param  mode		Any number of interrupt types (GPIO_INT_LOW_LEVEL, GPIO_INT_ANY_EDGE, GPIO_INT_FALLING_EDGE, GPIO_INT_RISING_EDGE).
- 		 * @param  func_pt	Pointer to ISR function that is to be attached to the interrupt.
+ 		 * @param  callback	Pointer to ISR function that is to be attached to the interrupt.
 		 * @return Return code representing whether operation was successful
 		 */
-		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, void (*func_pt)(void));
+		Gpio_interrupt_status enable_interrupt(Gpio_interrupt_mode mode, IsrHandler callback);
 		
 		/**
 		 * Disable an interrupt for the pin.

@@ -27,38 +27,17 @@ TODO: Description of ports, pins, and allowable config modes
 eg. do the pins support pull-ups? pin-change? interrupts?
 
 ===== USART =====
-The ATmega2560 has 4 USARTs available (''USART_0 .. USART_3''), and can be configured for Synchronous (SPI-like) and Asynchronous (UART) operating modes. For more information see [[HAL:USART]]
-These USART channels can also be used as SPI channels through the [[HAL:SPI|SPI HAL module]], but if configured for SPI they cannot be used for UART as well. In this mode it provides proper SPI, which is different to the Synchronous UART mode (although very similar).
+The ATmega2560 has 4 USARTs available (''USART_0 .. USART_3''), and can be configured for Synchronous (SPI-like) and Asynchronous (UART) operating modes, and can also be configured for SPI operation through the SPI HAL module.
 
-The highest supported baud rate for this target is //fclk/K//, where K is 16 for USART_MODE_ASYNCHRONOUS, 8 for USART_MODE_ASYNCHRONOUS_DOUBLESPEED, and 2 for USART_MODE_SYNCHRONOUS_xxx.
-For the maximum clock of 16MHz, this is 1Mbps for USART_MODE_ASYNCHRONOUS.
-For best results, choose a baud rate //fclk/(K*n)// for some //n//. Eg. at 16MHz, supported baud rates are 1M, 6667K, 5000K, 4000Kbaud, etc.
-Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
-Always verify the USART output matches your configured baud rate with an oscilloscope!!!
-
-You can use the following formula to calculate the error of the chosen baud rate, in percent:
-''actual_baud = fclk / (K * (floor(fclk / (K * desired_baud) - 1) + 1))''
-''error = ((actual_baud - desired_baud) / desired_baud) * 100''
-
-Supported frame formats:
-	5 - 9 data bits
-	1 - 2 stop bits
-
-Supported modes:
-	''USART_MODE_ASYNCHRONOUS''			- UART
-	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	
-	''USART_MODE_SYNCHRONOUS_MASTER''		- Chip drives the XCK pin
-	''USART_MODE_SYNCHRONOUS_SLAVE''		- Chip uses the XCK pin for synchronization
-	
-
-Supported parity settings:
-	''USART_PARITY_NONE''
-	''USART_PARITY_EVEN''
-	''USART_PARITY_ODD''
-
+For more information see [[HAL:USART]] and [[HAL:USART:AVR]]
 
 ===== SPI =====
-TODO: Description of the SPI module and allowable config values
+The ATmega2560 has 1 hardware SPI available (''SPI_0''), and an additional 4 available through the USART peripherals (''USARTSPI_0 .. USARTSPI_3'').
+
+''SPI_0'' can be configured for both Master and Slave SPI, and has four hardware SPI pins that cannot be disabled: MISO, MOSI, SCK, and SS.
+''USARTSPI_0..3'' can only be configured for Master SPI and lacks an SS pin.
+
+For more information see [[HAL:SPI]] and [[HAL:SPI:AVR]]
 
 ===== I2C =====
 TODO: Description of the I2C module and allowable config values

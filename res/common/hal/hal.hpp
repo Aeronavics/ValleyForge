@@ -47,7 +47,7 @@
  *  @section Description
  *  In order to use the Hardware Abstraction Library, some aspects need to be set up beforehand. There are also some
  *  functions that are relevant to all modules, such as global interrupts, and are therefore placed in this separate
- *  hal.h header file.
+ *  hal.hpp header file.
  * 
  *  @section Example
  * 
@@ -91,6 +91,9 @@
 
 // DEFINE PUBLIC MACROS.
 
+#define F_CPU <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>000000UL
+
+
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
 // General structure for handling IO pin addresses.
@@ -102,12 +105,15 @@ struct IO_pin_address
 };
 
 // Macro for convenience. Usage:
-//   IO_pin_address pinaddr = _IOPADDR(PORT_A, PIN_0);
+//   IO_pin_address pinaddr = _IOADDR(PORT_A, PIN_0);
 #define _IOADDR(port, pin) ((IO_pin_address){port, pin})
 #endif
 
-// Generic ISR callback.
-typedef void (*voidFuncPtr)(void);
+// Generic ISR callback
+typedef void (*IsrHandler)(void);
+
+// Preferred callback type - Callbacks should always have a way to pass in user data
+typedef void (*Callback)(void *context);
 
 // INCLUDE REQUIRED HEADER FILES THAT DEPEND ON TYPES DEFINED HERE.
 

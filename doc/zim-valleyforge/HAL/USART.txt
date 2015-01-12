@@ -7,20 +7,24 @@ Created Wednesday 03 December 2014
 
 The Universal Synchronous-Asynchronous Receive-Transmit (USART) module provides a portable interface for communicating with USART based devices, such as serial terminals and cellular modems.
 
+Additional target-specific information:
+	* [[USART:AVR]]
+	* [[USART:AVR-LIN]] (For the ATmega64C1)
+
 ===== Configuration =====
 The modes that the USART library supports depends heavily on the capabilities of the chip. All chips will support USART_MODE_ASYNCHRONOUS which is just standard UART with RX/TX pins, and some chips will also support USART_MODE_SYNCHRONOUS which adds a clock pin as well, similar to SPI.
 
 In synchronous mode, the USART can be configured as either master (chip drives the clock output), or slave (chip uses the clock provided by a master).
 
-IMPORTANT - The USART module must be instantiated and configured before it can be used!
-By default, the USART module is disabled, and must be enabled before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
+By default, the USART module is disabled, and must be configured before it can be used. Operating the module while disabled has undefined behaviour (and will probably hang and freeze)
 
 Example configuration:
 '''
 Usart usart = Usart::bind(USART_0);
 usart.configure(USART_MODE_ASYNCHRONOUS, 9600, 8, USART_PARITY_NONE, 1);
-usart.enable();
 '''
+
+It's good practice to check the result of the configuration to make sure it actually succeeded, or you may get confused as to why the USART doesn't seem to be working as it should.
 
 NOTE: For specific configuration values, see the appropriate [[Targets|target]] documentation.
 
@@ -106,16 +110,26 @@ The USART library provides asynchronous communication functions, which return im
 
 Because asynchronous functions return immediately, you should always check the return type to see if it returned USART_IO_BUSY. Alternatively you should check the status flags ''transmitter_ready()'' or ''receiver_has_data()'' before calling the functions.
 
+Asynchronous transfers provide a callback which accepts a function with the following signature:
+'''
+For TX: void callback(void *context, Usart_error_status status)
+For RX: void callback(void *context, Usart_error_status status, uint8_t *rx_data, size_t size)
+'''
+''status'' will be ''USART_ERR_NONE'' if the operation succeeded, or some error code otherwise.
+''*rx_data'' will point to the rx buffer provided to the transfer buffer (which may be null), and ''size'' will contain the total number of received bytes.
+
+It is recommended that you make use of *context to pass user data, to avoid excessive use of global variables. For example, you could pass ''this'' or a pointer to a struct which contains local state.
+
 ===== Interrupts =====
 The USART library allows you to register interrupt service routines, which are called by the CPU when specific events happen.
 The exact interrupts provided will vary between devices, but generally it will support some form of interrupt which triggers when a byte of data is received, or when the transmitter becomes available to send more data.
 
-When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes.
+When using buffer/string asynchronous communications, interrupts are also called at the end of the operation to signify that it has finished, and interrupts will be suppressed for the individual bytes. This can be used as an alternative to callbacks on the transfer functions themselves.
 
 IMPORTANT - Only one callback can be registered for each interrupt type.
 
 ===== Examples =====
-**A simple echo demo**
+**A simple echo demo using blocking communications**
 
 '''
 #include <hal/usart.hpp>
@@ -147,21 +161,27 @@ int main(void)
 '''
 
 
-**Implementing asynchronous communications**
+**Implementing asynchronous communications using callbacks**
 
 '''
 #include <hal/usart.hpp>
 
 #define RX_LEN 16
 
-static uint8_t rx_buffer[RX_LEN];
-
-void data_received(Usart_error_type error, uint8_t* buffer, size_t size)
+// Note that this callback does not use any global variables
+void data_received(void *context, Usart_error_type error, uint8_t *rx_data, size_t rx_size)
 {
-	// Do something with the data here...
+	// The Usart HAL object was passed in through the context parameter
+	Usart *usart = static_cast<Usart*>(context);
+
+	if (error == USART_ERR_SUCCESS)
+	{
+		// Do something with the data here...
+		do_something(rx_data, rx_size);
+	}
 
 	// Start listening again
-	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	if (usart->receive_buffer_async(rx_data, RX_LEN, &data_received, context) != USART_IO_SUCCESS)
 	{
 		// An error occurred, do something about it here...
 	}
@@ -169,6 +189,8 @@ void data_received(Usart_error_type error, uint8_t* buffer, size_t size)
 
 int main(void)
 {
+	static uint8_t rx_buffer[RX_LEN];
+
 	Usart usart = Usart::bind(USART_0);
 	if (usart.configure(USART_MODE_ASYNCHRONOUS, 9600) != USART_CFG_SUCCESS)
 	{
@@ -178,7 +200,7 @@ int main(void)
 	usart.enable();
 
 	// Start listening for 16 bytes of data
-	if (usart.receive_buffer_async(rx_buffer, RX_LEN, data_received) != USART_IO_SUCCESS)
+	if (usart.receive_buffer_async(rx_buffer, RX_LEN, &data_received, &usart) != USART_IO_SUCCESS)
 	{
 		// An error occurred
 		return -1;
@@ -198,7 +220,7 @@ To see full hardware support, see [[HAL|Support]]
 
 [*] [[Targets:ATmega2560|ATmega2560]] family - TODO - Untested
 [*] [[Targets:AT90CAN128|AT90CAN128]] family
-[ ] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]] - These chips do not have USART, but instead provide LIN which is similar.
+[*] [[Targets:ATmega64C1|ATmega64M1/ATmega64C1]] - These chips do not have USART, but instead provide LIN which is similar.
 
 The USART AVR implementation was written to be easily extendible, so adding support for more AVR chips should be straight forward. See res/avr/hal/target_config.hpp
 

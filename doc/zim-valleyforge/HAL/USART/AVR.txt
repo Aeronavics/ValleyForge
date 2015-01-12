@@ -1,0 +1,48 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-12T11:58:44+13:00
+
+====== AVR ======
+Created Friday 12 December 2014
+
+Most AVR chips have at least one hardware USART peripheral, configurable for both Asynchronous (UART) and Synchronous (SPI-Like) communication.
+
+Note that the following information does not apply to the [[Targets:ATmega64C1|ATmega64C1 family]] of chips as they use the LIN peripheral instead.
+
+=== Baud Rate ===
+The highest supported baud rate is //fclk/K//, where K is 16 for USART_MODE_ASYNCHRONOUS, 8 for USART_MODE_ASYNCHRONOUS_DOUBLESPEED, and 2 for USART_MODE_SYNCHRONOUS_xxx.
+For a CPU clock of 16MHz, this is 1Mbps for USART_MODE_ASYNCHRONOUS.
+For best results, choose a baud rate //fclk/(K*n)// for some n ≤ 4095. Eg. at 16MHz, supported baud rates are 1M, 6667K, 5000K, 4000Kbps, etc.
+Values that do not satisfy this will be truncated to the nearest integer //n//, and will introduce some error which will be worse for the higher baud rates.
+Always verify the USART output matches your configured baud rate with an oscilloscope!!!
+
+=== Baud Error ===
+You can use the following formula to calculate the error of the chosen baud rate, in percent:
+''actual_baud = fclk / (K * (floor(fclk / (K * desired_baud) - 1) + 1))''
+''error = ((actual_baud - desired_baud) / desired_baud) * 100''
+
+=== Configuration Options ===
+Supported frame formats:
+	5 - 9 data bits
+	1 - 2 stop bits
+
+Supported modes:
+	''USART_MODE_ASYNCHRONOUS''			- UART
+	''USART_MODE_ASYNCHRONOUS_DOUBLESPEED''	
+	''USART_MODE_SYNCHRONOUS_MASTER''		- Chip drives the XCK pin
+	''USART_MODE_SYNCHRONOUS_SLAVE''		- Chip uses the XCK pin for synchronization
+	
+Supported parity settings:
+	''USART_PARITY_NONE''
+	''USART_PARITY_EVEN''
+	''USART_PARITY_ODD''
+
+
+=== Asynchronous Communication ===
+(Aka. non-blocking communication)
+Because the AVR doesn't have DMA, asynchronous communications are performed using interrupts and an internal state machine. This incurs some overhead for each byte sent, so it may not be possible to use the USART at very high baud rates.
+
+IMPORTANT: You MUST enable global interrupts for asynchronous communications to work! ie, you must call sei() before you can use any of the async methods.
+
+
+

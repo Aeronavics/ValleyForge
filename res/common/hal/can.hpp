@@ -445,7 +445,7 @@ class Can_buffer
 		* @param	callback	The handler for this interrupt condition.
 		* @return 				Return code indicating whether operation was successful
 		*/
-		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, IsrHandler callback);
 		
 		/**
 		* Removes a handler for a specific object for a particular interrupt event.
@@ -542,7 +542,7 @@ class Can
 		 * @param     callback		The handler for this interrupt event.
 		 * @return    				Return code indiciating whether operation was successful
 		 */
-		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, IsrHandler callback);
 	    
 		/**
 		 * Detach interrupt for channel based event.

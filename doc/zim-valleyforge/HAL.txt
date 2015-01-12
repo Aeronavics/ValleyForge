@@ -15,9 +15,13 @@ The HAL modules are documented in the links below, but for complete interface do
 	[[+USART|USART]] - Asynchronous & Synchronous USART interface
 	CAN - Controller Area Network
 	I2C - Inter-Integrated Circuit (Also known as TWI)
-	SPI - Serial Peripheral Interface
+	[[+SPI|SPI]] - Serial Peripheral Interface
 	ADC - Analog to Digital Converter
 	Timer/Counter
+	
+===== Other Info =====
+	[[HAL:Callbacks|Callbacks]] - How the HAL manages callbacks for interrupts and asynchronous communications
+
 
 ===== Support =====
 The HAL is still a work-in-progress. The table below shows which HAL modules are implemented for each supported target.

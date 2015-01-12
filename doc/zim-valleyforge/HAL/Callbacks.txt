@@ -1,0 +1,43 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-06T12:12:58+13:00
+
+====== Callbacks ======
+Created Tuesday 06 January 2015
+
+Callbacks are a way for the HAL to call a user function when some asynchronous action happens, such as when an Interrupt is triggered or some asynchronous communication has finished.
+
+Currently there are two Callback types:
+	''Callback'' 
+		Accepts a function with the following signature: 
+		''void callback(void *context)'' ie, a function that takes a single ''void*'' pointer, and returns nothing.
+		This allows you to pass custom data or state to the callback, such as a pointer to a struct or object.
+		
+	''IsrHandler''
+		Accepts a function with the following signature:
+		''void callback(void)'' ie, a function that has no parameters and returns nothing.
+		If you need to pass state to any callbacks using this type, you must use global variables.
+		DEV-NOTE: We should probably move away from this and use ''Callback'' instead.
+		
+
+=== Example ===
+For an example HAL module that provides the following attach_interrupt function
+	''attach_interrupt(Callback callback, void *context)''
+	
+Here is an example of how to attach an interrupt handler and pass some context to it
+'''
+void my_isr_handler(void *context)
+{
+	ExampleModule *mod = static_cast<ExampleModule*>(context);
+	// Do something here...
+}
+
+void main(void)
+{
+	ExampleModule mod;
+	mod.attach_interrupt(&my_isr_handler, &mod); // Pass the module to the callback so it can use it
+
+	// Main application...
+}
+'''
+

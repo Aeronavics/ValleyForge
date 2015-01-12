@@ -224,6 +224,7 @@ enum Usart_channel {USART_0, USART_1, USART_2, USART_3};
 // NOTE - This chip supports additional SPI channels through the use of the USART modules.
 //  If using a USARTSPI channel, the corresponding USART channel may not be used.
 enum Spi_channel {SPI_0, USARTSPI_0, USARTSPI_1, USARTSPI_2, USARTSPI_3};
+#define USE_SPI_USART
 
 
 #endif /*__TARGET_ATMEGA2560_H__*/

@@ -47,7 +47,7 @@
 
 // DEFINE PRIVATE MACROS.
 
-#define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>	// Replaces the need to use the <<< syntax to get clock speed	
+#define CLK_MHZ F_CPU // See hal.hpp
 
 #define ENABLE_TOUT_LOOP  1000000;						// Controller enable timeout.
 
@@ -187,7 +187,7 @@ class Can_buffer_imp
 
 		void disable_interrupt(void);
 
-		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_buffer_interrupt_type interrupt, IsrHandler callback);
 		
 		Can_int_status detach_interrupt(Can_buffer_interrupt_type interrupt);
 
@@ -231,7 +231,7 @@ class Can_imp
 	    
 		void disable_interrupts(void);
 	    
-		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void));
+		Can_int_status attach_interrupt(Can_channel_interrupt_type interrupt, IsrHandler callback);
 
 		Can_int_status detach_interrupt(Can_channel_interrupt_type interrupt);
 
@@ -416,8 +416,8 @@ class Can_imp
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-volatile static voidFuncPtr bufIntFunc[CAN_NUM_BUFFERS][CAN_NUM_BUF_INT];
-volatile static voidFuncPtr chanIntFunc[CAN_NUM_CHAN_INT];
+volatile static IsrHandler bufIntFunc[CAN_NUM_BUFFERS][CAN_NUM_BUF_INT];
+volatile static IsrHandler chanIntFunc[CAN_NUM_CHAN_INT];
 
 volatile Can_id_buffer interrupt_service_buffer;
 volatile bool in_buffer_interrupt = false;
@@ -561,7 +561,7 @@ void Can_buffer::disable_interrupt(void)
 	imp->disable_interrupt();
 }
 
-Can_int_status Can_buffer::attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void))
+Can_int_status Can_buffer::attach_interrupt(Can_buffer_interrupt_type interrupt, IsrHandler callback)
 {
 	return imp->attach_interrupt(interrupt, callback);
 }
@@ -625,7 +625,7 @@ void Can::disable_interrupts(void)
 	imp->disable_interrupts();
 }
 
-Can_int_status Can::attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void))
+Can_int_status Can::attach_interrupt(Can_channel_interrupt_type interrupt, IsrHandler callback)
 {
 	return imp->attach_interrupt(interrupt, callback);
 }
@@ -1072,7 +1072,7 @@ void Can_buffer_imp::disable_interrupt(void)
 	}
 }
 
-Can_int_status Can_buffer_imp::attach_interrupt(Can_buffer_interrupt_type interrupt, void (*callback)(void))
+Can_int_status Can_buffer_imp::attach_interrupt(Can_buffer_interrupt_type interrupt, IsrHandler callback)
 {
 	Can_set_mob(buf_no);
 	
@@ -1742,7 +1742,7 @@ void Can_imp::disable_interrupts(void)
 	CANGIE &= ~(1<<ENIT);
 }
 
-Can_int_status Can_imp::attach_interrupt(Can_channel_interrupt_type interrupt, void (*callback)(void))
+Can_int_status Can_imp::attach_interrupt(Can_channel_interrupt_type interrupt, IsrHandler callback)
 {
 	Can_int_status ret_code;
 	

@@ -250,7 +250,7 @@ class Tc
 		 * @param  callback		The handler for this interrupt event.s
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
-		Tc_command_status enable_tov_interrupt(void (*callback)(void));
+		Tc_command_status enable_tov_interrupt(IsrHandler callback);
 		
 		/**
 		 * Disables the overflow interrupt on this timer
@@ -287,7 +287,7 @@ class Tc
 		 * @param  callback		The handler for this interrupt event.
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
-		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, void (*callback)(void));
+		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback);
 		
 		/**
 		 * Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the OC mode operation itself.
@@ -333,10 +333,10 @@ class Tc
 		 * Enables the input compare interrupt on this timer
 		 *
 		 * @param  channel		Which channel register to interrupt on.
-		 * @param  ISRptr		A pointer to the ISR that is called when this interrupt is generated. Of form &myISR
+		 * @param  callback		A pointer to the ISR that is called when this interrupt is generated. Of form &myISR
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
-		Tc_command_status enable_ic_interrupt(Tc_ic_channel channel, void (*ISRptr)(void));
+		Tc_command_status enable_ic_interrupt(Tc_ic_channel channel, IsrHandler callback);
 		
 		/**
 		 * Disables the input compare interrupt on this timer

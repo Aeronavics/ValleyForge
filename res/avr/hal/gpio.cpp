@@ -72,7 +72,7 @@ class Gpio_pin_imp
 		
 		Gpio_io_status write(IO_pin_address address, Gpio_output_state value);
 		
-		Gpio_interrupt_status enable_interrupt(IO_pin_address address, Gpio_interrupt_mode mode, void (*func_pt)(void));
+		Gpio_interrupt_status enable_interrupt(IO_pin_address address, Gpio_interrupt_mode mode, IsrHandler callback);
 		
 		Gpio_interrupt_status disable_interrupt(IO_pin_address address);
 		
@@ -81,7 +81,7 @@ class Gpio_pin_imp
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-volatile static voidFuncPtr intFunc[EXTERNAL_NUM_INTERRUPTS];
+volatile static IsrHandler intFunc[EXTERNAL_NUM_INTERRUPTS];
 
 Gpio_pin_imp gpio_pin_imp;
 
@@ -129,9 +129,9 @@ Gpio_pin::~Gpio_pin()
 	return;
 }
 
-Gpio_interrupt_status Gpio_pin::enable_interrupt(Gpio_interrupt_mode mode, void (*user_ISR)(void))
+Gpio_interrupt_status Gpio_pin::enable_interrupt(Gpio_interrupt_mode mode, IsrHandler callback)
 {
-      return imp->enable_interrupt(pin_address, mode, user_ISR); 
+      return imp->enable_interrupt(pin_address, mode, callback);
 }
 
 Gpio_interrupt_status Gpio_pin::disable_interrupt(void)
@@ -431,7 +431,7 @@ Gpio_interrupt_status Gpio_pin_imp::enable_interrupt(IO_pin_address address, Gpi
 		}
 		
 		// Attach the callback.
-		intFunc[PC_INT[address.port][address.pin]] = (voidFuncPtr) userFunc;
+		intFunc[PC_INT[address.port][address.pin]] = userFunc;
 		
 	#elif defined(__AVR_ATmega64M1__) || defined(__AVR_ATmega64C1__)
 	// Provisions for ATmega64M1/C1: Due to non-existence of port A, port_t types must be decremented by 1

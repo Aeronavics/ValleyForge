@@ -163,8 +163,9 @@ enum Usart_parity {USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD, USART
 
 enum Usart_clock_polarity {USART_CLOCK_NORMAL, USART_CLOCK_INVERTED};
 
-typedef void(*usartrx_callback_t)(Usart_error_status, uint8_t* buffer, size_t received_bytes);
-typedef void(*usarttx_callback_t)(Usart_error_status);
+// Callback for asynchronous data transfers
+typedef void (*Usart_Receive_Callback)(void *context, Usart_error_status status, uint8_t *rx_data, size_t size);
+typedef void (*Usart_Transmit_Callback)(void *context, Usart_error_status status);
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
@@ -184,8 +185,7 @@ class Usart
 		// Methods.
 		
 		/**
-		 * Binds the interface with a USART hardware peripheral,
-		 * locking it for exclusive access.
+		 * Binds the interface with a USART hardware peripheral
 		 */
 		static Usart bind(Usart_channel channel);
 		
@@ -196,7 +196,7 @@ class Usart
 
 		/**
 		 * Enable transmitter/receiver hardware.
-		 * This must be called before any data transfers can occur!!
+		 * Called automatically by configure()
 		 */
 		void enable(void);
 
@@ -283,10 +283,10 @@ class Usart
 		 * @param size			The size of the block of data, in bytes
 		 * @param cb_done		Optional callback to be executed when the buffer has been fully transmitted, or an error has occurred.
 		 * 						Callback must have the following signature:
-		 * 							void callback(Usart_io_status status);
+		 * 							void callback(void *context, Usart_io_status status);
 		 * @return 				The status of the operation
 		 */
-		Usart_io_status transmit_buffer_async(uint8_t* buffer, size_t size, usarttx_callback_t cb_done = NULL);
+		Usart_io_status transmit_buffer_async(uint8_t* buffer, size_t size, Usart_Transmit_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Transmits a null-terminated string of variable length up to max_len bytes, via the
@@ -311,10 +311,11 @@ class Usart
 		 * @param max_len		Maximum number of bytes to send
 		 * @param cb_done		Optional callback to be executed when the buffer has been fully transmitted, or an error has occurred.
 		 * 						Callback must have the following signature:
-		 * 							void callback(Usart_io_status status);
+		 * 							void callback(void *context, Usart_io_status status);
+		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return				The status of the operation
 		 */
-		Usart_io_status transmit_string_async(char *string, size_t max_len, usarttx_callback_t cb_done = NULL);
+		Usart_io_status transmit_string_async(char *string, size_t max_len, Usart_Transmit_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Read a byte from the receive buffer, blocking if not yet available.
@@ -357,10 +358,11 @@ class Usart
 		 * @param size			The number of bytes to receive
 		 * @param cb_done		Optional callback to be executed when the buffer has been fully received, or an error has occurred.
 		 * 						Callback must have the following signature:
-		 * 							void callback(Usart_io_status status, uint8_t *rx_data, size_t received_bytes);
+		 * 							void callback(void *context, Usart_io_status status);
+		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return 				The status of the operation
 		 */
-		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, usartrx_callback_t cb_done);
+		Usart_io_status receive_buffer_async(uint8_t *data, size_t size, Usart_Receive_Callback cb_done = nullptr, void *context = nullptr);
 
 		/**
 		 * Enable interrupt generation by this USART channel.
@@ -377,10 +379,13 @@ class Usart
 		 * Enables an interrupt to be be associated with a USART connection.
 		 *
 		 * @param interrupt		One of the possible interrupt sources that are available.
-		 * @param ISRptr		Pointer to the user-defined ISR.
+		 * @param callback		Pointer to the user-defined ISR.
+		 * 						Callback must have the following signature:
+		 * 							void callback(void *context);
+		 * @param context		Pointer to user data to be passed to the callback. Optional.
 		 * @return Zero for success, non-zero for failure.
 		 */
-		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, callback_t callback);
+		Usart_int_status attach_interrupt(Usart_interrupt_type interrupt, Callback callback, void *context = nullptr);
 
 		/**
 		 * Detaches an interrupt handler from a particular interrupt event source associated with this USART channel.
