@@ -40,10 +40,6 @@ public:
 	// Called whenever someone is finished with this instance
 	void unbind(void);
 
-#ifdef USE_SPI_USART
-	bool mspim_inuse(void);
-#endif
-
 	virtual void enable(void);
 
 	virtual void disable(void);
@@ -99,6 +95,9 @@ protected: //// Utility Functions ////
 	virtual Usart_config_status set_baud_rate(uint32_t baud_rate);
 
 
+#ifdef USE_SPI_USART
+	bool mspim_inuse(void);
+#endif
 
 public:  //// Asynchronous Interrupt Handling ////
 

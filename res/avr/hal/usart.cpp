@@ -688,7 +688,7 @@ void Usart_imp::isr_receive_byte(void)
 		if (rx_isr && rx_isr_enabled)
 			rx_isr(rx_isr_p);
 
-		// Make sure the byte is read to clear the interrupt flag!
+		// Make sure the byte is read to clear the interrupt flag! (But only in USART mode)
 		// If this is not done, it affects the UDRE interrupt ???
 		if (receiver_has_data())
 		{
@@ -702,7 +702,8 @@ void Usart_imp::isr_transmit_complete(void)
 	// This interrupt is triggered only when the transmission is complete
 	// and there is no new data to be sent
 
-	// Unused.
+	if (tx_isr && tx_isr_enabled)
+		tx_isr(tx_isr_p);
 }
 
 void Usart_imp::isr_transmit_ready(void)
@@ -743,10 +744,6 @@ void Usart_imp::isr_transmit_ready(void)
 			// Inform the user the data has been sent
 			if (async_tx.cb_done != NULL)
 				async_tx.cb_done(async_tx.cb_p, USART_ERR_NONE);
-
-			// Call the user ISR to indicate the transmitter is free to send more data
-			if (tx_isr && tx_isr_enabled)
-				tx_isr(tx_isr_p);
 		}
 	}
 	// Only process user ISR if no async operations are running
@@ -755,10 +752,11 @@ void Usart_imp::isr_transmit_ready(void)
 		// Call the user ISR, which can be used to load more data into UDR.
 		// The callback should return a bool, which should be set to true
 		// when the user has no more data to send.
-		if (tx_isr && tx_isr_enabled)
-			tx_isr(tx_isr_p);
 
-		// Explicitly clear the UDRIE flag in case they didn't load more data
+		//TODO: Should we provide a UDR ISR?
+		// The transmit_complete offers similar functionality, but is called later than UDR so will decrease performance and latency.
+
+		// Explicitly clear the UDRIE flag to prevent re-transmission if no data was loaded.
 		set_udrie(false);
 	}
 }

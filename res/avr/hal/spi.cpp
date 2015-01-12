@@ -184,9 +184,10 @@ public:
 	Spi_config_status set_mode(Spi_setup_mode mode);
 	Spi_config_status set_data_config(Spi_data_mode data_mode, Spi_frame_format frame_format);
 	Spi_config_status set_speed(int16_t baud_rate);
+	Spi_config_status set_speed(Spi_clock_divider divider);
 	Spi_config_status set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin);
 
-	int16_t transfer(uint8_t tx_data);
+	Spi_io_status transfer(uint8_t tx_data, uint8_t *rx_data);
 	Spi_io_status transfer_async(uint8_t tx_data, uint8_t *rx_data, Spi_Data_Callback done, void *context);
 	Spi_io_status transfer_buffer(size_t size, uint8_t *tx_data, uint8_t *rx_data);
 	Spi_io_status transfer_buffer_async(size_t size, uint8_t *tx_data, uint8_t *rx_data, Spi_Data_Callback done, void *context);
@@ -197,8 +198,8 @@ public:
 	// Fields
 	uint16_t ubrr; // delayed ubrr
 
-	static void isr_receive_byte(void *p);
-	static void isr_transmit_ready(void *p);
+	static void isr_receive_byte(void *context);
+	static void isr_transmit_complete(void *context);
 };
 
 #endif
@@ -750,12 +751,20 @@ Usartspi_imp::Usartspi_imp(Spi_channel channel, Usart_imp *usart_imp)
 	// NOTE - Because there can be multiple instances of Usartspi_imp, the callback
 	// must be a static function. We pass in a reference to 'this' so the callback can
 	// use it.
-	//usart_imp->attach_interrupt(USART_INT_TX_COMPLETE, Usartspi_imp::isr_receive_byte, this);
-	//usart_imp->attach_interrupt(USART_INT_RX_COMPLETE, Usartspi_imp::isr_transmit_ready, this);
+
+	usart_imp->detach_interrupt(USART_INT_TX_COMPLETE);
+	usart_imp->attach_interrupt(USART_INT_TX_COMPLETE, Usartspi_imp::isr_transmit_complete, this);
+
+	usart_imp->detach_interrupt(USART_INT_RX_COMPLETE);
+	usart_imp->attach_interrupt(USART_INT_RX_COMPLETE, Usartspi_imp::isr_receive_byte, this);
 }
 
 
-Usartspi_imp::~Usartspi_imp() { }
+Usartspi_imp::~Usartspi_imp()
+{
+	usart_imp->detach_interrupt(USART_INT_RX_COMPLETE);
+	usart_imp->detach_interrupt(USART_INT_TX_COMPLETE);
+}
 
 bool Usartspi_imp::enabled(void) const
 {
@@ -773,15 +782,15 @@ void Usartspi_imp::enable(void)
 {
 	*usart_imp->registers.UBRR = 0;
 
-	usart_imp->enable_interrupts();
-
 	// Configure XCK as output, for master mode
 	Gpio_pin xck = Gpio_pin(pins.sck_address);
 	xck.set_mode(GPIO_OUTPUT_PP);
 
-	// Enable the transceivers
-	bit_write(*usart_imp->registers.UCSRB, TXEN_BIT, 1);
-	bit_write(*usart_imp->registers.UCSRB, RXEN_BIT, 1);
+	// Enable the transceivers and ISRs
+	usart_imp->enable();
+	usart_imp->enable_interrupts();
+
+	set_ss(false);
 
 	// NOTE - UBRR cannot be set until AFTER the peripheral is enabled
 	*usart_imp->registers.UBRR = this->ubrr;
@@ -790,6 +799,7 @@ void Usartspi_imp::enable(void)
 void Usartspi_imp::disable(void)
 {
 	usart_imp->disable_interrupts();
+	usart_imp->disable();
 
 	// NOTE - UBRR must be set to 0 before configuring
 	*usart_imp->registers.UBRR = 0;
@@ -900,6 +910,11 @@ Spi_config_status Usartspi_imp::set_speed(int16_t baud_rate)
 	return SPI_CFG_SUCCESS;
 }
 
+Spi_config_status Usartspi_imp::set_speed(Spi_clock_divider divider)
+{
+	return SPI_CFG_FAILED;
+}
+
 Spi_config_status Usartspi_imp::set_slave_select(Spi_slave_select_mode mode, IO_pin_address software_ss_pin)
 {
 	// MSPIM doesn't support a hardware SS. It must be user controlled!
@@ -909,16 +924,19 @@ Spi_config_status Usartspi_imp::set_slave_select(Spi_slave_select_mode mode, IO_
 	return Spi_imp::set_slave_select(mode, software_ss_pin);
 }
 
-int16_t Usartspi_imp::transfer(uint8_t tx_data)
+Spi_io_status Usartspi_imp::transfer(uint8_t tx_data, uint8_t *rx_data)
 {
 	// NOTE - When transmitting a byte you must also read a byte
 
-	while (!usart_imp->transmitter_ready())
+	while (!usart_imp->transmitter_ready() || async.active)
 	{
 		// Wait for empty transmit buffer
 	}
 
 	set_ss(true);
+
+	// Disable RXC interrupt to improve performance, since it's not used and doesn't do anything for this.
+	bit_write(*usart_imp->registers.UCSRB, RXCIE_BIT, 0);
 
 	*xDR = tx_data;
 
@@ -927,14 +945,20 @@ int16_t Usartspi_imp::transfer(uint8_t tx_data)
 		// Wait for data to be shifted
 	}
 
+	//TODO: SS is cleared a bit early (half a clock cycle before the end of the transmission)
 	set_ss(false);
 
-	return *xDR;
+	if (rx_data != nullptr)
+	 	*rx_data = *xDR;
+
+	bit_write(*usart_imp->registers.UCSRB, RXCIE_BIT, 1);
+
+	return SPI_IO_SUCCESS;
 }
 
 Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, Spi_Data_Callback done, void *context)
 {
-	if (transfer_busy())
+	if (!usart_imp->transmitter_ready() || async.active)
 		return SPI_IO_BUSY;
 
 	// Tell async handler we're expecting one byte
@@ -951,7 +975,6 @@ Spi_io_status Usartspi_imp::transfer_async(uint8_t tx_data, uint8_t *rx_data, Sp
 
 	// Start the transfer
 	*xDR = tx_data;
-	usart_imp->set_udrie(true);
 
 	return SPI_IO_SUCCESS;
 }
@@ -962,7 +985,7 @@ Spi_io_status Usartspi_imp::transfer_buffer(size_t size, uint8_t *tx_data, uint8
 		return SPI_IO_FAILED;
 
 	// Safety net (in case an async transfer was initiated beforehand)
-	while (!usart_imp->transmitter_ready())
+	while (!usart_imp->transmitter_ready() || async.active)
 	{
 		// Wait for empty transmit buffer
 	}
@@ -998,7 +1021,7 @@ Spi_io_status Usartspi_imp::transfer_buffer_async(size_t size, uint8_t *tx_data,
 	if (size == 0)
 		return SPI_IO_FAILED;
 
-	if (transfer_busy())
+	if (!usart_imp->transmitter_ready() || async.active)
 		return SPI_IO_BUSY;
 
 	// Tell async handler we're expecting one byte
@@ -1015,17 +1038,13 @@ Spi_io_status Usartspi_imp::transfer_buffer_async(size_t size, uint8_t *tx_data,
 
 	// Start the transfer
 	*xDR = tx_data[0];
-	usart_imp->set_udrie(true);
 
 	return SPI_IO_SUCCESS;
 }
 
 bool Usartspi_imp::transfer_busy(void)
 {
-	//TODO: Not sure how exactly these bits compare to SPI
-	return (bit_read(*usart_imp->registers.UCSRA, UDRE_BIT) != 1)
-		|| (bit_read(*usart_imp->registers.UCSRA, RXC_BIT) != 1)
-		|| (async.active);
+	return !usart_imp->transmitter_ready() || !usart_imp->receiver_has_data() || async.active;
 }
 
 Spi_io_status Usartspi_imp::get_status(void)
@@ -1035,16 +1054,19 @@ Spi_io_status Usartspi_imp::get_status(void)
 
 // Static class functions
 
-void Usartspi_imp::isr_receive_byte(void *p)
+void Usartspi_imp::isr_receive_byte(void *context)
 {
 	// To avoid having to define multiple ISR handlers for each Usartimp implementation,
 	// we instead define a static method which accepts a pointer to the instance itself.
-	Usartspi_imp *imp = static_cast<Usartspi_imp*>(p);
+	Usartspi_imp *imp = static_cast<Usartspi_imp*>(context);
 
 	// Store the byte
 	if (imp->async.active)
 	{
 		uint8_t rx = *imp->xDR;
+
+		if (imp->async.index < imp->async.size)
+		{
 
 		if (imp->async.rx_data != NULL)
 		{
@@ -1052,34 +1074,23 @@ void Usartspi_imp::isr_receive_byte(void *p)
 		}
 
 		imp->async.index++;
+		}
 
-		if (imp->async.index >= imp->async.size)
-		{
-			// Finished transferring bytes
-			// NOTE: UDRE will probably be called once more, so ignore it when it comes.
-
-			imp->async.active = false;
-
-			imp->set_ss(false);
-
-			if (imp->async.cb_done != NULL)
-				imp->async.cb_done(imp->async.cb_p, SPI_IO_SUCCESS, imp->async.rx_data, imp->async.size);
-
-			// Data is transmitted in the UDR interrupt.
 		}
 	}
-}
 
-void Usartspi_imp::isr_transmit_ready(void *p)
+void Usartspi_imp::isr_transmit_complete(void *context)
 {
-	// NOTE - I think this is called immediately after isr_receive_byte(), but I'm not certain.
-	Usartspi_imp *imp = static_cast<Usartspi_imp*>(p);
+	// This is called half a clock cycle after isr_receive_byte, at the end of transmission.
+	// This ISR corresponds to the USART TXC interrupt, not the UDR interrupt.
+
+	Usartspi_imp *imp = static_cast<Usartspi_imp*>(context);
 
 	// Send next byte
 	if (imp->async.active)
 	{
 		// NOTE - this is incremented before we send more data,
-		// since one byte has already been sent before UDR was enabled.
+		// since one byte has already been sent in transfer_async()
 		imp->async.tx_index++;
 
 		if (imp->async.tx_index < imp->async.size)
@@ -1093,7 +1104,12 @@ void Usartspi_imp::isr_transmit_ready(void *p)
 		else
 		{
 			// Finished
-			imp->usart_imp->set_udrie(false);
+			imp->async.active = false;
+			imp->set_ss(false);
+
+			if (imp->async.cb_done != NULL)
+				imp->async.cb_done(imp->async.cb_p, SPI_IO_SUCCESS, imp->async.rx_data, imp->async.size);
+
 		}
 	}
 }
