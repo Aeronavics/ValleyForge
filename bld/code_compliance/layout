@@ -16,7 +16,6 @@ echo -e "${RED}LAYOUT CONVENTIONS ${CYAN}$1\n${NO_COLOUR}"
 #Loop through each file with required extension in the specified directory. This loop is for advocating layout conventions in the code.
 for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 
-	count=$((count+1))
 	uncrustify -c $dir/default.cfg -f $FILE -o $FILE
 	sed -i 's/todo[ -: ]*/ TODO - /I' $FILE #working one
 	sed -i 's/note[ -: ]*/ NOTE - /I' $FILE #working one
@@ -27,16 +26,16 @@ done
 for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
 	
 	#Get the line numbers of string containing single line C comments
-	for ml in `pcregrep -n -M '/\*.*?\*/\n' $FILE | cut -d : -f 1`
+	for str_line in `pcregrep -n -M '/\*.*?\*/\n' $FILE | cut -d : -f 1`
 	do
 
-		string=$(awk 'NR == '"$ml"' ' $FILE)
+		string=$(awk 'NR == '"$str_line"' ' $FILE)
 		if [[ $string =~ "\\" ]]; then
 			#The line contains line breaks. Do nothing.
 			:
 		else
 			#Replace C style comments with C++ style comments.
-			sed -i ''"$ml"'s:\(.*\)/[*]\(.*\)[*]/:\1 // \2:' $FILE
+			sed -i ''"$str_line"'s:\(.*\)/[*]\(.*\)[*]/:\1 // \2:' $FILE
 		fi
 	done
 	

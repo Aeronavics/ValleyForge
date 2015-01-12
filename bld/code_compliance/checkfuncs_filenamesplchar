@@ -43,7 +43,6 @@ compliance_check_file_filenamesplchar()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-	echo >&2 "inside $FILE"
 	filename=$(basename "$1")
 	valcase='0-9a-z_.'
 	path="${FILE%.*}"

@@ -25,7 +25,7 @@
 ###
 ### Type:           Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for class, structure and template name validity.
+### Purpose:        Implements code compliance tests: tests for class and template name validity.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid class, structure and template names.
+### Purpose:	Tests a single C/CPP source or header file for valid class and template names.
 ###
 ###########################################################################################
 
@@ -43,92 +43,61 @@ compliance_check_file_classnamecheck()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-	
-	#Regex pattern to match structure names
-	pattern='[}]+[ ]*[a-zA-Z0-9]+;+'
+
+	#Regex pattern to match template names.
+	pattern_template="(template)+[ ]*<(class) ([a-zA-Z0-9_]+)>"
+
+	#Regex pattern to match class names.
+	pattern_class="class +([a-zA-Z0-9_]+)[:]*"
 
 	# Define internal functions.
 
 	check_line()
 	{
+
+		#
+		#	$1 The content of the line in question.
+		#	$2 The line number we are up to.
+		#
 	
 		#Condition used for ignoring lines which include comments. 
 		if [[ "$1" =~ ^/.*|^\*.* ]]; then
-		#If it is a comment line, do nothing
-			return 0
-		
-		#Condition for checking structure names that come in the format "} XYZ;"
-		elif [[ $1 =~ $pattern ]]; then
-			str_word=${1#\}*}
 
-			#Condition to obtain the first character of the structure name considering space between braces and name.
-			if [[ ${str_word:0:1} == " " ]]; then
-				str_firstchar=${str_word:0:2}
-			else
-				str_firstchar=${str_word:0:1}
-			fi 
-		
-			#Condition to check for lowercase letters
-			if [[ "$str_firstchar" =~ [a-z] ]]; then
-				ERROR="structure name $str_word doesn't begin with an uppercase letter."
-				return 1	
-			fi
+			#If it is a comment line, do nothing.
+			return 0	
 
-		#This part is for checking structure names that come in the format "struct int XYZ;"
-		elif [[ "$1" =~ ";" && "$1" =~ "struct" ]]; then
+		#Condition to check for template names.
+		elif [[ $1 =~ $pattern_template ]]; then
 			
-			str_word=${1%\;*}
-			str_structname=${str_word##* }
+			str_template=${BASH_REMATCH[3]}
+			size=${#str_template}
 
-			#Condition to check for lowercase letters
-			if [[ ${str_structname:0:1} =~ [a-z] ]]; then
-				ERROR="structure name $str_structname doesn't begin with an uppercase letter."
+			#Condition to check whether template names have more than one character.
+			if [[ $size != 1 ]]; then
+				ERROR="$str_template has more than one uppercase letter."
+
 				return 1
 			fi
 
-		#This is the required part for checking the names of classes and structures
-		else
-			case "$1" in
-	
-			#check for class names whether they start with an upper case letter
-			*class*)
+			#Condition to check whether template names contain lower case letters.
+			if [[ $str_template =~ [a-z] ]]; then
+				ERROR="$str_template contains lowercase letters."
 
-				if [[ $1 =~ "friend" ]]; then
-					#This line obtains "XYZ" from string "class XYZ"
-					str_name=${1#*class }
-					#match with the first character 
-					case ${str_name:0:1} in  
-						[[:upper:]])
-							#The class name is correct
-							return 0
- 			       			        ;;
- 			       			*)
-							ERROR="class name $str_name begins with lowercase letters."
-							return 1
-					                ;;
-					esac
-				fi
-				;;
-	
-			#check for template names whether they have only a single uppercase letter
-			template*) 		
-				str_name=${1#*template<class }
-				case ${str_name:0:1} in
-					[[:upper:]])
-						if [[ $size != 1 ]]; then
-							ERROR="template name $str_name has more than one uppercase letter."
+				return 1
+			fi	
 
-							return 1
-						fi
- 				                ;;
- 				        *)
-						ERROR="$str_name contains lowercase letters."
+		#Condition to check for class names.
+		elif [[ $1 =~ $pattern_class ]]; then	
+        		
+			str_class=${BASH_REMATCH[1]}
 
-						return 1		        		
- 					        ;;
-				esac
-			;;
-			esac 
+			#Condition to check for lowercase letters.
+			if [[ ${str_class:0:1} =~ [a-z] ]]; then
+				ERROR="$str_class doesn't begin with an uppercase letter....."
+
+				return 1
+			fi
+				
 		fi
 	return 0
 	}
@@ -162,7 +131,7 @@ compliance_check_file_classnamecheck()
 			if ! check_line "$LINE" $LINE_NUM; then
 				# Report the line has failed.
 				
-				compliance_fail_line "compliance_check_file_classnamecheck" $1 $LINE_NUM "Non-compliant class/structure/template name: $ERROR"
+				compliance_fail_line "compliance_check_file_classnamecheck" $1 $LINE_NUM "Non-compliant class/template name: $ERROR"
 		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
@@ -182,7 +151,6 @@ compliance_check_file_classnamecheck()
 
 	done < $FILE
 
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
@@ -193,7 +161,7 @@ compliance_check_file_classnamecheck()
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains non-compliant class/structure/template name(s)."
+		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains non-compliant class/template name(s)."
 	fi
 
 	# All done.
@@ -213,7 +181,7 @@ compliance_check_file_classnamecheck()
 compliance_get_rules_classnamecheck()
 {
 	echo "classnamecheck:"
-	echo "\tClass and structure names which begin with a lower case character will fail. Template names which do not contain a single uppercase letter will fail."
+	echo "\tClass names which begin with a lower case character will fail. Template names which do not contain a single uppercase letter will fail."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }
