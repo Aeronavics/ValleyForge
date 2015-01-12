@@ -85,7 +85,6 @@
 
 // INCLUDE REQUIRED HEADER FILES.
 #include "target_config.hpp"	// Include target specific configuration.
-#include "startup.h"			// Tell ValleyForge to include startup.c when building
 
 // Include the STDINT fixed width types.
 #include <<<TC_INSERTS_STDINT_FILE_NAME_HERE>>>
