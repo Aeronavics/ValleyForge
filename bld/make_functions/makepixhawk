@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 
 #	Copyright (C) 2012 Unison Networks Ltd
 #
@@ -59,7 +59,7 @@ makepixhawk_armcortex()
 
 	# Check if the USB Device Configuration file exists. If it is missing, it is likely the rest of the build environment is not configured correctly either.
 	type genromfs >/dev/null 2>&1
-	if [ -e "/etc/udev/rules.d/10-px4.rules" ]; then
+	if [ ! -e "/etc/udev/rules.d/10-px4.rules" ]; then
 		# The system is not configured to build the Pixhawk Firmware
 		echo -e "${YELLOW}System is not properly configured for a Pixhawk build.\n${NO_COLOUR}"
 
@@ -124,6 +124,8 @@ makepixhawk_armcortex()
 	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
 	# Also copy the ELF across, in case we also want that.
 	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+	# Also copy the .px4 across, in case we're using the bootloader to upload code.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.px4 $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.px4
 
 	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
 	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
@@ -298,6 +300,49 @@ makepixhawk_configure_environment()
 
 	echo -e "${CYAN}\nBuild Environment Configured. Please log out and log in again to complete the process.\n${NO_COLOUR}"
 	exit 0
+}
+
+makepixhawk_bootloader()
+{
+	# Download the bootloader code.
+	unpack_pixhawk_bootloader
+
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	cp -rf $TCPATH/res/vendor/pixhawk_bootloader/Bootloader/* $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	pushd $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader >/dev/null
+	make
+	make ${TARGET_PIXHAWK_DEVICE}
+	popd >/dev/null
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+	# Also copy the ELF across, in case we also want that.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+
+	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+
+	cp -f $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/
 }
 
 # ALL DONE.
