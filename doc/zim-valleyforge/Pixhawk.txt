@@ -36,3 +36,7 @@ make
 
 ===== Updating Bootloader =====
 The bootloader can be updated using the JTAG interface and OpenOCD. Instructions can be found [[https://pixhawk.org/dev/px4_bootloader#flashing_bootloader|here]]. Instructions for updating the bootloader using a MicroSD Card or DFUse can be found [[https://pixhawk.org/dev/bootloader_update|here]].
+
+===== Pixhawk on the STM32F4 Discovery Development Board =====
+The microcontroller in the PX4FMU Autopilot is similar to the one used in the STM32F4 Discovery Development Board, and there is even documentation to help run the PX4FMU code on the Discovery Board. At this time however, the FMU Firmware does not produce software that is compatible with the Discovery Board. If that changes, the following [[https://pixhawk.org/modules/stm32f4discovery|page]] will likely be updated to reflect this.
+The bootloader works without any modifications and can be loaded via ST-Link, as explained [[https://pixhawk.org/dev/px4_bootloader#stm32f4discovery_with_integrated_stlinkv2|here]].
