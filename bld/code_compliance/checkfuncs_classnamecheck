@@ -45,7 +45,7 @@ compliance_check_file_classnamecheck()
 	local FILE=$1
 
 	#Regex pattern to match template names.
-	pattern_template="(template)+[ ]*<(class) ([a-zA-Z0-9_]+)>"
+	pattern_template="(template)+[ ]*<[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)>"
 
 	#Regex pattern to match class names.
 	pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
@@ -69,7 +69,7 @@ compliance_check_file_classnamecheck()
 		#Condition to check for template names.
 		elif [[ $1 =~ $pattern_template ]]; then
 			
-			str_template=${BASH_REMATCH[3]}
+			str_template=${BASH_REMATCH[2]}
 			size=${#str_template}
 
 			#Condition to check whether template names have more than one character.

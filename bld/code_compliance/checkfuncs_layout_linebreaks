@@ -17,57 +17,41 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_headercheck
+### Name:           checkfuncs_layout_linebreaks
 ###
 ### Author:         Ravi Shankar
 ###
-### Date Created:	08-01-2015
+### Date Created:	13-01-2015
 ###
 ### Type:           Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for corresponding header files.
+### Purpose:        Implements code compliance tests: tests for proper layout conventions(linebreaks) in files.
 ###
 ###########################################################################################################################
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_headercheck
+### Name:		compliance_check_file_layout_linebreaks
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source file for a matching header file.
+### Purpose:	Tests a single C/CPP source file for proper layout conventions(linebreaks).
 ###
 ###########################################################################################
 
-compliance_check_file_headercheck()
+
+compliance_check_file_layout_linebreaks()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	#Extract the filename from the entire path
-	filename_ext=$(basename "$1")
+	#Run "Artistic Style" with the file as its input and store the output string with status of the operation.
+	str=$(astyle --style=allman -j --dry-run $FILE) 
+	status=${str%% *}
 
-	#Condition to check if the file is a "C++" or "C" file.
-	if [[ $filename_ext =~ ".cpp" || $filename_ext =~ ".c" ]]; then
-		
-		#Extract the filename alone without the extension
-		filename="${filename_ext%.*}"
-
-		#Condition to match C++ file
-		if [[ $filename_ext =~ ".cpp" ]]; then
-			headerfile=$filename".hpp"
-
-		#Condition to match C file
-		elif [[ $filename_ext =~ ".c" ]]; then
-			headerfile=$filename".h"
-		fi
-		
-		#Condition to check if the file has a matching header file.
-		if [[ ! $(find $COMPLIANCE_INPUT_DIRECTORY -type f -name $headerfile) ]]; then
-			compliance_fail_file "compliance_check_file_headercheck" $1 "This file doesn't have a matching header"
-
-		fi
-
+	#Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)		
+	if [[ "$status" == "Formatted" ]]; then
+		compliance_fail_file "compliance_check_file_layout_linebreaks" $FILE "This file doesn't follow proper layout conventions(linebreaks)"
 	fi
 
 	return 0
@@ -75,18 +59,19 @@ compliance_check_file_headercheck()
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_get_rules_headercheck
+### Name:		compliance_get_rules_layout_linebreaks
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the headercheck test.
+### Purpose:	Prints out a summary of the code compliance rules for the "layout_linebreaks" test.
 ###
 ###########################################################################################
 
-compliance_get_rules_headercheck()
+compliance_get_rules_layout_linebreaks()
 {
-	echo "Header file conventions:"
-	echo "\tAll C++ anc C files should have a corresponding header file."
+	echo "Layout conventions(linebreaks):"
+	echo "\tAll C++ anc C files should follow proper layout conventions(linebreaks)."
+	echo "\tConditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional."
 	echo ""
 }
 

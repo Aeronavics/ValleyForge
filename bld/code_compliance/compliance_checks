@@ -155,7 +155,6 @@ compliance_check_directory()
 			# Test if this check is actually enabled in our current configuration.
 			if ! compliance_lookup_test ${CHECK}; then
 				# Perform the check.
-				echo >&2 "check is performed ${CHECK}"
 				${CHECK} ${FILE}
 			fi
 		done
@@ -216,14 +215,14 @@ compliance_fail_file()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error: $2: '$3'${NO_COLOUR}"
+			echo -e "${RED}\tCompliance error in $1: $2: '$3'${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance error: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Compliance error in $1: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 		
-		if [[ $1 == compliance_check_file_file* || $1 == "exception_limits" ]]; then
+		if [[ $1 == compliance_check_file_file* || $1 == compliance_check_file_layout* || $1 == "exception_limits" ]]; then
 			((COMPLIANCE_NUM_ERRORS++))
 		fi
 
@@ -231,14 +230,14 @@ compliance_fail_file()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning: $2: '$3'${NO_COLOUR}"
+			echo -e "${YELLOW}\tCompliance warning in $1: $2: '$3'${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance warning: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Compliance warning in $1: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		if [[ $1 == compliance_check_file_file* || $1 == "exception_limits" ]]; then
+		if [[ $1 == compliance_check_file_file* || $1 == compliance_check_file_layout* || $1 == "exception_limits" ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
 
