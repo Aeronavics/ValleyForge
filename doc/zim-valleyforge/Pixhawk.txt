@@ -5,3 +5,34 @@ Creation-Date: 2015-01-09T08:08:15+13:00
 ====== Pixhawk ======
 Created Friday 09 January 2015
 
+===== Configuring the Pixhawk Build Environment =====
+Instructions for setting up Ubuntu for building the Pixhawk Firmware can be found on the "[[+Build Environment|Build Environment]]" page.
+
+===== Building the Firmware =====
+Instructions can be found on the Pixhawk [[https://pixhawk.org/dev/nuttx/building_and_flashing_console|website]].
+
+===== Updating Firmware =====
+Firmware is uploaded to the Pixhawk boards via the USB bootloader and a Python uploader script. The specific script that is used can found at Firmware/tools/px_uploader.py. The script is called (Linux) in the following way:
+'''
+python -u $(UPLOADER) --port $(SERIAL_PORTS) $(BUNDLE)
+'''
+
+Where:
+* $(UPLOADER) is the path to px_uploader.py
+* $(SERIAL_PORTS) is the list of all possible serial ports that the bootloader could be attached to
+* $(BUNDLE) is the path to the "firmware.px4" file. For example, "Firmware/Build/px4fmu-v2_default.build/firmware.px4.
+
+Alternatively, one can use the uploader as it is implemented in the Pixhawk build system, as explained [[https://pixhawk.org/dev/nuttx/building_and_flashing_console#flashing_via_usb_with_px4_bootloader|here]].
+
+===== Building the Bootloader =====
+Building the bootloader is a simple process.
+'''
+cd ~/src
+git clone https://github.com/PX4/Bootloader.git
+cd Bootloader
+make
+'''
+
+
+===== Updating Bootloader =====
+The bootloader can be updated using the JTAG interface and OpenOCD. Instructions can be found [[https://pixhawk.org/dev/px4_bootloader#flashing_bootloader|here]]. Instructions for updating the bootloader using a MicroSD Card or DFUse can be found [[https://pixhawk.org/dev/bootloader_update|here]].
