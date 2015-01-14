@@ -31,6 +31,7 @@
 
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported embedded ARM (Cortex) make-functions.\n${NO_COLOUR}"
+source ${TCPATH}/bld/make_functions/dependency_detection
 
 ######################################## FUNCTION #########################################
 ###											###
@@ -91,6 +92,12 @@ makecortex()
 	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
+    pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
+	for FILE in $(find . -iname \*.cpp -o -iname \*.c); do
+		list_object_dependencies . $FILE
+	done
+	popd >/dev/null
+
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all			
