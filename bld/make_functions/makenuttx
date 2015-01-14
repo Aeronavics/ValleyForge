@@ -57,8 +57,6 @@ makenuttx_armcortex()
 		return 1
 	fi
 
-	# TODO - Unpacking the compiler won't help, because at the moment NuttX won't use the version we unpack.
-
 	# Set up the native compiler.
 	unpack_embeddedarmc
 

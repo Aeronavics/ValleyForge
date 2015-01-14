@@ -87,8 +87,6 @@ makepixhawk_armcortex()
 		esac
 	fi
 
-	# TODO - Unpacking the compiler won't help, because at the moment Pixhawk won't use the version we unpack.
-
 	# Set up the native compiler.
 	unpack_embeddedarmc
 
