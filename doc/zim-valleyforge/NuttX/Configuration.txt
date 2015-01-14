@@ -3,5 +3,35 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-07T08:18:36+13:00
 
 ====== Configuration ======
-Created Wednesday 07 January 2015
+This is a brief guide. More in depth information can be found inside nuttx/configs/README.txt.
 
+Before the [[NuttX]] source can be built, first a configuration must be loaded. The nuttx/configs directory lists all of the different boards that are available. Inside each of these directories are a number of subdirectories.
+
+  ''<board-name>''
+''  |-- README.txt''
+''  |-- include/''
+''  |   `-- (board-specific header files)''
+''  |-- src/''
+''  |   |-- Makefile''
+''  |   `-- (board-specific source files)''
+''  |-- <config1-dir>''
+''  |   |-- Make.defs''
+''  |   |-- defconfig''
+''  |   `-- setenv.sh''
+''  |-- <config2-dir>''
+''  |   |-- Make.defs''
+''  |   |-- defconfig''
+''  |   `-- setenv.sh''
+''  ...''
+
+The include and src directories are for board specific header and source files respectively. The rest of the subdirectories each contain a particular configuration. The specifics of each configuration are stored inside the README.txt file.
+
+To load a particular configuration, open a terminal window in nuttx/tools and run the following:
+'''
+configure.sh board-name/config-name
+'''
+This copies the Make.defs, defconfig and setenv.sh files to the nuttx/ directory, and renames defconfig to ".config".
+
+At this point, NuttX is now in a position to be compiled by calling ''make'' in the nuttx/ directory. Alternatively, further configuration can be done by either manually editing the nuttx/.config file or by running  ''make menuconfig ''in the nuttx/ directory and navigating the various menus.
+
+By default, [[NuttX]] is not configured to build C++ code, as it requires uClibc++. The reasons for this are related to licensing issues. uClib++ can be installed by following the instructions in misc/uClibc++/README.txt.

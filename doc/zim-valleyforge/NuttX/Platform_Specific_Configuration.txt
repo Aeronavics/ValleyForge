@@ -1,0 +1,18 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-14T14:19:16+13:00
+
+====== Platform Specific Configuration ======
+Created Wednesday 14 January 2015
+
+For each application, [[NuttX]] requires two values to be defined: the stack size and the priority.
+
+Inside the component .cfg file there are four additional keys:
+* APP_STACKSIZES
+	 This is a space delimited string of the stack sizes for each application defined in EXECUTABLES. If EXECUTABLES is not defined, then only one stack size should be entered.
+* DEFAULT_APP_STACKSIZE
+	This is the stack size that will be applied to an application in the instance that one is not defined in APP_STACKSIZES. At the time of writing, this is automatically assigned a value of 2048.
+* APP_PRIORITIES
+	As with APP_STACKSIZES, APP_PRIORITIES is a space delimited string of priorities for each application defined in EXECUTABLES. If EXECUTABLES is not defined, then only one priority value should be entered.
+* DEFAULT_APP_PRIORITY
+	This is the priority that will be automatically assigned to an application should one not be defined in APP_PRIORITIES. At the time of writing, this is automatically assigned the value of "SCHED_PRIORITY_DEFAULT".

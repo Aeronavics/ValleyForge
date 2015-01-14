@@ -1,0 +1,15 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-14T14:12:27+13:00
+
+====== Platform Specific Configuration ======
+Created Wednesday 14 January 2015
+
+Since Pixhawk is built on top of NuttX, it also requires some additional configuration. Specifically, each executable requires a stacksize, or for there to be a default stacksize defined.
+
+Inside the component .cfg file, there are two additional keys. 
+* APP_STACKSIZES
+	 This is a space delimited string of the stack sizes for each application defined in EXECUTABLES. If EXECUTABLES is not defined, then only one stack size should be entered.
+* DEFAULT_APP_STACKSIZE
+	This is the stack size that will be applied to an application in the instance that one is not defined in APP_STACKSIZES. At the time of writing, this is automatically assigned a value of 2048.
+	

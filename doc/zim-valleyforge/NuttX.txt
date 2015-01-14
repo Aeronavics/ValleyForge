@@ -4,4 +4,13 @@ Creation-Date: 2015-01-07T07:55:13+13:00
 
 ====== NuttX ======
 
-[[NuttX]] is the real-time operating system that the Pixhawk autopilot system runs on. It is designed to comply with POSIX and ANSI standards and runs on a range of different microcontrollers (from 8-bit ATmega cores to 32-bit ARM cores). A complete list of the supported devices can be found [[http://www.nuttx.org/Documentation/NuttX.html#platforms|here]].
+NuttX is a real-time operating system (RTOS) with an emphasis on standards compliance and small footprint. Scalable from 8-bit to 32-bit microcontroller environments, the primary governing standards in NuttX are Posix and ANSI standards. Additional standard APIs from Unix and other common RTOS's (such as VxWorks) are adopted for functionality not available under these standards, or for functionality that is not appropriate for deeply-embedded environments (such as fork()). 
+
+[[NuttX]] is the real-time operating system that the Pixhawk autopilot system runs on. A complete list of the supported devices can be found [[http://www.nuttx.org/Documentation/NuttX.html#platforms|here]].
+
+A [[http://www.nuttx.org/doku.php?id=documentation:userguide|user guide]] is available on the NuttX [[http://www.nuttx.org/|website]], along with a a list of key features. The [[NuttX]] Git repository can be found at their [[http://sourceforge.net/p/nuttx/git/ci/master/tree/|SourceForge page]].
+
+===== Installation =====
+[[NuttX]] only requires two directories from the Git repository; the apps/ and nuttx/ directories. By default, the apps/ and nuttx/ directory should be installed alongside each other in the same directory.
+
+Instructions for configuring and building [[NuttX]] can be found on the "[[+Configuration|Configuration]]" page.
