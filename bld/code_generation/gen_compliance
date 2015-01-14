@@ -1,0 +1,189 @@
+#!/bin/bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_compliance											###
+###															###
+### Author:		Ravi Shankar											###
+###															###
+### Date Created:	14-01-2015											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions and definitions which implement layout conventions on C and C++ files.	###
+###															###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_compliance							###
+###											###
+### Inputs/Outputs:	Takes the path to the location of the source files which should	###
+###			be modified.							###
+###											###
+### Purpose:		Modifies the files present in the provided directory to enforce	###
+###			layout conventions using 'Artistic Style' program.		###
+###											###
+###########################################################################################
+
+gen_compliance()
+{
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	#Variables to check the status of the file modification operation.
+	local status_astyle=
+
+	#Hardcode the config file for uncrustify.
+	CONFIG_FILE="code_compliance/config_files/whitespace.cfg"
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code modification.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	#Obtain user's choice to modify entire directory or particular file.
+	echo -e "${GREEN}Which layout convention do you want to enforce?\n${NO_COLOUR}"
+	select choice in whitespace indentation linebreaks All_layout None
+	do
+
+	case $choice in
+		whitespace)
+			options='-p -k1 -U -xy'
+			break
+			;;
+		indentation)
+			options='--style=allman -t -C -S -N -xW'
+			break
+			;;
+		linebreaks)
+			options='-j'
+			break
+			;;
+		All_layout)
+			options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j'
+			break
+			;;
+		None)
+        	        echo -e "${CYAN}Exiting from gen_compliance script...${NO_COLOUR}"
+                        exit
+                        ;;
+	esac
+	break
+	done
+
+	#Obtain user's choice to modify entire directory or particular file.
+	echo -e -n "${GREEN}Do you wish to modify all the files in the directory '$1' (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+	# If they responded YES, then modify all the files in the directory and sub-directories.
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+
+		#Loop through all the required files.
+		for FILE in $(find $1 -name "*.h" -print \
+				-o -name "*.hpp" -print \
+				-o -name "*.c" -print \
+				-o -name "*.cpp" -print \
+				-o -name "*.pde" -print); do
+
+			echo -e "${CYAN}"
+			
+
+			#Run Artistic style program on the selected file.
+			astyle $options $FILE &> /dev/null			
+
+			#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
+			if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
+				uncrustify -c $CONFIG_FILE -f $FILE -o $FILE &> /dev/null
+			fi		
+		done
+
+	#If NO, then ask for the name of the specific file to be modified.
+	elif [[ $REPLY =~ ^[Nn]$ ]]; then
+
+		# Prompt the user for the name of the file.
+		echo -e "${GREEN}Which file do you want to be modified?${NO_COLOUR}"
+
+		#Obtain and store all the required files in the src directory into an array.
+		ALL_FILES=$(find $1 -name "*.h" -o -name "*.hpp" -o -name "*.c" -o -name "*.cpp" -o -name "*.pde")
+
+		#Add an option for user to exit the loop.
+		ALL_FILES+=("None")
+
+		# Create a menu of available files and have the user select one.
+		select FILE in ${ALL_FILES[@]}
+		do
+
+			# Check if they wish to exit the loop.
+			if [ "${FILE}" == "None" ]; then
+
+				echo -e "${CYAN}Not modifying any code...\n${NO_COLOUR}"
+
+				#Something has gone wrong.
+				CHECKS_OK=
+				break
+			fi
+			
+			# Check if the selected file is actually valid.
+			FILE=$(echo "${ALL_FILES}" | grep -w -o "${FILE}")
+
+			if [ -z "${FILE}" ]; then
+
+				# The selected file was not in the list of scripts, so the user is apparently a moron.
+				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+			else
+
+				# A legitimate option was selected, so we can go now.
+				echo -e "${CYAN}Selected the file '${FILE}' to modify.\n"
+				
+				#Run Artistic style program on the selected file.
+				astyle $options $FILE &> /dev/null	
+
+				#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
+				if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
+					uncrustify -c $CONFIG_FILE -f $FILE -o $FILE &> /dev/null
+				fi						
+			fi
+		break
+		done
+
+	#The user has entered an invalid option.
+	else
+		echo -e "${RED}Invalid option...\n${NO_COLOUR}"
+
+		#Something has gone wrong.
+		CHECKS_OK=
+	fi
+	
+	#Check the status of the script. Display warning messages based on the status. 
+	if [[ $CHECKS_OK != 1 ]]; then
+		echo -e "${RED}\nCode modification failed...\n${NO_COLOUR}"
+	else
+		echo -e "${GREEN}\nCode modification successfully completed according to $choice conventions...\n${NO_COLOUR}"
+	fi
+
+	#All done.
+	return 0
+}
+
+# ALL DONE.

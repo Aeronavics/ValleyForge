@@ -46,7 +46,7 @@ compliance_check_file_layout_whitespace()
 	local FILE=$1
 
 	#Run "Artistic Style" with the file as its input and store the output string with status of the operation.
-	str=$(astyle --style=allman -p -k1 --dry-run $FILE) 
+	str=$(astyle -p -k1 -U -xy --dry-run $FILE) 
 	status=${str%% *}
 		
 	#Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)

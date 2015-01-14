@@ -62,7 +62,7 @@ gen_bootappinterface_avr()
 	# Check if we are using the bootloader.
 	if [ -z $BOOTLOADER ]; then
 		# The component isn't using a bootloader, so the interface isn't going to work.  Just skip this section.
-		echo -e "${Yellow}No bootloader in use, skipping the bootloader application interface.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No bootloader in use, skipping the bootloader application interface.\n${NO_COLOUR}"
 		return 0
 	fi
 
