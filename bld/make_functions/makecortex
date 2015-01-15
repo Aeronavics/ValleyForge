@@ -93,15 +93,19 @@ makecortex()
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
     pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-	for FILE in $(find . -iname \*.cpp -o -iname \*.c); do
-		list_object_dependencies . $FILE
-	done
-	list_library_dependencies . $(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c) $(1)
+	# for FILE in $(find . -iname \*.cpp -o -iname \*.c); do
+	# 	list_object_dependencies . $FILE
+	# 	generate_dependency_files . $FILE
+	# done
+	# list_library_dependencies . $(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)
+	generate_make_dep . $(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)
 	popd >/dev/null
+	
+	# exit 0
 
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
-	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all			
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 

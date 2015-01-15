@@ -47,29 +47,32 @@
 
 find_source_dependencies() {
 	pushd $1 >/dev/null
-
-	echo -e "${CYAN}\t\t\tDetecting source dependencies for $2....\n${NO_COLOUR}"
+	echo -e "${CYAN}\t\t\tDetecting source dependencies for ${2##*/}....\n${NO_COLOUR}"
 	SRC_STRING=
 	ASRCS=
 	CSRCS=
-	# Find the source files required to build the application
+	# Find the source files required to build the application.
 	find_source_dependencies_recursive $2
 
 	# Split up the assembly and C/CPP files
 	for SRC in $SRC_STRING; do
 		if [[ ${SRC} == *.s ]]; then
 			ASRCS="$SRC $ASRCS"
-		else
+		elif [[ ${SRC} == *.c ]]; then
+			CSRCS="$SRC $CSRCS"
+		elif [[ ${SRC} == *.cpp ]]; then
 			CSRCS="$SRC $CSRCS"
 		fi
 	done
+	# Remove duplicate entries and sort alphabetically.
+	ASRCS=$(echo "$ASRCS" | tr " " "\n" | sort -u | tr "\n" " ")
+	CSRCS=$(echo "$CSRCS" | tr " " "\n" | sort -u | tr "\n" " ")
+	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
+
 	echo -e "${CYAN}\t\t\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
 	echo -e "${CYAN}\t\t\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
 
 	popd >/dev/null
-
-	# Perhaps this stage could be completed by the calling function?
-	# echo $SRC_STRING > FILENAME
 }
 
 ######################################## FUNCTION ####################################################
@@ -118,13 +121,14 @@ find_object_dependencies() {
 	else
 		ROOT_FILE=$2
 	fi
-
 	# Find the list of source dependencies
 	find_source_dependencies $1 $ROOT_FILE
 	# Convert the source file names into object file names.
 	for SRC in $SRC_STRING; do
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
+	# Remove duplicate entries and sort alphabetically.
+	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 	echo -e "${CYAN}\t\t\tObject files dependencies detected: ${OBJ_STRING}\n${NO_COLOUR}"
 
 	pushd >/dev/null
@@ -173,12 +177,8 @@ list_object_dependencies() {
 	# Remove the output file if it already exists.
 	rm -f "${2%.*}.ld"
 	find_object_dependencies $1 $2
-	# Append each file name to the output file.
-	for OBJ in $OBJ_STRING; do
-		echo "$OBJ" >> "${2%.*}.ld"
-	done
-	# Sort and remove duplicate entries
-	sort -u "${2%.*}.ld" -o "${2%.*}.ld"
+	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
+	echo "OBJS =${OBJ_STRING}" > "${2%.*}.ld"
 	pushd >/dev/null	
 }
 
@@ -197,6 +197,73 @@ list_object_dependencies() {
 ######################################################################################################
 list_library_dependencies() {
 	pushd $1 >/dev/null
+	echo "DEBUG $1, $2"
 	find . -name "lib*.a" > ${2%.*}.lld
+	popd >/dev/null
+}
+
+#1 Directory
+#2 Root File
+generate_make_dep() {
+	pushd $1 >/dev/null
+	rm -f Make.deps
+	# List the executable linker dependencies
+	find_object_dependencies $1 $2
+	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
+	echo -e "OBJS =${OBJ_STRING}\n" >> "Make.deps"
+
+	# List the library dependencies
+	LIB_STRING=$(find . -name "lib*.a" | tr "\n" " ")
+	echo -e "LIBS = ${LIB_STRING}\n" >> Make.deps
+
+	# List the object dependencies
+	for SRC in $SRC_STRING; do
+		case ${SRC##*.} in
+			"c")
+				${C_COMPILER} ${CFLAGS} -MM ${SRC} >> Make.deps
+				echo " " >> Make.deps
+				;;
+			"cpp")
+				${P_COMPILER} ${PFLAGS} -MM ${SRC} >> Make.deps
+				echo " " >> Make.deps
+				;;
+			"s")
+				${ASSEMBLER} ${AFLAGS} -MM ${SRC} >> Make.deps
+				echo " " >> Make.deps
+				;;
+			*)
+				echo "${RED}ERROR: Invalid Source File Extension\n${NO_COLOUR}"
+				exit 1
+				;;
+		esac
+	done
+}
+
+#1 Directory
+#2 Root File
+generate_dependency_files() {
+	pushd $1 >/dev/null
+	find_source_dependencies $1 $2
+
+	# Produce the .dc, .dcpp, .ds files
+	for SRC in $SRC_STRING; do
+		case ${SRC##*.} in
+			"c")
+				${C_COMPILER} ${CFLAGS} -MM ${SRC} > ${SRC%.*}.dc
+				;;
+			"cpp")
+				${P_COMPILER} ${PFLAGS} -MM ${SRC} > ${SRC%.*}.dcpp
+				;;
+			"s")
+				${ASSEMBLER} ${AFLAGS} -MM ${SRC} > ${SRC%.*}.ds
+				;;
+			*)
+				echo "${RED}ERROR: Invalid Source File Extension\n${NO_COLOUR}"
+				exit 1
+				;;
+		esac
+	done
+	# Produce the .d file
+	echo "${COMPONENT_NAME}: ${COMPONENT_NAME}.ld ${COMPONENT_NAME}.lld" > ${COMPONENT_NAME}.d
 	popd >/dev/null
 }

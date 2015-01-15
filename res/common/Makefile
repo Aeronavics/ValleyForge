@@ -52,144 +52,31 @@ PFLAGS=BUILD_INSERTS_PFLAGS_HERE # The C++ compiler flags to apply.
 AFLAGS=BUILD_INSERTS_AFLAGS_HERE # The assembler flags to apply.
 LFLAGS=BUILD_INSERTS_LFLAGS_HERE # The linker flags to apply.
 
-# FUNCTIONS.
+include Make.deps
 
-# PSEUDO-TARGETS
+.PHONY: all
 
-# All the pseudo-targets are phony: they don't correspond with real files.
-.PHONY: all main
+all: $(EXECUTABLE)
+	
 
-all: main
-
-main: $(EXECUTABLE)
-
-# TARGETS.
-
-#	EXECUTABLE FILES.
-
-%: %.d
+$(EXECUTABLE): $(OBJS) startup.o
 	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
-	$(LD) -o $@ $(shell cat $@.ld) $(shell cat $@.lld) $(LFLAGS)
+	$(LD) -o $@ $(OBJS) $(LIBS) $(LFLAGS)
 
 #	OBJECT FILES.
 
 # Object from C.
-%.o : %.c %.dc
-	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
+%.o: %.c
+	@echo -e "$(BOLD_WHITE)******** Compiling $@. test ********$(NO_COLOUR)"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Object from C++.
-%.o : %.cpp %.dcpp
+%.o: %.cpp
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(PC) $(PFLAGS) -c $< -o $@
 
 # Object from assembly.
-%.o : %.s %.ds
+%.o: %.s
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
 	$(AS) $(AFLAGS) $< -o $@
-
-#	ASSEMBLY FILES.
-
-# Assembly from C.
-%.s: %.c %.dc
-	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
-	$(CC) $(CFLAGS) -s $< -o $@
-
-# Assembly from CPP.
-%.s: %.cpp %.dcpp
-	@echo -e "$(BOLD_WHITE)******** Assembling $@. ********$(NO_COLOUR)"
-	$(CC) $(PFLAGS) -s $< -o $@
-
-# HEADER FILES
-
-%.h: %.o ;
-
-%.hpp: %.o ;
-
-# DEPENDENCY TARGETS.
-
-# Header file dependencies are calculated directly by the compiler, they are easy.  Object file dependencies are more complicated; they are 
-# calculated by a separate function.
-
-# Dependency from C.
-%.dc: %.c
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
-	@${CC} ${CFLAGS} -MM $^ > $@
-	@sed "s^.*:^$*.o:^g" -i $@
-	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
-
-# Dependency from C++.
-%.dcpp: %.cpp
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
-	@${PC} ${PFLAGS} -MM $^ > $@
-	@sed "s^.*:^$*.o:^g" -i $@
-	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
-
-# Dependency from assembly.
-%.ds: %.s
-	@echo -e "$(BOLD_WHITE)******** Calculating dependencies for $(*).o. ********$(NO_COLOUR)"
-	@${AS} ${AFLAGS} -MM $^ > $@
-	@sed "s^.*:^$*.o:^g" -i $@
-	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no dependencies."; fi
-
-# The dependencies for the target output file are created by assuming that the target output file requires some object file which carries the same
-# name as the executable being compiled.  It's assumed that from there, all other dependencies can be discovered from the include chain (this now
-# includes assembler files, which will need header files so they are discovered).
-
-# Dependencies of executable.
-${EXECUTABLE}.d:
-	@echo -e "$(BOLD_WHITE)******** Calculating executable dependencies. ********$(NO_COLOUR)"
-	@# Work out what the main file is going to be, so we can build the output file.
-	@echo -e "Assuming executable ${EXECUTABLE} will depend upon ${EXECUTABLE}.o"
-	@echo -e "${EXECUTABLE}: $(@:.d=.ld) $(@:.d=.lld)\n" >> ${EXECUTABLE}.d
-
-# Linking dependencies are calculated by a separate function.  These are not proper make-syntax dependencies, these are simply a list of those
-# object files which need to be included for linking a particular executable.  This allows linking only those object files which are required.
-
-# Linker dependency from source dependencies.
-%.ld: %.o $(LOOSE_OBJECTS)
-	@echo -e "$(BOLD_WHITE)******** Calculating linking dependencies for $*. ********$(NO_COLOUR)"
-	@echo $(LOOSE_OBJECTS) >> $@
-	@sed -i "s^ ^\n^g; /^$$/d" $@
-	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete linker dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no linker dependencies (this seems unlikely, and probably indicates something is about to go wrong)."; fi
-
-# Library dependencies are easy enough to calculate; since unused objects are discarded by the linker, we can simply include all the library (archive)
-# files we find, and let the linker sort out which are actually needed.
-
-# Linker library dependency from nothing.
-%.lld: %.o
-	@echo -e "${BOLD_WHITE}******** Searching for library files to include for $*. ********$(NO_COLOUR)"
-	@cat $@ | head -n $(DEPENDENCY_LINES_TO_TRUNCATE)
-	@if [ "`cat $@ | wc -l`" -gt "$(DEPENDENCY_LINES_TO_TRUNCATE)" ]; then echo "Listing truncated.  Complete library dependency file $@ is `cat $@ | wc -l` lines long."; fi
-	@if [ "`cat $@ | wc -l`" -lt "1" ]; then echo "File has no library dependencies."; fi
-
-# IMPORT EXTERNAL DEPENDENCIES.
-
-# Dependencies are calculated for all the source files, even if they might not be needed, because there isn't an option to go back and include
-# additional rules later, so we have to include all the rules we might possibly need right from the start.
-
-# Include dependencies for C files.
--include ${patsubst %.c, %.dc, ${shell find . -name "*.c"}}
-
-# Include dependencies for C++ files.
--include ${patsubst %.cpp, %.dcpp, ${shell find . -name "*.cpp"}}
-
-# Include dependencies for assembly files.
--include ${patsubst %.s, %.ds, ${shell find . -name "*.s"}}
-
-# Dependencies also need to be calculated for the executable as a whole, so that we actually have some rules which create us the desired output
-# file, using the appropriate source files.
-
-# Include dependencies for executable main.
--include ${EXECUTABLE}.d
-
-
 
