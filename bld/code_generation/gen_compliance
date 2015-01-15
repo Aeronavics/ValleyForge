@@ -51,7 +51,7 @@ gen_compliance()
 	local status_astyle=
 
 	#Hardcode the config file for uncrustify.
-	CONFIG_FILE="code_compliance/config_files/whitespace.cfg"
+	CONFIG_FILE_DIRECTORY="code_compliance/config_files"
 
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then
@@ -63,31 +63,33 @@ gen_compliance()
 
 	#Obtain user's choice to modify entire directory or particular file.
 	echo -e "${GREEN}Which layout convention do you want to enforce?\n${NO_COLOUR}"
-	select choice in whitespace indentation linebreaks All_layout None
+	select choice in whitespace indentation linebreaks comment All_layout None
 	do
-
-	case $choice in
-		whitespace)
-			options='-p -k1 -U -xy'
-			break
-			;;
-		indentation)
-			options='--style=allman -t -C -S -N -xW'
-			break
-			;;
-		linebreaks)
-			options='-j'
-			break
-			;;
-		All_layout)
-			options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j'
-			break
-			;;
-		None)
-        	        echo -e "${CYAN}Exiting from gen_compliance script...${NO_COLOUR}"
-                        exit
-                        ;;
-	esac
+		case $choice in
+			whitespace)
+				options='-p -k1 -U -xy'
+				break
+				;;
+			indentation)
+				options='--style=allman -t -C -S -N -xW'
+				break
+				;;
+			linebreaks)
+				options='-j'
+				break
+				;;
+			comment)
+				break
+				;;
+			All_layout)
+				options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j'
+				break
+				;;
+			None)
+        		        echo -e "${CYAN}Exiting from gen_compliance script...${NO_COLOUR}"
+                	        exit
+                	        ;;
+		esac
 	break
 	done
 
@@ -106,16 +108,43 @@ gen_compliance()
 				-o -name "*.cpp" -print \
 				-o -name "*.pde" -print); do
 
+			#Statement to add colour to the output text of Uncrustify program.
 			echo -e "${CYAN}"
 			
+			#Condition to check if user has selected "comment".
+			if [[ $choice == "comment" ]]; then
+				
+				#Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
+				uncrustify -c $CONFIG_FILE_DIRECTORY/commenting.cfg -f $FILE -o $FILE
 
-			#Run Artistic style program on the selected file.
-			astyle $options $FILE &> /dev/null			
+				#Replace todo comment with the correct syntax
+				sed -i 's/todo[ -: ]*/ TODO - /I' $FILE
 
-			#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
-			if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
-				uncrustify -c $CONFIG_FILE -f $FILE -o $FILE &> /dev/null
-			fi		
+				#Replace note comment with the correct syntax
+				sed -i 's/note[ -: ]*/ NOTE - /I' $FILE
+
+				#Get the line numbers of string containing single line C comments.
+				for str_line in `pcregrep -n -M '/\*.*?\*/\n' $FILE | cut -d : -f 1`
+				do
+					string=$(awk 'NR == '"$str_line"' ' $FILE)
+
+					if [[ $string =~ "\\" ]]; then
+						#The line contains line breaks. Do nothing.
+						:
+					else
+						#Replace C style comments with C++ style comments.
+						sed -i ''"$str_line"'s:\(.*\)/[*]\(.*\)[*]/:\1//\2:' $FILE
+					fi
+				done
+			else
+				#Run Artistic style program on the selected file.
+				astyle $options $FILE &> /dev/null			
+
+				#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
+				if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
+					uncrustify -c $CONFIG_FILE_DIRECTORY/whitespace.cfg -f $FILE -o $FILE &> /dev/null
+				fi		
+			fi
 		done
 
 	#If NO, then ask for the name of the specific file to be modified.
@@ -155,13 +184,39 @@ gen_compliance()
 
 				# A legitimate option was selected, so we can go now.
 				echo -e "${CYAN}Selected the file '${FILE}' to modify.\n"
-				
-				#Run Artistic style program on the selected file.
-				astyle $options $FILE &> /dev/null	
 
-				#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
-				if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
-					uncrustify -c $CONFIG_FILE -f $FILE -o $FILE &> /dev/null
+				if [[ $choice == "comment" ]]; then
+
+					#Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
+					uncrustify -c $CONFIG_FILE_DIRECTORY/commenting.cfg -f $FILE -o $FILE
+	
+					#Replace todo comment with the correct syntax
+					sed -i 's/todo[ -: ]*/ TODO - /I' $FILE
+	
+					#Replace note comment with the correct syntax
+					sed -i 's/note[ -: ]*/ NOTE - /I' $FILE
+	
+					#Get the line numbers of string containing single line C comments.
+					for str_line in `pcregrep -n -M '/\*.*?\*/\n' $FILE | cut -d : -f 1`
+					do
+						string=$(awk 'NR == '"$str_line"' ' $FILE)
+	
+						if [[ $string =~ "\\" ]]; then
+							#The line contains line breaks. Do nothing.
+							:
+						else
+							#Replace C style comments with C++ style comments.
+							sed -i ''"$str_line"'s:\(.*\)/[*]\(.*\)[*]/:\1//\2:' $FILE
+						fi
+					done
+				else				
+					#Run Artistic style program on the selected file.
+					astyle $options $FILE &> /dev/null	
+
+					#For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
+					if [[ $choice == "whitespace" || $choice="All_layout" ]]; then
+						uncrustify -c $CONFIG_FILE_DIRECTORY/whitespace.cfg -f $FILE -o $FILE &> /dev/null
+					fi
 				fi						
 			fi
 		break
