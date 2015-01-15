@@ -50,19 +50,23 @@ compliance_check_file_funcname()
 	local class_count=0
 	# Define internal functions.
 
-array_contains () 
-{ 
-    local array="$1[@]"
-    local seeking=$2
-    local in=1
-    for element in "${!array}"; do
-        if [[ $element == $seeking ]]; then
-            in=0
-            break
-        fi
-    done
-    return $in
-}
+	#Function to check if the function name is a class name (To eliminate constructors and destructors)
+	array_contains () 
+	{ 
+		local array="$1[@]"
+		local seeking=$2
+		local in=1
+		
+		for element in "${!array}"; do
+
+			if [[ $element == $seeking ]]; then
+				in=0
+				break
+			fi
+		done
+		return $in
+	}
+
 	check_line()
 	{
 		#

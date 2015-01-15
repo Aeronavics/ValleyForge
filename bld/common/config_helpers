@@ -53,13 +53,13 @@ push_key()
 		# We are deleting a specific key/value pair, rather than inserting a new key, or replacing an existing key.
 
 		# If we can find the exact key/value pair (treating assignment and concatenation the same), then we delete it.
-		sed -r -i "\|\s*${2}=${3}\s*|d" ${1}
-		sed -r -i "\|\s*${2}[+]=${3}\s*|d" ${1}
+		sed -r -i "\|\s*${2}=\"${3}\"\s*|d" ${1}
+		sed -r -i "\|\s*${2}[+]=\"${3}\"\s*|d" ${1}
 
 	# Check whether we should be concatenating this key rather than assigning it.
 	elif [ "$4" == "--concat" ]; then
 		# Because this is a concatenated key, we check if the complete key/value pair already exists, rather than just the key.
-		if [ -z "`cat ${1} | grep -E \"^\s*${2}[+]=${3}$\"`" ]; then
+		if [ -z "`cat ${1} | grep -E \"^\s*${2}[+]=\"${3}\"$\"`" ]; then
 			# We couldn't already find the key, so we just insert it add the end.
 			echo "${2}+=${3}" >> "${1}"
 		fi
@@ -69,10 +69,10 @@ push_key()
 		# Check if the key already exists in the file.
 		if [ -n "`cat ${1} | grep -E \"^\s*${2}=.*$\"`" ]; then
 			# The key already exists, so now we just change its value.
-			sed -r -i "s%^\s*${2}=.*$%${2}=${3}%g" ${1}
+			sed -r -i "s%^\s*${2}=.*$%${2}=\"${3}\"%g" ${1}
 		else
 			# We couldn't already find the key, so we just insert it add the end.
-			echo "${2}=${3}" >> "${1}"
+			echo "${2}=\"${3}\"" >> "${1}"
 		fi
 	fi
 
