@@ -91,17 +91,11 @@ makecortex()
 	sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
-    
+
+	# Generate the Make.deps dependency file.    
     pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-	# for FILE in $(find . -iname \*.cpp -o -iname \*.c); do
-	# 	list_object_dependencies . $FILE
-	# 	generate_dependency_files . $FILE
-	# done
-	# list_library_dependencies . $(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)
-	generate_make_dep . $(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)
+	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)"
 	popd >/dev/null
-	
-	# exit 0
 
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"

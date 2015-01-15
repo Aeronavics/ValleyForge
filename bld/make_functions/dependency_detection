@@ -36,23 +36,28 @@
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		SRC_STRING: The list of all detected source files.
-###					ASRCS:		The list of detected assembly source files.
-###					CSRCS:		The list of detected C/C++ source files.
+### Outputs:		SRC_STRING: The list of all source files that the examined file depends on.
+###					ASRCS:		The list of assembly source files that the examined file depends on.
+###					CSRCS:		The list of C/C++ source files that the examined file depends on.
 ###
-### Purpose:		Finds the list of .c/.cpp/.s source files that are required depended on to
-###					compile a given file.
+### Purpose:		Finds the list of .c/.cpp/.s source files that are depended on by
+###					a given file.
 ###
 ######################################################################################################
 
 find_source_dependencies() {
 	pushd $1 >/dev/null
-	echo -e "${CYAN}\t\t\tDetecting source dependencies for ${2##*/}....\n${NO_COLOUR}"
+	echo -e "${CYAN}\tDetecting source dependencies for ${2##*/}....\n${NO_COLOUR}"
+	# Reset the output variables
 	SRC_STRING=
 	ASRCS=
 	CSRCS=
 	# Find the source files required to build the application.
 	find_source_dependencies_recursive $2
+
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
+	# list into a newline delimited list for sort, before converting it back again.
+	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
 	# Split up the assembly and C/CPP files
 	for SRC in $SRC_STRING; do
@@ -64,13 +69,13 @@ find_source_dependencies() {
 			CSRCS="$SRC $CSRCS"
 		fi
 	done
-	# Remove duplicate entries and sort alphabetically.
-	ASRCS=$(echo "$ASRCS" | tr " " "\n" | sort -u | tr "\n" " ")
-	CSRCS=$(echo "$CSRCS" | tr " " "\n" | sort -u | tr "\n" " ")
-	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
+	# Remove any leading spaces
+	ASRC="$(echo "$ASRCS" | sed 's/^ *//')"
+	CSRCS="$(echo "$CSRCS" | sed 's/^ *//')"
+	SRC_STRING="$(echo "$SRC_STRING" | sed 's/^ *//')"
 
-	echo -e "${CYAN}\t\t\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
-	echo -e "${CYAN}\t\t\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
+	echo -e "${CYAN}\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
+	echo -e "${CYAN}\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
 
 	popd >/dev/null
 }
@@ -79,7 +84,9 @@ find_source_dependencies() {
 ###
 ### Name:			find_source_dependencies_recursive
 ###
-### Inputs/Outputs:	1. The name of the file which is being examined for dependencies.
+### Inputs:			1. The name of the file which is being examined for dependencies.
+###
+### Outputs:		SRC_STRING: A variable containing all of the detected source files.
 ###
 ### Purpose:		Recusively examines each source file that is found to discover any nested
 ###					dependencies.
@@ -88,13 +95,40 @@ find_source_dependencies() {
 
 find_source_dependencies_recursive() {
 	local DEPENDENCIES
+	local TARGET_FILE
+	# Find the basename of examined file by removing any directory or filetype components
+	TARGET_BASENAME=${1%.*}
+	TARGET_BASENAME=${TARGET_BASENAME##*/}
 
-	# Use gcc to detect the local .h dependencies, remove the object file reference, convert assembly headers into assembly filenames, swap all remaining instances of .h for .c and remove any instances of $1.
-	DEPENDENCIES=$(gcc -MM ${1} | sed "s^.*: ^^g" | sed "s^\\.hs^\\.s^g" | sed "s^\\.h^\\.c^g" | sed "s^${1}^^g")
+	# Use gcc to detect the local .h dependencies, then remove any files with "TARGET_BASENAME" followed by a "." and any number of characters.
+	DEPENDENCIES=$(gcc -MM ${1} | sed "s/${TARGET_BASENAME}\.\S*//g")
 	# Add each dependency to the list and search of any dependencies of its own.
+
+	# For each .h/.hpp/.hs file, check if a respective source file exists and if so, add it SRC_STRING.
 	for WORD in $DEPENDENCIES; do
-		SRC_STRING="${WORD} $SRC_STRING"
-		find_source_dependencies_recursive $WORD
+		case ${WORD##*.} in
+			"h")
+				if [ -e ${WORD%.*}.c ]; then
+					SRC_STRING="${WORD%.*}.c ${SRC_STRING}"
+					find_source_dependencies_recursive ${WORD%.*}.c
+				elif [ -e ${WORD%.*}.cpp ]; then
+					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
+					find_source_dependencies_recursive ${WORD%.*}.cpp
+				fi
+				;;
+			"hpp")
+				if [ -e ${WORD%.*}.cpp ]; then
+					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
+					find_source_dependencies_recursive ${WORD%.*}.cpp
+				fi
+				;;
+			"hs")
+				if [ -e ${WORD%.*}.s ]; then
+					SRC_STRING="${WORD%.*}.s ${SRC_STRING}"
+					find_source_dependencies_recursive ${WORD%.*}.s
+				fi
+				;;
+		esac
 	done
 }
 
@@ -105,7 +139,7 @@ find_source_dependencies_recursive() {
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		OBJ_STRING: The list of all detected object files.
+### Outputs:		OBJ_STRING: A variable containing the list of all detected object files.
 ###
 ### Purpose:		Finds the list of object files that are required depended on to
 ###					compile a given file.
@@ -122,14 +156,19 @@ find_object_dependencies() {
 		ROOT_FILE=$2
 	fi
 	# Find the list of source dependencies
-	find_source_dependencies $1 $ROOT_FILE
+	find_source_dependencies . $ROOT_FILE
 	# Convert the source file names into object file names.
 	for SRC in $SRC_STRING; do
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
-	# Remove duplicate entries and sort alphabetically.
+	# Add the 
+	OBJ_STRING="${ROOT_FILE%.*}.o ${OBJ_STRING}"
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
+	# list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
-	echo -e "${CYAN}\t\t\tObject files dependencies detected: ${OBJ_STRING}\n${NO_COLOUR}"
+	# Remove any leading spaces
+	OBJ_STRING="$(echo "$OBJ_STRING" | sed 's/^ *//')"
+	echo -e "${CYAN}\tObject file dependencies detected: ${OBJ_STRING}\n${NO_COLOUR}"
 
 	pushd >/dev/null
 }
@@ -151,7 +190,7 @@ list_source_dependencies() {
 	pushd $1 >/dev/null
 	# Remove the output file if it already exists.
 	rm -f "$2.sd"
-	find_source_dependencies $1 $2
+	find_source_dependencies . $2
 	# Append each file name to the output file.
 	for SRC in $SRC_STRING; do
 		echo "$SRC" >> "$2.sd"
@@ -166,9 +205,9 @@ list_source_dependencies() {
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		Writes the object dependencies to $2.ld
+### Outputs:		Writes the object dependencies to $2.ld (with the original suffix removed).
 ###
-### Purpose:		Writes the list of object dependencies to a .ld file. Each object file on
+### Purpose:		Writes the list of object dependencies to a .ld file. Each object file name on
 ###					its own line.
 ###
 ######################################################################################################
@@ -176,8 +215,7 @@ list_object_dependencies() {
 	pushd $1 >/dev/null
 	# Remove the output file if it already exists.
 	rm -f "${2%.*}.ld"
-	find_object_dependencies $1 $2
-	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
+	find_object_dependencies . $2
 	echo "OBJS =${OBJ_STRING}" > "${2%.*}.ld"
 	pushd >/dev/null	
 }
@@ -189,34 +227,53 @@ list_object_dependencies() {
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		OBJ_STRING:	The list of all detected object files.
+### Outputs:		Writes the list of library dependencies to $2.lld 
+###					(with the original suffix removed).
 ###
-### Purpose:		Finds the list of object files that are required depended on to
-###					compile a given file.
+### Purpose:		Writes the list of library dependencies to a .lld file. Each library file name
+###					on its own line.
 ###
 ######################################################################################################
 list_library_dependencies() {
 	pushd $1 >/dev/null
-	echo "DEBUG $1, $2"
 	find . -name "lib*.a" > ${2%.*}.lld
 	popd >/dev/null
 }
 
-#1 Directory
-#2 Root File
-generate_make_dep() {
-	pushd $1 >/dev/null
-	rm -f Make.deps
+######################################## FUNCTION ####################################################
+###
+### Name:			generate_component_dependencies
+###
+### Inputs:			1. The directory containing the file which is being examined for dependencies.
+###					2. The name of the file which is being examined for dependencies.
+###
+### Outputs:		Creates a file called "Make.deps" in the directory being examined. This file
+###					is designed to be included in a makefile to fill in all of the recipes as well
+###					as to provide the list of objects and library files for final linking.
+###
+### Purpose:		Produces all of the dependencies for compiling all of the modules in the project.
+###
+######################################################################################################
+generate_component_dependencies() {
+	pushd "$1" >/dev/null
+	# Remove the Make.deps file if it exists already.
+	rm -f "./Make.deps"
 	# List the executable linker dependencies
-	find_object_dependencies $1 $2
+	echo "# Executable Linker Dependencies" >> "Make.deps"
+	find_object_dependencies . $2
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
+	# list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
 	echo -e "OBJS =${OBJ_STRING}\n" >> "Make.deps"
 
 	# List the library dependencies
+	echo "# Executable Library Dependencies" >> "Make.deps"
 	LIB_STRING=$(find . -name "lib*.a" | tr "\n" " ")
 	echo -e "LIBS = ${LIB_STRING}\n" >> Make.deps
 
 	# List the object dependencies
+	echo "# Object File Dependencies" >> "Make.deps"
+	# Use the -MM flag to generate a rule describing the dependencies of each source file for make.
 	for SRC in $SRC_STRING; do
 		case ${SRC##*.} in
 			"c")
@@ -233,37 +290,9 @@ generate_make_dep() {
 				;;
 			*)
 				echo "${RED}ERROR: Invalid Source File Extension\n${NO_COLOUR}"
+				echo "$SRC"
 				exit 1
 				;;
 		esac
 	done
-}
-
-#1 Directory
-#2 Root File
-generate_dependency_files() {
-	pushd $1 >/dev/null
-	find_source_dependencies $1 $2
-
-	# Produce the .dc, .dcpp, .ds files
-	for SRC in $SRC_STRING; do
-		case ${SRC##*.} in
-			"c")
-				${C_COMPILER} ${CFLAGS} -MM ${SRC} > ${SRC%.*}.dc
-				;;
-			"cpp")
-				${P_COMPILER} ${PFLAGS} -MM ${SRC} > ${SRC%.*}.dcpp
-				;;
-			"s")
-				${ASSEMBLER} ${AFLAGS} -MM ${SRC} > ${SRC%.*}.ds
-				;;
-			*)
-				echo "${RED}ERROR: Invalid Source File Extension\n${NO_COLOUR}"
-				exit 1
-				;;
-		esac
-	done
-	# Produce the .d file
-	echo "${COMPONENT_NAME}: ${COMPONENT_NAME}.ld ${COMPONENT_NAME}.lld" > ${COMPONENT_NAME}.d
-	popd >/dev/null
 }

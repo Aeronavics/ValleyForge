@@ -14,7 +14,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #
-# GENERIC MAKEFILE WITH DEPENDENCY CALCULATION.
+# GENERIC MAKEFILE.
 #
 #	Author:		Edwin Hayes
 #
@@ -27,7 +27,6 @@
 SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
 	# Disable implicit rules, since they will screw dependency detection up.
 .SUFFIXES:
-DEPENDENCY_LINES_TO_TRUNCATE=6
 
 # Shell colours.
 NO_COLOUR=\033[0m
