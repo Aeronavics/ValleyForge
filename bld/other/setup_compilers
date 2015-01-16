@@ -274,13 +274,13 @@ unpack_arduinoc()
 
 		# Download the release.
 		echo -e "${CYAN}Downloading Arduino IDE release...\n${NO_COLOUR}"
-		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "http://downloads.arduino.cc/arduino-1.5.4-linux64.tgz"
+		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "http://arduino.cc/download.php?f=/arduino-1.0.6-linux64.tgz"
 		echo ""
 			
 		# Unpack the release.
 		echo -e "${CYAN}Unpacking the release...\n${NO_COLOUR}"
 		tar -xzf "${TMP_COMPILER_DIR}/arduino/arduino.tgz" -C "${TMP_COMPILER_DIR}/arduino/"
-		mv "${TMP_COMPILER_DIR}/arduino/arduino-1.5.4" "${TMP_COMPILER_DIR}/arduino/arduino-dist"
+		mv "${TMP_COMPILER_DIR}/arduino/arduino-1.0.6" "${TMP_COMPILER_DIR}/arduino/arduino-dist"
 			
 		# We should be all good to go now.
 		echo -e "${CYAN}Arduino compiler available.\n${NO_COLOUR}"
