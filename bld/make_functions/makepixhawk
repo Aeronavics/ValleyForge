@@ -32,8 +32,6 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported Pixhawk make-functions.\n${NO_COLOUR}"
 
-source ${TCPATH}/bld/make_functions/find_source_dependencies
-
 ######################################## FUNCTION #########################################
 ###
 ### Name:		makepixhawk_armcortex
