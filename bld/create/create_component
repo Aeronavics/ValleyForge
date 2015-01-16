@@ -769,7 +769,7 @@ if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ] && 
 	choose_executables
 else
 	# Only one executable. Do nothing.
-	:
+	EXECUTABLES="$COMPONENT"
 fi
 
 # Run any required bootloader specific config.
