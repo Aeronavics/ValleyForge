@@ -15,6 +15,16 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
 ###########################################################################################################################
 ###
 ### Name:           config_helpers
@@ -52,9 +62,15 @@ push_key()
 	if [ "$4" == "--delete" ]; then
 		# We are deleting a specific key/value pair, rather than inserting a new key, or replacing an existing key.
 
-		# If we can find the exact key/value pair (treating assignment and concatenation the same), then we delete it.
-		sed -r -i "\|\s*${2}=\"${3}\"\s*|d" ${1}
-		sed -r -i "\|\s*${2}[+]=\"${3}\"\s*|d" ${1}
+		# Check if the key/value pair exists in the file.	
+		if [ ! -z "`grep -qE "\s*${2}=\"${3}\"\s*|\s*${2}[+]=\"${3}\"\s*" ${1}`" ]; then
+			# The key/value pair exists, so we delete it.
+			sed -r -i "\|\s*${2}=\"${3}\"\s*|d" ${1}
+			sed -r -i "\|\s*${2}[+]=\"${3}\"\s*|d" ${1}
+			echo -e "${GREEN}Deleted '$key'/'$value' pair...${NO_COLOUR}"
+		else
+			echo -e "${RED}The key/value pair '$2'/'$3' doesn't exist...${NO_COLOUR}"
+		fi
 
 	# Check whether we should be concatenating this key rather than assigning it.
 	elif [ "$4" == "--concat" ]; then
@@ -63,6 +79,16 @@ push_key()
 			# We couldn't already find the key, so we just insert it add the end.
 			echo "${2}+=${3}" >> "${1}"
 		fi
+
+	# Check whether we should be adding a new key to the file.
+	elif [ "$4" == "--add" ]; then
+		# We check if the key already exists.
+		if [ -z "`cat ${1} | grep -E \"^\s*${2}[+]=\"${3}\"$\"`" ]; then
+			# We couldn't already find the key, so we just insert it add the end.
+			echo "${2}+=${3}" >> "${1}"
+		else
+			echo -e "${RED}The key '$2' already exists...${NO_COLOUR}"
+		fi
 	
 	# Else this is just a regular assignment.
 	else
@@ -70,9 +96,10 @@ push_key()
 		if [ -n "`cat ${1} | grep -E \"^\s*${2}=.*$\"`" ]; then
 			# The key already exists, so now we just change its value.
 			sed -r -i "s%^\s*${2}=.*$%${2}=\"${3}\"%g" ${1}
+			echo -e "${GREEN}Modified key '$key' with value '$value'... ${NO_COLOUR}"
 		else
 			# We couldn't already find the key, so we just insert it add the end.
-			echo "${2}=\"${3}\"" >> "${1}"
+			echo -e "${RED}The key '$2' doesn't exist...${NO_COLOUR}"
 		fi
 	fi
 
@@ -90,17 +117,19 @@ pull_key()
 
 	# NOTE - However, the behavior in the case of multiple (usually concatenating) keys may not be immediately obvious.
 
-	# TODO - Check if the required fields are actually present.
-
 	# Check if the specified configuration file exists.
 	if [ ! -f "$1" ]; then
 		# The specified configuration file does not exist, so we simply return nothing.
-		return 1
+		echo -e "${RED}The configuration file '$1' doesn't exist...${NO_COLOUR}"
 	fi
 
-	# Check if the key is found in the file, and if so, print it out (since you can't return a string in bash).
-	echo `cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2`
-	echo `cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2`
+	if [ ! -z "`grep -E "^\s*${2}=.*$|^\s*${2}[+]=.*$" ${1}`" ]; then
+		# The key exists, so we just print out the value to console.
+		echo `cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2`
+		echo `cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2`
+	else
+		echo -e "${RED}The key '$2' doesn't exist...${NO_COLOUR}"
+	fi
 
 	# All done.
 	return 0

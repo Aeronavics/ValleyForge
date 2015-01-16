@@ -1,0 +1,181 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           config_interface
+###
+### Author:         Ravi Shankar
+###
+### Date Created:	16-01-2015
+###
+### Type:           Bash Function Definitions
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:        Provides an interface to add/modify/delete key/value pairs in configuration files.
+###
+###########################################################################################################################
+
+# FIGURE OUT WHERE WE ARE.
+
+# Determine what the absolute path to the root of the toolchain is.
+SCRIPT=`readlink -f $0`
+SCRIPTPATH=`dirname $SCRIPT`
+TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+
+# Define the functions used for handling key/value pairs.
+source $TCPATH/bld/common/config_helpers
+
+# Define the colours used for interface output.
+source $TCPATH/bld/common/def_colours
+
+#Obtain and store all the required .cfg files into an array.
+ALL_FILES=$(find $TCPATH/var $TCPATH/bld/code_compliance/config_files -name "*.cfg" | sed 's/.*\/ValleyForge//')
+ALL_FILES+=("Exit")
+
+# Clear the terminal to tidy things up.
+clear
+
+# Obtain user's choice of input file.
+echo -e "${GREEN}\nWhich file do you want to select?${NO_COLOUR}"
+
+# Variable to decide whether or not to continue the loop.
+loop_status=1
+
+# Loop until the user enters a valid input or chooses to exit.
+while [[ $loop_status == 1 ]]
+do
+	# Change the default prompt.
+	PS3="Please enter your choice: "
+
+	# Obtain user's choice of configuration file.
+	select FILE in ${ALL_FILES[@]}
+	do
+		# User has chosen to exit from the script.
+		if [[ $FILE == "Exit" ]]; then
+			clear
+			echo -e "${RED}Exiting from config_interface script...${NO_COLOUR}"
+			exit 1
+
+		# Check if the user has entered an invalid input.
+		elif [ ! -f $TCPATH/$FILE ]; then
+			echo -e "${RED}Invalid option entered. Try again...${NO_COLOUR}"
+			loop_status=1
+
+		# The user has provided a valid input so continue.
+		else
+			loop_status=0
+		fi
+
+	break
+	done
+done
+
+# Clear the terminal to tidy things up.
+clear
+
+echo -e "${CYAN}Selected '$FILE'\n${NO_COLOUR}"
+
+# Loop until user chooses to exit from the script.
+while :
+do
+	echo -e "${GREEN}Which operation do you want to perform?${NO_COLOUR}"
+
+	# Array with operations for users to choose from.				
+	options=("View key/value pairs in config file" "Modify key" "Delete key" "Concatenate value to key" "Retrieve value" "Add key/value" "Reset to default config file" "Exit")
+	# Obtain user's choice of operation.
+	select choice in "${options[@]}"
+	do
+		case $choice in
+			"${options[0]}")
+				# Display only the key/value pairs from the .cfg file.
+				clear
+				# Print out an empty line to ensure no key/value pairs were left out by clearing the screen.
+				echo ""
+				grep -Eo '^COMPLIANCE_(.*)[+]*=(".*"|[0-9]|)' $TCPATH/$FILE
+				;;
+
+			"${options[1]}")
+				# Obtain the key and the new value for the key from user and modify it if found.
+				echo -e "${CYAN}Enter the name of the key to modify: ${NO_COLOUR}"
+				read key
+				echo -e "${CYAN}Enter the new value: ${NO_COLOUR}"
+				read value
+				clear
+				push_key $TCPATH/$FILE $key $value
+				;;
+
+			"${options[2]}")
+				# Obtain the key/value pair from user and delete it if found.
+				echo -e "${CYAN}Enter the name of the key to delete: ${NO_COLOUR}"
+				read key
+				echo -e "${CYAN}Enter the value of this key: ${NO_COLOUR}"
+				read value
+				clear
+				push_key $TCPATH/$FILE $key $value --delete
+				;;
+
+			"${options[3]}")
+				#TODO - Not sure how concatenation works in config_helpers script. So empty for now.
+				;;
+
+			"${options[4]}")
+				# Obtain the key from user and print out its value.
+				echo -e "${CYAN}Enter the name of the key to retrieve: ${NO_COLOUR}"
+				read key
+				clear
+				pull_key $TCPATH/$FILE $key
+				;;
+
+			"${options[5]}")
+				# Obtain the key/value pair from user and add it if not present already.
+				echo -e "${CYAN}Enter the name of the key to add: ${NO_COLOUR}"
+				read key
+				echo -e "${CYAN}Enter the value for this key: ${NO_COLOUR}"
+				read value
+				clear
+				push_key $TCPATH/$FILE $key $value --add
+				;;
+			"${options[6]}")
+				#Copy and replace the selected file with default file.
+				cp $TCPATH/bld/code_compliance/config_files/code_compliance.cfg $TCPATH/$FILE
+				clear
+				if [[ $? != 0 ]]; then
+					echo -e "${RED}Reset to the default config file failed...${NO_COLOUR}"
+				else
+					echo -e "${GREEN}Successfully reset to the default config file ${NO_COLOUR}"
+				fi
+				;;
+
+			"${options[7]}")
+				# The user has chosen to exit.
+				clear
+				echo -e "${RED}Exiting from config_interface script...${NO_COLOUR}"
+				exit 1
+				;;
+
+			*)
+				# The user has provided an invalid option.
+				clear
+				echo -e "${RED}Invalid option. Try another one.${NO_COLOUR}"
+				;;
+		esac
+	break
+	done
+done
+
