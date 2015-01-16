@@ -58,7 +58,7 @@ include Make.deps
 all: $(EXECUTABLE)
 	
 
-$(EXECUTABLE): $(OBJS) startup.o
+$(EXECUTABLE): $(OBJS)
 	@echo -e "$(BOLD_WHITE)******** Linking $@ from Object Files. ********$(NO_COLOUR)"
 	$(LD) -o $@ $(OBJS) $(LIBS) $(LFLAGS)
 
