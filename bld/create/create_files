@@ -300,7 +300,6 @@ fi
 echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 for FILENAME in $FILENAMES; do
 	# TODO - Check if there is already a file which the specified name in the source directory.
-
 	# If the following four variables are defined, we can simply use the template files stored at their location.
 	# There is also the option of a template suffix. If not defined, it resolves to an empty string which has no effect on the final file name.
 	if [ -n "${TEMPLATE_C_SOURCE}" -a -n "${TEMPLATE_H_SOURCE}" -a -n "${TEMPLATE_CPP_SOURCE}" -a -n "${TEMPLATE_HPP_SOURCE}" ]; then
@@ -327,6 +326,7 @@ for FILENAME in $FILENAMES; do
 		fi
 	# Template source files are not defined in the build config, we must determine where to look manually. Eventually this section will be unecessary.
 	else
+		echo -e "${YELLOW}Outdated definitions for template file locations. Please update the build configuration.\n${NO_COLOUR}"
 		# Check which kind of file we are creating.
 		if [ $TYPE == "C" ] && [ ${PLATFORM,,} == "freertos" ]; then
 			# Create the actual files by coping the templates into the source directory.
