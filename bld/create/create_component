@@ -283,24 +283,32 @@ choose_bootloader()
 ###########################################################################################
 
 choose_executables() {
-	# Ask if the user wants multiple executable files.
-	echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
+	while :
+	do
+		# # Ask if the user wants multiple executable files.
+		echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
-	# If they responded YES, then ask for the names of the executables.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
-		read -e
-		echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
+		case "$REPLY" in
+			"Y" | "y" )
+				# If they responded YES, then ask for the names of the executables.
+				echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
+				read -e
+				echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
-		EXECUTABLES="$REPLY"
-		# Update the config file with the executable files.
-		push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
-	else
-		# Otherwise, default to one executable with the name of the component.
-		EXECUTABLES="$COMPONENT"
-	fi
+				EXECUTABLES="$REPLY"
+				# Update the config file with the executable files.
+				push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
+				break
+				;;
+			"N" | "n" )
+				# Otherwise, default to one executable with the name of the component.
+				EXECUTABLES="$COMPONENT_NAME"
+				break
+				;;
+		esac
+	done
 }
 
 ##################################### MINOR FUNCTIONS ####################################
@@ -784,50 +792,70 @@ generate_code_config_time $TCPATH/src/$COMPONENT
 
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
-	# Ask if the user wants to set this as the current component.
-	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+	while :
+	do
+		# Ask if the user wants to set this as the current component.
+		echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 
-	# If they responded YES, then set the current component.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		# We want to set this as the current component.
-		sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
+		case "$REPLY" in
+			"Y" | "y" )
+				# We want to set this as the current component.
+				sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
 
-		# TODO - We should actually check if we can find the config file first.
-	fi
-
-	# Ask if the user wants template files to be created.
-	echo -e -n "${GREEN}Do you wish for template files to be created for the component? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
-
-	# If they responded YES, then create the template files.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		# Prompt the user to select a file type.
-		echo -e "${GREEN}Please choose which file type to create:${NO_COLOUR}"
-		# Create a menu of choices and have the user select one.
-		select TYPE in C CPP
-		do
-			# Check if the selected file type is actually valid.
-			TYPE=$(echo "C CPP" | grep -w -o "$TYPE")
-			if [ -z "$TYPE" ]; then
-				# The selected file type was not in the list of supported types, so the user is apparently a moron.
-				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
-			else
-				# A legitimate option was selected, so we can go now.
-				echo -e "${CYAN}Selected file type $TYPE.\n${NO_COLOUR}"
+				# TODO - We should actually check if we can find the config file first.
 				break
-			fi
-		done
+				;;
+			"N" | "n" )
+				# We don't want to set this as the current component. Do nothing.
+				:
+				break
+				;;
+		esac
+	done
 
-		# Create the template files.
-		for EXEC_NAME in $EXECUTABLES
-		do
-			echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
-			bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT -t "$TYPE" -b
-		done
-	fi
+	while :
+	do
+		# Ask if the user wants template files to be created.
+		echo -e -n "${GREEN}Do you wish for template files to be created for the component? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+
+		case "$REPLY" in
+			"Y" | "y" )
+				# Prompt the user to select a file type.
+				echo -e "${GREEN}Please choose which file type to create:${NO_COLOUR}"
+				# Create a menu of choices and have the user select one.
+				select TYPE in C CPP
+				do
+					# Check if the selected file type is actually valid.
+					TYPE=$(echo "C CPP" | grep -w -o "$TYPE")
+					if [ -z "$TYPE" ]; then
+						# The selected file type was not in the list of supported types, so the user is apparently a moron.
+						echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+					else
+						# A legitimate option was selected, so we can go now.
+						echo -e "${CYAN}Selected file type $TYPE.\n${NO_COLOUR}"
+						break
+					fi
+				done
+
+				# Create the template files.
+				for EXEC_NAME in $EXECUTABLES
+				do
+					echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
+					bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT -t "$TYPE" -b
+				done
+				break
+				;;
+			"N" | "n" )
+				# The user does not want template files. Do nothing.
+				:
+				break
+				;;
+		esac
+	done
 
 	# Explain to the user what they should do now.
 	echo -e "${BOLD_WHITE}The working directory for component $COMPONENT_NAME can now be found at src/$COMPONENT.\n${NO_COLOUR}"
