@@ -326,45 +326,7 @@ for FILENAME in $FILENAMES; do
 		fi
 	# Template source files are not defined in the build config, we must determine where to look manually. Eventually this section will be unecessary.
 	else
-		echo -e "${YELLOW}Outdated definitions for template file locations. Please update the build configuration.\n${NO_COLOUR}"
-		# Check which kind of file we are creating.
-		if [ $TYPE == "C" ] && [ ${PLATFORM,,} == "freertos" ]; then
-			# Create the actual files by coping the templates into the source directory.
-			cp $TCPATH/$TEMPLATE_RTOS_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
-			cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
-
-			# Preprocess the two template files.
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
-		elif [ $TYPE == "CPP" ] && [ ${PLATFORM,,} == "freertos" ]; then
-			# Create the actual files by coping the templates into the source directory.
-			cp $TCPATH/$TEMPLATE_RTOS_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
-			cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.hpp
-
-			# Preprocess the two template files.
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.hpp
-		# If we've reached this point, then we aren't using an RTOS so the default source files are used.
-		elif [ $TYPE == "C" ]; then
-			# Create the actual files by coping the templates into the source directory.
-			cp $TCPATH/$TEMPLATE_C_FILE $TCPATH/src/$COMPONENT/$FILENAME.c
-			cp $TCPATH/$TEMPLATE_H_FILE $TCPATH/src/$COMPONENT/$FILENAME.h
-
-			# Preprocess the two template files.
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.c
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.h
-		elif [ $TYPE == "CPP" ]; then
-			# Create the actual files by coping the templates into the source directory.
-			cp $TCPATH/$TEMPLATE_CPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.cpp
-			cp $TCPATH/$TEMPLATE_HPP_FILE $TCPATH/src/$COMPONENT/$FILENAME.hpp
-
-			# Preprocess the two template files.
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.cpp
-			preprocess_template $TCPATH/src/$COMPONENT/$FILENAME.hpp
-		else
-			echo -e "${RED}Correct options not specified to create files ${NO_COLOUR}\n"
-			exit -1
-		fi
+		echo -e "${RED}Correct options not specified to create files. Please update the build configuration.\n${NO_COLOUR}"
 	fi
 done
 
