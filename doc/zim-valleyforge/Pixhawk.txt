@@ -3,39 +3,14 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-09T08:08:15+13:00
 
 ====== Pixhawk ======
-Created Friday 09 January 2015
 
 ===== Configuring the Pixhawk Build Environment =====
 Instructions for setting up Ubuntu for building the Pixhawk Firmware can be found on the "[[+Build Environment|Build Environment]]" page.
 
-===== Building the Firmware =====
-Instructions can be found on the Pixhawk [[https://pixhawk.org/dev/nuttx/building_and_flashing_console|website]].
+===== Pixhawk Modules =====
+The Pixhawk "module" is the equivalent of an "application" in NuttX. The Pixhawk modules are found in src/modules.
 
-===== Updating Firmware =====
-Firmware is uploaded to the Pixhawk boards via the USB bootloader and a Python uploader script. The specific script that is used can found at Firmware/tools/px_uploader.py. The script is called (Linux) in the following way:
-'''
-python -u $(UPLOADER) --port $(SERIAL_PORTS) $(BUNDLE)
-'''
-
-Where:
-* $(UPLOADER) is the path to px_uploader.py
-* $(SERIAL_PORTS) is the list of all possible serial ports that the bootloader could be attached to
-* $(BUNDLE) is the path to the "firmware.px4" file. For example, "Firmware/Build/px4fmu-v2_default.build/firmware.px4.
-
-Alternatively, one can use the uploader as it is implemented in the Pixhawk build system, as explained [[https://pixhawk.org/dev/nuttx/building_and_flashing_console#flashing_via_usb_with_px4_bootloader|here]].
-
-===== Building the Bootloader =====
-Building the bootloader is a simple process.
-'''
-cd ~/src
-git clone https://github.com/PX4/Bootloader.git
-cd Bootloader
-make
-'''
-
-
-===== Updating Bootloader =====
-The bootloader can be updated using the JTAG interface and OpenOCD. Instructions can be found [[https://pixhawk.org/dev/px4_bootloader#flashing_bootloader|here]]. Instructions for updating the bootloader using a MicroSD Card or DFUse can be found [[https://pixhawk.org/dev/bootloader_update|here]].
+Pixhawk have a tutorial available for creating custom modules available [[https://pixhawk.org/dev/px4_simple_app|here]].
 
 ===== Pixhawk on the STM32F4 Discovery Development Board =====
 The microcontroller in the PX4FMU Autopilot is similar to the one used in the STM32F4 Discovery Development Board, and there is even documentation to help run the PX4FMU code on the Discovery Board. At this time however, the FMU Firmware does not produce software that is compatible with the Discovery Board. If that changes, the following [[https://pixhawk.org/modules/stm32f4discovery|page]] will likely be updated to reflect this.

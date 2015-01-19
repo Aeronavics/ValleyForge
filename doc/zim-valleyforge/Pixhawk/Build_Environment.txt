@@ -3,7 +3,6 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-13T10:01:00+13:00
 
 ====== Build Environment ======
-Created Friday 09 January 2015
 
 To build the Pixhawk firmware successfully, some packages must be installed. For operating systems other than Ubuntu, instructions can be found [[https://pixhawk.org/dev/minimal_build_env|here]].
 
