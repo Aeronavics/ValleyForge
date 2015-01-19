@@ -1546,7 +1546,7 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 	{
 		case TC_OC_CHANNEL_MODE_0 : // Normal Port Operation mode (Pins disconnected)
 		{
-      *table.TIMSK_ADDRESS = 0x00; // make sure all interrupts are disabled
+      *imp_register_table.TIMSK_ADDRESS = 0x00; // make sure all interrupts are disabled
 
 			if (timer_number != TC_0 || timer_number != TC_2)
 			{

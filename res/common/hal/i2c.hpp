@@ -1,5 +1,5 @@
 // Copyright (C) 2011  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,23 +16,23 @@
 /**
  *
  *  @addtogroup		hal Hardware Abstraction Library
- * 
+ *
  *  @file			i2c.hpp
  *  A header file for the I2C Module of the HAL.
- * 
- *  @brief 
+ *
+ *  @brief
  *  This is the header file which matches i2c.cpp.  Implements various functions relating to I2C, transmission
  *  and receiving of messages.
- * 
+ *
  *  @author			Ben O'Brien, derived from CAN-bus code by Paul Davey & George Xian
  *	 				Documentation based on AT90CAN128 data sheet Rev. 7679H–CAN–08/08, by ATMEL
- * 
+ *
  *  @date			1-02-2014
- * 
+ *
  *  @section 		Licence
- * 
+ *
  * Copyright (C) 2014  Unison Networks Ltd
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -45,10 +45,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  *  @section Description
  *
- * A class for the I2C module of the HAL. Implements various functions relating to I2C hardware 
+ * A class for the I2C module of the HAL. Implements various functions relating to I2C hardware
  * initialisation, transmission and receiving of data.
  */
 
@@ -61,20 +61,19 @@
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
 
-// Include the standard C++ definitions.
 #include <stddef.h>
 #include <stdint.h>
 
-// Include hal library components.
 #include "hal/hal.hpp"
 #include "hal/target_config.hpp"
 
+// FORWARD DEFINE PRIVATE PROTOTYPES.
+
 class I2C_imp;
+
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-class I2C;
-
-enum I2C_mode_t 
+enum I2C_mode
 {
 	I2C_MASTER = 0x0,
 	I2C_SLAVE = 0x1,
@@ -82,18 +81,21 @@ enum I2C_mode_t
 	I2C_RECEIVER = 0x4
 };
 
+enum I2C_bit_rate
+{
 
-enum I2C_send_condition_t 
+}
+
+enum I2C_send_condition_t
 {
 	I2C_START,
 	I2C_STOP,
 	I2C_REPEATED_START
 };
 
-
 enum I2C_return_status {I2C_SUCCESS, I2C_ERROR};
 
-enum I2C_prescaler_value_t 
+enum I2C_prescaler
 {
 	TW_PRESCALER_1 = 0x0,
 	TW_PRESCALER_4 = 0x1,
@@ -101,18 +103,17 @@ enum I2C_prescaler_value_t
 	TW_PRESCALER_64 = 0x3
 };
 
-
-// The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these 
+// The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
 // status codes to be displayed is summarised to the right of each definition.
-enum I2C_status_code_t 
+enum I2C_status_code_t
 {
 	// Master-specific codes ---------------------------------------------------------------------------------------------------------------------------
-	NO_INFO_TWINT_NOT_SET				= 0xf8,	// Meaning: The TWINT flag is not set, so no relevant information is available 
+	NO_INFO_TWINT_NOT_SET				= 0xf8,	// Meaning: The TWINT flag is not set, so no relevant information is available
 	BUS_ERROR							= 0x00,	// A bus error has occurred during a Two-wire Serial Bus transfer.
-												// From the data sheet: a bus error occurs 
-	
+												// From the data sheet: a bus error occurs
+
 	// Transmission
-	MT_START 							= 0x08,	// A START condition has been transmitted 
+	MT_START 							= 0x08,	// A START condition has been transmitted
 	MT_REPEAT_START 					= 0x10,	// A repeated START condition has been transmitted
 	MT_SLA_ACK 							= 0x18,	// SLA+W has been transmitted. ACK has been received.
 	MT_SLA_NACK 						= 0x20,	// SLA+W has been transmitted. NOT ACK has been received.
@@ -129,7 +130,7 @@ enum I2C_status_code_t
 	MR_DATA_NACK 						= 0x58,	// Data byte has been received; NOT ACK has been returned
 
 	// Slave-specific codes ---------------------------------------------------------------------------------------------------------------------------
-	
+
 	// Transmission
 	S_GOT_OWN_SLA_ACK					= 0x60,	// Own SLA+W has been received; ACK has been returned
 	S_LOST_ARB_1						= 0x68,	// Arbitration lost in SLA+R/W as master; own SLA+W has been received; ACK has been returned
@@ -140,66 +141,96 @@ enum I2C_status_code_t
 	S_PREV_ADDR_GEN_CALL_DATA_ACK		= 0x90,	// Previously addressed with general call; data has been received; ACK has been returned
 	S_PREV_ADDR_GEN_CALL_DATA_NOT_ACK	= 0x98,	// Previously addressed with general call; data has been received; NOT ACK has been returned
 	S_STOP_OR_REPEAT_START				= 0xA0,	// A STOP condition or repeated START condition has been received while still addressed as slave
-	
+
 	// Reception
-	S_SLA_ACK 							= 0xA8,	// Own SLA+R has been received; ACK has been returned 
+	S_SLA_ACK 							= 0xA8,	// Own SLA+R has been received; ACK has been returned
 	S_LOST_ARB_3						= 0xB0,	// Arbitration lost in SLA+R/W as master; own SLA+R has been received; ACK has been returned
 	S_SENT_BYTE_ACK 					= 0xB8,	// Data byte in TWDR has been transmitted; ACK has been received
 	S_SENT_BYTE_NOT_ACK 				= 0xC0,	// Data byte in TWDR has been transmitted; NOT ACK has been received
 	S_SENT_LAST_BYTE_SENT_ACK 			= 0xC8 	// Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
 };
 
-
-#define i2c_get_bit(address, pin) ((address & (1<<pin))>>pin)
-#define i2c_set_bit(address, pin, value) {if(((value) & 0x1) == 1) (address) |= (1<<(pin)); else (address) &= ~(1<<(pin));}
-
-#define I2C_COMMAND_START 	(1 << TWINT) | (1 << TWSTA) | (1 << TWEN)
-#define I2C_COMMAND_STOP 	(1 << TWINT) | (1 << TWSTO) | (1 << TWEN)
-
+struct
+{
+	unsigned char slave_adr;				//Slave address and W/R byte
+	unsigned char size;						//Number of bytes to send or
+											//receive
+	unsigned char *data_ptr;				//Pointer to the bytes to send
+}tx_type;
 
 /**
- * Interface class for an I2C controller.
+ * @class
+ *
+ * This class implements various functions relating to operating a I2C interface.
+ *
  */
-class I2C 
+class I2C
 {
-	friend class I2C_imp;
-	
 	public:
-	
-		/**
-		 * I2C Constructor
-		 */
-		I2C(I2C_mode_t new_mode);
-		
-		/**
-		 * Called when I2C instance goes out of scope
-		 */
+
+    // Functions.
+
+    /**
+     * Create I2C instance abstracting the specified I2C hardware peripheral.
+     */
+		I2C(I2C_mode mode);
+
+    /**
+     * Called when I2C instance goes out of scope
+     */
 		~I2C(void);
-		
+
+    /**
+     * Enables the I2C/TWI interface by setting the enable bit in the control register.
+     */
 		void enable(void);
-		
+
+    /**
+     * Disables the I2C/TWI register by un setting the enable bit in the control register.
+     */
 		void disable(void);
-		
-		void set_bitrate_divider(uint8_t new_bitrate_divider);
-		
-		/**
-		 * Sets the Clock Line (SCL) prescaler. 
-		 * Valid inputs are TW_PRESCALER_1, TW_PRESCALER_4, TW_PRESCALER_16, TW_PRESCALER_64
-		 */
-		void set_prescaler(I2C_prescaler_value_t new_pre_scaler);
-		
-		I2C_return_status start(uint8_t addres);
-		
+
+    /**
+     * Initialise the parameters for I2C use.
+     *
+     * @param    I2C_bit_rate    The bitrate of the I2C/TWI interface.
+     *           I2C_prescalar    Prescale value of I2C/TWI interface.
+     */
+		I2C_return_status initialise(I2C_bit_rate bitrate, I2C_prescaler pre_scaler);
+
+    /**
+     * Send START signal of I2C.
+     */
+		I2C_return_status start();
+
+    /**
+     * Send STOP signal of I2C.
+     */
 		I2C_return_status stop();
-		
-		I2C_return_status set_mode(I2C_mode_t new_mode);
-		
-		I2C_status_code_t get_status();
-		
-		I2C_return_status write(uint8_t write_value);
-		
+
+    /**
+     * Set the mode of I2C.
+     *
+     * @param    I2C_mode    A selection of operating modes for the device I2C.
+     *
+     */
+		I2C_return_status transmit(tx_type *data);
+
+    /**
+     * Set the slave mode for I2C.
+     *
+     * @param    I2C_mode    A selection of operating modes for the device I2C.
+     *
+     */
+		I2C_return_status receive(tx_type *data);
+
+    /**
+     * Check if the I2C Interrupt Service Routine is busy.
+     */
+		I2C_status_code_t transceiver_busy();
+
 	private:
-	
+
 		// Methods.
 
 		I2C(void);	// Poisoned.
@@ -212,18 +243,11 @@ class I2C
 
 		// Fields.
 
-		I2C_imp* implementation;
+		I2C_imp* imp;
 };
 
-#endif /*__I2C_H__*/
+// DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
-// 
-// Registers used for testing purposes only
-uint8_t test_TWAR = 0x00;
-uint8_t test_TWBR = 0x00;
-uint8_t test_TWCR = 0x00;
-uint8_t test_TWSR = 0x00;
-uint8_t test_TWDR = 0x00;
-bool is_debug_mode = true;
+#endif /*__I2C_H__*/
 
 // ALL DONE.
