@@ -42,14 +42,21 @@ STACKSIZE = <APP_STACK>
 
 ASRCS = <ASSEMBLY_SOURCE_FILES>
 CSRCS = <C_SOURCE_FILES>
+CXXSRCS = <CPP_SOURCE_FILES>
 MAINSRC = <APP_MAIN>
 
 AOBJS = $(ASRCS:.S=$(OBJEXT))
 COBJS = $(CSRCS:.c=$(OBJEXT))
-MAINOBJ = $(MAINSRC:.c=$(OBJEXT))
+CXXOBJS = $(CXXSRCS:.cpp=$(OBJEXT))
 
-SRCS = $(ASRCS) $(CSRCS) $(MAINSRC)
-OBJS = $(AOBJS) $(COBJS)
+ifeq (.c,$(suffix $(MAINSRC)))
+	MAINOBJ = $(MAINSRC:.c=$(OBJEXT))
+else
+	MAINOBJ = $(MAINSRC:.cpp=$(OBJEXT))
+endif
+
+SRCS = $(ASRCS) $(CSRCS) $(CXXSRCS) $(MAINSRC)
+OBJS = $(AOBJS) $(COBJS) $(CXXOBJS)
 
 ifneq ($(CONFIG_BUILD_KERNEL),y)
   OBJS += $(MAINOBJ)
@@ -86,8 +93,19 @@ all: .built
 $(AOBJS): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
 
+ifeq (.c,$(suffix $(MAINSRC)))
 $(COBJS) $(MAINOBJ): %$(OBJEXT): %.c
 	$(call COMPILE, $<, $@)
+
+$(CXXOBJS): %$(OBJEXT): %cpp
+	$(call COMPILEXX, $<, $@)
+else
+$(COBJS): %$(OBJEXT): %.c
+	$(call COMPILE, $<, $@)
+
+$(CXXOBJS) $(MAINOBJ): %$(OBJEXT): %.cpp
+	$(call COMPILEXX, $<, $@)
+endif
 
 .built: $(OBJS)
 	$(call ARCHIVE, $(BIN), $(OBJS))
