@@ -254,6 +254,7 @@ makenuttx_configure_apps()
 		sed -i s^"<APP_MAIN>"^"${MAIN_FILE}"^g $1/apps/external/${EXECUTABLE}/Makefile
 		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
 		sed -i s^"<C_SOURCE_FILES>"^"${CSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<CPP_SOURCE_FILES>"^"${PSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
 
 		# Enable the ValleyForge applications by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
