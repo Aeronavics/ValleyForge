@@ -38,7 +38,8 @@
 ###
 ### Outputs:		SRC_STRING: The list of all source files that the examined file depends on.
 ###					ASRCS:		The list of assembly source files that the examined file depends on.
-###					CSRCS:		The list of C/C++ source files that the examined file depends on.
+###					CSRCS:		The list of C source files that the examined file depends on.
+###					PSRCS:		The list of C source files that the examined file depends on.
 ###
 ### Purpose:		Finds the list of .c/.cpp/.s source files that are depended on by
 ###					a given file.
@@ -54,6 +55,7 @@ find_source_dependencies()
 	SRC_STRING=
 	ASRCS=
 	CSRCS=
+	PSRCS=
 
 	# Find the source files required to build the application.
 	echo -e "${CYAN}\tDetecting source dependencies for ${2}...\n${NO_COLOUR}"
@@ -232,10 +234,9 @@ find_object_dependencies()
 	for SRC in $SRC_STRING; do
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
-	
-	# TODO - What?  Add the WHAT?!
 
-	# Add the 
+	# Add the original file being examined to the list of objects. This is done here and not in find_source_dependencies since
+	# find_source_dependencies is also used for NuttX/Pixhawk, which do not want the main file being mixed in with the rest of the source files.
 	OBJ_STRING="${ROOT_FILE%.*}.o ${OBJ_STRING}"
 	
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
