@@ -3,7 +3,6 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-14T14:19:16+13:00
 
 ====== Platform Specific Configuration ======
-Created Wednesday 14 January 2015
 
 For each application, [[NuttX]] requires two values to be defined: the stack size and the priority.
 

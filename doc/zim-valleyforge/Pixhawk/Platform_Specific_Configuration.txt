@@ -3,7 +3,6 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-14T14:12:27+13:00
 
 ====== Platform Specific Configuration ======
-Created Wednesday 14 January 2015
 
 Since Pixhawk is built on top of NuttX, it also requires some additional configuration. Specifically, each executable requires a stacksize, or for there to be a default stacksize defined.
 
