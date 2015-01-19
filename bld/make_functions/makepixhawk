@@ -88,6 +88,12 @@ makepixhawk_armcortex()
 	# Set up the native compiler.
 	unpack_embeddedarmc
 
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
+
 	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
 	EXECUTABLES="${EXECUTABLES:-${COMPONENT_NAME}}"
 
@@ -206,7 +212,11 @@ makepixhawk_configure_apps()
 		# Create a directory for the application inside Firmware/src/modules.
 		mkdir $1/Firmware/src/modules/$EXECUTABLE
 
-		find_source_dependencies $1 $(ls $1 | grep ${MAIN_FILE})
+		if ! find_source_dependencies $1 $(ls $1 | grep ${MAIN_FILE}); then
+			# Something went wrong.
+			echo -e "${RED}\t\tUnable to detect dependencies for executable: ${EXECUTABLE}"
+			return 1
+		fi
 
 		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
 

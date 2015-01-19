@@ -45,18 +45,25 @@
 ###
 ######################################################################################################
 
-find_source_dependencies() {
-	pushd $1 >/dev/null
-	echo -e "${CYAN}\tDetecting source dependencies for ${2##*/}....\n${NO_COLOUR}"
+find_source_dependencies() 
+{
+	# Push into the folder containing the source.
+	pushd "$1" >/dev/null
+
 	# Reset the output variables
 	SRC_STRING=
 	ASRCS=
 	CSRCS=
-	# Find the source files required to build the application.
-	find_source_dependencies_recursive $2
 
-	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
-	# list into a newline delimited list for sort, before converting it back again.
+	# Find the source files required to build the application.
+	echo -e "${CYAN}\tDetecting source dependencies for ${2}...\n${NO_COLOUR}"
+	if ! find_source_dependencies_recursive $2; then
+		# Something went wrong.
+		echo -e "${RED}\tUnable to calculate source dependencies for ${2}.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
 	# Split up the assembly and C/CPP files
@@ -66,18 +73,26 @@ find_source_dependencies() {
 		elif [[ ${SRC} == *.c ]]; then
 			CSRCS="$SRC $CSRCS"
 		elif [[ ${SRC} == *.cpp ]]; then
-			CSRCS="$SRC $CSRCS"
+			PSRCS="$SRC $PSRCS"
 		fi
 	done
+
 	# Remove any leading spaces
 	ASRC="$(echo "$ASRCS" | sed 's/^ *//')"
 	CSRCS="$(echo "$CSRCS" | sed 's/^ *//')"
+	PSRCS="$(echo "$PSRCS" | sed 's/^ *//')"
 	SRC_STRING="$(echo "$SRC_STRING" | sed 's/^ *//')"
 
-	echo -e "${CYAN}\tC source files detected: ${CSRCS}\n${NO_COLOUR}"
-	echo -e "${CYAN}\tAssembly source files detected: ${ASRCS}\n${NO_COLOUR}"
+	# Print out the dependencies that we found.
+	echo -e "${CYAN}\tC source dependencies detected: ${CSRCS}${NO_COLOUR}"
+	echo -e "${CYAN}\tCPP source dependencies detected: ${PSRCS}${NO_COLOUR}"
+	echo -e "${CYAN}\tAssembly source dependencies detected: ${ASRCS}\n${NO_COLOUR}"
 
+	# Leave the folder containing the source.
 	popd >/dev/null
+
+	# All done.
+	return 0
 }
 
 ######################################## FUNCTION ####################################################
@@ -93,16 +108,50 @@ find_source_dependencies() {
 ###
 ######################################################################################################
 
-find_source_dependencies_recursive() {
+find_source_dependencies_recursive()
+{
 	local DEPENDENCIES
 	local TARGET_FILE
-	# Find the basename of examined file by removing any directory or filetype components
-	TARGET_BASENAME=${1%.*}
+
+	# The first argument is the relative path of the target file.
+	TARGET_FILE=${1}
+
+	# Find the basename of examined file by removing any directory or filetype components.
+	TARGET_BASENAME=${TARGET_FILE%.*}
 	TARGET_BASENAME=${TARGET_BASENAME##*/}
 
-	# Use gcc to detect the local .h dependencies, then remove any files with "TARGET_BASENAME" followed by a "." and any number of characters.
-	DEPENDENCIES=$(gcc -MM ${1} | sed "s/${TARGET_BASENAME}\.\S*//g")
+	# Detecting header dependencies is different for various source types, because you need to use the correct flags.
+	case ${TARGET_FILE##*.} in
+		"c")
+			# Use C compiler to detect the local header dependencies.
+			DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE})
+			;;
+		"cpp")
+			# Use CPP compiler to detect the local header dependencies.
+			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
+			;;
+		"s")
+			# Use assembler to detect the local header dependencies.
+			DEPENDENCIES=$(${A_COMPILER} ${AFLAGS} -MM ${TARGET_FILE})
+			;;
+		*)
+			echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
+			return 1
+	esac
+
+	# NOTE - Don't put anything in here; we need the return value from the compiler below.
+
+	if [ $? != 0 ]; then
+		echo -e "\n${RED}\tUnable to detect dependencies for broken source file: ${TARGET_FILE}.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Remove dependencies which share the target's basename, so that it doesn't depend on itself.
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s/${TARGET_BASENAME}\.\S*//g")
+	
 	# Add each dependency to the list and search of any dependencies of its own.
+
+	# TODO - Why do we allow H headers to compile CPP files?  This shouldn't be allowed.
 
 	# For each .h/.hpp/.hs file, check if a respective source file exists and if so, add it SRC_STRING.
 	for WORD in $DEPENDENCIES; do
@@ -110,26 +159,37 @@ find_source_dependencies_recursive() {
 			"h")
 				if [ -e ${WORD%.*}.c ]; then
 					SRC_STRING="${WORD%.*}.c ${SRC_STRING}"
-					find_source_dependencies_recursive ${WORD%.*}.c
+					if ! find_source_dependencies_recursive ${WORD%.*}.c; then
+						return 1
+					fi
 				elif [ -e ${WORD%.*}.cpp ]; then
 					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
-					find_source_dependencies_recursive ${WORD%.*}.cpp
+					if ! find_source_dependencies_recursive ${WORD%.*}.cpp; then
+						return 1
+					fi
 				fi
 				;;
 			"hpp")
 				if [ -e ${WORD%.*}.cpp ]; then
 					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
-					find_source_dependencies_recursive ${WORD%.*}.cpp
+					if ! find_source_dependencies_recursive ${WORD%.*}.cpp; then
+						return 1
+					fi
 				fi
 				;;
 			"hs")
 				if [ -e ${WORD%.*}.s ]; then
 					SRC_STRING="${WORD%.*}.s ${SRC_STRING}"
-					find_source_dependencies_recursive ${WORD%.*}.s
+					if ! find_source_dependencies_recursive ${WORD%.*}.s; then
+						return 1
+					fi
 				fi
 				;;
 		esac
 	done
+
+	# All done.
+	return 0
 }
 
 ######################################## FUNCTION ####################################################
@@ -145,32 +205,51 @@ find_source_dependencies_recursive() {
 ###					compile a given file.
 ###
 ######################################################################################################
-find_object_dependencies() {
+
+find_object_dependencies() 
+{
+	# Push into the folder containing the source.
+	pushd "$1" >/dev/null
+
 	# Reset the OBJ_STRING variable
 	OBJ_STRING=
-	pushd $1 >/dev/null
+	
 	# Ensure we were passed a source file, and not an object file.
 	if [ ${2##*.} != "c" -a ${2##*.} != "cpp" ]; then
 		ROOT_FILE="$(ls | grep -e "${2%.*}\.\(c\|cpp\)$")"
 	else
 		ROOT_FILE=$2
 	fi
-	# Find the list of source dependencies
-	find_source_dependencies . $ROOT_FILE
+	
+	# Find the list of source dependencies.
+	if ! find_source_dependencies . $ROOT_FILE; then
+		# Something went wrong.
+		echo -e "${RED}\tUnable to calculate object dependencies for ${2}.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Convert the source file names into object file names.
 	for SRC in $SRC_STRING; do
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
+	
+	# TODO - What?  Add the WHAT?!
+
 	# Add the 
 	OBJ_STRING="${ROOT_FILE%.*}.o ${OBJ_STRING}"
-	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
-	# list into a newline delimited list for sort, before converting it back again.
+	
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
-	# Remove any leading spaces
+
+	# Remove any leading spaces.
 	OBJ_STRING="$(echo "$OBJ_STRING" | sed 's/^ *//')"
 	echo -e "${CYAN}\tObject file dependencies detected: ${OBJ_STRING}\n${NO_COLOUR}"
 
+	# Leave the folder containing the source.
 	pushd >/dev/null
+
+	# All done.
+	return 0
 }
 
 ######################################## FUNCTION ####################################################
@@ -186,16 +265,32 @@ find_object_dependencies() {
 ###					on its own line.
 ###
 ######################################################################################################
-list_source_dependencies() {
-	pushd $1 >/dev/null
+
+list_source_dependencies() 
+{
+	# Push into the folder containing the source.
+	pushd "$1" >/dev/null
+
 	# Remove the output file if it already exists.
 	rm -f "$2.sd"
-	find_source_dependencies . $2
+
+	# Calculate the source dependencies.
+	if ! find_source_dependencies . $2; then
+		# Something went wrong.
+		echo -e "${RED}\tUnable to calculate source dependencies for ${2}.\n${NO_COLOUR}"
+		return 1
+	fi
+	
 	# Append each file name to the output file.
 	for SRC in $SRC_STRING; do
 		echo "$SRC" >> "$2.sd"
 	done
+	
+	# Leave the folder containing the source.
 	pushd >/dev/null
+
+	# All done.
+	return 0
 }
 
 ######################################## FUNCTION ####################################################
@@ -211,13 +306,28 @@ list_source_dependencies() {
 ###					its own line.
 ###
 ######################################################################################################
-list_object_dependencies() {
-	pushd $1 >/dev/null
+
+list_object_dependencies() 
+{
+	# Push into the folder containing the source.
+	pushd "$1" >/dev/null
+
 	# Remove the output file if it already exists.
 	rm -f "${2%.*}.ld"
-	find_object_dependencies . $2
+
+	if ! find_object_dependencies . $2; then
+		# Something went wrong.
+		echo -e "${RED}\tUnable to calculate object dependencies for ${2}.\n${NO_COLOUR}"
+		return 1
+	fi
+	
 	echo "OBJS =${OBJ_STRING}" > "${2%.*}.ld"
+	
+	# Leave the folder containing the source.
 	pushd >/dev/null	
+
+	# All done.
+	return 0
 }
 
 ######################################## FUNCTION ####################################################
@@ -234,9 +344,16 @@ list_object_dependencies() {
 ###					on its own line.
 ###
 ######################################################################################################
-list_library_dependencies() {
-	pushd $1 >/dev/null
+
+list_library_dependencies() 
+{
+	# Push into the folder containing the source.
+	pushd "$1" >/dev/null
+
+	# All we do is list anything that looks like it might be a library archive.
 	find . -name "lib*.a" > ${2%.*}.lld
+	
+	# Leave the folder containing the source.
 	popd >/dev/null
 }
 
@@ -254,25 +371,36 @@ list_library_dependencies() {
 ### Purpose:		Produces all of the dependencies for compiling all of the modules in the project.
 ###
 ######################################################################################################
-generate_component_dependencies() {
+
+generate_component_dependencies() 
+{
+	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
+	
 	# Remove the Make.deps file if it exists already.
-	rm -f "./Make.deps"
-	# List the executable linker dependencies
-	echo "# Executable Linker Dependencies" >> "Make.deps"
-	find_object_dependencies . $2
-	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited
-	# list into a newline delimited list for sort, before converting it back again.
+	rm -f Make.deps
+	
+	# List the executable linker dependencies.
+	if ! find_object_dependencies . $2; then
+		# Something went wrong.  Don't need to print a message, there will already be one.
+		return 1
+	fi
+
+	# Else, we detected the executable dependencies ok.
+	echo -e "# Executable Linker Dependencies.\n" >> Make.deps
+	
+	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
-	echo -e "OBJS =${OBJ_STRING}\n" >> "Make.deps"
+	echo -e "OBJS =${OBJ_STRING}\n" >> Make.deps
 
 	# List the library dependencies
-	echo "# Executable Library Dependencies" >> "Make.deps"
+	echo -e "# Executable Linker Library Dependencies.\n" >> Make.deps
 	LIB_STRING=$(find . -name "lib*.a" | tr "\n" " ")
 	echo -e "LIBS = ${LIB_STRING}\n" >> Make.deps
 
 	# List the object dependencies
-	echo "# Object File Dependencies" >> "Make.deps"
+	echo -e "# Object File Dependencies.\n" >> Make.deps
+
 	# Use the -MM flag to generate a rule describing the dependencies of each source file for make.
 	for SRC in $SRC_STRING; do
 		case ${SRC##*.} in
@@ -289,10 +417,24 @@ generate_component_dependencies() {
 				echo " " >> Make.deps
 				;;
 			*)
-				echo "${RED}ERROR: Invalid Source File Extension\n${NO_COLOUR}"
-				echo "$SRC"
+				echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
 				exit 1
 				;;
 		esac
+
+		# NOTE - Don't put anything in here; we need the return value from the compiler below.
+
+		if [ $? != 0 ]; then
+			echo -e "\n${RED}\tUnable to detect dependencies for broken source file: ${TARGET_FILE}.\n${NO_COLOUR}"
+			return 1
+		fi
 	done
+
+	# Leave the folder containing the source.
+	popd >/dev/null
+
+	# All done.
+	return 0
 }
+
+# ALL DONE.
