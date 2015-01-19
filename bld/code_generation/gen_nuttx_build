@@ -86,6 +86,7 @@ gen_nuttx_build()
 	# Copy the Nuttx source files across to where they are needed.
 	cp -fr ${NUTTX_COMMON_SOURCE}/nuttx $1/nuttx/
 	cp -fr ${NUTTX_COMMON_SOURCE}/apps $1/apps/
+	cp -fr ${NUTTX_COMMON_SOURCE}/misc $1/misc/
 
 	# Move the NuttX configuration files into the /nuttx/ directory, overwriting any pre-existing files.
 	echo -e "${CYAN}\tReplacing NuttX configuration files...\n${NO_COLOUR}"
@@ -94,6 +95,23 @@ gen_nuttx_build()
 	mv -f $1/defconfig $1/nuttx/.config
 	mv -f $1/Make.defs $1/nuttx/Make.defs
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
+
+	# Configure C++ support with uCLibc++
+	pushd $1/misc/uClibc++ >/dev/null
+
+	for FILE in $(find libxx -type f); do
+		install -D ${FILE} ../../nuttx/${FILE}
+	done
+
+	for FILE in $(find include -type f); do
+		install -D ${FILE} ../../nuttx/${FILE}
+	done
+
+	popd >/dev/null
+
+	# Update the .config file to enable C++ support.
+	sed -i -e s/'# CONFIG_HAVE_CXX is not set'/'CONFIG_HAVE_CXX=y'/ $1/nuttx/.config
+	sed -i -e s/'# CONFIG_HAVE_CXXINITIALIZE is not set'/'CONFIG_HAVE_CXXINITIALIZE=y'/ $1/nuttx/.config
 
 	# TODO - This stuff looks target specific.
 
