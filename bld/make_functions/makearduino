@@ -181,7 +181,7 @@ makearduino()
 		ARDUINO_VARI_PATH="${ARDUINO_VARI_DIR}"
 	else
 		# Specify the default core variants directory.
-		ARDUINO_VARI_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/variants"
+		ARDUINO_VARI_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/avr/variants"
 		mkdir -p "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core/variants"
 		cp -rf ${ARDUINO_VARI_PATH} "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core"
 		ARDUINO_VARI_PATH="arduino_core/variants"
@@ -192,7 +192,7 @@ makearduino()
 		ARDUINO_CORE_PATH="${ARDUINO_CORE_DIR}"
 	else
 		# Specify the default core directory.
-		ARDUINO_CORE_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/cores/arduino"
+		ARDUINO_CORE_PATH="$TCPATH/tmp/tmp_compiler/arduino/arduino-dist/hardware/arduino/avr/cores/arduino"
 		mkdir -p "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core/arduino"
 		cp -rf ${ARDUINO_CORE_PATH} "$TCPATH/$TMP_SRC_DIR/$COMPONENT/arduino_core"
 		ARDUINO_CORE_PATH="arduino_core/arduino"
