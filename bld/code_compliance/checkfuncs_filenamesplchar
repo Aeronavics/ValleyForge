@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_filenamesplchar
+### Name:           	checkfuncs_filenamesplchar
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	06-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:          	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for file name's validity.
+### Purpose:        	Implements code compliance tests: tests for file name's validity.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file's name for validity.
+### Purpose:		Tests a single C/CPP source or header file's name for validity.
 ###
 ###########################################################################################
 
@@ -43,26 +43,33 @@ compliance_check_file_filenamesplchar()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
+
+	# Remove the path to the file and retrieve the file name alone.
 	filename=$(basename "$1")
+
+	# String containing allowed characters in file names.
 	valcase='0-9a-z_.'
-	path="${FILE%.*}"
+
+	# Retrieve the name of the file removing the extension of the file.
 	filename="${filename%.*}"
 
-		if [[ "$filename" =~ [^$valcase] ]]; then
-			compliance_fail_file "compliance_check_file_filenamesplchar" $1 "This file's name contains invalid characters"	
-		fi
+	if [[ "$filename" =~ [^$valcase] ]]; then
+		compliance_fail_file "compliance_check_file_filenamesplchar" $1 "This file's name contains invalid characters"	
+	fi
+	
+	# All done.
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #####################################################
 ###
 ### Name:		compliance_get_rules_filenamesplchar
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the filenamesplchar test.
+### Purpose:		Prints out a summary of the code compliance rules for the filenamesplchar test.
 ###
-###########################################################################################
+#######################################################################################################
 
 compliance_get_rules_filenamesplchar()
 {

@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_headerguard
+### Name:           	checkfuncs_headerguard
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	08-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for include guards in header files.
+### Purpose:        	Implements code compliance tests: tests for include guards in header files.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP header file for include guards.
+### Purpose:		Tests a single C/CPP header file for include guards.
 ###
 ###########################################################################################
 
@@ -44,15 +44,26 @@ compliance_check_file_headerguard()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
+	# Proceed only for header files.
 	if [[ $FILE =~ ".hpp" || $FILE =~ ".h" ]]; then
 
+		# Variable used to count the number of lines.
 		linecount=0
-		lastoccur=0
-		count=0
+
+		# Variable used to get the line number of last occurrence of #endif.
 		endcount=0
-		splcount=0
+
+		# Variable used to get the last line number of the file.
+		spl_line_count=0
+
+		# Variable used to count the occurrences of #endif.
 		endif_count=0
+
+		# Variable used to count the occurrences of #ifndef or #if.
 		ifndef_count=0
+
+		# Pattern matching lines which we should avoid.
+		pattern="^$|[{}]+"
 
 		# Need to keep track of the line number we are up to.
 		local LINE_NUM=
@@ -63,7 +74,7 @@ compliance_check_file_headerguard()
 		# Initially, we are checking.
 		local CHECKS_EN=1
 
-		#variable for counting the number of lines disabled.
+		# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 		local DISABLED_LINE_COUNT=0
 
 		while read LINE
@@ -81,24 +92,35 @@ compliance_check_file_headerguard()
   					continue
   				fi
 
-				if [[ "$name" != ['*']* && "$name" != [/]* && "$name" != "" && $size != 1 && $name != "{" && $name != "}" ]]; then
-					
+				# Increment the counter for line numbers.
+				if [[ ! "$name" =~ ^/.*|^\*.* && $size != 1 && ! $name =~ $pattern ]]; then
 					linecount=$((linecount+1))
-					splcount=$LINE_NUM
+					spl_line_count=$LINE_NUM
 
+					# Obtain the line number where #endif occurs and increment the #endif counter.
 					if [[ "$name" =~ "#endif" ]]; then
 						endcount=$LINE_NUM
+						# Variable to count the number of occurrences of #endif
 						endif_count=$((endif_count+1))
 					fi
 
+					# Increment the #ifndef counter.
 					if [[ "$name" =~ "#ifndef" || "$name" =~ "#if" ]]; then
+						# Variable to count the number of occurrences of #ifndef or #if
 						ifndef_count=$((ifndef_count+1))
+
+						if [[ "$name" =~ "#ifndef" ]]; then
+							macro_name=$(echo $name | cut -d ' ' -f 2)
+							# Check if the macro name is prefixed and suffixed with a pair of underscore characters.
+							if [[ $macro_name != __* || $macro_name != *__ ]]; then
+								CHECKS_OK=
+
+								ERROR="At line $LINE_NUM: The macro name is missing a pair of underscore characters in the prefix/suffix"
+							fi
+						fi
 					fi
-			fi
-
-
+				fi
   			else
-	
 				DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   				# Checking is temporarily disabled, so all we do is see if this line enables them again.
@@ -107,50 +129,57 @@ compliance_check_file_headerguard()
   					CHECKS_EN=1
   				fi
   			fi
-
 		done < $FILE
-
 
 		if [[ $linecount -gt 0 ]]; then
 
-			if [[ "$splcount" != "$endcount" || "$ifndef_count" != "$endif_count" ]]; then
+			# Check whether the last line of the header file is #endif. Also check whether the number of occurrences of #ifndef and #endif match. 
+			if [[ "$spl_line_count" != "$endcount" ]]; then
 				CHECKS_OK=
+
+				ERROR="The header file doesn't have include guard."
 			fi
 
+			if [[ "$ifndef_count" != "$endif_count" ]]; then
+				CHECKS_OK=
+				
+				ERROR="The header file has incorrect/incomplete include guard."
+			fi
 		fi
 		
 		# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 		local LINE_THRESH=$((LINE_NUM/10))
 	
-		#Check if the number of lines disabled is lesser than the threshold
+		# Check if the number of lines disabled is lesser than the threshold
 		if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 			compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 		fi   
 
 		if [ ! ${CHECKS_OK} ]; then
-			# Report that the file has failed.
-			compliance_fail_file "compliance_check_file_headerguard" $1 "This file contains violations of conventions in include guards."
+			# Report that the file has failed along with the corresponding ERROR message.
+			compliance_fail_file "compliance_check_file_headerguard" $1 "$ERROR"
 		fi
+	fi
 
 	# All done.
-	fi
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #################################################
 ###
 ### Name:		compliance_get_rules_headerguard
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the headerguard test.
+### Purpose:		Prints out a summary of the code compliance rules for the headerguard test.
 ###
-###########################################################################################
+###################################################################################################
 
 compliance_get_rules_headerguard()
 {
 	echo "headerguard:"
 	echo "\tAll C++ anc C header files should contain header guards."
+	echo "\tThe name of the macro should be prefixed and suffixed with a pair of underscore characters."
 	echo ""
 }
 

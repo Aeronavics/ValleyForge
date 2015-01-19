@@ -17,27 +17,27 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_structnamecheck
+### Name:           	checkfuncs_structnamecheck
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	12-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for structure name validity.
+### Purpose:        	Implements code compliance tests: tests for structure name validity.
 ###
 ###########################################################################################################################
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #############################################
 ###
 ### Name:		compliance_check_file_structnamecheck
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid structure names.
+### Purpose:		Tests a single C/CPP source or header file for valid structure names.
 ###
-###########################################################################################
+###############################################################################################
 
 compliance_check_file_structnamecheck()
 {
@@ -47,7 +47,7 @@ compliance_check_file_structnamecheck()
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
 	local CHECKS_OK=1
 
-	#Condition for checking structure names that come in the format "struct { ..... } XYZ;"
+	# Condition for checking structure names that come in the format "struct { ..... } XYZ;"
 	for struct_name in `pcregrep -o1 -M 'struct[ ]*[\n]*{[\S \n]+?[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
 	do
 		if [[ ${struct_name:0:1} =~ [a-z] ]]; then
@@ -59,7 +59,7 @@ compliance_check_file_structnamecheck()
 	done
 
 
-	#Condition for checking structure names that come in the format "struct { ..... } XYZ;"
+	# Condition for checking structure names that come in the format "struct { ..... } XYZ;"
 	for str_line in `grep -n -E 'struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)' $FILE | cut -d : -f 1`
 	do
 		struct_name="${BASH_REMATCH[2]}"
@@ -81,15 +81,15 @@ compliance_check_file_structnamecheck()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #####################################################
 ###
 ### Name:		compliance_get_rules_structnamecheck
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the structnamecheck test.
+### Purpose:		Prints out a summary of the code compliance rules for the structnamecheck test.
 ###
-###########################################################################################
+#######################################################################################################
 
 compliance_get_rules_structnamecheck()
 {

@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_filecomplete
+### Name:           	checkfuncs_filecomplete
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	06-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for file completeness.
+### Purpose:        	Implements code compliance tests: tests for file completeness.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for file completeness.
+### Purpose:		Tests a single C/CPP source or header file for file completeness.
 ###
 ###########################################################################################
 
@@ -44,31 +44,29 @@ compliance_check_file_filecomplete()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	#Get the line number of the last line of the current file.
+	# Get the line number of the last line of the current file.
 	local LINE_NUM=$(wc -l $1)
 
-	#Get the last line of the current file.
+	# Get the last line of the current file.
 	str_lastline=$(tail -1 $1 | head -1)
 
 	if [[ $str_lastline != "// ALL DONE." ]]; then
-		
 		compliance_fail_file "compliance_check_file_filecomplete" $1 "This file doesn't conclude with the comment \" // ALL DONE.\""
-
 	fi
 
-		#All done.
-		return 0
+	#All done.
+	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ##################################################
 ###
 ### Name:		compliance_get_rules_filecomplete
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the filecomplete test.
+### Purpose:		Prints out a summary of the code compliance rules for the filecomplete test.
 ###
-###########################################################################################
+####################################################################################################
 
 compliance_get_rules_filecomplete()
 {

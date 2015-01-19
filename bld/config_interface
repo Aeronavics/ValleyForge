@@ -17,17 +17,17 @@
 
 ###########################################################################################################################
 ###
-### Name:           config_interface
+### Name:           	config_interface
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	16-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:        Provides an interface to add/modify/delete key/value pairs in configuration files.
+### Purpose:        	Provides an interface to add/modify/delete key/value pairs in configuration files.
 ###
 ###########################################################################################################################
 
@@ -44,15 +44,12 @@ source $TCPATH/bld/common/config_helpers
 # Define the colours used for interface output.
 source $TCPATH/bld/common/def_colours
 
-#Obtain and store all the required .cfg files into an array.
+# Obtain and store all the required .cfg files into an array.
 ALL_FILES=$(find $TCPATH/var $TCPATH/bld/code_compliance/config_files -name "*.cfg" | sed 's/.*\/ValleyForge//')
 ALL_FILES+=("Exit")
 
 # Clear the terminal to tidy things up.
 clear
-
-# Obtain user's choice of input file.
-echo -e "${GREEN}\nWhich file do you want to select?${NO_COLOUR}"
 
 # Variable to decide whether or not to continue the loop.
 loop_status=1
@@ -60,6 +57,10 @@ loop_status=1
 # Loop until the user enters a valid input or chooses to exit.
 while [[ $loop_status == 1 ]]
 do
+
+	# Obtain user's choice of input file.
+	echo -e "${GREEN}\nWhich file do you want to select?${NO_COLOUR}"
+
 	# Change the default prompt.
 	PS3="Please enter your choice: "
 
@@ -76,6 +77,20 @@ do
 		elif [ ! -f $TCPATH/$FILE ]; then
 			echo -e "${RED}Invalid option entered. Try again...${NO_COLOUR}"
 			loop_status=1
+
+		# Display a warning message that the user has chosen the default configuration file and confirm his choice again.
+		elif [ $FILE == "/bld/code_compliance/config_files/code_compliance.cfg" ]; then
+			echo -e "${YELLOW}This is the default configuration file... Do you want to modify this?(Y/N)${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+			
+			# If they responded YES, continue with this file.
+			if [[ $REPLY =~ ^[Yy]$ ]]; then
+				loop_status=0
+			else
+				# Display the menu again for the user to select another file.
+				loop_status=1
+			fi
 
 		# The user has provided a valid input so continue.
 		else
@@ -105,9 +120,8 @@ do
 			"${options[0]}")
 				# Display only the key/value pairs from the .cfg file.
 				clear
-				# Print out an empty line to ensure no key/value pairs were left out by clearing the screen.
-				echo ""
 				grep -Eo '^COMPLIANCE_(.*)[+]*=(".*"|[0-9]|)' $TCPATH/$FILE
+				echo "-----------------------------------------------------"
 				;;
 
 			"${options[1]}")
@@ -131,7 +145,14 @@ do
 				;;
 
 			"${options[3]}")
-				#TODO - Not sure how concatenation works in config_helpers script. So empty for now.
+				# TODO - Not sure how concatenation works in config_helpers script. So empty for now.
+				# Obtain the key/value pair from user and delete it if found.
+				echo -e "${CYAN}Enter the name of the key to concatenate: ${NO_COLOUR}"
+				read key
+				echo -e "${CYAN}Enter the value for this key: ${NO_COLOUR}"
+				read value
+				clear
+				push_key $TCPATH/$FILE $key $value --concat
 				;;
 
 			"${options[4]}")
@@ -152,7 +173,7 @@ do
 				push_key $TCPATH/$FILE $key $value --add
 				;;
 			"${options[6]}")
-				#Copy and replace the selected file with default file.
+				# Copy and replace the selected file with default file.
 				cp $TCPATH/bld/code_compliance/config_files/code_compliance.cfg $TCPATH/$FILE
 				clear
 				if [[ $? != 0 ]]; then

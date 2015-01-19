@@ -50,14 +50,11 @@ compliance_check_file_classnamecheck()
 	#Regex pattern to match class names.
 	pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
 
-	# Define internal functions.
-
 	check_line()
 	{
-
 		#
-		#	$1 The content of the line in question.
-		#	$2 The line number we are up to.
+		#	$1 - The content of the line in question.
+		#	$2 - The line number we are up to.
 		#
 	
 		#Condition used for ignoring lines which include comments. 
@@ -99,7 +96,9 @@ compliance_check_file_classnamecheck()
 			fi
 				
 		fi
-	return 0
+	
+		# All done.
+		return 0
 	}
 
 	# Need to keep track of the line number we are up to.

@@ -17,27 +17,27 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_layout_linebreaks
+### Name:           	checkfuncs_layout_linebreaks
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	13-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for proper layout conventions(linebreaks) in files.
+### Purpose:        	Implements code compliance tests: tests for proper layout conventions(linebreaks) in files.
 ###
 ###########################################################################################################################
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #################################################
 ###
 ### Name:		compliance_check_file_layout_linebreaks
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source file for proper layout conventions(linebreaks).
+### Purpose:		Tests a single C/CPP source file for proper layout conventions(linebreaks).
 ###
-###########################################################################################
+###################################################################################################
 
 
 compliance_check_file_layout_linebreaks()
@@ -45,27 +45,28 @@ compliance_check_file_layout_linebreaks()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	#Run "Artistic Style" with the file as its input and store the output string with status of the operation.
+	# Run "Artistic Style" with the given file and store the output string with status of the operation.
 	str=$(astyle -j --dry-run $FILE) 
 	status=${str%% *}
 
-	#Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)		
+	# Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)		
 	if [[ "$status" == "Formatted" ]]; then
 		compliance_fail_file "compliance_check_file_layout_linebreaks" $FILE "This file doesn't follow proper layout conventions(linebreaks)"
 	fi
 
+	# All done.
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #########################################################
 ###
 ### Name:		compliance_get_rules_layout_linebreaks
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the "layout_linebreaks" test.
+### Purpose:		Prints out a summary of the code compliance rules for the "layout_linebreaks" test.
 ###
-###########################################################################################
+###########################################################################################################
 
 compliance_get_rules_layout_linebreaks()
 {

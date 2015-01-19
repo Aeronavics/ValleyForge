@@ -17,85 +17,94 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_funcname
+### Name:        	checkfuncs_funcname
 ###
-### Author:         Ravi Shankar
+### Author:      	Ravi Shankar
 ###
 ### Date Created:	19-12-2014
 ###
-### Type:           Bash Function Definitions
+### Type:		Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for constant name validity.
+### Purpose:		Implements code compliance tests: tests for constant name validity.
 ###
 ###########################################################################################################################
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ##########################################
 ###
 ### Name:		compliance_check_file_funcname
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid constant names.
+### Purpose:		Tests a single C/CPP source or header file for valid constant names.
 ###
-###########################################################################################
+############################################################################################
 
 compliance_check_file_funcname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
-	echo >&2 "inside $FILE"
+	
+	# Patterns to match function and eliminate constructors and destructors.
 	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)\(+[a-zA-Z0-9,_*& ]*\)+"
-	pattern="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
+	pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
 	pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
+
+	# Variables used as counter for number of classes in the file.
 	local class_count=0
+
 	# Define internal functions.
 
-	#Function to check if the function name is a class name (To eliminate constructors and destructors)
+	# Function to check if the function name is a class name (To eliminate constructors and destructors)
 	array_contains () 
-	{ 
+	{
+		#
+		#	$1 - The array within which we should search.
+		#	$2 - The value to be searched for.
+		#
+	
 		local array="$1[@]"
 		local seeking=$2
 		local in=1
 		
 		for element in "${!array}"; do
-
 			if [[ $element == $seeking ]]; then
 				in=0
 				break
 			fi
 		done
+		
+		# All done.
 		return $in
 	}
 
 	check_line()
 	{
 		#
-		#	$1 The content of the line in question.
-		#	$2 The line number we are up to.
+		#	$1 - The content of the line in question.
+		#	$2 - The line number we are up to.
 		#
 		
-		#Condition to avoid comment lines and destructors.
+		# Condition to avoid comment lines and destructors.
 		if ! [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "~" ]]; then
 
-			#Obtain classname inorder to avoid false positives (constructors and destructors).
+			# Obtain classname inorder to avoid false positives (constructors and destructors).
 			if [[ $1 =~ $pattern_class ]]; then
 				classname="${BASH_REMATCH[1]}"
 				
-				#Store the class names in an array.
+				# Store the class names in an array.
 				class_array[$class_count]=$classname
 				class_count=$((class_count+1))
 				
 			fi
 
-			#Condition to check for Constructors
+			# Condition to check for Constructors
 			if [[ $1 =~ "::" ]]; then
-				if [[ $1 =~ $pattern ]]; then
-					temp_str="${BASH_REMATCH[1]}"
+				if [[ $1 =~ $pattern_constructor ]]; then
+					temp_constructor="${BASH_REMATCH[1]}"
 				fi
 			fi
 
-
-			#Condition to match lines with functions in it.
+			# Condition to match lines with functions in it.
 			if [[ ! $1 =~ "="|"#" && $1 =~ $pattern_function ]]; then
 				
 				function_name="${BASH_REMATCH[2]}"
@@ -104,17 +113,15 @@ compliance_check_file_funcname()
 					function_name=${function_name#*::}
 				fi
 				
-
-				#Condition to check whether the function is not a constructor/destructor and for uppercase characters
+				# Condition to check whether the function is not a constructor/destructor and for uppercase characters
 				if ! array_contains class_array "$function_name"; then
-					if  [[ $function_name =~ [A-Z] && $temp_str != $function_name ]]; then
+					if  [[ $function_name =~ [A-Z] && $temp_constructor != $function_name ]]; then
 						ERROR="$function_name has uppercase characters"
 
 						return 1
 					fi
 				fi
 			fi
-			
 		fi
 	
 		# The line seems ok, so return zero.
@@ -154,9 +161,7 @@ compliance_check_file_funcname()
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
 			fi
-
   		else
-	
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
@@ -171,7 +176,7 @@ compliance_check_file_funcname()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
-	#Check if the number of lines disabled is lesser than the threshold
+	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
@@ -185,15 +190,15 @@ compliance_check_file_funcname()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ##############################################
 ###
 ### Name:		compliance_get_rules_funcname
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the funcname test.
+### Purpose:		Prints out a summary of the code compliance rules for the funcname test.
 ###
-###########################################################################################
+################################################################################################
 
 compliance_get_rules_funcname()
 {

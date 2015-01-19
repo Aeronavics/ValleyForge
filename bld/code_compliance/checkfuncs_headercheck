@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_headercheck
+### Name:           	checkfuncs_headercheck
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	08-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for corresponding header files.
+### Purpose:        	Implements code compliance tests: tests for corresponding header files.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source file for a matching header file.
+### Purpose:		Tests a single C/CPP source file for a matching header file.
 ###
 ###########################################################################################
 
@@ -44,28 +44,30 @@ compliance_check_file_headercheck()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	#Extract the filename from the entire path
-	filename_ext=$(basename "$1")
+	# Extract the filename from the entire path
+	filename_ext=$(basename "$FILE")
 
-	#Condition to check if the file is a "C++" or "C" file.
+	# Extract the directory where the file resides.
+	file_directory=${FILE%/*}
+
+	# Condition to check if the file is a "C++" or "C" file.
 	if [[ $filename_ext =~ ".cpp" || $filename_ext =~ ".c" ]]; then
 		
-		#Extract the filename alone without the extension
+		# Extract the filename alone without the extension
 		filename="${filename_ext%.*}"
 
-		#Condition to match C++ file
+		# Condition to match C++ file
 		if [[ $filename_ext =~ ".cpp" ]]; then
 			headerfile=$filename".hpp"
 
-		#Condition to match C file
+		# Condition to match C file
 		elif [[ $filename_ext =~ ".c" ]]; then
 			headerfile=$filename".h"
 		fi
 		
-		#Condition to check if the file has a matching header file.
-		if [[ ! $(find $COMPLIANCE_INPUT_DIRECTORY -type f -name $headerfile) ]]; then
-			compliance_fail_file "compliance_check_file_headercheck" $1 "This file doesn't have a matching header"
-
+		# Condition to check if the file has a matching header file in the same directory.
+		if [[ ! $(find $file_directory -type f -name $headerfile) ]]; then
+			compliance_fail_file "compliance_check_file_headercheck" $FILE "This file doesn't have a matching header"
 		fi
 
 	fi
@@ -73,15 +75,15 @@ compliance_check_file_headercheck()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #################################################
 ###
 ### Name:		compliance_get_rules_headercheck
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the headercheck test.
+### Purpose:		Prints out a summary of the code compliance rules for the headercheck test.
 ###
-###########################################################################################
+###################################################################################################
 
 compliance_get_rules_headercheck()
 {

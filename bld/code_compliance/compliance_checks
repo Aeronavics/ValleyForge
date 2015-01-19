@@ -221,8 +221,9 @@ compliance_fail_file()
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
 			echo -e "Compliance error in $1: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
-		
-		if [[ $1 == compliance_check_file_file* || $1 == compliance_check_file_layout* || $1 == "exception_limits" ]]; then
+
+		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of errors.
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_ERRORS++))
 		fi
 
@@ -237,7 +238,8 @@ compliance_fail_file()
 			echo -e "Compliance warning in $1: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		if [[ $1 == compliance_check_file_file* || $1 == compliance_check_file_layout* || $1 == "exception_limits" ]]; then
+		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of warnings.
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
 

@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_constname
+### Name:           	checkfuncs_constname
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	19-12-2014
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for constant name validity.
+### Purpose:        	Implements code compliance tests: tests for constant name validity.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid constant names.
+### Purpose:		Tests a single C/CPP source or header file for valid constant names.
 ###
 ###########################################################################################
 
@@ -49,87 +49,84 @@ compliance_check_file_constname()
 	check_line()
 	{
 		#
-		#	$1 The content of the line in question.
-		#	$2 The line number we are up to.
+		#	$1 - The content of the line in question.
+		#	$2 - The line number we are up to.
 		#
 
-		#temp variables which should not be empty at the beginning
-		indiv_string="just text"
-		indiv_string1="just text"
+		# Temporary variables to store individual words in the string and should not be empty at the beginning
+		indiv_word1="just text"
+		indiv_word2="just text"
 
-		#Condition to avoid comment lines
+		# Condition to avoid comment lines
 		if ! [[ $1 == "/"* || "$1" == "*"* ]]; then
 
-			#Condition to obtain lines with constants.
+			# Condition to obtain lines with constants.
 			if [[ $1 =~ "const " ]]; then
 
-				#Condition to check for single variable initialisation
+				# Condition to check for single variable initialisation
 				if [[ $1 =~ \= && ! $1 =~ "," ]]; then					
 
-					#Obtain the part of string before "="				
+					# Obtain the part of string before "="				
 					first_str=${1%=*}
 					strcount=0
 			
-					#Loop through the words in the line to get to the required constant name.
-					while [[ $indiv_string != "" ]];
+					# Loop through the words in the line to get to the required constant name.
+					while [[ $indiv_word1 != "" ]];
 					do
 						strcount=$((strcount+1))
-						indiv_string=`echo "$first_str" | cut -d ' ' -f $strcount`
+						indiv_word1=`echo "$first_str" | cut -d ' ' -f $strcount`
 
-						#Condition to obtain the required constant name.
-						if [[ $indiv_string != "" ]]; then
-							req_str=$indiv_string
+						# Condition to obtain the required constant name.
+						if [[ $indiv_word1 != "" ]]; then
+							req_str=$indiv_word1
 						fi
 							
 					done
 	
-					#Condition to check for lower case characters in constant names.
+					# Condition to check for lower case characters in constant names.
 					if [[ "$req_str" =~ [a-z] ]]; then
 						ERROR="$req_str contains lower case characters."
 
 						return 1
 					fi
 				
-				#Condition to check for initialisation of multiple variables
+				# Condition to check for initialisation of multiple variables
 				elif [[ $1 =~ \= && $1 =~ "," ]]; then					
 					strcount1=0
 
-					#Loop through the words in the line to get to the required constant name.
-					while [[ $indiv_string != "" ]];
+					# Loop through the words in the line to get to the required constant name.
+					while [[ $indiv_word1 != "" ]];
 					do
 						strcount1=$((strcount1+1))
-						indiv_string=`echo "$1" | cut -d ',' -f $strcount1`
+						indiv_word1=`echo "$1" | cut -d ',' -f $strcount1`
 					
-						#This is to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
+						# This is to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
 						if [[ $strcount1 == "1" ]]; then
-							first_str=${indiv_string%=*}
+							first_str=${indiv_word1%=*}
 							strcount=0
 				
-							#Loop through the words in the line to get to the required constant name.
-							while [[ $indiv_string1 != "" ]];
+							# Loop through the words in the line to get to the required constant name.
+							while [[ $indiv_word2 != "" ]];
 							do
 								strcount=$((strcount+1))
-								indiv_string1=`echo "$first_str" | cut -d ' ' -f $strcount`
+								indiv_word2=`echo "$first_str" | cut -d ' ' -f $strcount`
 	
-								#Condition to obtain the required constant name.		
-								if [[ $indiv_string1 != "" ]]; then
-									req_str=$indiv_string1
-								fi
-								
+								# Condition to obtain the required constant name.		
+								if [[ $indiv_word2 != "" ]]; then
+									req_str=$indiv_word2
+								fi		
 							done
 	
-							#Condition to check for lower case characters in constant names.
+							# Condition to check for lower case characters in constant names.
 							if [[ "$req_str" =~ [a-z] ]]; then
 								ERROR="$req_str contains lower case characters."
 
 								return 1
 							fi
-	
 						else
+							str_var=${indiv_word1%=*}
 
-							str_var=${indiv_string%=*}
-
-							#Condition to check for lower case characters in constant names.
+							# Condition to check for lower case characters in constant names.
 							if [[ "$str_var" =~ [a-z] ]]; then
 								ERROR="$str_var contains lower case characters."
 
@@ -138,26 +135,26 @@ compliance_check_file_constname()
 						fi
 					done
 	
-				#This part is for const pointers
+				# This part is for const pointers
 				elif [[ $1 =~ "*" ]]; then
 					strcount=0
 
-					#Loop through the words in the line before actual variable name
-					while [[ $indiv_string != "" ]];
+					# Loop through the words in the line before actual variable name
+					while [[ $indiv_word1 != "" ]];
 					do
 						strcount=$((strcount+1))
-						indiv_string=`echo "$1" | cut -d ' ' -f $strcount`
+						indiv_word1=`echo "$1" | cut -d ' ' -f $strcount`
 	
-						#If the string contains "," or ";", it is a variable name
-						if [[ $indiv_string =~ "," || $indiv_string =~ ";" && ! $indiv_string =~ "(" ]]; then
+						# If the string contains "," or ";", it is a variable name
+						if [[ $indiv_word1 =~ "," || $indiv_word1 =~ ";" && ! $indiv_word1 =~ "(" ]]; then
 	
-							if [[ $indiv_string =~ "[" ]]; then
-								indiv_string=${indiv_string%[*}
+							if [[ $indiv_word1 =~ "[" ]]; then
+								indiv_word1=${indiv_word1%[*}
 							fi
 							
-							#Condition to check for lower case characters in constant names.
-							if [[ "$indiv_string" =~ [a-z] ]]; then
-								ERROR="$indiv_string -contains lower case characters."
+							# Condition to check for lower case characters in constant names.
+							if [[ "$indiv_word1" =~ [a-z] ]]; then
+								ERROR="$indiv_word1 -contains lower case characters."
 	
 								return 1
 							fi
@@ -221,7 +218,7 @@ compliance_check_file_constname()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
-	#Check if the number of lines disabled is lesser than the threshold
+	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
@@ -235,15 +232,15 @@ compliance_check_file_constname()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ###############################################
 ###
 ### Name:		compliance_get_rules_constname
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the constname test.
+### Purpose:		Prints out a summary of the code compliance rules for the constname test.
 ###
-###########################################################################################
+#################################################################################################
 
 compliance_get_rules_constname()
 {

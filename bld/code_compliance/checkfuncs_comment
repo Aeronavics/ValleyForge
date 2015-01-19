@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_comment
+### Name:        	checkfuncs_comment
 ###
-### Author:         Ravi Shankar
+### Author:      	Ravi Shankar
 ###
 ### Date Created:	13-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:        	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for proper commenting conventions in files.
+### Purpose:        	Implements code compliance tests: tests for proper commenting conventions in files.
 ###
 ###########################################################################################################################
 
@@ -35,7 +35,7 @@
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source file for proper commenting conventions.
+### Purpose:		Tests a single C/CPP source file for proper commenting conventions.
 ###
 ###########################################################################################
 
@@ -44,35 +44,37 @@ compliance_check_file_comment()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	
+	# Define internal functions.
 
-check_line()
-{
+	check_line()
+	{
 		#
-		#	$1 The content of the line in question.
+		#	$1 - The content of the line in question.
 		#	
 
-	#Pattern to check for TODO comments
-	pattern_todo="[Tt][Oo][Dd][Oo][ -:]*(.*)"
-	pattern_todo_correct="TODO - (.*)"
+		# Pattern to check for TODO comments
+		pattern_todo="[Tt][Oo][Dd][Oo][ -:]*(.*)"
+		pattern_todo_correct="TODO - (.*)"
 
-	#Pattern to check for NOTE comments
-	pattern_note="[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)"
-	pattern_note_correct="NOTE - (.*)"
+		# Pattern to check for NOTE comments
+		pattern_note="[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)"
+		pattern_note_correct="NOTE - (.*)"
 
-	if [[ $1 =~ $pattern_todo && ! $1 =~ $pattern_todo_correct ]]; then
-		ERROR="This line doesn't follow proper syntax for TODO comments"
-
-		return 1
-	fi
-
-	if [[ $1 =~ $pattern_note && ! $1 =~ $pattern_note_correct ]]; then
-		ERROR="This line doesn't follow proper syntax for NOTE comments"
-
-		return 1
-	fi
+		if [[ $1 =~ $pattern_todo && ! $1 =~ $pattern_todo_correct ]]; then
+			ERROR="This line doesn't follow proper syntax for TODO comments"
 	
-}
+			return 1
+		fi
+	
+		if [[ $1 =~ $pattern_note && ! $1 =~ $pattern_note_correct ]]; then
+			ERROR="This line doesn't follow proper syntax for NOTE comments"
+	
+			return 1
+		fi
+	
+		# All done.
+		return 0	
+	}
 
 	# Need to keep track of the line number we are up to.
 	local LINE_NUM=
@@ -95,6 +97,7 @@ check_line()
   		if [ ${CHECKS_EN} ]; then
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+
   				CHECKS_EN=
   				continue
   			fi
@@ -107,13 +110,12 @@ check_line()
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
 			fi
-
   		else
-	
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+
   				# Enable checking again.
   				CHECKS_EN=1
   			fi
@@ -121,44 +123,46 @@ check_line()
 
 	done < $FILE
 
-	#Condition to check if the file has multiple C++ comments.
-	if pcregrep -q -M '(\/\/+(.*))+(\n([\/\/]+(.*))+)+' $1; then
-		echo -e "\t${YELLOW}Compliance warning: $1: This file has multiple single line C++ style comments${NO_COLOUR}"
-		CHECKS_OK=
-	fi
-
-	#Condition to check if the file has single line C style("/* .... */") comments.
-	if pcregrep -q -M '\/+\*+(.*)\*\/+' $1; then
-		echo -e "\t${YELLOW}Compliance warning: $1: This file has multiple single line C style comments${NO_COLOUR}"
-		CHECKS_OK=
-	fi
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
-	
-	#Check if the number of lines disabled is lesser than the threshold
+
+	# Condition to check if the file has multiple C++ comments.
+	if pcregrep -q -M '(\/\/+(.*))+(\n([\/\/]+(.*))+)+' $1; then
+		compliance_fail_file "compliance_check_file_comment" $1 "This file has multiple single line C++ style comments."
+
+		CHECKS_OK=
+	fi
+
+	# Condition to check if the file has single line C style("/* .... */") comments.
+	if pcregrep -q -M '\/+\*+(.*)\*\/+' $1; then
+		compliance_fail_file "compliance_check_file_comment" $1 "This file has single line C style comments."
+
+		CHECKS_OK=
+	fi
+
+	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
-
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_comment" $1 "This file contains non-compliant comment(s)."
 	fi
 
+	# All done.
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION #############################################
 ###
 ### Name:		compliance_get_rules_comment
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the comment test.
+### Purpose:		Prints out a summary of the code compliance rules for the comment test.
 ###
-###########################################################################################
+###############################################################################################
 
 compliance_get_rules_comment()
 {
