@@ -63,10 +63,18 @@ preprocess_template()
 		return
 	fi
 
+	# Check if the user configuration file exists. If not, generate one.
+	# Check if the username is defined in the user config file.
+	grep -q "tc_authname" ${TCPATH}/var/config.cfg
+	if [ $? != 0 -o ! -f ${TCPATH}/var/config.cfg ]; then
+		# Load the script containing the configuration wizard.
+		source ${TCPATH}/bld/edit/edit_user_config
+		echo -e "\n${RED}User configuration file does not exist. Starting wizard.\n${NO_COLOUR}"
+		vf_config_wizard
+	fi
+
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
 
 	# Populate a string with the current date.
 	local DATE=$(date +"%-d-%-m-%Y")
@@ -183,10 +191,18 @@ preprocess_general()
 		return
 	fi
 
+	# Check if the user configuration file exists. If not, generate one.
+	# Check if the username is defined in the user config file.
+	grep -q "tc_authname" ${TCPATH}/var/config.cfg
+	if [ $? != 0 -o ! -f ${TCPATH}/var/config.cfg ]; then
+		# Load the script containing the configuration wizard.
+		source ${TCPATH}/bld/edit/edit_user_config
+		echo -e "\n${RED}User configuration file does not exist. Starting wizard.\n${NO_COLOUR}"
+		vf_config_wizard
+	fi
+
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
 
 	# Populate a string with the current date.
 	local DATE=$(date +"%-d-%-m-%Y")
