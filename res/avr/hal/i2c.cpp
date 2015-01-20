@@ -61,7 +61,7 @@ class I2C_imp
 
 		void disable(void);
 
-    I2C_return_status initialise(I2C_bit_rate bitrate, I2C_prescaler pre_scaler);
+    I2C_return_status initialise(I2C_SCL_speed scl_speed);
 
 		I2C_return_status start();
 
@@ -71,25 +71,21 @@ class I2C_imp
 
     I2C_return_status receive(tx_type *data);
 
-    I2C_status_code_t transceiver_busy();
+    I2C_status_code transceiver_busy();
 
 	private:
 
     // Functions
 
-    I2C_imp(void) = delete;
+    // I2C_imp(void) = delete;
 
-    I2C_imp(I2C_imp) = delete;
+    // I2C_imp(I2C_imp*) = delete;
 
     I2C_imp operator = (I2C_imp const&) = delete;
 
     // Fields
 
 		I2C_mode mode;
-
-		I2C_prescaler pre_scaler;
-
-    I2C_bit_rate bit_rate;
 
 };
 
@@ -110,6 +106,15 @@ I2C::I2C(I2C_imp* implementation)
   return;
 }
 
+I2C::I2C()
+{
+	// Attach the implementation.
+	imp = &i2c_imp;
+
+	// All done.
+	return;
+}
+
 I2C::~I2C()
 {
   return;
@@ -125,9 +130,9 @@ void I2C::disable(void)
   return (imp->disable());
 }
 
-I2C_return_status I2C::initialise(I2C_bit_rate bitrate, I2C_prescaler pre_scaler)
+I2C_return_status I2C::initialise(I2C_SCL_speed scl_speed)
 {
-  return (imp->initialise(bitrate, pre_scaler));
+  return (imp->initialise(scl_speed));
 }
 
 I2C_return_status I2C::start()
@@ -150,13 +155,19 @@ I2C_return_status I2C::receive(tx_type *data)
   return (imp->receive(data));
 }
 
-I2C_status_code_t I2C::transceiver_busy()
+I2C_status_code I2C::transceiver_busy()
 {
   return (imp->transceiver_busy());
 }
 
 /****************************************************************************/
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+void wait_twi_int(void)
+{
+  while (!(TWCR & (1 << TWINT)))
+    ;
+}
 
 // IMPLEMENT PRIVATE CLASS FUNCTION (METHODS).
 
@@ -167,47 +178,172 @@ I2C_status_code_t I2C::transceiver_busy()
 void I2C_imp::enable()
 {
   // TODO - this
+
+   TWCR = (1<<TWEN)|        // Enable TWI-interface and release TWI pins.
+         (0<<TWIE)|(0<<TWINT)|        // Disable Interupt.
+         (0<<TWEA)|(0<<TWSTA)|(0<<TWSTO);        // No Signal requests.
+
   return;
 }
 
 void I2C_imp::disable(void)
 {
   // TODO - this
+
+  TWCR = (0<<TWEN)|(0<<TWIE)|(0<<TWINT);        // Disable TWI-interface and release TWI pins.
+
   return;
 }
 
-I2C_return_status I2C_imp::initialise(I2C_bit_rate bitrate, I2C_prescaler pre_scaler)
+I2C_return_status I2C_imp::initialise(I2C_SCL_speed scl_speed)
 {
   // TODO - this
-  return I2C_ERROR;
+  if ((CLK_MHZ / 10000 / scl_speed) <= 24 )
+  {
+    return I2C_ERROR;
+  }
+
+  uint16_t temp;
+  temp = (CLK_MHZ / 10000 / scl_speed) - 16 / 8;
+  TWBR = temp;
+  TWSR &= (~(1 << TWPS0) & ~(1 << TWPS1));         // prescaler value is always 0 (or prescale 1)
+  return I2C_SUCCESS;
 }
 
 I2C_return_status I2C_imp::start()
 {
   // TODO - this
-  return I2C_ERROR;
+  TWCR = (1<<TWEN)|                             // TWI Interface enabled.
+         (1<<TWIE)|(1<<TWINT)|                  // Enable TWI Interupt and clear the flag.
+         (0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|       // Initiate a START condition.
+         (0<<TWWC);
+
+  wait_twi_int();
+
+  if ((TWSR != MT_START) && (TWSR != MT_REPEAT_START))
+  {
+    return I2C_ERROR;
+  }
+
+  return I2C_SUCCESS;
 }
 
 I2C_return_status I2C_imp::stop()
 {
   // TODO - this
-  return I2C_ERROR;
+  // Needs to do a check if the last transfer was successful.
+
+  TWCR = ((1<<TWEN)+(1<<TWINT)+(1<<TWSTO));//Send STOP condition
+
+  return I2C_SUCCESS;
 }
 
 I2C_return_status I2C_imp::transmit(tx_type *data)
 {
   // TODO - this
-  return I2C_ERROR;
+  unsigned char* temp = data->data_ptr + data->bytes;
+
+  if (!(data->slave_adr & WRITE))
+  {
+      return I2C_ERROR;
+  }
+
+  if (data->slave_adr != OWN_ADR)
+  {
+    if (start() == I2C_SUCCESS)
+    {
+      wait_twi_int();
+
+      TWDR = data->slave_adr;
+      TWCR = ((1<<TWINT)+(1<<TWEN));
+
+      wait_twi_int();
+
+      if ((TWSR != MT_SLA_ACK)&&(TWSR != MR_SLA_ACK))
+      {
+        return I2C_ERROR;
+      }
+      // return I2C_SUCCESS;
+    }
+    while (data->data_ptr < temp)
+    {
+      wait_twi_int();
+
+      TWDR = *data->data_ptr;
+      TWCR = ((1<<TWINT)+(1<<TWEN));
+
+      wait_twi_int();
+
+      if(TWSR != MT_DATA_ACK)
+      {
+        return I2C_ERROR;
+      }
+      data->data_ptr++;
+    }
+    stop();
+  }
+  return I2C_SUCCESS;
 }
 
 I2C_return_status I2C_imp::receive(tx_type *data)
 {
   // TODO - this
+  unsigned char* temp = data->data_ptr + data->bytes;
+
+  if (!(data->slave_adr & READ))
+  {
+      return I2C_ERROR;
+  }
+
+  if (data->slave_adr != OWN_ADR)
+  {
+    if (start() == I2C_SUCCESS)
+    {
+      wait_twi_int();
+
+      TWDR = data->slave_adr;
+      TWCR = ((1<<TWINT)+(1<<TWEN));
+
+      wait_twi_int();
+
+      if ((TWSR != MT_SLA_ACK)&&(TWSR != MR_SLA_ACK))
+      {
+        return I2C_ERROR;
+      }
+      // return I2C_SUCCESS;
+    }
+    while (data->data_ptr < temp)
+    {
+      wait_twi_int();
+
+      // if there are more data to receive, send an ACK to the the slave
+      if (data->data_ptr <= temp)
+      {
+        TWCR = ((1<<TWINT)+(1<<TWEA)+(1<<TWEN));
+      }
+      else
+      {
+        TWCR = ((1<<TWINT)+(1<<TWEN));
+      }
+
+      wait_twi_int();
+
+      *data->data_ptr = TWDR;
+
+      if(((TWSR == MR_DATA_NACK)&&(data->data_ptr == temp))||(TWSR == MR_DATA_ACK))
+      {
+        stop();
+        return I2C_SUCCESS;
+      }
+      data->data_ptr++;
+    }
+  }
+
   return I2C_ERROR;
 }
 
-I2C_status_code_t I2C_imp::transceiver_busy()
+I2C_status_code I2C_imp::transceiver_busy()
 {
   // TODO - this
-  return I2C_ERROR;
+  return BUS_ERROR;
 }

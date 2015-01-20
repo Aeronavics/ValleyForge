@@ -69,6 +69,8 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
+
+
 class I2C_imp;
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
@@ -81,10 +83,12 @@ enum I2C_mode
 	I2C_RECEIVER = 0x4
 };
 
-enum I2C_bit_rate
+enum I2C_SCL_speed
 {
-
-}
+  I2C_10kHz = 1,     // No external pull-up required at this bus speed.
+  I2C_100kHz = 10,
+  I2C_400kHz = 40
+};
 
 enum I2C_send_condition_t
 {
@@ -95,17 +99,9 @@ enum I2C_send_condition_t
 
 enum I2C_return_status {I2C_SUCCESS, I2C_ERROR};
 
-enum I2C_prescaler
-{
-	TW_PRESCALER_1 = 0x0,
-	TW_PRESCALER_4 = 0x1,
-	TW_PRESCALER_16 = 0x2,
-	TW_PRESCALER_64 = 0x3
-};
-
 // The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
 // status codes to be displayed is summarised to the right of each definition.
-enum I2C_status_code_t
+enum I2C_status_code
 {
 	// Master-specific codes ---------------------------------------------------------------------------------------------------------------------------
 	NO_INFO_TWINT_NOT_SET				= 0xf8,	// Meaning: The TWINT flag is not set, so no relevant information is available
@@ -150,13 +146,13 @@ enum I2C_status_code_t
 	S_SENT_LAST_BYTE_SENT_ACK 			= 0xC8 	// Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
 };
 
-struct
+struct tx_type
 {
 	unsigned char slave_adr;				//Slave address and W/R byte
-	unsigned char size;						//Number of bytes to send or
+	unsigned char bytes;						//Number of bytes to send or
 											//receive
 	unsigned char *data_ptr;				//Pointer to the bytes to send
-}tx_type;
+};
 
 /**
  * @class
@@ -173,7 +169,7 @@ class I2C
     /**
      * Create I2C instance abstracting the specified I2C hardware peripheral.
      */
-		I2C(I2C_mode mode);
+		I2C();
 
     /**
      * Called when I2C instance goes out of scope
@@ -196,7 +192,7 @@ class I2C
      * @param    I2C_bit_rate    The bitrate of the I2C/TWI interface.
      *           I2C_prescalar    Prescale value of I2C/TWI interface.
      */
-		I2C_return_status initialise(I2C_bit_rate bitrate, I2C_prescaler pre_scaler);
+		I2C_return_status initialise(I2C_SCL_speed scl_speed);
 
     /**
      * Send START signal of I2C.
@@ -227,19 +223,19 @@ class I2C
     /**
      * Check if the I2C Interrupt Service Routine is busy.
      */
-		I2C_status_code_t transceiver_busy();
+		I2C_status_code transceiver_busy();
 
 	private:
 
 		// Methods.
 
-		I2C(void);	// Poisoned.
+		// I2C(void) = delete;	// Poisoned.
 
-		I2C(I2C*);	// Poisoned.
+		// I2C(I2C*) = delete;	// Poisoned.
 
 		I2C(I2C_imp*);
 
-		I2C operator =(I2C const&);	// Poisoned.
+		//I2C operator = (I2C const&) = delete;	// Poisoned.
 
 		// Fields.
 

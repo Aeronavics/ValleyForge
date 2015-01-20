@@ -1,5 +1,5 @@
 // Copyright (C) 2013  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -31,10 +31,10 @@
  * @date		1-12-2014
  * -----------------------------------------------------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------
- * @section 	Licence	
- * 
+ * @section 	Licence
+ *
  * Copyright (C) 2014  Unison Networks Ltd
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -50,7 +50,7 @@
  * -----------------------------------------------------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------
  * @section 	Description
- * 
+ *
  * [See BRIEF]
  * -----------------------------------------------------------------------------------------------------
  */
@@ -65,6 +65,15 @@
 // Importing the clock speed
 #define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
 
+#define BASE_AT90_SLA     0xA0
+#define BASE_ATMEGA8_SLA     0xB0
+#define ENERGY_AT90_SLA     0xC0
+
+#define OWN_ADR     0xD0
+
+#define READ     0
+#define WRITE     1
+
 
 /* ***************** Macros for AVR registers ********************** */
 #ifdef __AVR_AT90CAN128__
@@ -73,7 +82,7 @@
 	// TWO WIRE SERIAL INTERFACE (TWI) REGISTERS
 	//(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
 	//
-	
+
 	//---------------------------------------------------------------------------------------------------
 	//	TWBR 0xB8	// TWI Bit Rate Register - sets the division factor for the bit rate generator
 	//---------------------------------------------------------------------------------------------------
@@ -88,7 +97,7 @@
 	/*RW*/	#define TWBR2	2
 	/*RW*/	#define TWBR1	1
 	/*RW*/	#define TWBR0	0
-	
+
 	#define MIN_TWBR_MASTER_MODE 10
 	//***************************************************************************************************
 	//---------------------------------------------------------------------------------------------------
@@ -116,10 +125,10 @@
 	/*R*/	#define TWS_RESERVED 2	// Reserved bit. Always read as zero.
 	/*RW*/	#define TWPS1 	1		// TWI Prescaler Bits
 	/*RW*/	#define TWPSO 	0		// "
-	
+
 	//***************************************************************************************************
 	//---------------------------------------------------------------------------------------------------
-	//	TWDR 0xBB	// TWI Data Register - Transmit Mode: 	Contains the next byte to be transmitted. 
+	//	TWDR 0xBB	// TWI Data Register - Transmit Mode: 	Contains the next byte to be transmitted.
 					// 					 - Receive Mode: 	Contains the last byte receieved.
 	//---------------------------------------------------------------------------------------------------
 	//***************************************************************************************************
@@ -136,7 +145,7 @@
 	//	TWAR 0xBA	// TWI (Slave) Address Register
 	//---------------------------------------------------------------------------------------------------
 	//***************************************************************************************************
-	/*RW*/	#define TWA6 	7		// Bits 7 to 1 represent the slave address. 
+	/*RW*/	#define TWA6 	7		// Bits 7 to 1 represent the slave address.
 	/*RW*/	#define TWA5 	6		// "
 	/*RW*/	#define TWA4 	5		// "
 	/*RW*/	#define TWA3 	4		// "
@@ -146,10 +155,7 @@
 	/*RW*/	#define TWGCE 	0		// TWI General Call Recognition Enable Bit
 	//***************************************************************************************************
 
-	#define SCL_FREQUENCY()	{ CLK_MHZ / (16+2*TWBR*pow(4,(TWBR & 0x3)))} 
-	// For more detail, see pp220, 224, 226, 229 of the AVR AT90CAN128 Data Sheet
 
-	
 #endif
 
 // TODO: get addresses on the power management board
