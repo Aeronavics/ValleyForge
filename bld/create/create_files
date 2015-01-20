@@ -258,7 +258,11 @@ if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 		# Call the 'component_create' script: it will handle rebuilding the configuration file.
 		bash $TCPATH/bld/create/create_component --component $COMPONENT
 
-		# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+		# Check that the component was actually created.
+		if [ ! -f ${TCPATH}/src/${COMPONENT}/${COMPONENT_NAME}.cfg ]; then
+			echo -e "${RED}Creation of the configuration file has failed. Exiting...\n${NO_COLOUR}"
+			exit 1
+		fi
 	else
 		# Just skip this component and move on.
 		echo -e "${YELLOW}No configuration file.  Cannot create files for component $COMPONENT.\n${NO_COLOUR}"
@@ -299,7 +303,13 @@ fi
 # Iterate through all the filenames in the list provided.
 echo -e "${CYAN}Creating template files...\n${NO_COLOUR}"
 for FILENAME in $FILENAMES; do
-	# TODO - Check if there is already a file which the specified name in the source directory.
+	# Check if there is already a file with the specified name in the source directory. If so, do not generate the template file.
+	TYPE_LOWERCASE=${TYPE,,}
+	if [ -f ${TCPATH}/src/${COMPONENT}/${FILENAME}${TEMPLATE_SUFFIX}.${TYPE_LOWERCASE} -o -f ${TCPATH}/src/${COMPONENT}/${FILENAME}${TEMPLATE_SUFFIX}.${TYPE_LOWERCASE/c/h} ]; then
+		echo -e "${YELLOW}File \"${FILENAME}${TEMPLATE_SUFFIX}\" already exists in source directory. Skipping template generation for this file...\n${NO_COLOUR}"
+		continue
+	fi
+
 	# If the following four variables are defined, we can simply use the template files stored at their location.
 	# There is also the option of a template suffix. If not defined, it resolves to an empty string which has no effect on the final file name.
 	if [ -n "${TEMPLATE_C_SOURCE}" -a -n "${TEMPLATE_H_SOURCE}" -a -n "${TEMPLATE_CPP_SOURCE}" -a -n "${TEMPLATE_HPP_SOURCE}" ]; then
