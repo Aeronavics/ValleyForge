@@ -168,8 +168,6 @@ makepixhawk_configure_apps()
 	# Create application configuration files for each executable.
 	echo -e "${CYAN}\tConfiguring Pixhawk applications\n${NO_COLOUR}"
 
-	# TODO - Don't actually need to make a directory as such, because 'external' can just be a symlink.
-
 	# Restrict the scope of some variables used in the loop
 	local APP_EXECUTABLES_ARRAY
 	local APP_STACKSIZE_ARRAY
