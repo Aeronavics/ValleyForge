@@ -32,8 +32,6 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported NuttX code generation functions.\n${NO_COLOUR}"
 
-source "${TCPATH}/bld/code_generation/gen_nuttx_app_configuration"
-
 ######################################## FUNCTION #########################################
 ###
 ### Name:		gen_nuttx_build
@@ -52,11 +50,6 @@ gen_nuttx_build()
 	# PRIVATE INTERNAL FUNCTIONS
 
 	# FUNCTION PROPER STARTS HERE
-
-	# TODO - Don't think you should do this here.  All the configuration settings should already be loaded by this point.
-
-	# Load the configuration variables from the project .cfg file.
-	source $1/$COMPONENT_NAME.cfg
 
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then

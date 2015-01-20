@@ -755,7 +755,11 @@ if [ ${NEW} ]; then
 	echo -e "# Configuration file for component $COMPONENT_NAME.\n" > ${CONFIG_FILE}
 fi
 
-# TODO - We should check that this actually worked, and if it didn't, bail.
+# Check that the configuration file was actually created.
+if [ ! -f ${CONFIG_FILE} ]; then
+	echo -e "${RED}Creation of the configuration file failed. Exiting...\n${NO_COLOUR}"
+	exit 1
+fi
 
 # Populate the configuration file for the component.
 echo -e "${CYAN}Populating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
@@ -764,7 +768,14 @@ push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
 
-# TODO - We should actually check if this works.
+read -e -i "Hold for a moment..." -p " "
+
+# Check if the keys were actually written to the configuration file.
+grep -q "SUBSYSTEM" ${CONFIG_FILE} && grep -q "TARGET" ${CONFIG_FILE} && grep -q "PLATFORM" ${CONFIG_FILE} && grep -q "BOOTLOADER" ${CONFIG_FILE}
+if [ $? != 0 ]; then
+	echo -e "${RED}Expected keys not present in configuration file. Exiting...\n${NO_COLOUR}"
+	exit 1
+fi
 
 # TARGET SPECIFIC CONFIGURATION.
 
@@ -803,8 +814,6 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 			"Y" | "y" )
 				# We want to set this as the current component.
 				sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
-
-				# TODO - We should actually check if we can find the config file first.
 				break
 				;;
 			"N" | "n" )
