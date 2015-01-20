@@ -137,6 +137,8 @@ gen_nuttx_build()
 				"Y" | "y" )
 					# If they responded YES, run "make menuconfig" in the /nuttx directory.
 					make menuconfig -C $1/nuttx
+					# Copy the configuration file back to the component source directory.
+					cp -f $1/nuttx/.config ${TCPATH}/src/${COMPONENT_NAME}/defconfig
 					break
 					;;
 				"N" | "n" )
