@@ -768,8 +768,6 @@ push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
 
-read -e -i "Hold for a moment..." -p " "
-
 # Check if the keys were actually written to the configuration file.
 grep -q "SUBSYSTEM" ${CONFIG_FILE} && grep -q "TARGET" ${CONFIG_FILE} && grep -q "PLATFORM" ${CONFIG_FILE} && grep -q "BOOTLOADER" ${CONFIG_FILE}
 if [ $? != 0 ]; then
