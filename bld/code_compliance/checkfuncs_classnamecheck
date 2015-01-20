@@ -50,6 +50,9 @@ compliance_check_file_classnamecheck()
 	# Regex pattern to match class names.
 	pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
 
+	# Regex pattern to match lines containing enum.
+	pattern_enum="enum[ 	]*[a-zA-Z_0-9]+[ 	]*\{(.*)\};"
+
 	# Define internal functions.
 
 	check_line()
@@ -92,11 +95,23 @@ compliance_check_file_classnamecheck()
 
 			# Condition to check for lowercase letters.
 			if [[ ${str_class:0:1} =~ [a-z] ]]; then
-				ERROR="$str_class doesn't begin with an uppercase letter....."
+				ERROR="$str_class doesn't begin with an uppercase letter."
 
 				return 1
 			fi
-				
+
+		# Condition to check for enum labels.
+		elif [[ $1 =~ $pattern_enum ]]; then
+	
+			str_enum_label=${BASH_REMATCH[1]}
+
+			# Condition to check for lowercase letters in enum labels.
+			if [[ $str_enum_label =~ [a-z] ]]; then
+				ERROR="$str_enum_label contains lowercase letters."
+
+				return 1
+
+			fi
 		fi
 	
 		# All done.
@@ -132,7 +147,7 @@ compliance_check_file_classnamecheck()
 			if ! check_line "$LINE" $LINE_NUM; then
 				# Report the line has failed.
 				
-				compliance_fail_line "compliance_check_file_classnamecheck" $1 $LINE_NUM "Non-compliant class/template name: $ERROR"
+				compliance_fail_line "compliance_check_file_classnamecheck" $1 $LINE_NUM "Non-compliant class/template/enum name: $ERROR"
 		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
@@ -162,7 +177,7 @@ compliance_check_file_classnamecheck()
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains non-compliant class/template name(s)."
+		compliance_fail_file "compliance_check_file_classnamecheck" $1 "This file contains non-compliant class/template/enum name(s)."
 	fi
 
 	# All done.
@@ -182,7 +197,9 @@ compliance_check_file_classnamecheck()
 compliance_get_rules_classnamecheck()
 {
 	echo "classnamecheck:"
-	echo "\tClass names which begin with a lower case character will fail. Template names which do not contain a single uppercase letter will fail."
+	echo "\tClass names which begin with a lower case character will fail."
+	echo "\tTemplate names which do not contain a single uppercase letter will fail."
+	echo "\tEnum labels which contain lower case letters will fail."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }

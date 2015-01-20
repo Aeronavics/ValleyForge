@@ -144,15 +144,15 @@ gen_compliance()
 	do
 		case $choice in
 			whitespace)
-				options='-p -k1 -U -xy'
+				options='-p -k1 -U -xy -n'
 				break
 				;;
 			indentation)
-				options='--style=allman -t -C -S -N -xW'
+				options='--style=allman -t -C -S -N -xW -n'
 				break
 				;;
 			linebreaks)
-				options='-j'
+				options='-j -n'
 				break
 				;;
 			comment)
@@ -160,7 +160,7 @@ gen_compliance()
 				break
 				;;
 			All_layout)
-				options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j'
+				options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j -n'
 				break
 				;;
 			Exit)

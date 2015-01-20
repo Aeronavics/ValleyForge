@@ -63,7 +63,7 @@ compliance_check_file_varname()
 		pattern_both="^([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]*[a-zA-Z0-9_]*[, ]*)+[;]+"
 
 		# Pattern to match multiple pointer/reference types declared on a single line. 
-		pattern_multiple_point_ref="^[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]+[ ]*[a-zA-Z0-9_]+)+;"
+		pattern_multiple_point_ref="^[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]*[ ]*[a-zA-Z0-9_]+)+;"
 
 		# Patterns to check for declarations of variables of different types in the same line.
 		pattern_mul_var="^([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"

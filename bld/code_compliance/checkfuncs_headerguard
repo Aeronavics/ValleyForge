@@ -65,6 +65,9 @@ compliance_check_file_headerguard()
 		# Pattern matching lines which we should avoid.
 		pattern="^$|[{}]+"
 
+		# Pattern to match lines containing macro definitions.
+		pattern_macro="(#[ 	]*define)+[ 	]*([a-zA-Z_0-9]+)"
+
 		# Need to keep track of the line number we are up to.
 		local LINE_NUM=
 
@@ -104,6 +107,16 @@ compliance_check_file_headerguard()
 						endif_count=$((endif_count+1))
 					fi
 
+					# Obtain the macro name and check if it contains any lowercase letters.					
+					if [[ "$name" =~ $pattern_macro ]]; then
+						macro_name=${BASH_REMATCH[2]}
+						if [[ $macro_name =~ [a-z] ]]; then
+							CHECKS_OK=
+
+							ERROR="At line $LINE_NUM: The macro name '$macro_name' has lowercase letters."
+						fi
+					fi					
+
 					# Increment the #ifndef counter.
 					if [[ "$name" =~ "#ifndef" || "$name" =~ "#if" ]]; then
 						# Variable to count the number of occurrences of #ifndef or #if
@@ -115,7 +128,7 @@ compliance_check_file_headerguard()
 							if [[ $macro_name != __* || $macro_name != *__ ]]; then
 								CHECKS_OK=
 
-								ERROR="At line $LINE_NUM: The macro name is missing a pair of underscore characters in the prefix/suffix"
+								ERROR="At line $LINE_NUM: The macro name is missing a pair of underscore characters in the prefix/suffix."
 							fi
 						fi
 					fi
