@@ -1,0 +1,214 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           	config_interface
+###
+### Author:         	Ravi Shankar
+###
+### Date Created:	16-01-2015
+###
+### Type:           	Bash Function Definitions
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:        	Provides an interface to add/modify/delete key/value pairs in configuration files.
+###
+###########################################################################################################################
+
+# DEFINE CONSTANTS.
+
+######################################## FUNCTION #########################################
+###
+### Name:		vf_config_keys
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Implements an interactive interface which prompts the user to modify the
+###				individual configuration keys stored in the various configuration files
+###				used by the toolchain.
+###
+###########################################################################################
+
+vf_config_keys()
+{
+	local ALL_FILES
+	local LOOP_STATUS
+	local KEY_OPTIONS
+	local KEY
+	local VALUE
+
+	# Obtain and store all the required .cfg files into an array.
+	ALL_FILES=$(find $TCPATH/var $TCPATH/bld/code_compliance/config_files -name "*.cfg" | sed "s^${TCPATH}\/^^")
+	ALL_FILES+=("Back")
+
+	# Variable to decide whether or not to continue the loop.
+	LOOP_STATUS=1
+
+	# Loop until the user enters a valid input or chooses to exit.
+	while [[ $LOOP_STATUS == 1 ]]
+	do
+		# Obtain user's choice of input file.
+		echo -e "${GREEN}\nWhich file do you want to select? \n${NO_COLOUR}"
+
+		# Change the default prompt.
+		PS3="Please enter your choice: "
+
+		# Obtain user's choice of configuration file.
+		select FILE in ${ALL_FILES[@]}
+		do
+			# User chose to exit.
+			if [[ $FILE == "Back" ]]; then
+				# Just leave without doing anything.
+				echo ""
+				return 0
+
+			# Check if the user has entered an invalid input.
+			elif [ ! -f $TCPATH/$FILE ]; then
+				echo -e "${RED}Invalid option entered. Try again...${NO_COLOUR}"
+				LOOP_STATUS=1
+
+			# Display a warning message that the user has chosen a default configuration file and to confirm his choice.
+			elif [[ $FILE == "bld/*.cfg" ]]; then
+				echo -e "${YELLOW}This is a default configuration file.\n${NO_COLOUR}"
+				echo -e "${BOLD_GREEN}Are you sure you wish to modify this file? (Y/N) ${NO_COLOUR}"
+				read -n 1
+				echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+				
+				# If they responded YES, continue with this file.
+				if [[ $REPLY =~ ^[Yy]$ ]]; then
+					LOOP_STATUS=0
+				else
+					# Display the menu again for the user to select another file.
+					LOOP_STATUS=1
+				fi
+
+			# The user has provided a valid input so continue.
+			else
+				LOOP_STATUS=0
+			fi
+
+		break
+		done
+	done
+
+	echo -e "${CYAN}Selected '$FILE'\n${NO_COLOUR}"
+
+	# Array with operations for users to choose from.				
+	KEY_OPTIONS=("List Keys" "Add/Modify Key" "Delete Key" "Concatenate to Key" "Retrieve Value" "Reset to Default")
+	KEY_OPTIONS+=("Back")
+
+	# Variable to decide whether or not to continue the loop.
+	LOOP_STATUS=1
+
+	# Loop until user chooses to exit from the script.
+	while [[ $LOOP_STATUS == 1 ]]
+	do
+		echo -e "${GREEN}Which operation do you want to perform? \n${NO_COLOUR}"
+
+		# Obtain user's choice of operation.
+		select choice in "${KEY_OPTIONS[@]}"
+		do
+			case $choice in
+				"${KEY_OPTIONS[0]}")
+					# Display only the key/value pairs from the .cfg file.
+					echo ""
+					echo -e "${BOLD_CYAN}Keys stored in $FILE.\n${NO_COLOUR}"
+					echo -e "${NO_COLOUR}$(grep -Eo '^(.*[+]?)=(.*)$$' $TCPATH/$FILE)\n${NO_COLOUR}"
+					;;
+
+				"${KEY_OPTIONS[1]}")
+					# Obtain the key and the new value for the key from user and modify it if found.
+					echo ""
+					echo -e "${GREEN}Enter the name of the key to modify: ${NO_COLOUR}"
+					read KEY
+					echo -e "${GREEN}Enter the new value: ${NO_COLOUR}"
+					read VALUE
+					push_key $TCPATH/$FILE "$KEY" "$VALUE"
+					echo ""
+					echo -e "${NO_COLOUR}Value of key ${BOLD_WHITE}${KEY}${NO_COLOUR} is now: ${BOLD_WHITE}$(pull_key $TCPATH/$FILE $KEY)\n${NO_COLOUR}"					
+					;;
+
+				"${KEY_OPTIONS[2]}")
+					# Obtain the key from the user and attempt to delete it.
+					echo ""
+					echo -e "${GREEN}Enter the name of the key to delete: ${NO_COLOUR}"
+					read KEY
+					push_key $TCPATH/$FILE "$KEY" "" --delete
+					;;
+
+				"${KEY_OPTIONS[3]}")
+					# Obtain the key/value from the user create a concatenating key.
+					echo ""
+					echo -e "${GREEN}Enter the name of the key to concatenate: ${NO_COLOUR}"
+					read KEY
+					echo -e "${GREEN}Enter the value for this key (should probably look like \" XXX\" for most keys): ${NO_COLOUR}"
+					read VALUE
+					push_key $TCPATH/$FILE "$KEY" "$VALUE" --concat
+					echo ""
+					echo -e "${NO_COLOUR}Value of key ${BOLD_WHITE}${KEY}${NO_COLOUR} is now: ${BOLD_WHITE}$(pull_key $TCPATH/$FILE $KEY)\n${NO_COLOUR}"
+					;;
+
+				"${KEY_OPTIONS[4]}")
+					# Obtain the key from user and print out its value.
+					echo ""
+					echo -e "${GREEN}Enter the name of the key to retrieve: ${NO_COLOUR}"
+					read KEY
+					VALUE=$(pull_key $TCPATH/$FILE "$KEY")
+					echo ""
+					if [ -n "${VALUE}" ]; then
+						echo -e "${NO_COLOUR}Value of key ${BOLD_WHITE}${KEY}${NO_COLOUR} is: ${BOLD_WHITE}${VALUE}\n${NO_COLOUR}"
+					else
+						echo -e "${NO_COLOUR}Key ${BOLD_WHITE}${KEY}${NO_COLOUR} is empty.\n${NO_COLOUR}"
+					fi
+					;;
+			
+				"${KEY_OPTIONS[5]}")
+					# Copy and replace the selected file with default file.
+					cp $TCPATH/bld/code_compliance/config_files/code_compliance.cfg $TCPATH/$FILE
+					if [[ $? != 0 ]]; then
+						echo ""
+						echo -e "${RED}Reset to the default config file failed.\n${NO_COLOUR}"
+					else
+						echo ""
+						echo -e "${CYAN}Successfully reset to the default config file.\n${NO_COLOUR}"
+					fi
+					;;
+
+				"${KEY_OPTIONS[6]}")
+					# Just leave without doing anything.
+					echo ""
+					return 0
+					;;
+
+				*)
+					# The user has provided an invalid option.
+					echo -e "${RED}Invalid option. Try another one.${NO_COLOUR}"
+					;;
+			esac
+
+			# Break immediately, since the outer loop is what we are interested in.
+			break
+		done
+	done
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
