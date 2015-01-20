@@ -113,16 +113,17 @@ gen_nuttx_build()
 	sed -i -e s/'# CONFIG_HAVE_CXX is not set'/'CONFIG_HAVE_CXX=y'/ $1/nuttx/.config
 	sed -i -e s/'# CONFIG_HAVE_CXXINITIALIZE is not set'/'CONFIG_HAVE_CXXINITIALIZE=y'/ $1/nuttx/.config
 
-	# TODO - This stuff looks target specific.
-
-	# Update the .config file for building on a Linux system.
-	sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
-	sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
-	sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
-	
-	# Update the .config file to use the gcc-arm-none-eabi toolchain
-	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
-	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
+	# The NuttX configurations default to a Windows environment running Cygwin. If we're running on Linux, we want to change this automatically.
+	if [[ $OSTYPE == "linux-gnu" ]]; then
+		# Update the .config file for building on a Linux system.
+		sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
+		sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
+		sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
+		
+		# Update the .config file to use the gcc-arm-none-eabi toolchain
+		sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
+		sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
+	fi
 
 	# type kconfig-mconf >/dev/null 2>&1
 	if type kconfig-mconf >/dev/null 2>&1; then
