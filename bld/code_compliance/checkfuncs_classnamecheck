@@ -184,15 +184,15 @@ compliance_check_file_classnamecheck()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ####################################################
 ###
 ### Name:		compliance_get_rules_classnamecheck
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Prints out a summary of the code compliance rules for the classnamecheck test.
+### Purpose:		Prints out a summary of the code compliance rules for the classnamecheck test.
 ###
-###########################################################################################
+######################################################################################################
 
 compliance_get_rules_classnamecheck()
 {
