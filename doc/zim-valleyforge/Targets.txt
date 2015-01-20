@@ -27,7 +27,11 @@ Currently supported targets are listed below, grouped by architecture type.
 
 === Stellaris ===
 	The Stellaris is a Cortex-M ARM microcontroller developed by Texas Instruments.
-	* [[+LM3S1968|LM3S1968]]	
+	* [[+LM3S1968|LM3S1968]]
+
+=== Tiva C ===
+	The Tiva C Series is a Cortex-M4 microcontoller developed by Texas Instruments.
+	* [[+TM4C123GH6PM|TM4C123GH6PM]]
 
 === STM32 ===
 	The [[http://www.st.com/web/en/catalog/mmc/FM141/SC1169?sc=stm32|STM32]] is a Cortex-M ARM microcontroller developed by ST-Microelectronics

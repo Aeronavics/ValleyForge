@@ -67,11 +67,22 @@ makearduino()
 	# Because Arduino builds are different to regular ValleyForge C/C++ builds, we need to do some configuration of the source files first.
 	echo -e "${CYAN}Configuring Arduino source files...\n${NO_COLOUR}"
 	
+	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
 	# Check if a specific sketch to build was specified for the component.
 	if [ -z "${ARDUINO_SKETCH}" ]; then
 		# No sketch was specified, so assume it's named after the component.
-		ARDUINO_SKETCH="${COMPONENT_NAME}.ino"
+		if [ -e ${COMPONENT_NAME}.ino ]; then
+			ARDUINO_SKETCH="${COMPONENT_NAME}.ino"
+		elif [ -e ${COMPONENT_NAME}.c ]; then
+			mv ${COMPONENT_NAME}.c ${COMPONENT_NAME}.ino
+			ARDUINO_SKETCH="${COMPONENT_NAME}.ino"
+		elif [ -e ${COMPONENT_NAME}.cpp ]; then
+			mv ${COMPONENT_NAME}.cpp ${COMPONENT_NAME}.ino
+			ARDUINO_SKETCH="${COMPONENT_NAME}.ino"
+		fi
 	fi
+	popd >/dev/null
+
 	# We need to handle non-compliant nesting (since Arduino projects don't play nicely with ValleyForge) where the parent file isn't in the root.
 	ARDUINO_BUILD_DIR=$TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH}
 	ARDUINO_BUILD_DIR=${ARDUINO_BUILD_DIR%/*}
@@ -308,6 +319,11 @@ makearduino()
 	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile"
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile"
   
+	# Generate the Make.deps dependency file.    
+    pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
+	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)"
+	popd >/dev/null
+
 	# Actually make the component.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	make -C "$TCPATH/$TMP_SRC_DIR/$COMPONENT" all

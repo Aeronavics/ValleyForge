@@ -26,7 +26,7 @@
 
 #include <nuttx/config.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <errno.h>
 
 // DEFINE PRIVATE MACROS.
 
@@ -40,11 +40,7 @@
 
 // IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
-#ifdef CONFIG_BUILD_KERNEL
-int main(int argc, FAR char *argv[])
-#else
 int <<<TC_INSERTS_FILE_BASENAME_HERE>>>(int argc, char *argv[])
-#endif
 {
   printf("Hello, World!!\n");
   return 0;

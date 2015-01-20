@@ -86,6 +86,7 @@ gen_nuttx_build()
 	# Copy the Nuttx source files across to where they are needed.
 	cp -fr ${NUTTX_COMMON_SOURCE}/nuttx $1/nuttx/
 	cp -fr ${NUTTX_COMMON_SOURCE}/apps $1/apps/
+	cp -fr ${NUTTX_COMMON_SOURCE}/misc $1/misc/
 
 	# Move the NuttX configuration files into the /nuttx/ directory, overwriting any pre-existing files.
 	echo -e "${CYAN}\tReplacing NuttX configuration files...\n${NO_COLOUR}"
@@ -95,16 +96,61 @@ gen_nuttx_build()
 	mv -f $1/Make.defs $1/nuttx/Make.defs
 	mv -f $1/setenv.sh $1/nuttx/setenv.sh
 
-	# TODO - This stuff looks target specific.
+	# Configure C++ support with uCLibc++
+	pushd $1/misc/uClibc++ >/dev/null
 
-	# Update the .config file for building on a Linux system.
-	sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
-	sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
-	sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
-	
-	# Update the .config file to use the gcc-arm-none-eabi toolchain
-	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
-	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
+	for FILE in $(find libxx -type f); do
+		install -D ${FILE} ../../nuttx/${FILE}
+	done
+
+	for FILE in $(find include -type f); do
+		install -D ${FILE} ../../nuttx/${FILE}
+	done
+
+	popd >/dev/null
+
+	# Update the .config file to enable C++ support.
+	sed -i -e s/'# CONFIG_HAVE_CXX is not set'/'CONFIG_HAVE_CXX=y'/ $1/nuttx/.config
+	sed -i -e s/'# CONFIG_HAVE_CXXINITIALIZE is not set'/'CONFIG_HAVE_CXXINITIALIZE=y'/ $1/nuttx/.config
+
+	# The NuttX configurations default to a Windows environment running Cygwin. If we're running on Linux, we want to change this automatically.
+	if [[ $OSTYPE == "linux-gnu" ]]; then
+		# Update the .config file for building on a Linux system.
+		sed -i -e s/'CONFIG_HOST_WINDOWS=y'/'# CONFIG_HOST_WINDOWS is not set'/ $1/nuttx/.config
+		sed -i -e s/'CONFIG_WINDOWS_CYGWIN=y'/'# CONFIG_WINDOWS_CYGWIN is not set'/ $1/nuttx/.config
+		sed -i -e s/'# CONFIG_HOST_LINUX is not set'/'CONFIG_HOST_LINUX=y'/ $1/nuttx/.config
+		
+		# Update the .config file to use the gcc-arm-none-eabi toolchain
+		sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
+		sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
+	fi
+
+	# type kconfig-mconf >/dev/null 2>&1
+	if type kconfig-mconf >/dev/null 2>&1; then
+		while :
+		do
+			# # Ask if the user wants to run the NuttX configuration tool.
+			echo -e -n "${GREEN}Do you wish to run the NuttX configuration tool? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
+
+			case "$REPLY" in
+				"Y" | "y" )
+					# If they responded YES, run "make menuconfig" in the /nuttx directory.
+					make menuconfig -C $1/nuttx
+					# Copy the configuration file back to the component source directory.
+					cp -f $1/nuttx/.config ${TCPATH}/src/${COMPONENT_NAME}/defconfig
+					break
+					;;
+				"N" | "n" )
+					# Otherwise, continue with the build process.
+					break
+					;;
+			esac
+		done
+	else
+		echo -e "${YELLOW}\tkconfig-mconf not installed, skipping additional user configuration.\n${NO_COLOUR}"
+	fi
 
 	# All done.
 	return 0

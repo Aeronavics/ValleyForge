@@ -48,11 +48,7 @@ extern "C" {
  * @param	Details of arguments to the function.
  * @return	Details of return value from the function.
  */
-#ifdef CONFIG_BUILD_TERMINAL
-int main(int argc, FAR char *argv[]);
-#else
-int <<<TC_INSERTS_FILE_BASENAME_HERE>>>(int argc, char *argv[]);
-#endif
+__EXPORT int <<<TC_INSERTS_FILE_BASENAME_HERE>>>(int argc, char *argv[]);
 
 #endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
