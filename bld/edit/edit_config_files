@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	config_interface
+### Name:           	edit_config_files
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,19 +31,17 @@
 ###
 ###########################################################################################################################
 
-# DEFINE CONSTANTS.
-
-######################################## FUNCTION #########################################
+######################################## FUNCTION ###############################################
 ###
 ### Name:		vf_config_keys
 ###
 ### Inputs/Outputs:	None
 ###
-### Purpose:	Implements an interactive interface which prompts the user to modify the
-###				individual configuration keys stored in the various configuration files
-###				used by the toolchain.
+### Purpose:		Implements an interactive interface which prompts the user to modify the
+###			individual configuration keys stored in the various configuration files
+###			used by the toolchain.
 ###
-###########################################################################################
+#################################################################################################
 
 vf_config_keys()
 {
@@ -84,7 +82,7 @@ vf_config_keys()
 				LOOP_STATUS=1
 
 			# Display a warning message that the user has chosen a default configuration file and to confirm his choice.
-			elif [[ $FILE == "bld/*.cfg" ]]; then
+			elif [[ $FILE == bld/*.cfg ]]; then
 				echo -e "${YELLOW}This is a default configuration file.\n${NO_COLOUR}"
 				echo -e "${BOLD_GREEN}Are you sure you wish to modify this file? (Y/N) ${NO_COLOUR}"
 				read -n 1
