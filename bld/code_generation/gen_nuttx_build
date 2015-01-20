@@ -124,6 +124,31 @@ gen_nuttx_build()
 	sed -i -e s/'CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y'/'# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set'/ $1/nuttx/.config
 	sed -i -e s/'# CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL is not set'/'CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y'/ $1/nuttx/.config
 
+	# type kconfig-mconf >/dev/null 2>&1
+	if type kconfig-mconf >/dev/null 2>&1; then
+		while :
+		do
+			# # Ask if the user wants to run the NuttX configuration tool.
+			echo -e -n "${GREEN}Do you wish to run the NuttX configuration tool? (Y/N) ${NO_COLOUR}"
+			read -n 1
+			echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
+
+			case "$REPLY" in
+				"Y" | "y" )
+					# If they responded YES, run "make menuconfig" in the /nuttx directory.
+					make menuconfig -C $1/nuttx
+					break
+					;;
+				"N" | "n" )
+					# Otherwise, continue with the build process.
+					break
+					;;
+			esac
+		done
+	else
+		echo -e "${YELLOW}\tkconfig-mconf not installed, skipping additional user configuration.\n${NO_COLOUR}"
+	fi
+
 	# All done.
 	return 0
 }
