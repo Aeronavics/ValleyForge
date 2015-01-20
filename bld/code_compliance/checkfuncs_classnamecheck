@@ -17,38 +17,40 @@
 
 ###########################################################################################################################
 ###
-### Name:           checkfuncs_classnamecheck
+### Name:           	checkfuncs_classnamecheck
 ###
-### Author:         Ravi Shankar
+### Author:         	Ravi Shankar
 ###
 ### Date Created:	06-01-2015
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Implements code compliance tests: tests for class and template name validity.
+### Purpose:        	Implements code compliance tests: tests for class and template name validity.
 ###
 ###########################################################################################################################
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ####################################################
 ###
 ### Name:		compliance_check_file_classnamecheck
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:	Tests a single C/CPP source or header file for valid class and template names.
+### Purpose:		Tests a single C/CPP source or header file for valid class and template names.
 ###
-###########################################################################################
+######################################################################################################
 
 compliance_check_file_classnamecheck()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	#Regex pattern to match template names.
+	# Regex pattern to match template names.
 	pattern_template="(template)+[ ]*<[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)>"
 
-	#Regex pattern to match class names.
+	# Regex pattern to match class names.
 	pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
+
+	# Define internal functions.
 
 	check_line()
 	{
@@ -57,38 +59,38 @@ compliance_check_file_classnamecheck()
 		#	$2 - The line number we are up to.
 		#
 	
-		#Condition used for ignoring lines which include comments. 
+		# Condition used for ignoring lines which include comments. 
 		if [[ "$1" =~ ^/.*|^\*.* ]]; then
 
-			#If it is a comment line, do nothing.
+			# If it is a comment line, do nothing.
 			return 0	
 
-		#Condition to check for template names.
+		# Condition to check for template names.
 		elif [[ $1 =~ $pattern_template ]]; then
 			
 			str_template=${BASH_REMATCH[2]}
 			size=${#str_template}
 
-			#Condition to check whether template names have more than one character.
+			# Condition to check whether template names have more than one character.
 			if [[ $size != 1 ]]; then
 				ERROR="$str_template has more than one uppercase letter."
 
 				return 1
 			fi
 
-			#Condition to check whether template names contain lower case letters.
+			# Condition to check whether template names contain lower case letters.
 			if [[ $str_template =~ [a-z] ]]; then
 				ERROR="$str_template contains lowercase letters."
 
 				return 1
 			fi	
 
-		#Condition to check for class names.
+		# Condition to check for class names.
 		elif [[ $1 =~ $pattern_class ]]; then	
         		
 			str_class=${BASH_REMATCH[1]}
 
-			#Condition to check for lowercase letters.
+			# Condition to check for lowercase letters.
 			if [[ ${str_class:0:1} =~ [a-z] ]]; then
 				ERROR="$str_class doesn't begin with an uppercase letter....."
 
@@ -110,7 +112,7 @@ compliance_check_file_classnamecheck()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
-	#variable for counting the number of lines disabled.
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
 	while read LINE
@@ -153,7 +155,7 @@ compliance_check_file_classnamecheck()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
-	#Check if the number of lines disabled is lesser than the threshold
+	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
