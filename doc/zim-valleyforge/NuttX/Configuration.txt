@@ -36,3 +36,20 @@ This copies the Make.defs, defconfig and setenv.sh files to the nuttx/ directory
 At this point, NuttX is now in a position to be compiled by calling ''make'' in the nuttx/ directory. Alternatively, further configuration can be done by either manually editing the nuttx/.config file or by running  ''make menuconfig ''in the nuttx/ directory and navigating the various menus.
 
 By default, [[NuttX]] is not configured to build C++ code, as it requires uClibc++. The reasons for this are related to licensing issues. uClib++ can be installed by following the instructions in misc/uClibc++/README.txt.
+
+===== Modifying the Loaded Configuration =====
+Once a particular configuration has been loaded, particular details can be modified by running the following command in the nuttx/ directory:
+'''
+make menuconfig
+'''
+This tool uses an ncurses GUI to allow a user to modify all the available configuration settings. This tool requires the kconfig-frontends program to operate. Kconfig-frontends can be found at the following [[http://ymorin.is-a-geek.org/projects/kconfig-frontends|website]] as either a tar ball or git repository.
+
+To install, navigate to the source directory and execute the following commands in order:
+'''
+./bootstrap
+./configure
+make
+make install
+'''
+
+By default this installs to /usr/local/bin/
