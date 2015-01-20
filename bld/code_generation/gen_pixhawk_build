@@ -51,11 +51,6 @@ gen_pixhawk_build()
 
 	# FUNCTION PROPER STARTS HERE
 
-	# TODO - Don't think you should do this here.  All the configuration settings should already be loaded by this point.
-
-	# Load the configuration variables from the project .cfg file.
-	source $1/$COMPONENT_NAME.cfg
-
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then
 		# The specified location is not a directory.
