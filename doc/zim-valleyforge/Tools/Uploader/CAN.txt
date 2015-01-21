@@ -1,0 +1,10 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-22T10:23:48+13:00
+
+====== Modular Code Uploading Tool: CAN Protocol Module ======
+
+This is primarily intended to support the [[Bootloaders:Modular AVR Bootloader:CAN|CAN module]] of the [[Modular AVR Bootloader]].
+
+===== Module Parameters =====
+This module uses a number of parameters given to the uploader with the -C command line switch.

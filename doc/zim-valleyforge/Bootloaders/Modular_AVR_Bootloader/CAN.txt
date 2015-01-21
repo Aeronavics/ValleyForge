@@ -1,0 +1,47 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-22T09:53:47+13:00
+
+====== Modular AVR Bootloader: CAN Module ======
+
+ The CAN module for the [[Modular AVR Bootloader]] is provided to allow uploading of new application code to an [[Architectures:AVR|AVR]] device over a CAN (Controller Area Network) bus. 
+
+The module is specifically designed to be used in conjunction with the [[:Tools:Uploader:CAN|CAN module]] (and the [[:Tools:Uploader:IHex|Intel Hex File Parser]]) of the [[:Tools:Uploader|Modular Code Uploading Tool]].
+
+===== Operation =====
+
+==== CAN Module Interface with Bootloader Shell ====
+As per [[Modular AVR Bootloader|here,]] the module interacts with the bootloader by implementing the four virtual methods defined in the ''bootloader_module'' abstract class.
+* The init method initializes the CAN controller peripheral.
+* The exit method resets the CAN controller peripheral to default settings.
+* The event_idle method can send a flash page to the uploader for verification.
+* The event_periodic method checks for any new messages received from CAN communication. If no messages have been received an alert_uploader message is sent to the uploader, this informs the uploader that the bootloader is awaiting uploader command messages. If a message was received then the message is handled by executing its corresponding procedure. 
+
+==== CAN Controller Peripheral Interface ====
+The bit timing is configured by the module using the user defined baud rate. The module configures two MObs (Message Objects), one for message reception and one for message transmission. The reception MOb will only accept messages below a length of eight bytes with standard message identifiers identical to Uploader message identifiers. The transmission MOb allows a message up to 8 bytes long with any message identifier to be sent.
+
+The message reception method will filter out any Uploader commands without the component's node identifier. The accepted messages will have their message data, length and identifiers saved. Finally the message received flag will be set. 
+
+==== Message Handling ====
+ The received messages are filtered into five procedures corresponding to the five Uploader message commands:
+
+* The ''reset_request_procedure'' either resets the Bootloader or starts the application.
+* The ''get_info_procedure'' will send the Uploader a get_info reply message that contains the device signature and Bootloader version number.
+* The ''write_memory_procedure'' stores the flash page number to be written and the code length to be written.
+* The ''write_data_procedure'' will store the code into a buffer. Once the specified code length has been stored into the buffer a flag is set to allow writing the buffer to the flash memory.
+* The ''read_memory_procedure'' stores the flash page number to be read and the code length to be read. The corresponding flash memory is stored into a buffer and sent back to the Uploader in the ''read_data'' message format. 
+
+All of the procedures send a confirmation message back to the Uploader. 
+
+===== Configuring the CAN module =====
+ Upon configuring a CAN bus bootloader, the toolchain will prompt the user for two parameters:
+
+* The CAN bus baud rate for this CAN network. The bootloader and the application must both use this specified CAN baud rate.
+* The component's node ID for this CAN network. All the nodes on the CAN network must have different node IDs. 
+
+NOTE: Application code which is loaded onto a component using the CAN Module of the Modular AVR Bootloader should implement the facility to receive a ''reset_request'' message from a host which wishes to upload new code to the component. When the application receives a ''reset_request'' message, it should set the bootloader status flag to 'dirty' and then perform a CPU reset, to allow the bootloader to download new firmware from the host. 
+
+===== Protocol =====
+See [[:Tools:Uploader:CAN|here]].
+
+===== Implementation =====
