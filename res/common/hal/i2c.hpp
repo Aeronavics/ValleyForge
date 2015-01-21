@@ -83,6 +83,13 @@ enum I2C_mode
 	I2C_RECEIVER = 0x4
 };
 
+enum CPU_CLK_speed
+{
+  CPU_1MHz = 100,     // No external pull-up required at this bus speed.
+  CPU_8MHz = 800,
+  CPU_16MHz = 1600
+};
+
 enum I2C_SCL_speed
 {
   I2C_10kHz = 1,     // No external pull-up required at this bus speed.
@@ -192,7 +199,7 @@ class I2C
      * @param    I2C_bit_rate    The bitrate of the I2C/TWI interface.
      *           I2C_prescalar    Prescale value of I2C/TWI interface.
      */
-		I2C_return_status initialise(I2C_SCL_speed scl_speed);
+		I2C_return_status initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed);
 
     /**
      * Send START signal of I2C.

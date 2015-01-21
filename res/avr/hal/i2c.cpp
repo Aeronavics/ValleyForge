@@ -61,7 +61,7 @@ class I2C_imp
 
 		void disable(void);
 
-    I2C_return_status initialise(I2C_SCL_speed scl_speed);
+    I2C_return_status initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed);
 
 		I2C_return_status start();
 
@@ -130,9 +130,9 @@ void I2C::disable(void)
   return (imp->disable());
 }
 
-I2C_return_status I2C::initialise(I2C_SCL_speed scl_speed)
+I2C_return_status I2C::initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed)
 {
-  return (imp->initialise(scl_speed));
+  return (imp->initialise(cpu_speed, scl_speed));
 }
 
 I2C_return_status I2C::start()
@@ -195,26 +195,105 @@ void I2C_imp::disable(void)
   return;
 }
 
-I2C_return_status I2C_imp::initialise(I2C_SCL_speed scl_speed)
+I2C_return_status I2C_imp::initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed)
 {
-  // TODO - this
-  if ((CLK_MHZ / 10000 / scl_speed) <= 24 )
+  // TODO - This
+  TWSR &= (~(1 << TWPS0) & ~(1 << TWPS1));         // prescaler value is always 0 (or prescale 1)
+
+  if (cpu_speed / scl_speed <16)
   {
     return I2C_ERROR;
   }
 
-  uint16_t temp;
-  temp = (CLK_MHZ / 10000 / scl_speed) - 16 / 8;
-  TWBR = temp;
-  TWSR &= (~(1 << TWPS0) & ~(1 << TWPS1));         // prescaler value is always 0 (or prescale 1)
-  return I2C_SUCCESS;
+  switch (cpu_speed)
+  {
+    case CPU_1MHz:
+    {
+      switch (scl_speed)
+      {
+        case I2C_10kHz:
+        {
+          TWBR = 0x0B;
+          return I2C_SUCCESS;
+        }
+        case I2C_100kHz:
+        {
+          break;   // Not available at this CPU speed
+        }
+        case I2C_400kHz:
+        {
+          break;   // Not available at this CPU speed
+        }
+        default:
+        {
+          break;
+        }
+      }
+      return I2C_ERROR;
+    }
+    case CPU_8MHz:
+    {
+      switch (scl_speed)
+      {
+        case I2C_10kHz:
+        {
+          TWBR = 0x62;
+          return I2C_SUCCESS;
+        }
+        case I2C_100kHz:
+        {
+          TWBR = 0x08;
+          return I2C_SUCCESS;
+        }
+        case I2C_400kHz:
+        {
+          break;   // Not available at this CPU speed
+        }
+        default:
+        {
+          break;
+        }
+      }
+      return I2C_ERROR;
+    }
+    case CPU_16MHz:
+    {
+      switch (scl_speed)
+      {
+        case I2C_10kHz:
+        {
+          TWBR = 0xC6;
+          return I2C_SUCCESS;
+        }
+        case I2C_100kHz:
+        {
+          TWBR = 0x12;
+          return I2C_SUCCESS;
+        }
+        case I2C_400kHz:
+        {
+          TWBR = 0x03;
+          return I2C_SUCCESS;
+        }
+        default:
+        {
+          break;
+        }
+      }
+      return I2C_ERROR;
+    }
+    default:
+    {
+      return I2C_ERROR;
+    }
+  }
 }
 
 I2C_return_status I2C_imp::start()
 {
   // TODO - this
   TWCR = (1<<TWEN)|                             // TWI Interface enabled.
-         (1<<TWIE)|(1<<TWINT)|                  // Enable TWI Interupt and clear the flag.
+         (0<<TWIE)|(1<<TWINT)|                  // Enable TWI Interupt and clear the flag.
          (0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|       // Initiate a START condition.
          (0<<TWWC);
 

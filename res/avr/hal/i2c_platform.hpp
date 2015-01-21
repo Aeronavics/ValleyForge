@@ -62,9 +62,6 @@
 // REQUIRED HEADER FILES.
 #include <stdint.h>
 
-// Importing the clock speed
-#define CLK_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
-
 #define BASE_AT90_SLA     0xA0
 #define BASE_ATMEGA8_SLA     0xB0
 #define ENERGY_AT90_SLA     0xC0
