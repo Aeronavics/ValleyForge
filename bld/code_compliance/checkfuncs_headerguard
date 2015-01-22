@@ -126,9 +126,10 @@ compliance_check_file_headerguard()
 							macro_name=$(echo $name | cut -d ' ' -f 2)
 							# Check if the macro name is prefixed and suffixed with a pair of underscore characters.
 							if [[ $macro_name != __* || $macro_name != *__ ]]; then
-								CHECKS_OK=
 
-								ERROR="At line $LINE_NUM: The macro name is missing a pair of underscore characters in the prefix/suffix."
+								# Report the line has failed.
+								ERROR="'$macro_name' is missing a pair of underscore characters in the prefix/suffix."
+								compliance_fail_line "compliance_check_file_headerguard" $1 $LINE_NUM "Non-compliant macro name: $ERROR"
 							fi
 						fi
 					fi

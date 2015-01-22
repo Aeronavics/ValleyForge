@@ -79,19 +79,19 @@ compliance_check_file_varname()
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ $1 =~ $pattern_multiple_point_ref ]]; then
-			ERROR="$1 contains multiple reference/pointer type declarations"		
+			ERROR="This line contains multiple reference/pointer type declarations"		
 
 			return 1
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ ! $1 =~ $pattern_mul_var && $1 =~ $pattern_mul_diff ]]; then
-			ERROR="$1 contains declarations of variables of different types"		
+			ERROR="This line contains declarations of variables of different types"		
 
 			return 1
 
 		# Condition to detect where a single line contains both declarations and initialisations.
 		elif [[ $1 =~ $pattern_both && ! $1 =~ $pattern_declar && ! $1 =~ $pattern_init ]]; then
-			ERROR="$1 contains both variable declarations and initialisations"		
+			ERROR="This line contains both variable declarations and initialisations"		
 
 			return 1
 
@@ -115,7 +115,7 @@ compliance_check_file_varname()
 
 					# Condition to check for variable name's validity
 					if [[ "$indiv_word1" =~ [A-Z] ]]; then
-						ERROR="$indiv_word1 contains upper case characters1."
+						ERROR="Non-compliant variable name: '${indiv_word1//[!a-zA-Z]}' contains upper case characters."
 
 						return 1
 					fi
@@ -149,7 +149,7 @@ compliance_check_file_varname()
 
 				# Condition to check for variable name's validity
 				if [[ "$req_str" =~ [A-Z] ]]; then
-					ERROR="$req_str contains upper case characters2."
+					ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
 					return 1
 				fi
 
@@ -179,7 +179,7 @@ compliance_check_file_varname()
 
 						# Condition to check for variable name's validity
 						if [[ "$req_str" =~ [A-Z] ]]; then
-							ERROR="$req_str contains upper case characters3."
+							ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
 
 							return 1
 						fi
@@ -190,7 +190,7 @@ compliance_check_file_varname()
 
 						# Condition to check for variable name's validity
 						if [[ "$str_var" =~ [A-Z] ]]; then
-							ERROR="$str_var contains upper case characters4."
+							ERROR="Non-compliant variable name: '${str_var//[!a-zA-Z]}' contains upper case characters."
 
 							return 1
 						fi
@@ -232,7 +232,7 @@ compliance_check_file_varname()
 			if ! check_line "$LINE" $LINE_NUM; then
 
 				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_varname" $1 $LINE_NUM "Non-compliant variable name: $ERROR"
+				compliance_fail_line "compliance_check_file_varname" $1 $LINE_NUM "$ERROR"
 		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=

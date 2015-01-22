@@ -116,7 +116,7 @@ compliance_check_file_funcname()
 				# Condition to check whether the function is not a constructor/destructor and for uppercase characters
 				if ! array_contains class_array "$function_name"; then
 					if  [[ $function_name =~ [A-Z] && $temp_constructor != $function_name ]]; then
-						ERROR="$function_name has uppercase characters"
+						ERROR="'$function_name' has uppercase characters"
 
 						return 1
 					fi

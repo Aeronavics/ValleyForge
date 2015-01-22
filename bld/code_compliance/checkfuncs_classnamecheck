@@ -76,14 +76,14 @@ compliance_check_file_classnamecheck()
 
 			# Condition to check whether template names have more than one character.
 			if [[ $size != 1 ]]; then
-				ERROR="$str_template has more than one uppercase letter."
+				ERROR="'$str_template' has more than one uppercase letter."
 
 				return 1
 			fi
 
 			# Condition to check whether template names contain lower case letters.
 			if [[ $str_template =~ [a-z] ]]; then
-				ERROR="$str_template contains lowercase letters."
+				ERROR="'$str_template' contains lowercase letters."
 
 				return 1
 			fi	
@@ -95,7 +95,7 @@ compliance_check_file_classnamecheck()
 
 			# Condition to check for lowercase letters.
 			if [[ ${str_class:0:1} =~ [a-z] ]]; then
-				ERROR="$str_class doesn't begin with an uppercase letter."
+				ERROR="'$str_class' doesn't begin with an uppercase letter."
 
 				return 1
 			fi
@@ -107,7 +107,7 @@ compliance_check_file_classnamecheck()
 
 			# Condition to check for lowercase letters in enum labels.
 			if [[ $str_enum_label =~ [a-z] ]]; then
-				ERROR="$str_enum_label contains lowercase letters."
+				ERROR="'$str_enum_label' contains lowercase letters."
 
 				return 1
 

@@ -53,7 +53,7 @@ compliance_check_file_structnamecheck()
 		if [[ ${struct_name:0:1} =~ [a-z] ]]; then
 
 			line_number_struct=$(grep -n "}[ ]*$struct_name" $FILE | cut -d : -f 1)				
-			compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure name: $struct_name starts with a lower case letter"
+			compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure name: '$struct_name' starts with a lower case letter"
 			CHECKS_OK=
 		fi
 	done
@@ -65,7 +65,7 @@ compliance_check_file_structnamecheck()
 		struct_name="${BASH_REMATCH[2]}"
 		if [[ ${struct_name:0:1} =~ [a-z] ]]; then
 
-			compliance_fail_line "compliance_check_file_structnamecheck" $FILE $str_line "Non-compliant structure name: $struct_name starts with a lower case letter"
+			compliance_fail_line "compliance_check_file_structnamecheck" $FILE $str_line "Non-compliant structure name: '$struct_name' starts with a lower case letter"
 			CHECKS_OK=
 		fi
 	done

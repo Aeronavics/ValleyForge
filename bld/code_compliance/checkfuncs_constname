@@ -85,7 +85,7 @@ compliance_check_file_constname()
 	
 					# Condition to check for lower case characters in constant names.
 					if [[ "$req_str" =~ [a-z] ]]; then
-						ERROR="$req_str contains lower case characters."
+						ERROR="'$req_str' contains lower case characters."
 
 						return 1
 					fi
@@ -119,7 +119,7 @@ compliance_check_file_constname()
 	
 							# Condition to check for lower case characters in constant names.
 							if [[ "$req_str" =~ [a-z] ]]; then
-								ERROR="$req_str contains lower case characters."
+								ERROR="'$req_str' contains lower case characters."
 
 								return 1
 							fi
@@ -128,7 +128,7 @@ compliance_check_file_constname()
 
 							# Condition to check for lower case characters in constant names.
 							if [[ "$str_var" =~ [a-z] ]]; then
-								ERROR="$str_var contains lower case characters."
+								ERROR="'$str_var' contains lower case characters."
 
 								return 1
 							fi
@@ -154,7 +154,7 @@ compliance_check_file_constname()
 							
 							# Condition to check for lower case characters in constant names.
 							if [[ "$indiv_word1" =~ [a-z] ]]; then
-								ERROR="$indiv_word1 -contains lower case characters."
+								ERROR="'$indiv_word1' contains lower case characters."
 	
 								return 1
 							fi
