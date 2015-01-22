@@ -222,10 +222,10 @@ compliance_fail_file()
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE ERROR: $2: '$3'\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE ERROR: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of errors.
+		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of errors.
 		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_ERRORS++))
 		fi
@@ -238,10 +238,10 @@ compliance_fail_file()
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE WARNING: $2: '$3'\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE WARNING: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of warnings.
+		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of warnings.
 		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
@@ -295,8 +295,6 @@ compliance_fail_line()
 		fi
 
 		((COMPLIANCE_NUM_WARNINGS++))
-	else
-		echo -e "\n" >> ${COMPLIANCE_OUTPUT_FILEPATH} 
 	fi
 	# Else, the test wasn't even enabled, so why does it matter that it failed?  Why did we even run the test?
 
