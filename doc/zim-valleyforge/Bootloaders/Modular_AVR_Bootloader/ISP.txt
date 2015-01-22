@@ -1,0 +1,13 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-22T09:48:17+13:00
+
+====== Modular AVR Bootloader: ISP (Dummy) Module ======
+
+The ISP module for the [[Modular AVR Bootloader]] is provided largely for the purposes of debugging the bootloader shell (and as a reference for developing other bootloader modules); the module doesn't actually do anything. When programming an AVR device over ISP, all of the memory on the device (including both the NRWW and RWW flash memory sections, as well as the fuse bits) may be programmed. This means that a bootloader is not required to perform ISP programming; indeed, ISP programming is required to load the bootloader onto the device in the first place. 
+
+===== Operation =====
+The ISP bootloader module simply always tells the bootloader shell that the application code is ready to be executed (through setting the firmware_finished flag to true). Hence, even if the bootloader becomes resident, it will immediately stop waiting and start the application code. 
+
+===== Implementation =====
+ The ISP bootloader module is implemented via the file ''bootloader_module_isp.cpp'' (and matching header) located in ''res/avr/bootloader''. 

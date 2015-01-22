@@ -153,8 +153,6 @@ find_source_dependencies_recursive()
 	
 	# Add each dependency to the list and search of any dependencies of its own.
 
-	# TODO - Why do we allow H headers to compile CPP files?  This shouldn't be allowed.
-
 	# For each .h/.hpp/.hs file, check if a respective source file exists and if so, add it SRC_STRING.
 	for WORD in $DEPENDENCIES; do
 		case ${WORD##*.} in
@@ -162,11 +160,6 @@ find_source_dependencies_recursive()
 				if [ -e ${WORD%.*}.c ]; then
 					SRC_STRING="${WORD%.*}.c ${SRC_STRING}"
 					if ! find_source_dependencies_recursive ${WORD%.*}.c; then
-						return 1
-					fi
-				elif [ -e ${WORD%.*}.cpp ]; then
-					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
-					if ! find_source_dependencies_recursive ${WORD%.*}.cpp; then
 						return 1
 					fi
 				fi

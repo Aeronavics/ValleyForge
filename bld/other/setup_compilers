@@ -268,13 +268,26 @@ unpack_arduinoc()
 		rm -rf "${TMP_COMPILER_DIR}/arduino"
 		mkdir -p "${TMP_COMPILER_DIR}/arduino"
 
-		# NOTE - Because we're downloading a release version, we are just guessing that the host computer is x86_64 Linux.
-
-		# TODO - Fix this.
+		local DOWNLOAD_URL
+		DOWNLOAD_URL=
+		# Determine which version of the Arduino source we require.
+		if [ ${OSTYPE} = "linux-gnu" ]; then
+			if [ $(uname -m) = "x86_64" ]; then
+				echo -e "${CYAN}64-bit Linux OS Detected.\n${NO_COLOUR}"
+				DOWNLOAD_URL="http://arduino.cc/download.php?f=/arduino-1.5.8-linux64.tgz"
+			else
+				echo -e "${CYAN}32-bit Linux OS Detected.\n${NO_COLOUR}"
+				DOWNLOAD_URL="http://arduino.cc/download.php?f=/arduino-1.5.8-linux32.tgz"
+			fi
+		else
+			# TODO - Fix this.
+			echo -e "${RED}Arduino Compiler not configured for a non-linux machine.\n${NO_COLOUR}"
+			return 1
+		fi
 
 		# Download the release.
 		echo -e "${CYAN}Downloading Arduino IDE release...\n${NO_COLOUR}"
-		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "http://arduino.cc/download.php?f=/arduino-1.5.8-linux64.tgz"
+		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "${DOWNLOAD_URL}"
 		echo ""
 			
 		# Unpack the release.

@@ -166,18 +166,13 @@ makenuttx_configure_apps()
 	APP_STACKSIZE_ARRAY=($APP_STACKSIZES)
 	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
 
-	# TODO - Why does this iteration happen separately?
-
-	# Iterate over each of the executables and assign default configuration values to anything that isn't already assigned a value.
-	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
-	do
-		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
-		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
-	done
-
 	# Iterate over each of the executables for this component.
 	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
 	do
+		# Check the values for the application priorities and stack sizes. If nothing is assigned, set it to the default value.
+		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
+		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
+
 		# Use a simpler variable name for readability.
 		EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
 
