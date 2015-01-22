@@ -63,7 +63,7 @@ class I2C_imp
 
     I2C_return_status initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed);
 
-		I2C_return_status start();
+    I2C_return_status start();
 
 		I2C_return_status stop();
 
