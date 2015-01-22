@@ -62,14 +62,18 @@
 // REQUIRED HEADER FILES.
 #include <stdint.h>
 
-#define BASE_AT90_SLA     0xA0
-#define BASE_ATMEGA8_SLA     0xB0
-#define ENERGY_AT90_SLA     0xC0
+# define BASE_AT90_SLA     0xA0
+# define BASE_ATMEGA8_SLA     0xB0
+# define ENERGY_AT90_SLA     0xC0
 
-#define OWN_ADR     0xD0
+// Slave address should be in between 0x01 - 0x7F
+# define OWN_ADR     0x01
 
-#define READ     0
-#define WRITE     1
+#define READ     1
+#define WRITE     0
+
+# define SLA_W ((OWN_ADR << 1) | WRITE)
+# define SLA_R ((OWN_ADR << 1) | READ)
 
 
 /* ***************** Macros for AVR registers ********************** */
