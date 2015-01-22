@@ -218,11 +218,11 @@ compliance_fail_file()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCOMPLIANCE ERROR: $2: '$3'${NO_COLOUR}"
+			echo -e "${RED}\tCOMPLIANCE ERROR: $2: '$3'\n${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE ERROR: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE ERROR: $2: '$3'\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of errors.
@@ -234,11 +234,11 @@ compliance_fail_file()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCOMPLIANCE WARNING: $2: '$3'${NO_COLOUR}"
+			echo -e "${YELLOW}\tCOMPLIANCE WARNING: $2: '$3'\n${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE WARNING: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE WARNING: $2: '$3'\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of warnings.
@@ -295,7 +295,8 @@ compliance_fail_line()
 		fi
 
 		((COMPLIANCE_NUM_WARNINGS++))
-
+	else
+		echo -e "\n" >> ${COMPLIANCE_OUTPUT_FILEPATH} 
 	fi
 	# Else, the test wasn't even enabled, so why does it matter that it failed?  Why did we even run the test?
 
