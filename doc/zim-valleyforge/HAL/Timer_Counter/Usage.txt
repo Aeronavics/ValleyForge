@@ -1,0 +1,188 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2014-12-19T12:44:29+13:00
+
+====== Usage ======
+Created Friday 19 December 2014
+
+=== Usage ===
+Summaries of the Timer/ Counter units to each target board can be found in the links below:
+
+	(Link to each target device summary)
+
+The mode of operation/ behaviour of the Timer/ Counter and the output compare pins, is defined by the combination of the waveform generation mode (WGM02:0) and compare output mode [[(COMnx1:0)]] bits.
+
+The wavefrom generation mode bitts affect the counting sequence of the Timer/ Counter. Whereas the COM1:0 bits control whether the PWM output generated should be inverted or not.
+
+For non PWM modes the COMnx1:0 bits control whether the output should be set, cleared, or toggled at a compare match. 
+
+== Initialisation ==
+Functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean check can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
+
+The initialization involves creating an instance of a timer/counter and setting up a corresponding timer rate. The available timer rates for sychronous timer counters are (1, 8, 64, 256, or 1024). The asynchronous timer/counter, timer/counter 2, has more prescaling options, which are (1, 8, 32, 64, 128, 256, or 1024). The values of these prescalers are passed through the following enumeration defines.
+
+	TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024
+	
+The prescaled clock have a frequency  of either {{./equation.png?type=equation}},  {{./equation001.png?type=equation}}, {{./equation002.png?type=equation}}, {{./equation003.png?type=equation}}. Where {{./equation004.png?type=equation}} is the I/O clock provided by an external 16MHz crystal oscillator in the case of the UAS project.
+
+== Example ==
+'''
+
+Tc Timer0;		// Creating the instance of timer 0
+Tc_rate Timer0_rate;     	// Creating the rate variable for timer 0
+
+// Initialization without error checking 
+
+Timer0_rate.pre = TC_PRE_256;       // Prescaling the timer by 256
+Timer0_rate.src = TC_SRC_INT;	   // Internal source for the timer module
+Timer0.set_rate(Timer0_rate);
+
+Timer0.initialise();	// maps the appropriate registers to the instance of timer/counter
+Timer0.start();
+
+
+// Or the alternate boolean checking method
+
+Timer0_rate.pre = TC_PRE_256;
+Timer0_rate.src = TC_SRC_INT;
+
+if (Timer0.set_rate(Timer0_rate) == TC_CMD_NAK)
+{
+	// error! Most likely a wrong prescale in this case
+}
+
+if (Timer0.initialise() == TC_CMD_NAK)
+{
+	// error!
+}
+
+if (Timer0.start() == TC_CMD_NAK)
+
+{
+	// error!
+}
+
+// The method of error checking can be useful for debugging but error checking won't be used as an
+// example from here onwards for better readability.
+'''
+
+
+=== Writing to the pin ===
+The Timer/Counter module is mapped to a pin for each separate channel. Without activating the pin, only the pin register will be updated to reflect the status of the Timer/Counter. To make the pins reflect the status of the pin register, the pin data direction must be set. 
+
+Refer to the 'Setting the Mode' section of GPIO HAL to see how this is executed. 
+
+== Example ==
+
+// TODO
+
+=== Setting the mode ===
+Timer/counter modes are a collection of wave generation modes the timer/counter module can produce. It is impossible to understand the functionality of each mode by reading the variable names used in the HAL code. Therefore, users are recommended to read through each wavegeneration mode and the compare output modes before implementing a timer/counter. 
+
+There are five types of wave generation modes, but each mode has different operation modes which bloat the total number of modes. The list of Wave generation modes are described below.
+
+For the **8-Bit Timer/Counters**
+{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.17.52%20AM.png?width=650}}
+
+For the **16-Bit Timer/Counters**
+{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.18.29%20AM.png?width=650}}
+	Note:	ICRn and OCRnA are registers which require configuration, for further explanation of setting these values refer to (where ever)
+	
+With each wave generation mode, four compare output modes can be selected. The compare output modes do not affect the counting sequence of the timer/counter unlike the wave generation modes. For non-PWM modes the compare output modes control whether the output should be set, cleared or toggle at a compare match. For PWM modes, the compare output modes control whether the ouput should be inverted or not. The variable names and their corresponding characteristics can be found in the diagrams below. 
+
+{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.18.45%20AM.png?width=650}}
+
+{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.19.04%20AM.png?width=650}}
+
+{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.19.14%20AM.png?width=650}}
+
+== Example ==
+'''
+Tc Timer0;    // Creating the instance of timer 0
+Tc_rate Timer0_rate;     // Creating the rate variable for timer 0
+
+// NOTE!!
+// The pin data direction for the channel specified must be set (HIGH) for the Pins to changes states.
+
+Timer0.enable_oc(TC_OC_MODE_3); 	// Fast PWM mode (8-bit Timer/Counter)
+Timer0.enable_oc_channel(TC_OC_A, TC_OC_CHANNEL_MODE_2);	// enable Channel A of Timer and Output Compare mode 2
+
+// If an Interrupt Service Routine is desired
+
+Timer0.enable_oc_interrupt(TC_OC_A, __user_ISR__);	// Enable Output Compare Pin interrupt
+
+
+// Where __user_ISR__ is defined as
+
+	//	void __user_ISR__(void)
+	//	{
+	//		// Things
+	//		return void;
+	//	}
+'''
+
+
+=== Interrupts ===
+There are two types of Timer/Counter interrupts. In normal operation modes, the Timer Overflow (TOV) interrupts are used, whereas PWM modes largely implement the Output Compare Match Interrupts (OCIE) and some PWM modes use both. 
+
+To use the interrupts using the hardware abstraction code provided through Valley Forge. The user must identify the Interrupt Service Routine to go with the interrupt. This is so the controller can automatically clear the interrupt flags by monitoring the use of interrupt vectors. Also, the interrupts must be enabled Globally in SREG. 
+
+The heirarchy of interrupt priorities can be seen in the target specific pages, (_LINKS_). Additional indepth information on the consequences of triggering interrupts can be found in the diagram below. 
+
+Examples to show how each type of interrupt can be implemented using the Vally Forge Toolchain can be seen in the examples.
+
+== Example ==
+'''
+void __user_TOV_ISR__ (void)
+{
+	// Things
+	return void;
+}
+
+void __user_OCIE_ISR__ (void)
+{
+	// Things
+	return void;
+}
+
+int main(void)
+{
+	Tc Timer0;
+	Tc_rate Timer0_rate;
+
+	Timer0_rate.pre = TC_PRE_256;
+	Timer0_rate.src = TC_SRC_INT;
+	
+	Timer0.set_rate(Timer0_rate);
+	Timer0.initialise();
+	
+	Timer0.enable_oc(TC_OC_MODE_1);
+	Timer0.enable_oc_channel(TC_OC_A, TC_OC_CHANNEL_MODE_0);
+	
+	Timer0.enable_tov_interrupt(__user_TOV_ISR__);		// Connects the Timer0 TOV interrupt with the user ISR
+	Timer0.enable_oc_interrupt(TC_OC_A, __user_OCIE_ISR__);		// Connects the Timer 0 Channel A Output Compare interrupt with the user ISR
+	int_on();	// global interrupts
+
+	Timer0.start();
+}
+'''
+
+
+=== Interacting with the Timer Content Registers ===
+Tc_command_status load_timer_value(Tc_value value);
+Tc_value get_timer_value(void);
+
+Each Timer/Counter has a register loaded with the current status of the timer/counter. This register can be interacted with using the ValleyForge HAL, to check the status or load a value to change the status of the Timer/Counter. 
+
+When loading the timer with a new user defined value it is recommended never to load the TOP value when up-counting or BOTTOM when down-counting. In these situations, if the interrupt are enabled, the system will miss the interrupt. This behaviour can be especially critical when the Timer/Counters are used as PWM generators. Resulting in an incorrect waveform due to the missed interrupt. 
+
+== Example ==
+
+
+
+
+
+
+
+
+// TODO
