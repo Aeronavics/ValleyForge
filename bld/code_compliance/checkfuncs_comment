@@ -61,19 +61,63 @@ compliance_check_file_comment()
 		pattern_note_correct="NOTE - (.*)"
 
 		if [[ $1 =~ $pattern_todo && ! $1 =~ $pattern_todo_correct ]]; then
-			ERROR="This line doesn't follow proper syntax for TODO comments"
+			ERROR="This line doesn't follow proper syntax for TODO comments."
 	
 			return 1
 		fi
 	
 		if [[ $1 =~ $pattern_note && ! $1 =~ $pattern_note_correct ]]; then
-			ERROR="This line doesn't follow proper syntax for NOTE comments"
+			ERROR="This line doesn't follow proper syntax for NOTE comments."
 	
 			return 1
 		fi
 	
 		# All done.
 		return 0	
+	}
+
+	check_c_style_comments()
+	{
+		#
+		#	$1 - The file we are checking.
+		#
+
+		local FILE=$1
+
+		# Pattern to match single line C style comments
+		pattern_c_style="\/\*(.*)\*\/"
+
+		# Pattern to match lines in between /* and */
+		pattern_middle="[ ]*\*(.*)"
+
+		# Need to keep track of the line number we are up to.
+		local LINE_NUM=
+
+		while read line
+		do
+			# Increment the line number.
+	  		((LINE_NUM++))
+
+			if [[ "$line" == \/\** && ! $line =~ $pattern_c_style ]]; then
+
+				while read line
+				do
+					# Increment the line number.
+			  		((LINE_NUM++))
+
+					if [[ ! "$line" =~ $pattern_middle ]]; then
+						compliance_fail_line "compliance_check_file_comment" $FILE $LINE_NUM "Non-compliant comment: Doesn't follow proper C style commenting standards."
+						# At least one thing is wrong in this file.
+						CHECKS_OK=
+					fi
+			
+					if [[ "$line" == *\*\/ && ! $line =~ $pattern_c_style ]]; then
+						break
+					fi
+				done
+			fi
+
+		done < $FILE
 	}
 
 	# Need to keep track of the line number we are up to.
@@ -139,6 +183,9 @@ compliance_check_file_comment()
 
 		CHECKS_OK=
 	fi
+
+	# Check for proper syntax of multiple C style comments.
+	check_c_style_comments $FILE
 
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
