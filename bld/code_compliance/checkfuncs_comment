@@ -184,6 +184,11 @@ compliance_check_file_comment()
 		CHECKS_OK=
 	fi
 
+	# Condition to check for copyrights information in the file.
+	if ! grep -qi "Copyright" $1; then
+		compliance_fail_file "compliance_check_file_comment" $1 "This file is missing Copyright information."
+	fi
+
 	# Check for proper syntax of multiple C style comments.
 	check_c_style_comments $FILE
 

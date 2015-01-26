@@ -118,6 +118,87 @@ compliance_check_file_classnamecheck()
 		return 0
 	}
 
+	check_declaration_order()
+	{
+
+		#
+		#	$1 - The file we are checking.
+		#
+
+		local FILE=$1
+
+		# Need to keep track of the line number we are up to.
+		local LINE_NUM=
+		
+		# Pattern to match the beginning of a class declaration.
+		pattern_class_start="class\s+([^\s]+)"
+
+		# Pattern to match access modifier.
+		pattern_access_mod="^[a-z]+:"
+
+		# Read the contents of the file.
+		while read LINE
+		do
+			# Increment the line number.
+	  		((LINE_NUM++))
+
+			# Counter for array used to store the declaration order.
+			array_count=0
+
+			# Empty the contents of the array.
+			unset array
+
+				# Condition to check if the line matches class pattern.
+				if [[ $LINE =~ $pattern_class_start ]]; then
+
+					# Read the next line to ensure that it is a class declaration.
+					read LINE
+					
+					# Increment the line number.
+			  		((LINE_NUM++))
+
+					if [[ $LINE =~ "{" ]]; then
+
+						# Continue reading inside the class declaration.
+						while read LINE
+						do
+							# Increment the line number.
+					  		((LINE_NUM++))
+
+							# Store the access modifiers of the class in the array and increment the array counter.
+							if [[ $LINE =~ $pattern_access_mod ]]; then
+								array[$array_count]=${LINE%:*}
+								array_count=$((array_count+1))
+							fi
+							
+							# Check if the line denotes the end of class declaration.
+							if [[ $LINE =~ "};" ]]; then
+
+								# Sort the array contents in reverse order which is the required standard order.
+								readarray -t sorted < <(for a in "${array[@]}"; do echo "$a"; done | sort -r)
+
+								original_array=${array[@]}
+								sorted_array=${sorted[@]}
+
+								# Check if the original array and sorted array are equal. If not, display warning message.
+								if [ "$original_array" != "$sorted_array" ]; then
+									compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class declaration order: The declaration order doesn't follow correct order."
+									# At least one thing is wrong in this file.
+									CHECKS_OK=
+								fi
+								
+								# We have reached the end of the class declaration. So break the loop.
+								break
+							fi
+						done
+					fi
+				fi
+		done < $FILE
+
+		# All done.
+		return 0
+	}
+
 	# Need to keep track of the line number we are up to.
 	local LINE_NUM=
 
@@ -166,6 +247,9 @@ compliance_check_file_classnamecheck()
   		fi
 
 	done < $FILE
+
+	# Call the function to check declaration order.
+	check_declaration_order $FILE
 
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
