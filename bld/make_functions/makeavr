@@ -226,6 +226,11 @@ makeavr_bootloader()
 	sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/Makefile
     
+	# Generate the Make.deps dependency file.    
+	pushd $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader >/dev/null
+	generate_component_dependencies . "$(find . -iname bootloader.cpp -o -iname bootloader.c)"
+	popd >/dev/null
+
 	# Actually make the component.
 	echo -e "${CYAN}Making bootloader for component $COMPONENT ...\n${NO_COLOUR}"
 	make -C $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader all
