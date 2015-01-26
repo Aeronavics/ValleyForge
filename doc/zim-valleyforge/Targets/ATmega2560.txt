@@ -65,3 +65,28 @@ TODO: Description of the I2C module and allowable config values
 
 ===== CAN =====
 This target does not support CAN.
+
+===== Fuses =====
+The ATmega2560 has three Fuse bytes that determine the chip functionality.
+
+The ''Extended Fuse Byte ''configures the Brown-out detector trigger level. 
+
+The ''Fuse High Byte'' can configure the boot size, and enable or disable several features of interfacing with the micro-controller. These features are On-Chop Debug (OCDEN),  Joint Test Action Group (JTAGEN), Serial Programing Interface (SPIEN), Watchdog Timer always ON (WDTON) and EEPROM memory preserved through the Chip Erase (EESAVE).
+
+The ''Fuse Low Byte ''determines how the chip is clocked. The ''CKSEL3:0 ''bits allows the user to select a Clock Source. The ''SUT1:0 ''bits can configure the start-up time of the controller. The ''CKOUT ''bit enables the system clock to be output on Port ''PE7.'' Lastly, the ''CKDIV8 ''bit gives the user the ability to divide the system clock by 8.
+
+It is advised that the Fuse bits should not be tampered with without thoroughly being analysed. Consequences of configuring wrong values to the Fuse bits can be difficult to undo. 
+
+For the purpose of the UAS project, the fuse bits should bit set as:
+
+	''lfuse		      0xFF''
+					''Else   0xBF (if CKOUT is mapped to PE7)''
+	
+	''hfuse		      0xDF''
+	
+	''Efuse		      0xFF''
+	
+To double check that these are infact the correct configurations, please check the Fuse Calculator online. http://www.engbedded.com/fusecalc/
+
+In the case of an undesirable value in Fuse Low byte, the likely problem would be that the ISP will error while attempting to communicate with the micro controller or be unable to read the Fuse Bytes. There are two solutions to this issue, which is to either use the High Voltage Parallel Programming method or feed an external clock signal (use a function generator) to set the Fuse Bytes to the desired values.
+

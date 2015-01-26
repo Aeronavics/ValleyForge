@@ -41,12 +41,20 @@
 
 // DEFINE PRIVATE MACROS.
 
+#ifdef __AVR_AT90CAN128__
+# define OWN_ADR   0x01
+#elif defined (__AVR_ATmega2560__)
+# define OWN_ADR   0x02
+#elif defined (__AVR_ATmega8__)
+# define OWN_ADR   0x03
+#endif
+
+
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE IMPORTED GLOBAL VARIABLES.
 
 // DEFINE PRIVATE CLASSES.
-
 
 /**
  * A Class that provides device specific implementation class for I2C.
@@ -84,6 +92,8 @@ class I2C_imp
     		I2C_imp operator = (I2C_imp const&) = delete;
 
     		// Fields
+
+        uint8_t I2C_status;
 
 		I2C_mode mode;
 
@@ -165,8 +175,55 @@ I2C_status_code I2C::transceiver_busy()
 
 void wait_twi_int(void)
 {
-  while (!(TWCR & (1 << TWINT)))
-    ;
+  while (!(TWCR & (1 << TWINT)));
+}
+
+uint8_t Send_byte(uint8_t data)
+{
+    TWDR = data;
+    TWCR = ((1 << TWINT) + (1 << TWEN));
+
+    wait_twi_int();
+
+    if (TWSR != MT_DATA_ACK)
+    {
+        return TWSR;
+    }
+    return I2C_SUCCESS;
+}
+
+uint8_t Send_adr(uint8_t adr)
+{
+    TWDR = adr;
+    TWCR = ((1 << TWINT) + (1 << TWEN));
+
+    wait_twi_int();
+    if ((TWSR != MT_SLA_ACK) && (TWSR != MR_SLA_ACK))
+    {}
+    return I2C_SUCCESS;
+}
+
+uint8_t Get_byte(uint8_t *rx_ptr, uint8_t *last_byte)
+{
+    wait_twi_int();
+
+    if (rx_ptr != last_byte)
+    {
+        TWCR = ((1<<TWINT)+(1<<TWEA)+(1<<TWEN));
+    }
+    else if (rx_ptr == last_byte)
+    {
+        TWCR = ((1<<TWINT)+(1<<TWEN));
+    }
+
+    *rx_ptr = TWDR;
+
+    if(TWSR == MR_DATA_NACK)
+    {
+        return I2C_SUCCESS;
+    }
+    return TWSR;
+
 }
 
 // IMPLEMENT PRIVATE CLASS FUNCTION (METHODS).
@@ -230,7 +287,7 @@ I2C_return_status I2C_imp::initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl
         			}
       			}
       			return I2C_ERROR;
-    		}		
+    		}
     		case CPU_8MHz:
     		{
       			switch (scl_speed)
@@ -319,45 +376,22 @@ I2C_return_status I2C_imp::stop()
 
 I2C_return_status I2C_imp::transmit(tx_type *data)
 {
-	unsigned char* temp = data->data_ptr + data->bytes;
-  	if ((~data->slave_adr & 0x01))
-  	{
-      		return I2C_ERROR;
-  	}
+    data->slave_adr = (data->slave_adr << 1) | WRITE;
 
-  	if (data->slave_adr != OWN_ADR)
-  	{
-    		if (start() == I2C_SUCCESS)
-    		{
-      			wait_twi_int();
+    start();
+    Send_adr(data->slave_adr);
 
-      			TWDR = data->slave_adr;
-      			TWCR = ((1<<TWINT)+(1<<TWEN));
+    //if (data->slave_adr != OWN_ADR)
+  	//{
+        while (data->bytes > 0)
+        {
+            Send_byte(*data->data_ptr);
+            data->bytes--;
+        }
+        stop();
+    //}
 
-      			wait_twi_int();
-
-      			if ((TWSR != MT_SLA_ACK)&&(TWSR != MR_SLA_ACK))
-      			{
-        			return I2C_ERROR;
-      			}
-    		}
-    		while (data->data_ptr < temp)
-    		{
-      			wait_twi_int();
-
-      			TWDR = *data->data_ptr;
-      			TWCR = ((1<<TWINT)+(1<<TWEN));
-
-      			wait_twi_int();
-
-      			if(TWSR != MT_DATA_ACK)
-      			{
-        			return I2C_ERROR;
-      			}
-      			data->data_ptr++;
-    		}
-    		stop();
-  	}
+    TWDR = data->slave_adr;
   	return I2C_SUCCESS;
 }
 
@@ -366,52 +400,20 @@ I2C_return_status I2C_imp::receive(tx_type *data)
   	// TODO - this
   	unsigned char* temp = data->data_ptr + data->bytes;
 
-  	if (!(data->slave_adr & READ))
-  	{
-      		return I2C_ERROR;
-  	}
+    data->slave_adr = (data->slave_adr << 1) | READ;
+
+    start();
+    Send_adr(data->slave_adr);
 
   	if (data->slave_adr != OWN_ADR)
   	{
-    		if (start() == I2C_SUCCESS)
-    		{
-      			wait_twi_int();
+        while (data->bytes > 0)
+        {
+            Get_byte(data->data_ptr, temp);
+            data->data_ptr++;
+            data->bytes--;
+        }
 
-      			TWDR = data->slave_adr;
-      			TWCR = ((1<<TWINT)+(1<<TWEN));
-
-      			wait_twi_int();
-
-      			if ((TWSR != MT_SLA_ACK)&&(TWSR != MR_SLA_ACK))
-      			{
-        			return I2C_ERROR;
-      			}
-    		}
-    		while (data->data_ptr < temp)
-    		{
-      			wait_twi_int();
-
-      			// if there are more data to receive, send an ACK to the the slave
-      			if (data->data_ptr <= temp)
-      			{
-        			TWCR = ((1<<TWINT)+(1<<TWEA)+(1<<TWEN));
-      			}
-      			else
-      			{
-        			TWCR = ((1<<TWINT)+(1<<TWEN));
-      			}
-
-      			wait_twi_int();
-
-      			*data->data_ptr = TWDR;
-
-      			if(((TWSR == MR_DATA_NACK)&&(data->data_ptr == temp))||(TWSR == MR_DATA_ACK))
-      			{
-        			stop();
-        			return I2C_SUCCESS;
-      			}
-      			data->data_ptr++;
-    		}				
   	}
   	return I2C_ERROR;
 }

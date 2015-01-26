@@ -66,9 +66,6 @@
 # define BASE_ATMEGA8_SLA     0xB0
 # define ENERGY_AT90_SLA     0xC0
 
-// Slave address should be in between 0x01 - 0x7F
-# define OWN_ADR     0x01
-
 #define READ     1
 #define WRITE     0
 

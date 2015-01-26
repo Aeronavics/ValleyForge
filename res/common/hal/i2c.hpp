@@ -69,8 +69,6 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-
-
 class I2C_imp;
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
@@ -104,7 +102,18 @@ enum I2C_send_condition_t
 	I2C_REPEATED_START
 };
 
-enum I2C_return_status {I2C_SUCCESS, I2C_ERROR};
+enum SLA_adr
+{
+  SLA0_ADR = 0x01,
+  SLA1_ADR = 0x02,
+  SLA2_ADR = 0x03
+};
+
+enum I2C_return_status
+{
+  I2C_SUCCESS = 0x01,
+  I2C_ERROR = 0x00
+};
 
 // The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
 // status codes to be displayed is summarised to the right of each definition.
@@ -155,10 +164,10 @@ enum I2C_status_code
 
 struct tx_type
 {
-	unsigned char slave_adr;				//Slave address and W/R byte
-	unsigned char bytes;						//Number of bytes to send or
+	uint8_t slave_adr;				//Slave address and W/R byte
+	uint8_t bytes;						//Number of bytes to send or
 											//receive
-	unsigned char *data_ptr;				//Pointer to the bytes to send
+	uint8_t *data_ptr;				//Pointer to the bytes to send
 };
 
 /**
