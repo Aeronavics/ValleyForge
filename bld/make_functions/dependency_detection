@@ -133,8 +133,15 @@ find_source_dependencies_recursive()
 			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
 			;;
 		"s")
+			# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so need this craziness instead.
+
 			# Use assembler to detect the local header dependencies.
-			DEPENDENCIES=$(${A_COMPILER} ${AFLAGS} -MM ${TARGET_FILE})
+			${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
+			DEPENDENCIES=$(cat ${TARGET_BASENAME}.d)
+			if [ -z "$DEPENDENCIES" ]; then
+				false
+			fi
+			rm "${TARGET_BASENAME}.d"
 			;;
 		*)
 			echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
@@ -210,11 +217,11 @@ find_object_dependencies()
 	OBJ_STRING=
 	
 	# Ensure we were passed a source file, and not an object file.
-	if [ ${2##*.} != "c" -a ${2##*.} != "cpp" ]; then
-		ROOT_FILE="$(ls | grep -e "${2%.*}\.\(c\|cpp\)$")"
-	else
-		ROOT_FILE=$2
+	if [ "${2##*.}" != "c" -a "${2##*.}" != "cpp" -a "${2##*.}" != "s" ]; then
+		echo -e "${RED}\tCannot perform object dependency detection on non-source file: ${2}\n${NO_COLOUR}"
+		return 1
 	fi
+	ROOT_FILE=$2
 	
 	# Find the list of source dependencies.
 	if ! find_source_dependencies . $ROOT_FILE; then
@@ -397,18 +404,34 @@ generate_component_dependencies()
 
 	# Use the -MM flag to generate a rule describing the dependencies of each source file for make.
 	for SRC in $SRC_STRING; do
+		# Alias the source file, for consistency with the detect source deps function.
+		local TARGET_FILE=${SRC}
+		local TARGET_BASENAME
+
+		# Find the basename of examined file by removing any directory or filetype components.
+		TARGET_BASENAME=${TARGET_FILE%.*}
+		TARGET_BASENAME=${TARGET_BASENAME##*/}
+
 		case ${SRC##*.} in
 			"c")
-				${C_COMPILER} ${CFLAGS} -MM ${SRC} >> Make.deps
+				${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE} >> Make.deps
 				echo " " >> Make.deps
 				;;
 			"cpp")
-				${P_COMPILER} ${PFLAGS} -MM ${SRC} >> Make.deps
+				${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE} >> Make.deps
 				echo " " >> Make.deps
 				;;
 			"s")
-				${ASSEMBLER} ${AFLAGS} -MM ${SRC} >> Make.deps
+				# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so need this craziness instead.
+
+				# Use assembler to detect the local header dependencies.
+				${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
+				if [ -z "$(cat ${TARGET_BASENAME}.d)" ]; then
+					false
+				fi
+				cat "${TARGET_BASENAME}.d" >> Make.deps
 				echo " " >> Make.deps
+				rm "${TARGET_BASENAME}.d"
 				;;
 			*)
 				echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
