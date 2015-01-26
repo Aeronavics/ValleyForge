@@ -132,7 +132,7 @@ const uint8_t ALERT_UPLOADER_PERIOD = 10;// x10 the event_periodic() period. Per
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
 	//CAN BIT TIMING.
-#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>
 #if (CAN_BAUD_RATE == 1000)
 	// 16MHz crystal, 1Mbps baud rate, 75% sampling rate, TQ = 0.125us.
 	

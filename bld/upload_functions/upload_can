@@ -198,9 +198,9 @@ upload_can()
 	fi	
 	
 	# Check if the component/build configuration specified the bitrate.
-	if [[ ! -z ${CAN_BAUD_RATES} ]]; then
+	if [[ ! -z ${CAN_BAUD_RATE} ]]; then
 		# The setting was specified.  Check if the user wants to use this.
-		echo -e "${CYAN}The configuration for component $COMPONENT specifies the CAN bus bitrate as ${CAN_BAUD_RATES}kbps.${NO_COLOUR}"
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies the CAN bus bitrate as ${CAN_BAUD_RATE}kbps.${NO_COLOUR}"
 		echo -e -n "${GREEN}Do you wish to use this bitrate? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
@@ -208,12 +208,12 @@ upload_can()
 		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
 		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 			# Don't use the bitrate specified in the component/build configuration set.
-			CAN_BAUD_RATES=
+			CAN_BAUD_RATE=
 		fi
 	fi
 	
 	# Check if the programmer has been chosen yet.
-	if [ -z ${CAN_BAUD_RATES} ]; then
+	if [ -z ${CAN_BAUD_RATE} ]; then
 		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
 		while :
 		do
@@ -236,7 +236,7 @@ upload_can()
 			# TODO - Eventually, it might be nice to check if the entered value is legit.
 		
 			# Else we use whatever they entered.
-			CAN_BAUD_RATES=$REPLY
+			CAN_BAUD_RATE=$REPLY
 			break
 		done
 
@@ -348,9 +348,8 @@ upload_can()
 	
 	echo -e "${YELLOW}Programming using CAN requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
 	
-	
 	# Collate the configuration information in to a string of parameters to pass to the uploader proper.
-	CAN_PARAMS="can-type=${CAN_TYPE}:target=${NODE_ID}:bitrate=${CAN_BAUD_RATES}000"
+	CAN_PARAMS="can-type=${CAN_TYPE}:target=${NODE_ID}:bitrate=${CAN_BAUD_RATE}000"
 	if [[ ! -z ${CAN_IFACE} ]]; then
 		CAN_PARAMS="$CAN_PARAMS:iface=${CAN_IFACE}"
 	fi
