@@ -1,0 +1,79 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           	checkfuncs_layout_linebreaks
+###
+### Author:         	Ravi Shankar
+###
+### Date Created:	13-01-2015
+###
+### Type:           	Bash Function Definitions
+###
+### Purpose:        	Implements code compliance tests: tests for proper layout conventions(linebreaks) in files.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #################################################
+###
+### Name:		compliance_check_file_layout_linebreaks
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:		Tests a single C/CPP source file for proper layout conventions(linebreaks).
+###
+###################################################################################################
+
+
+compliance_check_file_layout_linebreaks()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Run "Artistic Style" with the given file and store the output string with status of the operation.
+	str=$(astyle -j --dry-run $FILE) 
+	status=${str%% *}
+
+	# Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)		
+	if [[ "$status" == "Formatted" ]]; then
+		compliance_fail_file "compliance_check_file_layout_linebreaks" $FILE "This file doesn't follow proper layout conventions(linebreaks)"
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################################
+###
+### Name:		compliance_get_rules_layout_linebreaks
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Prints out a summary of the code compliance rules for the "layout_linebreaks" test.
+###
+###########################################################################################################
+
+compliance_get_rules_layout_linebreaks()
+{
+	echo "Layout conventions(linebreaks):"
+	echo "\tAll C++ anc C files should follow proper layout conventions(linebreaks)."
+	echo "\tConditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional."
+	echo ""
+}
+
+# ALL DONE.

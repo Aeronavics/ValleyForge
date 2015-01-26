@@ -98,9 +98,17 @@ pull_key()
 		return 1
 	fi
 
-	# Check if the key is found in the file, and if so, print it out (since you can't return a string in bash).
-	echo `cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2`
-	echo `cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2`
+	# Look up the key in the file, excluding any concatenating keys.
+	local VALUE=`cat ${1} | grep -E "^\s*${2}=.*$" | cut -s -d = -f 2 | tr -d "\n"`
+
+	# If there are concatenating keys, then add them together.
+	local CVALUE=`cat ${1} | grep -E "^\s*${2}[+]=.*$" | cut -s -d = -f 2 | tr -d "\n"`
+
+	# If there were some concatenations, the value might end up containing adjacent double quotes.  We remove these.
+	VALUE=`echo "${VALUE}${CVALUE}" | sed "s^\"\"^^g"`
+	
+	# Print out the resulting string (since you can't return a string in bash).
+	echo -n "${VALUE}"
 
 	# All done.
 	return 0

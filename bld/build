@@ -351,11 +351,13 @@ generic_precompile()
 	# Check if we are supposed to run compliance checks before building.
 	if [ $VF_EN_COMPLIANCE_CHECKS ]; then
 		# Create an output directory to put results into.
-		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+		if [ ${COMPLIANCE_OUTPUT_FILE} ]; then
+			mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+		fi
 
 		# Run code compliance checks.
 		echo -e "${CYAN}Checking code compliance...\n${NO_COLOUR}"
-		if ! compliance_check_directory $TCPATH/src/$COMPONENT $TCPATH/$OUTPUT_DIR/$COMPONENT/compliance_results.txt; then
+		if ! compliance_check_directory $TCPATH/$TMP_SRC_DIR/$COMPONENT $TCPATH/$OUTPUT_DIR/$COMPONENT/compliance_results.txt; then
 			# Code compliance tests failed with errors, so we abort this component.
 			echo -e "${RED}Code compliance tests failed.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 			return 1
@@ -688,7 +690,11 @@ do
 			# Call the 'component_create' script: it will handle rebuilding the configuration file.
 			bash $TCPATH/bld/create/create_component --component $COMPONENT
 
-			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+			# Check that the component configuration was actually created.
+			if [ ! -f ${TCPATH}/src/${COMPONENT}/${COMPONENT_NAME}.cfg ]; then
+				echo -e "${RED}Creation of the configuration file has failed. Exiting...\n${NO_COLOUR}"
+				exit 1
+			fi
 		else
 			# Just skip this component and move on.
 			echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"

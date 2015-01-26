@@ -1,0 +1,24 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-09T09:00:42+13:00
+
+====== TM4C123GH6PM ======
+Created Friday 09 January 2015
+
+[[[http://www.ti.com/lit/ds/symlink/tm4c123gh6pm.pdf|Datasheet]]][[[http://www.ti.com/product/tm4c123gh6pm|Product Page]]][[[http://www.ti.com/tool/ek-tm4c123gxl|Development Board]]]
+The TM4C123GH6PM microcontroller is targeted for industrial applications, including remote monitoring, electronic point-of-sale machines, test and measurement equipment, network appliances and switches, factory automation, HVAC and building control, gaming equipment, motion control, transportation, and fire and security.
+
+**Flash**		256 KB
+**EEPROM**	2 KB
+**SRAM**		32 KB
+**Pin Count**	64
+**Frequency**	80 MHz
+
+**Timers**		12
+**USART**		8
+**SPI**			4
+**I2C**			4
+**CAN**		2
+**ADC**		2x (12 input channels) 12-bit, 1Msps
+
+NOTE: //This target does not currently implement any of the Hardware Abstraction Library. Rather it is configured with the NuttX RTOS.//

@@ -41,6 +41,9 @@ source $TCPATH/bld/common/def_colours
 # Import functions for manipulating config files.
 source $TCPATH/bld/common/config_helpers
 
+# Import functions for editing configuration files.
+source $TCPATH/bld/edit/edit_config_files
+
 ######################################## FUNCTION #########################################
 ###
 ### Name:		vf_config_ui
@@ -59,7 +62,7 @@ vf_config_ui()
 	do
 		# Print the prompt to the user.
 		echo -e  "${GREEN}Please select an option:\n${NO_COLOUR}"
-		echo -en "\t${UNDERLINED}U${NO_COLOUR}SER Name    ${UNDERLINED}R${NO_COLOUR}ERUN Configuration Wizard    ${UNDERLINED}Q${NO_COLOUR}UIT${NO_COLOUR}"
+		echo -en "\t${UNDERLINED}U${NO_COLOUR}SER Name    ${UNDERLINED}R${NO_COLOUR}ERUN Configuration Wizard    Edit Configuration ${UNDERLINED}K${NO_COLOUR}EYS    ${UNDERLINED}B${NO_COLOUR}ACK${NO_COLOUR}"
 		
 		# Read a single character input from the user and select the appropriate response.
 		read -s -n 1
@@ -67,15 +70,17 @@ vf_config_ui()
 		case "$REPLY" in
 			"U" | "u" )
 				vf_config_setname
-				break
 				;;
 
 			"R" | "r" )
 				vf_config_wizard
-				break
 				;;
 
-			"Q" | "q" | "X" | "x" )
+			"K" | "k" )
+				vf_config_keys
+				;;
+
+			"B" | "b" | "X" | "x" )
 				# We're done here.
 				break
 				;;

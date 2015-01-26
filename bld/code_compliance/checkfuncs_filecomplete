@@ -1,0 +1,78 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           	checkfuncs_filecomplete
+###
+### Author:         	Ravi Shankar
+###
+### Date Created:	06-01-2015
+###
+### Type:           	Bash Function Definitions
+###
+### Purpose:        	Implements code compliance tests: tests for file completeness.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_filecomplete
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:		Tests a single C/CPP source or header file for file completeness.
+###
+###########################################################################################
+
+compliance_check_file_filecomplete()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Get the line number of the last line of the current file.
+	local LINE_NUM=$(wc -l $1)
+
+	# Get the last line of the current file.
+	str_lastline=$(tail -1 $1 | head -1)
+
+	if [[ $str_lastline != "// ALL DONE." ]]; then
+		compliance_fail_file "compliance_check_file_filecomplete" $1 "This file doesn't conclude with the comment \" // ALL DONE.\""
+	fi
+
+	#All done.
+	return 0
+}
+
+######################################## FUNCTION ##################################################
+###
+### Name:		compliance_get_rules_filecomplete
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Prints out a summary of the code compliance rules for the filecomplete test.
+###
+####################################################################################################
+
+compliance_get_rules_filecomplete()
+{
+	echo "filecomplete:"
+	echo "\tFiles which do not conclude with the comment \"// ALL DONE.\" will fail."
+	echo ""
+}
+
+# ALL DONE.

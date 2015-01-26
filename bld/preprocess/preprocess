@@ -63,10 +63,18 @@ preprocess_template()
 		return
 	fi
 
+	# Check if the user configuration file exists. If not, generate one.
+	# Check if the username is defined in the user config file.
+	grep -q "tc_authname" ${TCPATH}/var/config.cfg
+	if [ $? != 0 -o ! -f ${TCPATH}/var/config.cfg ]; then
+		# Load the script containing the configuration wizard.
+		source ${TCPATH}/bld/edit/edit_user_config
+		echo -e "\n${RED}User configuration file does not exist. Starting wizard.\n${NO_COLOUR}"
+		vf_config_wizard
+	fi
+
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
 
 	# Populate a string with the current date.
 	local DATE=$(date +"%-d-%-m-%Y")
@@ -183,10 +191,18 @@ preprocess_general()
 		return
 	fi
 
+	# Check if the user configuration file exists. If not, generate one.
+	# Check if the username is defined in the user config file.
+	grep -q "tc_authname" ${TCPATH}/var/config.cfg
+	if [ $? != 0 -o ! -f ${TCPATH}/var/config.cfg ]; then
+		# Load the script containing the configuration wizard.
+		source ${TCPATH}/bld/edit/edit_user_config
+		echo -e "\n${RED}User configuration file does not exist. Starting wizard.\n${NO_COLOUR}"
+		vf_config_wizard
+	fi
+
 	# Populate a variable with the users information, from the configuration file.
 	local AUTHOR=$(grep -v "#" $TCPATH/var/config.cfg | grep tc_authname | cut -d '=' -f2)
-
-	# TODO - Need to confirm that such a configuration file actually exists?
 
 	# Populate a string with the current date.
 	local DATE=$(date +"%-d-%-m-%Y")
@@ -332,7 +348,7 @@ preprocess_bootloader()
 	sed -i "s^<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>^$CLK_SPEED_IN_MHZ^g" $1
 	sed -i "s^<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>^$ACTIVE_MODULE^g" $1
 	sed -i "s^<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>^$SHUTDOWNSTATE_MEM^g" $1
-	sed -i "s^<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>^$CAN_BAUD_RATES^g" $1
+	sed -i "s^<<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>^$CAN_BAUD_RATE^g" $1
 	sed -i "s^<<<TC_INSERTS_NODE_ID_HERE>>>^$NODE_ID^g" $1
 	sed -i "s^<<<TC_INSERTS_SS_PORT_HERE>>>^$SS_PORT^g" $1
 	sed -i "s^<<<TC_INSERTS_SS_PIN_HERE>>>^$SS_PIN^g" $1

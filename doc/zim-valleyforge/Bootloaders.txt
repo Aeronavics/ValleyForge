@@ -1,0 +1,40 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-22T08:50:53+13:00
+
+====== Bootloaders ======
+Created Thursday 22 January 2015
+
+===== Background =====
+ A bootloader is a small, simple program which sets up and then runs a more complicated program. There are two common reasons for using a bootloader:
+1. Hardware design of many CPU's means that it is not feasible to directly execute a large complex piece of 'application' software directly. The boot sequence of the CPU many be somewhat esoteric, or impose specific limitations which the application software is not designed to handle. Or the application software may assume the presence of some resources which will be unavailable until some configuration has occurred. In this case, a device specific bootloader is required to perform the necessary configuration to allow the application software to be started. 
+2. A common functionality desired of a computer system is to be able to update the software controlling the system 'in the field'. However, in many embedded devices, the CPU design prevents the 'application' software from modifying the memory in which it is stored. However, a piece of bootloader software may be able to modify the application code's memory (but not the bootloader's own memory). In this situation, a bootloader is used to allow uploading of new application code to a device. 
+In either case, typically a bootloader is loaded onto an embedded system once, and not modified again. Generally, all the bootloader does is run some application code. The application code on the device can then be modified to alter the functionality of the device at will.
+
+In some cases, the design of the application software may be so far abstracted from the underlying hardware, and the design of the CPU sufficiently complicated, that a single bootloader program is not feasible: a piece of software sufficiently sophisticated to invoke the application software is too complex to be started directly be the CPU when it boots up. In this case, multiple 'stages' of bootloader may be required: the first stage of bootloader is started automatically by the CPU; this then sets up and invokes the next stage of bootloader; until eventually the application code can be executed.
+
+Further information about bootloaders in general is available on  [[http://en.wikipedia.org/wiki/Bootloaders|Wikipedia]].
+
+===== Available Bootloaders =====
+The nature of bootloaders means that different designs of bootloader are required to support different hardware [[Targets|targets]]. Bootloaders which are included in the [[ValleyForge]] toolchain are listed below, categorized by [[Architectures|architecture]].
+
+==== AVR ====
+Singled staged:
+* [[+Modular AVR Bootloader|Modular AVR Bootloader]] - A first stage bootloader which fits into the RWW section of the AVR target's flash memory, and uses a modular design to support different communications peripherals.
+
+==== AVR32 ====
+Singled staged:
+* Modular AVR32 Bootloader - A first stage bootloader which fits into the RWW section of the AVR32 target's flash memory, and uses a modular design to support different communications peripherals.
+
+==== ARM ====
+
+== OMAP ==
+A two staged system is required:
+* [[http://omappedia.org/wiki/Bootloader_Project|xloader]] - Commonly referred to as 'MLO' (for the name of the binary). A first stage bootloader which sets things up like CPU pin multiplexing.
+* [[http://omappedia.org/wiki/Bootloader_Project|U-Boot]] - A second stage bootloader which can boot a standard embedded Linux image.
+
+===== User Guide =====
+The bootloader section of the user guide can be found here.
+
+===== Maintenance =====
+The Bootloader section of the Maintenance Manual can be found [[Maintenance Manual:Bootloaders|here]].

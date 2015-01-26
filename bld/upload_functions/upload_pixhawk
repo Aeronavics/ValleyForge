@@ -1,0 +1,173 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###																														###
+### Name:			upload_pixhawk																						###
+###																														###
+### Author:			Zane Barker																							###
+###																														###
+### Date Created:	13-01-2015																							###
+###																														###
+### Type:			Bash Script																							###
+###																														###
+### Purpose:		Provides functions for uploading code to targets using the Pixhawk bootloader.						###
+###																														###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Pixhawk upload-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###																						###
+### Name:			upload_pixhawk_firmware												###
+###																						###
+### Inputs/Outputs:	None																###
+###																						###
+### Purpose:		Uploads files to a microcontroller running the Pixhawk bootloader	###
+###						over a USB serial connection.									###
+###																						###
+###########################################################################################
+
+upload_pixhawk()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# Determine the serial ports for the uploader script to examine.
+	if [[ "${OSTYPE}" == "linux-gnu" ]]; then
+		BOOTLOADER_SERIAL_PORTS="/dev/serial/by-id/usb-3D_Robotics*"	
+	elif [[ "${OSTYPE}" == "darwin"* ]]; then
+		BOOTLOADER_SERIAL_PORTS="/dev/tty.usbmodemPX*,/dev/tty.usbmodem*"
+	else
+		BOOTLOADER_SERIAL_PORTS="COM32,COM31,COM30,COM29,COM28,COM27,COM26,COM25,COM24,COM23,COM22,COM21,COM20,COM19,COM18,COM17,COM16,COM15,COM14,COM13,COM12,COM11,COM10,COM9,COM8,COM7,COM6,COM5,COM4,COM3,COM2,COM1,COM0"
+	fi
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Unpack the Pixhawk Firmware
+	unpack_pixhawk
+
+	if [ $UPLOAD_APPLICATION ]; then
+		# Check that the expected px4 file is available in the toolchain output folder.
+		if [ ! -f "${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4" ]; then
+			# The expected px4 file was not present.
+			echo -e "${RED}Could not find application executable (.PX4) for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	if [ $UPLOAD_BOOTLOADER ]; then
+		# Check that the expected binary is available in the toolchain output folder.
+		if [ ! -f "${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin" ]; then
+			# The expected binary file was not present.
+			echo -e "${RED}Could not find bootloader binary (ARM BIN) for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			return 1
+		fi
+
+		unpack_pixhawk_bootloader
+
+		upload_pixhawk_bootloader
+	fi
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT via the Pixhawk Bootloader? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+
+	# If they responded YES, then upload the component.  If NO, then skip this component.
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
+	
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading files for component $COMPONENT via Pixhawk Bootloader.\n${NO_COLOUR}"
+
+		pushd ${TCPATH}/res/vendor/pixhawk/Tools >/dev/null
+		python -u ./px_uploader.py --port ${BOOTLOADER_SERIAL_PORTS} ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4
+		popd >/dev/null
+
+		# Check the return value from OpenOCD, to determine if an error occurred during compilation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			UPLOAD_FAILED=1
+		fi
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# Check if we need to get rid of any temporary files.
+	if [ ! $RETAIN ]; then
+		# Remove temporary files.
+		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
+	fi
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}
+
+upload_pixhawk_bootloader()
+{
+	echo -e -n "${GREEN}Please enter the OpenOCD JTAG interface to use (For example interface/olimex-jtag-tiny.cfg): ${NO_COLOUR}"
+	read -e
+	echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
+
+	JTAG_INTERFACE="$REPLY"
+
+	# Ask the user if they are sure they want to do this.
+	echo -e -n "${BOLD_GREEN}Are you sure you wish to update the Pixhawk Bootloader via OpenOCD? (Y/N) ${NO_COLOUR}"
+	read -n 1
+	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+
+	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+		# Abort the upload.
+		echo -e "${YELLOW}Skipping upload of the bootloader.\n${NO_COLOUR}"
+
+	# Check if we should actually upload anything.
+	elif [ ! ${NO_UPLOAD} ]; then
+		# Actually upload the component to the selected target.
+		echo -e "${CYAN}Uploading Pixhawk Bootloader for component $COMPONENT via Dfu-util.\n${NO_COLOUR}"
+
+		pushd ${TCPATH}/res/vendor/pixhawk_bootloader/tools >/dev/null
+		openocd --search ./ -f ${JTAG_INTERFACE} -f stm32f4x.cfg -c init -c "reset halt" -c "flash write_image erase ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin 0x08000000" -c "reset run" -c shutdown
+		popd >/dev/null
+
+		# Check the return value from OpenOCD, to determine if an error occurred during compilation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			UPLOAD_FAILED=1
+		fi
+	else
+		# We aren't actually going to do the uploading part.
+		echo -e "${BOLD_YELLOW}Skipping the actual upload, since 'no upload' option is set.\n${NO_COLOUR}"
+	fi
+
+	# All done.
+	if [ ${UPLOAD_FAILED} ]; then
+		UPLOAD_FAILED=
+		return 1
+	else
+		return 0
+	fi
+}

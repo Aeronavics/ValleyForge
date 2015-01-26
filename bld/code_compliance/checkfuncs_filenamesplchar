@@ -1,0 +1,81 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           	checkfuncs_filenamesplchar
+###
+### Author:         	Ravi Shankar
+###
+### Date Created:	06-01-2015
+###
+### Type:          	Bash Function Definitions
+###
+### Purpose:        	Implements code compliance tests: tests for file name's validity.
+###
+###########################################################################################################################
+
+######################################## FUNCTION #########################################
+###
+### Name:		compliance_check_file_filenamesplchar
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:		Tests a single C/CPP source or header file's name for validity.
+###
+###########################################################################################
+
+compliance_check_file_filenamesplchar()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Remove the path to the file and retrieve the file name alone.
+	filename=$(basename "$1")
+
+	# String containing allowed characters in file names.
+	valcase='0-9a-z_.'
+
+	# Retrieve the name of the file removing the extension of the file.
+	filename="${filename%.*}"
+
+	if [[ "$filename" =~ [^$valcase] ]]; then
+		compliance_fail_file "compliance_check_file_filenamesplchar" $1 "This file's name contains invalid characters"	
+	fi
+	
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #####################################################
+###
+### Name:		compliance_get_rules_filenamesplchar
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Prints out a summary of the code compliance rules for the filenamesplchar test.
+###
+#######################################################################################################
+
+compliance_get_rules_filenamesplchar()
+{
+	echo "filenamesplchar:"
+	echo "\tFile names should not contain space characters or special characters other than underscore or uppercase letters"
+	echo ""
+}
+
+# ALL DONE.

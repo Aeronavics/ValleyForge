@@ -283,22 +283,32 @@ choose_bootloader()
 ###########################################################################################
 
 choose_executables() {
-	# Ask if the user wants multiple executable files.
-	echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
+	while :
+	do
+		# # Ask if the user wants multiple executable files.
+		echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
-	# If they responded YES, then ask for the names of the executables.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
-		read -e
-		echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
+		case "$REPLY" in
+			"Y" | "y" )
+				# If they responded YES, then ask for the names of the executables.
+				echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
+				read -e
+				echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
-		EXECUTABLES="$REPLY"
-	else
-		# Otherwise, default to one executable with the name of the component.
-		EXECUTABLES="$COMPONENT"
-	fi
+				EXECUTABLES="$REPLY"
+				# Update the config file with the executable files.
+				push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
+				break
+				;;
+			"N" | "n" )
+				# Otherwise, default to one executable with the name of the component.
+				EXECUTABLES="$COMPONENT_NAME"
+				break
+				;;
+		esac
+	done
 }
 
 ##################################### MINOR FUNCTIONS ####################################
@@ -683,7 +693,7 @@ source $TCPATH/bld/common/clear_bconf_vars
 source $TCPATH/bld/common/clear_component_vars
 
 # Check if the name component already exists in the list of components.  This is legitimate, because the 'create' script is also used to reconfigure an existing component.
-if [ -n "$(echo \"${COMPONENTS}\" | grep \"^${COMPONENT}\$\")" ]; then
+if [ -n "$(echo "${COMPONENTS}" | grep "^${COMPONENT}\$")" ]; then
 	# The component already exists, so we're just reconfiguring it.
 	echo -e "${CYAN}Component ${COMPONENT} already exists; the component will be reconfigured.\n${NO_COLOUR}"
 	NEW=
@@ -745,7 +755,11 @@ if [ ${NEW} ]; then
 	echo -e "# Configuration file for component $COMPONENT_NAME.\n" > ${CONFIG_FILE}
 fi
 
-# TODO - We should check that this actually worked, and if it didn't, bail.
+# Check that the configuration file was actually created.
+if [ ! -f ${CONFIG_FILE} ]; then
+	echo -e "${RED}Creation of the configuration file failed. Exiting...\n${NO_COLOUR}"
+	exit 1
+fi
 
 # Populate the configuration file for the component.
 echo -e "${CYAN}Populating configuration file (src/$COMPONENT/$COMPONENT_NAME.cfg)...\n${NO_COLOUR}"
@@ -753,15 +767,27 @@ push_key ${CONFIG_FILE} "SUBSYSTEM" "\"${NEW_SUBSYSTEM}\""
 push_key ${CONFIG_FILE} "TARGET" "${NEW_TARGET}"
 push_key ${CONFIG_FILE} "PLATFORM" "${NEW_PLATFORM}"
 push_key ${CONFIG_FILE} "BOOTLOADER" "${NEW_BOOTLOADER}"
-# We create an empty key here because if it is created later, it appears in the wrong place.
-push_key ${CONFIG_FILE} "EXECUTABLES" ""
 
-# TODO - We should actually check if this works.
+# Check if the keys were actually written to the configuration file.
+grep -q "SUBSYSTEM" ${CONFIG_FILE} && grep -q "TARGET" ${CONFIG_FILE} && grep -q "PLATFORM" ${CONFIG_FILE} && grep -q "BOOTLOADER" ${CONFIG_FILE}
+if [ $? != 0 ]; then
+	echo -e "${RED}Expected keys not present in configuration file. Exiting...\n${NO_COLOUR}"
+	exit 1
+fi
 
 # TARGET SPECIFIC CONFIGURATION.
 
 # Run any required target/platform specific config.
 run_bconf_specific_config
+
+# Check if we have been supplied some executable names and that we're not in batch mode.
+if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ] && [ $NEW ]; then
+	# Offer the user the opportunity to define some custom executable names.
+	choose_executables
+else
+	# Only one executable. Do nothing.
+	EXECUTABLES="$COMPONENT"
+fi
 
 # Run any required bootloader specific config.
 run_bload_specific_config
@@ -773,49 +799,70 @@ generate_code_config_time $TCPATH/src/$COMPONENT
 
 # POST-NEW-COMPONENT OPTIONS.
 
-# Check if we have been supplied some executable names and that we're not in batch mode.
-if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
-	# Offer the user the opportunity to define some custom executable names.
-	choose_executables
-elif [ ! -z $EXECUTABLES ]; then
-	# We've been provided with a list of executables, do nothing.
-	:
-else
-	EXECUTABLES="${COMPONENT_NAME}"
-fi
-
-# Update the config file with the executable files.
-push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
-
 # We only ask the user questions if we're not in batch mode and it's a new component.
 if [ ! $BATCHMODE ] && [ $NEW ]; then
-	# Ask if the user wants to set this as the current component.
-	echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+	while :
+	do
+		# Ask if the user wants to set this as the current component.
+		echo -e -n "${GREEN}Do you wish to make this the current component? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 
-	# If they responded YES, then set the current component.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		# We want to set this as the current component.
-		sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
+		case "$REPLY" in
+			"Y" | "y" )
+				# We want to set this as the current component.
+				sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
+				break
+				;;
+			"N" | "n" )
+				# We don't want to set this as the current component. Do nothing.
+				:
+				break
+				;;
+		esac
+	done
 
-		# TODO - We should actually check if we can find the config file first.
-	fi
+	while :
+	do
+		# Ask if the user wants template files to be created.
+		echo -e -n "${GREEN}Do you wish for template files to be created for the component? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 
-	# Ask if the user wants template files to be created.
-	echo -e -n "${GREEN}Do you wish for template files to be created for the component? (Y/N) ${NO_COLOUR}"
-	read -n 1
-	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+		case "$REPLY" in
+			"Y" | "y" )
+				# Prompt the user to select a file type.
+				echo -e "${GREEN}Please choose which file type to create:${NO_COLOUR}"
+				# Create a menu of choices and have the user select one.
+				select TYPE in C CPP
+				do
+					# Check if the selected file type is actually valid.
+					TYPE=$(echo "C CPP" | grep -w -o "$TYPE")
+					if [ -z "$TYPE" ]; then
+						# The selected file type was not in the list of supported types, so the user is apparently a moron.
+						echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
+					else
+						# A legitimate option was selected, so we can go now.
+						echo -e "${CYAN}Selected file type $TYPE.\n${NO_COLOUR}"
+						break
+					fi
+				done
 
-	# If they responded YES, then create the template files.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
-		# Create the template files.
-		for EXEC_NAME in $EXECUTABLES
-		do
-			echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
-			bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT
-		done
-	fi
+				# Create the template files.
+				for EXEC_NAME in $EXECUTABLES
+				do
+					echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
+					bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT -t "$TYPE" -b
+				done
+				break
+				;;
+			"N" | "n" )
+				# The user does not want template files. Do nothing.
+				:
+				break
+				;;
+		esac
+	done
 
 	# Explain to the user what they should do now.
 	echo -e "${BOLD_WHITE}The working directory for component $COMPONENT_NAME can now be found at src/$COMPONENT.\n${NO_COLOUR}"

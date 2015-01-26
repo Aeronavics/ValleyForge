@@ -1,0 +1,211 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:        	checkfuncs_funcname
+###
+### Author:      	Ravi Shankar
+###
+### Date Created:	19-12-2014
+###
+### Type:		Bash Function Definitions
+###
+### Purpose:		Implements code compliance tests: tests for constant name validity.
+###
+###########################################################################################################################
+
+######################################## FUNCTION ##########################################
+###
+### Name:		compliance_check_file_funcname
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:		Tests a single C/CPP source or header file for valid constant names.
+###
+############################################################################################
+
+compliance_check_file_funcname()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+	
+	# Patterns to match function and eliminate constructors and destructors.
+	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)\(+[a-zA-Z0-9,_*& ]*\)+"
+	pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
+	pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
+
+	# Variables used as counter for number of classes in the file.
+	local class_count=0
+
+	# Define internal functions.
+
+	# Function to check if the function name is a class name (To eliminate constructors and destructors)
+	array_contains () 
+	{
+		#
+		#	$1 - The array within which we should search.
+		#	$2 - The value to be searched for.
+		#
+	
+		local array="$1[@]"
+		local seeking=$2
+		local in=1
+		
+		for element in "${!array}"; do
+			if [[ $element == $seeking ]]; then
+				in=0
+				break
+			fi
+		done
+		
+		# All done.
+		return $in
+	}
+
+	check_line()
+	{
+		#
+		#	$1 - The content of the line in question.
+		#	$2 - The line number we are up to.
+		#
+		
+		# Condition to avoid comment lines and destructors.
+		if ! [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "~" ]]; then
+
+			# Obtain classname inorder to avoid false positives (constructors and destructors).
+			if [[ $1 =~ $pattern_class ]]; then
+				classname="${BASH_REMATCH[1]}"
+				
+				# Store the class names in an array.
+				class_array[$class_count]=$classname
+				class_count=$((class_count+1))
+				
+			fi
+
+			# Condition to check for Constructors
+			if [[ $1 =~ "::" ]]; then
+				if [[ $1 =~ $pattern_constructor ]]; then
+					temp_constructor="${BASH_REMATCH[1]}"
+				fi
+			fi
+
+			# Condition to match lines with functions in it.
+			if [[ ! $1 =~ "="|"#" && $1 =~ $pattern_function ]]; then
+				
+				function_name="${BASH_REMATCH[2]}"
+
+				if [[ $function_name =~ "::" ]]; then
+					function_name=${function_name#*::}
+				fi
+				
+				# Condition to check whether the function is not a constructor/destructor and for uppercase characters
+				if ! array_contains class_array "$function_name"; then
+					if  [[ $function_name =~ [A-Z] && $temp_constructor != $function_name ]]; then
+						ERROR="$function_name has uppercase characters"
+
+						return 1
+					fi
+				fi
+			fi
+		fi
+	
+		# The line seems ok, so return zero.
+		return 0
+	}
+
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	# Initially, we are checking.
+	local CHECKS_EN=1
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local DISABLED_LINE_COUNT=0
+
+	# Iterate over each of the lines in the file.
+	while read LINE
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+  		if [ ${CHECKS_EN} ]; then
+  			# Check to see whether this line disables checking temporarily.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+  				CHECKS_EN=
+  				continue
+  			fi
+
+  			# Ok, so now we actually want to check this line for compliance.
+			if ! check_line "$LINE" $LINE_NUM; then
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_funcname" $1 $LINE_NUM "Non-compliant function name: $ERROR"
+
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+  		else
+			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
+
+  			# Checking is temporarily disabled, so all we do is see if this line enables them again.
+  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+  				# Enable checking again.
+  				CHECKS_EN=1
+  			fi
+  		fi
+
+	done < $FILE
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local LINE_THRESH=$((LINE_NUM/10))
+	
+	# Check if the number of lines disabled is lesser than the threshold
+	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+	fi   
+
+	if [ ! ${CHECKS_OK} ]; then
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_funcname" $1 "This file contains non-compliant constant name(s)."
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION ##############################################
+###
+### Name:		compliance_get_rules_funcname
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Prints out a summary of the code compliance rules for the funcname test.
+###
+################################################################################################
+
+compliance_get_rules_funcname()
+{
+	echo "funcname:"
+	echo "\tFunction names should be all in lower case and underscore separated."
+	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
+	echo ""
+}
+
+# ALL DONE.

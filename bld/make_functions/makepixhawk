@@ -1,0 +1,352 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:		makepixhawk
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	11-12-2014
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes components using the Pixhawk platform, which has its own build system.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Pixhawk make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		makepixhawk_armcortex
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Makefunction for ARM Cortex-M targets using the Pixhawk platform.
+###
+###             Copies both the component source files and the Pixhawk vendor code into the
+###				temporary location, creates the required compile time configuration files,
+###				then invokes the Pixhawk build system, which takes over the build process.
+###
+###########################################################################################
+
+makepixhawk_armcortex()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if the USB Device Configuration file exists. If it is missing, it is likely the rest of the build environment is not configured correctly either.
+	type genromfs >/dev/null 2>&1
+	if [ ! -e "/etc/udev/rules.d/10-px4.rules" ]; then
+		# The system is not configured to build the Pixhawk Firmware
+		echo -e "${YELLOW}System is not properly configured for a Pixhawk build.\n${NO_COLOUR}"
+
+		# Prompt the user.
+		echo -ne "${GREEN}Would you like to automatically configure the build environment now?\n${NO_COLOUR}"
+		echo -e "${GREEN}NOTE: This process requires elevated priviledges. You will be prompted for a sudo-capable password.\n${NO_COLOUR}"
+
+		# Read a single character input and select the appropriate response.
+		read -s -n 1
+		echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
+		case "$REPLY" in
+			"Y" | "y" )
+				# Run the configuration script
+				makepixhawk_configure_environment
+				;;
+			"N" | "n" )
+				# The user does not want to automatically configure the environment, so we'll quit.
+				exit 0
+				;;
+			* )
+				# Unexpected response. Terminating script.
+				echo -e "${RED}Unexpect response. Terminating script.\n${NO_COLOUR}"
+				exit 1
+				;;
+		esac
+	fi
+
+	# Set up the native compiler.
+	unpack_embeddedarmc
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
+
+	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
+	EXECUTABLES="${EXECUTABLES:-${COMPONENT_NAME}}"
+
+	# Generate applications for the executables in the project.
+	if ! makepixhawk_configure_apps $TCPATH/$TMP_SRC_DIR/$COMPONENT; then
+		# Something went wrong.
+		echo -e "${RED}Unable to generate application configurations for Pixhawk.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware >/dev/null
+	make distclean
+	make archives CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
+	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
+	popd >/dev/null
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+	# Also copy the ELF across, in case we also want that.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+	# Also copy the .px4 across, in case we're using the bootloader to upload code.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.px4 $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.px4
+
+	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		makepixhawk_configure_apps
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Generates source code and configuration files for Pixhawk applications,
+###				since the Pixhawk build system doesn't work with sources files in their
+###				usual locations.  A separate Pixhawk application will be generated for each
+###				executable in the component.
+###
+###########################################################################################
+
+# NOTE - Because extended globbing is used inside this function, it needs to be enabled for the function DEFINITION as well.
+
+# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+shopt -s extglob
+makepixhawk_configure_apps()
+{
+	# Check if the specified location is actually legit.
+	if [ -z "$1" ] || [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for configuring Pixhawk applications.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Create application configuration files for each executable.
+	echo -e "${CYAN}\tConfiguring Pixhawk applications\n${NO_COLOUR}"
+
+	# Restrict the scope of some variables used in the loop
+	local APP_EXECUTABLES_ARRAY
+	local APP_STACKSIZE_ARRAY
+	local APP_LOOP_MAX
+	local EXECUTABLE
+	local MAIN_FILE
+
+	# EXECUTABLES, APP_PRIORITIES and APP_STACKSIZES are provided in the .cfg file in the same way as the executable names.
+	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
+	APP_STACKSIZE_ARRAY=($APP_STACKSIZES)
+	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
+	
+	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
+	do
+		# Iterate over each of the executables and assign default configuration values to anything that isn't already assigned a value.
+		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
+
+		# Use a simpler variable name for readability.
+		EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+
+		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+		# Figure out what the main source file for this application is.
+		shopt -s extglob nullglob
+		MAIN_FILE=
+		for F in $(ls $1/${EXECUTABLE}_main.@(c|cpp))
+		do
+			# Remove the preceeding path name
+			MAIN_FILE=${F##*/}
+		done
+		if [ -z "$MAIN_FILE" ]; then
+			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
+			return 1
+		fi
+		shopt -u extglob nullglob
+
+		# For each executable, we'll need to build a separate application directory.
+		echo -e "${CYAN}\t\tBuilding Pixhawk application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
+
+		# Create a directory for the application inside Firmware/src/modules.
+		mkdir $1/Firmware/src/modules/$EXECUTABLE
+
+		if ! find_source_dependencies $1 $(ls $1 | grep ${MAIN_FILE}); then
+			# Something went wrong.
+			echo -e "${RED}\t\tUnable to detect dependencies for executable: ${EXECUTABLE}"
+			return 1
+		fi
+
+		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+		# Copy the Pixhawk application files to the new application directory.
+		shopt -s extglob
+		for SRC in $SRC_STRING; do
+			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/Firmware/src/modules/$EXECUTABLE
+		done
+		# NOTE: "${MAIN_FILE%.*}.*" ensures that the .c/.cpp and .h file are both copied.
+		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -i cp "{}" $1/Firmware/src/modules/$EXECUTABLE
+
+		shopt -u extglob
+
+		# Create are fill the necessary parts of the module.mk file.
+		echo -e "MODULE_COMMAND = ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		# Pixhawk doesn't seem to discriminate between assembly and c/cpp files at this stage.
+		echo -e "SRCS = ${MAIN_FILE} ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		echo -e "MODULE_STACKSIZE = ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+
+		# The following parameters are included for completeness, and possible future use.
+		echo -e "INCLUDE_DIRS += " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		echo -e "MAXOPTIMIZATION = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		echo -e "EXTRACXXFLAGS = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		echo -e "EXTRACFLAGS = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+
+		# Include the new application in the list of Pixhawk modules.
+		echo -e "MODULES += modules/${EXECUTABLE}" >> $1/Firmware/makefiles/config_${TARGET_PIXHAWK_DEVICE}.mk
+	done
+
+	# All done.
+	return 0
+}
+shopt -u extglob
+
+######################################## FUNCTION #########################################
+###
+### Name:			makepixhawk_configure_environment
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Performs the necessary tasks to configure the system for building
+###					the Pixhawk firmware.
+###					This only works on machines running Ubuntu.
+###
+###########################################################################################
+
+makepixhawk_configure_environment()
+{
+	if [ -z "$(uname -a | grep "Ubuntu")" ]; then
+		echo -e "${RED}OS is not Ubuntu. Cannot configure build environment automatically.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	echo -e "${CYAN}Configuring the Build Environment.\n${NO_COLOUR}"
+
+	echo -e "${CYAN}Installing the necessary packages.\n${NO_COLOUR}"
+
+	sudo apt-get update
+	sudo apt-get install python-serial python-argparse openocd flex bison libncurses5-dev autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev genromfs git wget
+
+	sudo apt-get install ia32-libs-multiarch
+	if [ $? != 0 ]; then
+		sudo apt-get install libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386
+	fi
+
+	echo -e "${CYAN}Configuring USB Device Configuration.\n${NO_COLOUR}"
+
+	echo -e "# All 3D Robotics (includes PX4) devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"26AC\", GROUP=\"plugdev\"\n \
+	# FTDI (and Black Magic Probe) Devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"0483\", GROUP=\"plugdev\"\n \
+	# Olimex Devices\n \
+	SUBSYSTEM==\"usb\", ATTR{idVendor}==\"15ba\", GROUP=\"plugdev\"\n" > $HOME/rule.tmp
+	sudo mv $HOME/rule.tmp /etc/udev/rules.d/10-px4.rules
+	sudo restart udev
+
+	echo -e "${CYAN}Registering GCC with Pixhawk Build System.\n${NO_COLOUR}"
+	#https://pixhawk.org/dev/toolchain_installation_lin#arm_toolchain_for_all_linux_distros
+	pushd .
+	cd ~
+	wget https://launchpadlibrarian.net/186124160/gcc-arm-none-eabi-4_8-2014q3-20140805-linux.tar.bz2
+	tar -jxf gcc-arm-none-eabi-4_8-2014q3-20140805-linux.tar.bz2
+	exportline="export PATH=$HOME/gcc-arm-none-eabi-4_8-2014q3/bin:\$PATH"
+	if grep -Fxq "$exportline" ~/.bashrc; then echo "nothing to do" ; else echo $exportline >> ~/.bashrc; fi
+	. ~/.bashrc
+	popd
+
+	echo -e "${CYAN}\nBuild Environment Configured. Please log out and log in again to complete the process.\n${NO_COLOUR}"
+	exit 0
+}
+
+makepixhawk_bootloader()
+{
+	# Download the bootloader code.
+	unpack_pixhawk_bootloader
+
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+	mkdir -p $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader
+
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	cp -rf $TCPATH/res/vendor/pixhawk_bootloader/Bootloader/* $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader 2>/dev/null
+
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	pushd $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader >/dev/null
+	make
+	make ${TARGET_PIXHAWK_DEVICE}
+	popd >/dev/null
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build bootloader for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+	# Also copy the ELF across, in case we also want that.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+
+	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
+	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+
+	cp -f $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/
+}
+
+# ALL DONE.

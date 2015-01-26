@@ -274,7 +274,11 @@ do
 			# Call the 'component_create' script: it will handle rebuilding the configuration file.
 			bash $TCPATH/bld/create/create_component --component $COMPONENT
 
-			# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
+			# Check that the component was actually created.
+			if [ ! -f ${TCPATH}/src/${COMPONENT}/${COMPONENT_NAME}.cfg ]; then
+				echo -e "${RED}Creation of the configuration file has failed. Exiting...\n${NO_COLOUR}"
+				exit 1
+			fi
 		else
 			# Just skip this component and move on.
 			echo -e "${YELLOW}No configuration file.  Skipping component $COMPONENT.\n${NO_COLOUR}"
@@ -416,8 +420,7 @@ if [ $POSTPACK ]; then
 	# Pack up the compilers.
 	echo -e "${CYAN}Packing tools...\n${NO_COLOUR}"
 	pack_allc
-
-	# TODO - Pack up any unpacked tools used by the load function.
+	pack_allt
 else
 	# Don't pack the tools, so that subsequent build attempts are faster.
 	echo -e "${CYAN}Leaving tools unpacked.\n${NO_COLOUR}"

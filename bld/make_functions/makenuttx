@@ -55,10 +55,14 @@ makenuttx_armcortex()
 		return 1
 	fi
 
-	# TODO - Unpacking the compiler won't help, because at the moment NuttX won't use the version we unpack.
-
 	# Set up the native compiler.
 	unpack_embeddedarmc
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
 
 	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
 	EXECUTABLES="${EXECUTABLES:-${COMPONENT_NAME}}"
@@ -70,9 +74,9 @@ makenuttx_armcortex()
 		return 1
 	fi
 
-	# Actually make the component.
+	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
-	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx
+	make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT/nuttx CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 
@@ -156,25 +160,40 @@ makenuttx_configure_apps()
 	local EXECUTABLE
 	local MAIN_FILE
 
+	# EXECUTABLES, APP_PRIORITIES and APP_STACKSIZES are provided in the .cfg file in the same way as the executable names.
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
-	APP_PRIORITIES_ARRAY=($PRIORITIES)	# TODO - Where does this come from?
-	APP_STACKSIZE_ARRAY=($STACKSIZES)	# TODO - Where does this come from?
+	APP_PRIORITIES_ARRAY=($APP_PRIORITIES)
+	APP_STACKSIZE_ARRAY=($APP_STACKSIZES)
 	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
-
-	# TODO - Why does this iteration happen separately?
-
-	# Iterate over each of the executables and assign default configuration values to anything that isn't already assigned a value.
-	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
-	do
-		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
-		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
-	done
 
 	# Iterate over each of the executables for this component.
 	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
 	do
+		# Check the values for the application priorities and stack sizes. If nothing is assigned, set it to the default value.
+		APP_PRIORITIES_ARRAY[$APP_INDEX]=${APP_PRIORITIES_ARRAY[$APP_INDEX]:=$DEFAULT_APP_PRIORITY}
+		APP_STACKSIZE_ARRAY[$APP_INDEX]=${APP_STACKSIZE_ARRAY[$APP_INDEX]:=$DEFAULT_APP_STACKSIZE}
+
 		# Use a simpler variable name for readability.
 		EXECUTABLE=${APP_EXECUTABLES_ARRAY[$APP_INDEX]}
+
+		# TODO - Hopefully we don't need to do this retardedness forever.
+
+		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
+
+		# Figure out what the main source file for this application is.
+		shopt -s extglob nullglob
+		MAIN_FILE=
+		# for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
+		for F in $(ls $1/${EXECUTABLE}_main.@(c|cpp))
+		do
+			# Remove the preceeding path name
+			MAIN_FILE=${F##*/}
+		done
+		if [ -z "$MAIN_FILE" ]; then
+			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
+			return 1
+		fi
+		shopt -u extglob nullglob
 
 		# For each executable, we'll need to build a separate application directory.
 		echo -e "${CYAN}\t\tBuilding NuttX application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
@@ -197,31 +216,22 @@ makenuttx_configure_apps()
 		# Enable the application by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config
 
-		# TODO - This is a temporary solution.  Actually, should use symlinks, or use dependency detection to only copy those files required.
+		if ! find_source_dependencies $1 $(ls $1 | grep ${EXECUTABLE}_main.c); then
+			# Something went wrong.
+			echo -e "${RED}\tUnable to detect dependencies for executable: ${EXECUTABLE}\n${NO_COLOUR}"
+			return 1
+		fi
 
 		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
 
 		# Copy the NuttX application files to the new application directory.
 		shopt -s extglob
-		cp -rf $1/!(apps|nuttx) $1/apps/external/$EXECUTABLE
-		shopt -u extglob
-
-		# TODO - Hopefully we don't need to do this retardedness forever.
-
-		# NOTE - Extended globbing is used here, but we turn it back off as soon as we are done, since it can plausibly break other things.
-
-		# Figure out what the main source file for this application is.
-		shopt -s extglob nullglob
-		MAIN_FILE=
-		for F in $(ls $1/apps/external/${EXECUTABLE}/${EXECUTABLE}_main.@(c|cpp))
-		do
-			MAIN_FILE=${F#$1/apps/external/${EXECUTABLE}/}
+		for SRC in $SRC_STRING; do
+			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
 		done
-		if [ -z "$MAIN_FILE" ]; then
-			echo -e "${RED}\t\tUnabled to detect main source file for application.\n${NO_COLOUR}"
-			return 1
-		fi
-		shopt -u extglob nullglob
+		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -i cp "{}" $1/apps/external/$EXECUTABLE
+
+		shopt -u extglob
 
 		# Copy in the template Kconfig file and Makefile for the application.
 		cp -f ${NUTTX_TEMPLATE_SOURCE}/Kconfig $1/apps/external/${EXECUTABLE}/Kconfig
@@ -237,18 +247,9 @@ makenuttx_configure_apps()
 		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile		
 		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile
 		sed -i s^"<APP_MAIN>"^"${MAIN_FILE}"^g $1/apps/external/${EXECUTABLE}/Makefile
-
-		# TODO - To be replaced with the toolchain's dependency detection functionality.
-
-		# Find all the C and CPP files in the directory that aren't suffixed by "_main".
-		C_SOURCE_FILES=($(find $1/apps/external/${EXECUTABLE} -iname "*.c" -o -iname "*.cpp" | grep -v "_main"))
-
-		# Find all the assembly files in the directory.
-		ASSEMBLY_SOURCE_FILES=($(find $1/apps/external -iname '*.s'))
-
-		# Update the makefile with the source files
-		sed -i s^"<C_SOURCE_FILES>"^"${C_SOURCE_FILES}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASSEMBLY_SOURCE_FILES}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<C_SOURCE_FILES>"^"${CSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		sed -i s^"<CPP_SOURCE_FILES>"^"${PSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
 
 		# Enable the ValleyForge applications by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config

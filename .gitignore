@@ -19,6 +19,7 @@ res/vendor/freertos/*
 res/vendor/stlink/*
 res/vendor/nuttx/*
 res/vendor/lm4tools/*
+res/vendor/pixhawk/*
 
 doc/zim-valleyforge/.zim/*
 

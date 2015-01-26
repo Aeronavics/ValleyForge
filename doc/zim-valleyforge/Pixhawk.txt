@@ -1,0 +1,17 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-09T08:08:15+13:00
+
+====== Pixhawk ======
+
+===== Configuring the Pixhawk Build Environment =====
+Instructions for setting up Ubuntu for building the Pixhawk Firmware can be found on the "[[+Build Environment|Build Environment]]" page.
+
+===== Pixhawk Modules =====
+The Pixhawk "module" is the equivalent of an "application" in NuttX. The Pixhawk modules are found in src/modules.
+
+Pixhawk have a tutorial available for creating custom modules available [[https://pixhawk.org/dev/px4_simple_app|here]].
+
+===== Pixhawk on the STM32F4 Discovery Development Board =====
+The microcontroller in the PX4FMU Autopilot is similar to the one used in the STM32F4 Discovery Development Board, and there is even documentation to help run the PX4FMU code on the Discovery Board. At this time however, the FMU Firmware does not produce software that is compatible with the Discovery Board. If that changes, the following [[https://pixhawk.org/modules/stm32f4discovery|page]] will likely be updated to reflect this.
+The bootloader works without any modifications and can be loaded via ST-Link, as explained [[https://pixhawk.org/dev/px4_bootloader#stm32f4discovery_with_integrated_stlinkv2|here]].

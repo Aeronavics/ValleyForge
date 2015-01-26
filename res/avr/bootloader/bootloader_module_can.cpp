@@ -53,7 +53,7 @@ const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 #endif
 
 	// CAN Baud rate values.
-#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATES_HERE>>>
+#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>
 #define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
 
 #if (CLK_SPEED_IN_MHZ == 16)

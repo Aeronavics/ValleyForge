@@ -51,10 +51,20 @@ echo -e "${CYAN}Imported top level code compliance functions.\n${NO_COLOUR}"
 
 compliance_load_config()
 {
-	# For how, just hard code the path.
-	CODE_COMPLIANCE_CONFIG="$TCPATH/bld/code_compliance/config_files/code_compliance.cfg"
+	# The default code compliance configuration is hard coded in.
+	CODE_COMPLIANCE_CONFIG_DEFAULT="bld/code_compliance/config_files/code_compliance.cfg"
+	
+	# Check if there is a user code compliance configuration available.  For now, the path to the user config file is hard coded.
+	CODE_COMPLIANCE_CONFIG_USER="var/code_compliance.cfg"
+	if [ -a "${CODE_COMPLIANCE_CONFIG_USER}" ]; then
+		CODE_COMPLIANCE_CONFIG=${CODE_COMPLIANCE_CONFIG_USER}
+	else
+		CODE_COMPLIANCE_CONFIG=${CODE_COMPLIANCE_CONFIG_DEFAULT}
+	fi
+
+	# Load whichever configuration file we chose.	
 	echo -e "${CYAN}Loading code compliance configuration from: ${CODE_COMPLIANCE_CONFIG}\n${NO_COLOUR}"
-	source ${CODE_COMPLIANCE_CONFIG}
+	source "$TCPATH/${CODE_COMPLIANCE_CONFIG}"
 
 	# All done.
 	return 0
@@ -76,6 +86,12 @@ compliance_load_config()
 
 compliance_check_directory()
 {
+	#
+	#	$1 - The name of the directory containing the source files to be checked.
+	#
+	#	$2 - The directory where the output text file is to be stored.
+	#
+
 	# Check if the specified location is actually legit.
 	if [ ! -d "$1" ]; then
 		# The specified location is not a directory.
@@ -93,6 +109,14 @@ compliance_check_directory()
 	# Record the output file.
 	COMPLIANCE_OUTPUT_FILEPATH=$2
 
+	# Record the input directory in a variable to be used by compliance scripts
+	COMPLIANCE_INPUT_DIRECTORY=$1
+
+
+	# The default directory for code compliance configuration files.
+	CODE_COMPLIANCE_CONFIG_DIRECTORY="bld/code_compliance/config_files"
+
+
 	# Initially, the number of errors or warnings is zero.
 	COMPLIANCE_NUM_ERRORS=0
 	COMPLIANCE_NUM_WARNINGS=0
@@ -105,20 +129,32 @@ compliance_check_directory()
 	# Check if at least one type of check if available.
 	if [ -z "${CHECKS}" ]; then
 		# There aren't any checks to perform.
-		echo -e "${YELLOW}No code compliance checks seem to be available.\n${NO_COLOUR}"
+		echo -e "${YELLOW}\tNo code compliance checks seem to be available.\n${NO_COLOUR}"
 		return 0
 	fi
 
+	# Construct a string with any required prune statements for files that should not be checked.
+	COMPLIANCE_MASK_STRING=
+	if [ -n "${COMPLIANCE_MASK}" ]; then
+		echo -e "${YELLOW}\tNot checking some files according to mask: ${COMPLIANCE_MASK}\n${NO_COLOUR}"
+		for COMPLIANCE_MASK_WORD in ${COMPLIANCE_MASK}; do
+			COMPLIANCE_MASK_STRING+=" -wholename $1/${COMPLIANCE_MASK_WORD} -prune -o"
+		done
+	fi
+
 	# Since it's easier to have the results ordered by file, iterate over the candidate files first.
-	for FILE in $(find $1 -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" -o -name "*.pde"); do
-		echo -e "${CYAN}\tChecking file: ${FILE}${NO_COLOUR}"
+	for FILE in $(find $1 ${COMPLIANCE_MASK_STRING} -name "*.cpp" -print \
+												 -o -name "*.hpp" -print \
+												 -o -name "*.c" -print \
+												 -o -name "*.h" -print \
+												 -o -name "*.pde" -print); do
+		echo -e "${CYAN}\tChecking code compliance: ${FILE}"
 
 		# Iterate over each of the checks.
 		for CHECK in ${CHECKS}; do
 			# Test if this check is actually enabled in our current configuration.
 			if ! compliance_lookup_test ${CHECK}; then
 				# Perform the check.
-				echo -e "${CYAN}\t\tPerforming check: ${CHECK}${NO_COLOUR}"
 				${CHECK} ${FILE}
 			fi
 		done
@@ -127,19 +163,19 @@ compliance_check_directory()
 	# Check whether any error were reported.
 	if [ ${COMPLIANCE_NUM_ERRORS} -gt 0 ]; then
 		# At least one error occurred, so we return indicating there is a problem.
-		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_ERRORS} errors, and ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${RED}${COMPLIANCE_NUM_ERRORS} errors${CYAN}, and ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 1
 	fi
 
 	# Check whether any warnings were reported.
 	if [ ${COMPLIANCE_NUM_WARNINGS} -gt 0 ]; then
 		# At least one warning occurred, so we print a message, but return that everything seemed ok.
-		echo -e "\n${CYAN}Code compliance testing complete.  Found ${COMPLIANCE_NUM_WARNINGS} warnings.\n${NO_COLOUR}"
+		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 0
 	fi
 
 	# Else return that the checks went ok.
-	echo -e "${CYAN}Code compliance testing complete.\n${NO_COLOUR}"
+	echo -e "\n${CYAN}\tCode compliance testing complete.\n${NO_COLOUR}"
 	return 0
 }
 
@@ -167,6 +203,49 @@ compliance_lookup_test()
 
 compliance_fail_file()
 {
+	#
+	#	$1 - The name of the test which has failed.
+	#	$2 - Filename where the failure appears.
+	#	$3 - String describing the error.
+	#
+
+	# Look up the appropriate behaviour for this test.
+	compliance_lookup_test $1
+	if [ $? -eq 2 ]; then
+		# The failure should generate an error.
+
+		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
+			echo -e "${RED}\tCompliance error in $1: $2: '$3'${NO_COLOUR}"
+		fi
+
+		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
+			echo -e "Compliance error in $1: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
+		fi
+
+		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of errors.
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
+			((COMPLIANCE_NUM_ERRORS++))
+		fi
+
+	elif [ $? -eq 1 ]; then
+		# The failure should generate a warning.
+
+		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
+			echo -e "${YELLOW}\tCompliance warning in $1: $2: '$3'${NO_COLOUR}"
+		fi
+
+		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
+			echo -e "Compliance warning in $1: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+		fi
+
+		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of warnings.
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
+			((COMPLIANCE_NUM_WARNINGS++))
+		fi
+
+	fi
+	# Else, the test wasn't even enabled, so why does it matter that it failed?  Why did we even run the test?
+
 	# All done.
 	return 0
 }
@@ -192,7 +271,7 @@ compliance_fail_line()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\t\tCompliance error: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${RED}\tCompliance error: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
@@ -205,7 +284,7 @@ compliance_fail_line()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\t\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${YELLOW}\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
