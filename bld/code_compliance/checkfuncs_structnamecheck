@@ -47,6 +47,72 @@ compliance_check_file_structnamecheck()
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
 	local CHECKS_OK=1
 
+	# Function for checking whether access modifiers are declared inside structures.
+	check_access_modifier()
+	{
+		#
+		#	$1 - The file we are checking.
+		#
+
+		# Need to keep track of the line number we are up to.
+		local LINE_NUM=
+		
+		# Pattern to match the beginning of a struct declaration.
+		pattern_struct_start="struct(.*)"
+
+		# Pattern to match access modifier.
+		pattern_access_mod="^(\s)*(public|protected|private):"
+
+		# Pattern to match end of structure.
+		pattern_struct_end="^(\s)*}(.*);"
+
+		# Read the contents of the file.
+		while read LINE
+		do
+			# Increment the line number.
+	  		((LINE_NUM++))
+
+				# Condition to check if the line matches struct pattern.
+				if [[ $LINE =~ $pattern_struct_start ]]; then
+
+					# Read the next line to ensure that it is a struct declaration.
+					read LINE
+					
+					# Increment the line number.
+			  		((LINE_NUM++))
+
+					if [[ $LINE =~ "{" ]]; then
+
+						# Continue reading inside the struct declaration.
+						while read LINE
+						do
+							# Increment the line number.
+					  		((LINE_NUM++))
+
+							# Display message if any access modifiers are found in the structure.
+							if [[ $LINE =~ $pattern_access_mod ]]; then
+								compliance_fail_line "compliance_check_file_structnamecheck" $1 $LINE_NUM "Non-compliant structure name: Access modifiers are declared within a structure."
+								CHECKS_OK=
+							fi
+							
+							# Check if the line denotes the end of struct declaration.
+							if [[ $LINE =~ $pattern_struct_end ]]; then
+								
+								# We have reached the end of the structure declaration. So break the loop.
+								break
+							fi
+						done
+					fi
+				fi
+		done < $1
+
+		# All done.
+		return 0
+	}
+
+	# Call function to check for access modifiers.
+	check_access_modifier $FILE
+
 	# Condition for checking structure names that come in the format "struct { ..... } XYZ;"
 	for struct_name in `pcregrep -o1 -M 'struct[ ]*[\n]*{[\S \n]+?[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
 	do
@@ -58,7 +124,6 @@ compliance_check_file_structnamecheck()
 		fi
 	done
 
-
 	# Condition for checking structure names that come in the format "struct XYZ { ..... };"
 	for str_line in `grep -n -E 'struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)' $FILE | cut -d : -f 1`
 	do
@@ -69,7 +134,6 @@ compliance_check_file_structnamecheck()
 			CHECKS_OK=
 		fi
 	done
-
 
 	if [ ! ${CHECKS_OK} ]; then
 
@@ -95,6 +159,7 @@ compliance_get_rules_structnamecheck()
 {
 	echo "structnamecheck:"
 	echo "\tStructure names which begin with a lower case character will fail."
+	echo "\tStructures which contain access modifiers such as public, protected or private will fail."
 	echo ""
 }
 

@@ -88,7 +88,7 @@ compliance_check_file_comment()
 		pattern_c_style="\/\*(.*)\*\/"
 
 		# Pattern to match lines in between /* and */
-		pattern_middle="[ ]*\*(.*)"
+		pattern_middle="^[\s\*](.*)"
 
 		# Need to keep track of the line number we are up to.
 		local LINE_NUM=
@@ -220,6 +220,7 @@ compliance_get_rules_comment()
 {
 	echo "Commenting conventions:"
 	echo "\tAll C++ anc C files should follow proper commenting conventions."
+	echo "\tAll C++ anc C files should contain copyrights information."
 	echo "\tMultiple comment lines should be in C style(/* ... */) and single comment lines should be in C++ style(// ....)"
 	echo "\tTODO comments should be in the syntax '// TODO - ...'"
 	echo "\tNOTE comments should be in the syntax '// NOTE - ...'"

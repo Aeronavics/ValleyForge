@@ -282,6 +282,7 @@ compliance_get_rules_classnamecheck()
 {
 	echo "classnamecheck:"
 	echo "\tClass names which begin with a lower case character will fail."
+	echo "\tClasses which do not follow the proper declaration order of access modifiers will fail."
 	echo "\tTemplate names which do not contain a single uppercase letter will fail."
 	echo "\tEnum labels which contain lower case letters will fail."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."

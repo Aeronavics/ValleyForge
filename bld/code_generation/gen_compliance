@@ -95,20 +95,20 @@ gen_compliance()
 
 			# Function for enforcing commenting conventions.
 			gen_comment $2		
+
 		elif [[ $1 == "All_layout" ]]; then
 		
 			# Function for enforcing commenting conventions.
 			gen_comment $2
 	
 			# Run Artistic style program on the selected file.
-			astyle $3 $2 &> /dev/null			
+			astyle $3 -n $2 &> /dev/null			
 			
 			# Run Uncrustify program for spacing conventions.
 			uncrustify -c $CONFIG_FILE_DIRECTORY/layout_whitespace.cfg -f $2 -o $2 &> /dev/null
-		else
-	
+		else	
 			# Run Artistic style program on the selected file.
-			astyle $3 $2 &> /dev/null			
+			astyle $3 -n $2 &> /dev/null
 	
 			# For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
 			if [[ $1 == "whitespace" ]]; then
@@ -144,15 +144,15 @@ gen_compliance()
 	do
 		case $choice in
 			whitespace)
-				options='-p -k1 -U -xy -n'
+				options='-p -k1 -U -H -xy'
 				break
 				;;
 			indentation)
-				options='--style=allman -t -C -S -N -xW -n'
+				options='--style=allman -t -C -S -N -xW'
 				break
 				;;
 			linebreaks)
-				options='-j -n'
+				options='-j'
 				break
 				;;
 			comment)
@@ -160,7 +160,7 @@ gen_compliance()
 				break
 				;;
 			All_layout)
-				options='--style=allman -t -C -S -N -xW -p -k1 -U -xy -j -n'
+				options='--style=allman -t -C -S -N -xW -p -k1 -U -H -xy -j'
 				break
 				;;
 			Exit)
@@ -205,10 +205,8 @@ gen_compliance()
 		# Create a menu of available files and have the user select one.
 		select FILE in ${ALL_FILES[@]}
 		do
-
 			# Check if they wish to exit the loop.
 			if [ "${FILE}" == "Exit" ]; then
-
 				echo -e "${CYAN}Not modifying any code...\n${NO_COLOUR}"
 				exit
 			fi
@@ -217,11 +215,9 @@ gen_compliance()
 			FILE=$(echo "${ALL_FILES}" | grep -w -o "${FILE}")
 
 			if [ -z "${FILE}" ]; then
-
 				# The selected file was not in the list of scripts, so the user is apparently a moron.
 				echo -e "${RED}Invalid choice.  Try again.\n${NO_COLOUR}"
 			else
-
 				# A legitimate option was selected, so we can go now.
 				echo -e "${CYAN}Selected the file '${FILE}' to modify.\n${NO_COLOUR}"
 
