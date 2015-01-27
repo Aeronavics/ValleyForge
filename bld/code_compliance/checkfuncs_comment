@@ -192,6 +192,12 @@ compliance_check_file_comment()
 	# Check for proper syntax of multiple C style comments.
 	check_c_style_comments $FILE
 
+	# Check for comment block at the start of the file.
+	if ! pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*\/' $1; then
+		compliance_fail_file "compliance_check_file_comment" $1 "This file is missing comment block at the beginning of file."
+	fi
+
+
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
 		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
@@ -221,6 +227,7 @@ compliance_get_rules_comment()
 	echo "Commenting conventions:"
 	echo "\tAll C++ anc C files should follow proper commenting conventions."
 	echo "\tAll C++ anc C files should contain copyrights information."
+	echo "\tAll C++ anc C files should start with a header comment."
 	echo "\tMultiple comment lines should be in C style(/* ... */) and single comment lines should be in C++ style(// ....)"
 	echo "\tTODO comments should be in the syntax '// TODO - ...'"
 	echo "\tNOTE comments should be in the syntax '// NOTE - ...'"

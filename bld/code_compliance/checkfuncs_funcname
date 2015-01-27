@@ -45,7 +45,7 @@ compliance_check_file_funcname()
 	local FILE=$1
 	
 	# Patterns to match function and eliminate constructors and destructors.
-	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)\(+[a-zA-Z0-9,_*& ]*\)+"
+	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+[a-zA-Z0-9,_*& ]*\)+)"
 	pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
 	pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
 
@@ -108,7 +108,8 @@ compliance_check_file_funcname()
 			if [[ ! $1 =~ "="|"#" && $1 =~ $pattern_function ]]; then
 				
 				function_name="${BASH_REMATCH[2]}"
-
+				function_args="${BASH_REMATCH[3]}"
+				
 				if [[ $function_name =~ "::" ]]; then
 					function_name=${function_name#*::}
 				fi
@@ -116,10 +117,23 @@ compliance_check_file_funcname()
 				# Condition to check whether the function is not a constructor/destructor and for uppercase characters
 				if ! array_contains class_array "$function_name"; then
 					if  [[ $function_name =~ [A-Z] && $temp_constructor != $function_name ]]; then
-						ERROR="'$function_name' has uppercase characters"
+						ERROR="'$function_name' has uppercase characters."
 
 						return 1
 					fi
+				fi
+
+				# Remove all characters other than commas.
+				comma="${function_args//[^,]}"
+
+				# Count the number of commas present. The number of arguments is one more than number of commas.
+				args_count="${#comma}"
+
+				# Report error if the number of arguments is greater than 5.
+				if [[ $((args_count+1)) -gt 5 ]]; then
+					ERROR="'$function_name' has more than 5 arguments."
+
+					return 1
 				fi
 			fi
 		fi

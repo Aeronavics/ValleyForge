@@ -69,6 +69,9 @@ compliance_check_file_varname()
 		pattern_mul_var="^([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"
 		pattern_mul_diff="([[a-zA-Z0-9_]+[ ]*)+]*(,[ ]*[a-zA-Z0-9_]*[ ]*[a-zA-Z0-9_]+)+;"
 
+		# Pattern to match variables 'I' or 'O'.
+		pattern_confusing_var="\bl\b|\bO\b"	
+
 		# Temporary variables to hold individual words in string and should not be empty at the beginning.
 		indiv_word1="just text"
 		indiv_word2="just text"
@@ -76,6 +79,12 @@ compliance_check_file_varname()
 		# Condition to avoid comment lines and false positives with pattern similar to variable declarations and initialisations.
 		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" || "$1" =~ "return" || "$1" =~ "struct" || "$1" =~ "class" ]]; then			
 			return 0
+
+		# Condition to check for variables composing only of characters 'l' or 'O'.
+		elif [[ $1 =~ $pattern_confusing_var ]]; then
+			ERROR="This line contains variables composed of 'l' and 'O' characters only."		
+
+			return 1			
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ $1 =~ $pattern_multiple_point_ref ]]; then
@@ -252,7 +261,6 @@ compliance_check_file_varname()
 
 	done < $FILE
 
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
@@ -284,6 +292,7 @@ compliance_get_rules_varname()
 {
 	echo "varname:"
 	echo "\tVariable names which contain upper case characters will fail."
+	echo "\tVariables composed of 'l' or 'O' characters only will fail."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }
