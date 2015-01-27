@@ -47,71 +47,84 @@ compliance_check_file_structnamecheck()
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
 	local CHECKS_OK=1
 
-	# Function for checking whether access modifiers are declared inside structures.
-	check_access_modifier()
+	check_line()
 	{
 		#
-		#	$1 - The file we are checking.
+		#	$1 - The content of the line in question.
 		#
-
-		# Need to keep track of the line number we are up to.
-		local LINE_NUM=
-		
-		# Pattern to match the beginning of a struct declaration.
-		pattern_struct_start="struct(.*)"
-
+	
 		# Pattern to match access modifier.
 		pattern_access_mod="^(\s)*(public|protected|private):"
 
-		# Pattern to match end of structure.
-		pattern_struct_end="^(\s)*}(.*);"
+		# Display message if any access modifiers are found in the structure.
+		if [[ $1 =~ $pattern_access_mod ]]; then
 
-		# Read the contents of the file.
-		while read LINE
-		do
-			# Increment the line number.
-	  		((LINE_NUM++))
+			ERROR="Access modifier '${BASH_REMATCH[2]}' found within structure."
 
-				# Condition to check if the line matches struct pattern.
-				if [[ $LINE =~ $pattern_struct_start ]]; then
-
-					# Read the next line to ensure that it is a struct declaration.
-					read LINE
-					
-					# Increment the line number.
-			  		((LINE_NUM++))
-
-					if [[ $LINE =~ "{" ]]; then
-
-						# Continue reading inside the struct declaration.
-						while read LINE
-						do
-							# Increment the line number.
-					  		((LINE_NUM++))
-
-							# Display message if any access modifiers are found in the structure.
-							if [[ $LINE =~ $pattern_access_mod ]]; then
-								compliance_fail_line "compliance_check_file_structnamecheck" $1 $LINE_NUM "Non-compliant structure name: Access modifiers are declared within a structure."
-								CHECKS_OK=
-							fi
+			return 1
+		fi
 							
-							# Check if the line denotes the end of struct declaration.
-							if [[ $LINE =~ $pattern_struct_end ]]; then
-								
-								# We have reached the end of the structure declaration. So break the loop.
-								break
-							fi
-						done
-					fi
-				fi
-		done < $1
-
 		# All done.
 		return 0
 	}
 
-	# Call function to check for access modifiers.
-	check_access_modifier $FILE
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	# Initially, we are checking.
+	local CHECKS_EN=1
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local DISABLED_LINE_COUNT=0
+
+	# Pattern to match the beginning of a struct declaration.
+	pattern_struct_start="struct(.*)"
+
+	# Pattern to match end of structure.
+	pattern_struct_end="^(\s)*}(.*);"
+
+	while read LINE
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+  		if [ ${CHECKS_EN} ]; then
+  			
+			# Condition to check if the line matches struct pattern.
+			if [[ $LINE =~ $pattern_struct_start ]]; then
+
+				# Read the next line to ensure that it is a struct declaration.
+				read LINE
+					
+				# Increment the line number.
+		  		((LINE_NUM++))
+
+				if [[ $LINE =~ "{" ]]; then
+					CHECKS_EN=
+	  				continue
+				fi
+			fi
+  		else
+			if [[ $LINE =~ $pattern_struct_end ]]; then
+								
+				# We have reached the end of the structure declaration. So break the loop.
+				CHECKS_EN=1
+			fi
+
+			# Ok, so now we actually want to check this line for compliance.
+			if ! check_line "$LINE"; then
+				# Report the line has failed.
+				
+				compliance_fail_line "compliance_check_file_structurenamecheck" $1 $LINE_NUM "Non-compliant structure: $ERROR"
+		
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+  		fi
+	done < $FILE
 
 	# Condition for checking structure names that come in the format "struct { ..... } XYZ;"
 	for struct_name in `pcregrep -o1 -M 'struct[ ]*[\n]*{[\S \n]+?[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`

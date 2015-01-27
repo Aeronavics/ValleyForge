@@ -44,15 +44,6 @@ compliance_check_file_classnamecheck()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	# Regex pattern to match template names.
-	pattern_template="(template)+[ ]*<[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)>"
-
-	# Regex pattern to match class names.
-	pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
-
-	# Regex pattern to match lines containing enum.
-	pattern_enum="enum[ 	]*[a-zA-Z_0-9]+[ 	]*\{(.*)\};"
-
 	# Define internal functions.
 
 	check_line()
@@ -61,6 +52,15 @@ compliance_check_file_classnamecheck()
 		#	$1 - The content of the line in question.
 		#	$2 - The line number we are up to.
 		#
+
+		# Regex pattern to match template names.
+		pattern_template="(template)+[ ]*<[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)>"
+	
+		# Regex pattern to match class names.
+		pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
+
+		# Regex pattern to match lines containing enum.
+		pattern_enum="enum[ 	]*[a-zA-Z_0-9]+[ 	]*\{(.*)\};"
 	
 		# Condition used for ignoring lines which include comments. 
 		if [[ "$1" =~ ^/.*|^\*.* ]]; then
