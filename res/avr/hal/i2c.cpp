@@ -38,13 +38,14 @@
 #include "i2c_platform.hpp"
 
 #include <avr/io.h>
+#include <util/delay.h>
 
 // DEFINE PRIVATE MACROS.
 
 #ifdef __AVR_AT90CAN128__
 # define OWN_ADR   0x01
 #elif defined (__AVR_ATmega2560__)
-# define OWN_ADR   0x02
+# define OWN_ADR   0x10
 #elif defined (__AVR_ATmega8__)
 # define OWN_ADR   0x03
 #endif
@@ -71,13 +72,13 @@ class I2C_imp
 
  		I2C_return_status initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed);
 
-		I2C_return_status start();
+		void start();
 
-		I2C_return_status stop();
+		void stop();
 
- 		I2C_return_status transmit(tx_type *data);
+ 		I2C_status_code transmit(tx_type *data);
 
- 		I2C_return_status receive(tx_type *data);
+ 		I2C_status_code receive(tx_type *data);
 
  		I2C_status_code transceiver_busy();
 
@@ -145,22 +146,22 @@ I2C_return_status I2C::initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_spe
   	return (imp->initialise(cpu_speed, scl_speed));
 }
 
-I2C_return_status I2C::start()
+void I2C::start()
 {
   	return (imp->start());
 }
 
-I2C_return_status I2C::stop()
+void I2C::stop()
 {
   	return (imp->stop());
 }
 
-I2C_return_status I2C::transmit(tx_type *data)
+I2C_status_code I2C::transmit(tx_type *data)
 {
   	return (imp->transmit(data));
 }
 
-I2C_return_status I2C::receive(tx_type *data)
+I2C_status_code I2C::receive(tx_type *data)
 {
   	return (imp->receive(data));
 }
@@ -180,49 +181,46 @@ void wait_twi_int(void)
 
 uint8_t Send_byte(uint8_t data)
 {
+    wait_twi_int();
+
     TWDR = data;
     TWCR = ((1 << TWINT) + (1 << TWEN));
 
     wait_twi_int();
 
-    if (TWSR != MT_DATA_ACK)
-    {
-        return TWSR;
-    }
-    return I2C_SUCCESS;
+    return TWSR;
 }
 
 uint8_t Send_adr(uint8_t adr)
 {
+    wait_twi_int();
+
     TWDR = adr;
     TWCR = ((1 << TWINT) + (1 << TWEN));
 
     wait_twi_int();
-    if ((TWSR != MT_SLA_ACK) && (TWSR != MR_SLA_ACK))
-    {}
-    return I2C_SUCCESS;
+
+    return TWSR;
 }
 
 uint8_t Get_byte(uint8_t *rx_ptr, uint8_t *last_byte)
 {
-    wait_twi_int();
-
     if (rx_ptr != last_byte)
     {
-        TWCR = ((1<<TWINT)+(1<<TWEA)+(1<<TWEN));
+        TWCR = ((1<<TWINT)+(1<<TWEN));
     }
     else if (rx_ptr == last_byte)
     {
         TWCR = ((1<<TWINT)+(1<<TWEN));
     }
 
-    *rx_ptr = TWDR;
-
-    if(TWSR == MR_DATA_NACK)
+    if(TWSR != MR_DATA_NAK)
     {
-        return I2C_SUCCESS;
+        return TWSR;
     }
-    return TWSR;
+
+    *rx_ptr = TWDR;
+    return I2C_SUCCESS;
 
 }
 
@@ -346,7 +344,7 @@ I2C_return_status I2C_imp::initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl
   	}
 }
 
-I2C_return_status I2C_imp::start()
+void I2C_imp::start()
 {
  	// TODO - this
   	TWCR = (1<<TWEN)|                             // TWI Interface enabled.
@@ -356,49 +354,111 @@ I2C_return_status I2C_imp::start()
 
   	wait_twi_int();
 
-  	if ((TWSR != MT_START) && (TWSR != MT_REPEAT_START))
-  	{
-    		return I2C_ERROR;
-  	}
-
-  	return I2C_SUCCESS;
+  	return;
 }
 
-I2C_return_status I2C_imp::stop()
+void I2C_imp::stop()
 {
   	// TODO - this
   	// Needs to do a check if the last transfer was successful.
 
-  	TWCR = ((1<<TWEN)+(1<<TWINT)+(1<<TWSTO));//Send STOP condition
+  	TWCR = ((1<<TWEN)+(1<<TWINT)+(1<<TWSTO));     //Send STOP condition
 
-  	return I2C_SUCCESS;
+  	return;
 }
 
-I2C_return_status I2C_imp::transmit(tx_type *data)
+I2C_status_code I2C_imp::transmit(tx_type *data)
 {
     data->slave_adr = (data->slave_adr << 1) | WRITE;
 
-    start();
-    Send_adr(data->slave_adr);
+    while ((data->slave_adr != OWN_ADR) && (data->bytes > 0))
+  	{
+        // send START signal
 
-    //if (data->slave_adr != OWN_ADR)
-  	//{
-        while (data->bytes > 0)
+        _delay_ms(1);
+
+        start();
+
+        if ((TWSR != MT_START) && (TWSR != MT_REPEAT_START))
         {
-            Send_byte(*data->data_ptr);
-            data->bytes--;
-        }
-        stop();
-    //}
+            switch (TWSR)
+            {
+                case MTR_LOST_ARB:
+                {
+                    return MTR_LOST_ARB;
+                }
+                case BUS_ERROR:
+                {
+                    return BUS_ERROR;
+                }
+                case NO_INFO_TWINT_NOT_SET:
+                {
+                    return NO_INFO_TWINT_NOT_SET;
+                }
+                default:
+                {
+                    return SOMETHING_WENT_WRONG;
+                }
 
-    TWDR = data->slave_adr;
-  	return I2C_SUCCESS;
+            }
+        }
+
+        // send slave address
+        if (Send_adr(data->slave_adr) != MT_SLA_ACK)
+        {
+            switch (TWSR)
+            {
+                case MT_SLA_NAK:
+                {
+                    stop();
+                    return MT_SLA_NAK;
+                }
+                case MTR_LOST_ARB:
+                {
+                    stop();
+                    return MTR_LOST_ARB;
+                }
+                default:
+                {
+                    return SOMETHING_WENT_WRONG;
+                }
+            }
+        }
+
+        // send data
+        if (Send_byte(*data->data_ptr) != MT_DATA_ACK)
+        {
+            switch (TWSR)
+            {
+                case MT_DATA_NAK:
+                {
+                    return MT_DATA_NAK;
+                }
+                case MTR_LOST_ARB:
+                {
+                    return MTR_LOST_ARB;
+                }
+                default:
+                {
+                    return SOMETHING_WENT_WRONG;
+                }
+            }
+        }
+
+        // iterate
+        data->bytes--;
+        data->data_ptr++;
+
+    }
+    stop();
+
+    //TWDR = data->slave_adr;
 }
 
-I2C_return_status I2C_imp::receive(tx_type *data)
+I2C_status_code I2C_imp::receive(tx_type *data)
 {
   	// TODO - this
-  	unsigned char* temp = data->data_ptr + data->bytes;
+  	uint8_t* temp = data->data_ptr + data->bytes;
 
     data->slave_adr = (data->slave_adr << 1) | READ;
 
@@ -413,9 +473,10 @@ I2C_return_status I2C_imp::receive(tx_type *data)
             data->data_ptr++;
             data->bytes--;
         }
+        stop();
 
   	}
-  	return I2C_ERROR;
+  	return MR_DATA_NAK;
 }
 
 I2C_status_code I2C_imp::transceiver_busy()

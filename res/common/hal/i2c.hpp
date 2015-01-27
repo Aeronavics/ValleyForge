@@ -128,18 +128,18 @@ enum I2C_status_code
 	MT_START 							= 0x08,	// A START condition has been transmitted
 	MT_REPEAT_START 					= 0x10,	// A repeated START condition has been transmitted
 	MT_SLA_ACK 							= 0x18,	// SLA+W has been transmitted. ACK has been received.
-	MT_SLA_NACK 						= 0x20,	// SLA+W has been transmitted. NOT ACK has been received.
+	MT_SLA_NAK 						= 0x20,	// SLA+W has been transmitted. NOT ACK has been received.
 	MT_DATA_ACK 						= 0x28,	// Data byte has been transmitted. ACK has been received.
-	MT_DATA_NACK 						= 0x30,	// Data byte has been transmitted. NOT ACK has been received.
+	MT_DATA_NAK 						= 0x30,	// Data byte has been transmitted. NOT ACK has been received.
 
 	// Transmission or Reception
 	MTR_LOST_ARB 						= 0x38,	// Arbitration lost in SLA+W OR data bytes (master-transmitter)
 												// OR Arbitration lost in SLA+R or NOT ACK bit (master-receiver)
 	// Reception
 	MR_SLA_ACK 							= 0x40,	// SLA+R has been transmitted, ACK has been received
-	MR_SLA_NACK 						= 0x48,	// SLA+R has been transmitted; NOT ACK has been received
+	MR_SLA_NAK 						= 0x48,	// SLA+R has been transmitted; NOT ACK has been received
 	MR_DATA_ACK 						= 0x50,	// Data byte has been received; ACK has been returned
-	MR_DATA_NACK 						= 0x58,	// Data byte has been received; NOT ACK has been returned
+	MR_DATA_NAK 						= 0x58,	// Data byte has been received; NOT ACK has been returned
 
 	// Slave-specific codes ---------------------------------------------------------------------------------------------------------------------------
 
@@ -159,7 +159,10 @@ enum I2C_status_code
 	S_LOST_ARB_3						= 0xB0,	// Arbitration lost in SLA+R/W as master; own SLA+R has been received; ACK has been returned
 	S_SENT_BYTE_ACK 					= 0xB8,	// Data byte in TWDR has been transmitted; ACK has been received
 	S_SENT_BYTE_NOT_ACK 				= 0xC0,	// Data byte in TWDR has been transmitted; NOT ACK has been received
-	S_SENT_LAST_BYTE_SENT_ACK 			= 0xC8 	// Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
+	S_SENT_LAST_BYTE_SENT_ACK 			= 0xC8, 	// Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
+
+  // Kevins made up debugging codes
+  SOMETHING_WENT_WRONG        = 0xD0
 };
 
 struct tx_type
@@ -213,12 +216,12 @@ class I2C
     /**
      * Send START signal of I2C.
      */
-		I2C_return_status start();
+		void start();
 
     /**
      * Send STOP signal of I2C.
      */
-		I2C_return_status stop();
+		void stop();
 
     /**
      * Set the mode of I2C.
@@ -226,7 +229,7 @@ class I2C
      * @param    I2C_mode    A selection of operating modes for the device I2C.
      *
      */
-		I2C_return_status transmit(tx_type *data);
+		I2C_status_code transmit(tx_type *data);
 
     /**
      * Set the slave mode for I2C.
@@ -234,7 +237,7 @@ class I2C
      * @param    I2C_mode    A selection of operating modes for the device I2C.
      *
      */
-		I2C_return_status receive(tx_type *data);
+		I2C_status_code receive(tx_type *data);
 
     /**
      * Check if the I2C Interrupt Service Routine is busy.

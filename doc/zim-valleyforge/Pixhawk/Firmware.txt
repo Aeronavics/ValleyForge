@@ -1,0 +1,21 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-19T11:39:01+13:00
+
+====== Firmware ======
+
+===== Building the Firmware =====
+Instructions can be found on the Pixhawk [[https://pixhawk.org/dev/nuttx/building_and_flashing_console|website]].
+
+===== Updating Firmware =====
+Firmware is uploaded to the Pixhawk boards via the USB bootloader and a Python uploader script. The specific script that is used can found at Firmware/tools/px_uploader.py. The script is called (Linux) in the following way:
+'''
+python -u $(UPLOADER) --port $(SERIAL_PORTS) $(BUNDLE)
+'''
+
+Where:
+* $(UPLOADER) is the path to px_uploader.py
+* $(SERIAL_PORTS) is the list of all possible serial ports that the bootloader could be attached to
+* $(BUNDLE) is the path to the "firmware.px4" file. For example, "Firmware/Build/px4fmu-v2_default.build/firmware.px4.
+
+Alternatively, one can use the uploader as it is implemented in the Pixhawk build system, as explained [[https://pixhawk.org/dev/nuttx/building_and_flashing_console#flashing_via_usb_with_px4_bootloader|here]].
