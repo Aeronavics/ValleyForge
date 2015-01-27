@@ -371,60 +371,57 @@ I2C_status_code I2C_imp::transmit(tx_type *data)
 {
     data->slave_adr = (data->slave_adr << 1) | WRITE;
 
+    // send START signal
+    start();
+
+    if ((TWSR != MT_START) && (TWSR != MT_REPEAT_START))
+    {
+      switch (TWSR)
+      {
+        case MTR_LOST_ARB:
+        {
+          return MTR_LOST_ARB;
+        }
+        case BUS_ERROR:
+        {
+          return BUS_ERROR;
+        }
+        case NO_INFO_TWINT_NOT_SET:
+        {
+          return NO_INFO_TWINT_NOT_SET;
+        }
+        default:
+        {
+          return SOMETHING_WENT_WRONG;
+        }
+
+      }
+    }
+
+    // send slave address
+    if (Send_adr(data->slave_adr) != MT_SLA_ACK)
+    {
+      switch (TWSR)
+      {
+        case MT_SLA_NAK:
+        {
+          stop();
+          return MT_SLA_NAK;
+        }
+        case MTR_LOST_ARB:
+        {
+          stop();
+          return MTR_LOST_ARB;
+        }
+        default:
+        {
+          return SOMETHING_WENT_WRONG;
+        }
+      }
+    }
+
     while ((data->slave_adr != OWN_ADR) && (data->bytes > 0))
   	{
-        // send START signal
-
-        _delay_ms(1);
-
-        start();
-
-        if ((TWSR != MT_START) && (TWSR != MT_REPEAT_START))
-        {
-            switch (TWSR)
-            {
-                case MTR_LOST_ARB:
-                {
-                    return MTR_LOST_ARB;
-                }
-                case BUS_ERROR:
-                {
-                    return BUS_ERROR;
-                }
-                case NO_INFO_TWINT_NOT_SET:
-                {
-                    return NO_INFO_TWINT_NOT_SET;
-                }
-                default:
-                {
-                    return SOMETHING_WENT_WRONG;
-                }
-
-            }
-        }
-
-        // send slave address
-        if (Send_adr(data->slave_adr) != MT_SLA_ACK)
-        {
-            switch (TWSR)
-            {
-                case MT_SLA_NAK:
-                {
-                    stop();
-                    return MT_SLA_NAK;
-                }
-                case MTR_LOST_ARB:
-                {
-                    stop();
-                    return MTR_LOST_ARB;
-                }
-                default:
-                {
-                    return SOMETHING_WENT_WRONG;
-                }
-            }
-        }
-
         // send data
         if (Send_byte(*data->data_ptr) != MT_DATA_ACK)
         {
@@ -448,7 +445,6 @@ I2C_status_code I2C_imp::transmit(tx_type *data)
         // iterate
         data->bytes--;
         data->data_ptr++;
-
     }
     stop();
 
