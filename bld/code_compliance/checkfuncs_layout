@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_layout_whitespace
+### Name:           	checkfuncs_layout
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -25,53 +25,60 @@
 ###
 ### Type:           	Bash Function Definitions
 ###
-### Purpose:        	Implements code compliance tests: tests for proper layout conventions(whitespace) in files.
+### Purpose:        	Implements code compliance tests: tests for proper layout conventions in files.
 ###
 ###########################################################################################################################
 
-######################################## FUNCTION #################################################
+######################################## FUNCTION ##################################################
 ###
-### Name:		compliance_check_file_layout_whitespace
+### Name:		compliance_check_file_layout
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:		Tests a single C/CPP source file for proper layout conventions(whitespace).
+### Purpose:		Tests a single C/CPP source file for proper layout conventions.
 ###
-###################################################################################################
+####################################################################################################
 
 
-compliance_check_file_layout_whitespace()
+compliance_check_file_layout()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	# Run "Artistic Style" with the given file and store the output string with status of the operation.
-	str=$(astyle -p -k1 -U -H -xy --dry-run $FILE) 
+	local status=
+
+	# Run "Artistic Style" with the given file and store the output string with status of the operation. 
+	str=$($TCPATH/res/vendor/astyle/build/gcc/bin/astyle --style=allman -t -C -S -N -p -k1 -U -H -xy -j --dry-run $FILE) 			
 	status=${str%% *}
-		
+
 	# Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)
 	if [[ "$status" == "Formatted" ]]; then
-		compliance_fail_file "compliance_check_file_layout_whitespace" $FILE "This file doesn't follow proper layout conventions(whitespace)"
+		compliance_fail_file "compliance_check_file_layout" $FILE "This file doesn't follow proper layout conventions"
 	fi
 
 	# All done.
 	return 0
 }
 
-######################################## FUNCTION #########################################################
+######################################## FUNCTION ##########################################################
 ###
-### Name:		compliance_get_rules_layout_whitespace
+### Name:		compliance_get_rules_layout
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:		Prints out a summary of the code compliance rules for the "layout_whitespace" test.
+### Purpose:		Prints out a summary of the code compliance rules for the "layout" test.
 ###
-###########################################################################################################
+############################################################################################################
 
-compliance_get_rules_layout_whitespace()
+compliance_get_rules_layout()
 {
-	echo "Layout conventions(whitespace):"
-	echo "\tAll C++ anc C files should follow proper layout conventions(whitespace)."
+	echo "Layout conventions:"
+	echo "\tAll C++ anc C files should follow proper layout conventions."
+	echo "\tIndentation:"
+	echo "\tThe indentation style to be used is the 'Allman style'"
+	echo "\tLine Breaks:"
+	echo "\tConditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional."
+	echo "\tWhite spacing:"
 	echo "\tUnary operators do not require surrounding whitespace."
 	echo "\tBinary operators should be surrounded by single space characters."
 	echo "\tTernary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments."

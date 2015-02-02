@@ -55,7 +55,7 @@ gen_compliance()
 		#
 
 		# Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
-		uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
+		$TCPATH/res/vendor/uncrustify/src/uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
 
 		# Replace todo comment with the correct syntax
 		sed -i 's/todo[ -: ]*/ TODO - /I' $1
@@ -100,21 +100,9 @@ gen_compliance()
 		
 			# Function for enforcing commenting conventions.
 			gen_comment $2
-	
-			# Run Artistic style program on the selected file.
-			astyle $3 -n $2 &> /dev/null			
 			
-			# Run Uncrustify program for spacing conventions.
-			uncrustify -c $CONFIG_FILE_DIRECTORY/layout_whitespace.cfg -f $2 -o $2 &> /dev/null
-		else	
 			# Run Artistic style program on the selected file.
-			astyle $3 -n $2 &> /dev/null
-	
-			# For whitespacing, better results are obtained when both Uncrustify and Artistic Style are used.
-			if [[ $1 == "whitespace" ]]; then
-				uncrustify -c $CONFIG_FILE_DIRECTORY/layout_whitespace.cfg -f $2 -o $2 &> /dev/null
-			fi
-					
+			$TCPATH/res/vendor/astyle/build/gcc/bin/astyle --style=allman -t -C -S -N -p -k1 -U -H -xy -j -n $2				
 		fi
 
 		# All done
@@ -128,7 +116,7 @@ gen_compliance()
 	local status_astyle=
 
 	# Hardcode the config file for uncrustify.
-	CONFIG_FILE_DIRECTORY="code_compliance/config_files"
+	CONFIG_FILE_DIRECTORY="$TCPATH/bld/code_compliance/config_files"
 
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then
@@ -140,27 +128,15 @@ gen_compliance()
 
 	# Obtain user's choice to modify entire directory or particular file.
 	echo -e "${GREEN}Which layout convention do you want to enforce?\n${NO_COLOUR}"
-	select choice in whitespace indentation linebreaks comment All_layout Exit
+	select choice in comment All_layout Exit
 	do
 		case $choice in
-			whitespace)
-				options='-p -k1 -U -H -xy'
-				break
-				;;
-			indentation)
-				options='--style=allman -t -C -S -N -xW'
-				break
-				;;
-			linebreaks)
-				options='-j'
-				break
-				;;
 			comment)
 				# Do nothing.
 				break
 				;;
 			All_layout)
-				options='--style=allman -t -C -S -N -xW -p -k1 -U -H -xy -j'
+				options="--style=allman -t -C -S -N -p -k1 -U -H -xy -j"
 				break
 				;;
 			Exit)
@@ -186,7 +162,7 @@ gen_compliance()
 				-o -name "*.cpp" -print \
 				-o -name "*.pde" -print); do
 
-			gen_layout $choice $FILE $options
+			gen_layout $choice $FILE "$options"
 		done
 
 	# If NO, then ask for the name of the specific file to be modified.
