@@ -44,11 +44,6 @@ compliance_check_file_funcname()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 	
-	# Patterns to match function and eliminate constructors and destructors.
-	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+[a-zA-Z0-9,_*& ]*\)+)"
-	pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
-	pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
-
 	# Variables used as counter for number of classes in the file.
 	local class_count=0
 
@@ -84,6 +79,14 @@ compliance_check_file_funcname()
 		#	$2 - The line number we are up to.
 		#
 		
+		# Patterns to match function and eliminate constructors and destructors.
+		pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+[a-zA-Z0-9,_*& ]*\)+)"
+		pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
+		pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
+
+		# Pattern to match malloc, realloc and free functions.
+		pattern_memory_funcs="(malloc|free|realloc)[ ]?\(.*\);"
+
 		# Condition to avoid comment lines and destructors.
 		if ! [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "~" ]]; then
 
@@ -95,6 +98,13 @@ compliance_check_file_funcname()
 				class_array[$class_count]=$classname
 				class_count=$((class_count+1))
 				
+			fi
+
+			# Condition to check for malloc, realloc or free functions.
+			if [[ $1 =~ $pattern_memory_funcs ]]; then
+				ERROR="${BASH_REMATCH[1]} should not be used."
+	
+				return 1
 			fi
 
 			# Condition to check for Constructors

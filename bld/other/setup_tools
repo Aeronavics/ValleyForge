@@ -268,7 +268,7 @@ unpack_lm4flash()
 
 ######################################## FUNCTION #########################################
 ###											###
-### NAME:		pack_allc							###
+### NAME:		pack_allt							###
 ###											###
 ### Inputs/Outputs:	None.								###
 ###											###
@@ -309,6 +309,17 @@ pack_stlink()
 	# All done.
 	return	
 }
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_lm4flash							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if lm4flash was previously unpacked, and if it was, then	###
+###			packs it up again.						###
+###											###
+###########################################################################################
 
 pack_lm4flash()
 {
