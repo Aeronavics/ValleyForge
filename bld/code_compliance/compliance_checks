@@ -218,11 +218,11 @@ compliance_fail_file()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCOMPLIANCE ERROR: $2: '$3'\n${NO_COLOUR}"
+			echo -e "${RED}\tCOMPLIANCE ERROR in $1: $2: '$3'\n${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE ERROR: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE ERROR in $1: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of errors.
@@ -234,15 +234,15 @@ compliance_fail_file()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCOMPLIANCE WARNING: $2: '$3'\n${NO_COLOUR}"
+			echo -e "${YELLOW}\tCOMPLIANCE WARNING in $1: $2: '$3'\n${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE WARNING: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "COMPLIANCE WARNING in $1: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of warnings.
-		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits|compliance_check_file_oclint ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
 
@@ -274,11 +274,11 @@ compliance_fail_line()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${RED}\tCompliance error in $1: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance error: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Compliance error in $1: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_ERRORS++))
@@ -287,11 +287,11 @@ compliance_fail_line()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${YELLOW}\tCompliance warning in $1: $2 line $3: $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance warning: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Compliance warning in $1: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_WARNINGS++))

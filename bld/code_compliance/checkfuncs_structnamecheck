@@ -127,7 +127,7 @@ compliance_check_file_structnamecheck()
 	done < $FILE
 
 	# Condition for checking structure names that come in the format "struct { ..... } XYZ;"
-	for struct_name in `pcregrep -o1 -M 'struct[ ]*[\n]*{[\S \n]+?[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
+	for struct_name in `pcregrep -o3 -M 'struct[ ]*[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
 	do
 		if [[ ${struct_name:0:1} =~ [a-z] ]]; then
 

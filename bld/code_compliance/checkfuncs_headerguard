@@ -62,11 +62,8 @@ compliance_check_file_headerguard()
 		# Variable used to count the occurrences of #ifndef or #if.
 		ifndef_count=0
 
-		# Pattern matching lines which we should avoid.
-		pattern="^$|[{}]+"
-
 		# Pattern to match lines containing macro definitions.
-		pattern_macro="(#[ 	]*define)+[ 	]*([a-zA-Z_0-9]+)"
+		pattern_macro="(#[ 	]*define)+[ 	]*([a-zA-Z_0-9]+)[ 	]+(.*)"
 
 		# Need to keep track of the line number we are up to.
 		local LINE_NUM=
@@ -96,7 +93,7 @@ compliance_check_file_headerguard()
   				fi
 
 				# Increment the counter for line numbers.
-				if [[ ! "$name" =~ ^/.*|^\*.* && $size != 1 && ! $name =~ $pattern ]]; then
+				if [[ ! "$name" =~ ^/.*|^\*.* && $size != 1 ]]; then
 					linecount=$((linecount+1))
 					spl_line_count=$LINE_NUM
 
