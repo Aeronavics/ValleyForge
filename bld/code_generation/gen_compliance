@@ -29,6 +29,9 @@
 ###															###
 ###########################################################################################################################
 
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Compliance checking code generation functions.\n${NO_COLOUR}"
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		gen_compliance							###
@@ -43,7 +46,6 @@
 
 gen_compliance()
 {
-
 	# Define internal functions.
 
 	# Function for modifying code according to commenting conventions

@@ -306,7 +306,7 @@ unpack_vendor_astyle()
 		popd >/dev/null
 	else
 		# The source has already been downloaded.
-		echo -e "${CYAN}\tastyle vendor source available...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tAstyle vendor source available...\n${NO_COLOUR}"
     	fi
 
 	# TODO - Test that now the required files actually exist.
