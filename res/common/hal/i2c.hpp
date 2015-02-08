@@ -24,8 +24,8 @@
  *  This is the header file which matches i2c.cpp.  Implements various functions relating to I2C, transmission
  *  and receiving of messages.
  *
- *  @author			Ben O'Brien, derived from CAN-bus code by Paul Davey & George Xian
- *	 				Documentation based on AT90CAN128 data sheet Rev. 7679H–CAN–08/08, by ATMEL
+ *  @author			Kevin Gong
+ *
  *
  *  @date			1-02-2014
  *
@@ -69,17 +69,17 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
+#ifdef __AVR_ATmega2560__
+#define TWI_BUFFER_SIZE 20
+#elif defined (__AVR_AT90CAN128__)
+#define TWI_BUFFER_SIZE 20
+#elif defined (__AVR_ATmega8__)
+#define TWI_BUFFER_SIZE 20
+#endif
+
 class I2C_imp;
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
-
-enum I2C_mode
-{
-	I2C_MASTER = 0x0,
-	I2C_SLAVE = 0x1,
-	I2C_TRANSMITTER = 0x2,
-	I2C_RECEIVER = 0x4
-};
 
 enum CPU_CLK_speed
 {
@@ -95,24 +95,18 @@ enum I2C_SCL_speed
   I2C_400kHz = 40
 };
 
-enum I2C_send_condition_t
-{
-	I2C_START,
-	I2C_STOP,
-	I2C_REPEATED_START
-};
-
-enum SLA_adr
-{
-  SLA0_ADR = 0x01,
-  SLA1_ADR = 0x02,
-  SLA2_ADR = 0x03
-};
-
 enum I2C_return_status
 {
   I2C_SUCCESS = 0x01,
   I2C_ERROR = 0x00
+};
+
+enum I2C_mode
+{
+  I2C_MT,
+  I2C_MR,
+  I2C_ST,
+  I2C_SR
 };
 
 // The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
@@ -123,19 +117,18 @@ enum I2C_status_code
 	NO_INFO_TWINT_NOT_SET				= 0xf8,	// Meaning: The TWINT flag is not set, so no relevant information is available
 	BUS_ERROR							= 0x00,	// A bus error has occurred during a Two-wire Serial Bus transfer.
 												// From the data sheet: a bus error occurs
+  TWI_START 							= 0x08,	// A START condition has been transmitted
+	TWI_REP_START 					= 0x10,	// A repeated START condition has been transmitted
+  TWI_ARB_LOST 						= 0x38,	// Arbitration lost in SLA+W OR data bytes (master-transmitter)
+												// OR Arbitration lost in SLA+R or NOT ACK bit (master-receiver)
 
-	// Transmission
-	MT_START 							= 0x08,	// A START condition has been transmitted
-	MT_REPEAT_START 					= 0x10,	// A repeated START condition has been transmitted
+  // Master Transmitter
 	MT_SLA_ACK 							= 0x18,	// SLA+W has been transmitted. ACK has been received.
 	MT_SLA_NAK 						= 0x20,	// SLA+W has been transmitted. NOT ACK has been received.
 	MT_DATA_ACK 						= 0x28,	// Data byte has been transmitted. ACK has been received.
 	MT_DATA_NAK 						= 0x30,	// Data byte has been transmitted. NOT ACK has been received.
 
-	// Transmission or Reception
-	MTR_LOST_ARB 						= 0x38,	// Arbitration lost in SLA+W OR data bytes (master-transmitter)
-												// OR Arbitration lost in SLA+R or NOT ACK bit (master-receiver)
-	// Reception
+	// Master Receiver
 	MR_SLA_ACK 							= 0x40,	// SLA+R has been transmitted, ACK has been received
 	MR_SLA_NAK 						= 0x48,	// SLA+R has been transmitted; NOT ACK has been received
 	MR_DATA_ACK 						= 0x50,	// Data byte has been received; ACK has been returned
@@ -143,35 +136,44 @@ enum I2C_status_code
 
 	// Slave-specific codes ---------------------------------------------------------------------------------------------------------------------------
 
-	// Transmission
-	S_GOT_OWN_SLA_ACK					= 0x60,	// Own SLA+W has been received; ACK has been returned
-	S_LOST_ARB_1						= 0x68,	// Arbitration lost in SLA+R/W as master; own SLA+W has been received; ACK has been returned
-	S_GOT_GEN_CALL_ADD_ACK				= 0x70,	// General call address has been received; ACK has been returned
-	S_LOST_ARB_2						= 0x78,	// Arbitration lost in SLA+R/W as master; General call address has been received; ACK has been returned
-	S_PREV_ADDR_SLAW_W_DATA_ACK			= 0x80,	// Previously addressed with own SLA+W; data has been received; ACK has been returned
-	S_PREV_ADDR_SLAW_W_DATA_NOT_ACK		= 0x88,	// Previously addressed with own SLA+W; data has been received; NOT ACK has been returned
-	S_PREV_ADDR_GEN_CALL_DATA_ACK		= 0x90,	// Previously addressed with general call; data has been received; ACK has been returned
-	S_PREV_ADDR_GEN_CALL_DATA_NOT_ACK	= 0x98,	// Previously addressed with general call; data has been received; NOT ACK has been returned
-	S_STOP_OR_REPEAT_START				= 0xA0,	// A STOP condition or repeated START condition has been received while still addressed as slave
+	// Slave Receiver
+	SR_SLA_ACK					= 0x60,	//  Own SLA+W has been received; ACK has been returned
+	S_LOST_ARB_1						= 0x68,	//  Arbitration lost in SLA+R/W as master; own SLA+W has been received; ACK has been returned
+	SR_GEN_ACK				= 0x70,	//  General call address has been received; ACK has been returned
+	S_LOST_ARB_2						= 0x78,	//  Arbitration lost in SLA+R/W as master; General call address has been received; ACK has been returned
+	SR_ADR_DATA_ACK			= 0x80,	//  Previously addressed with own SLA+W; data has been received; ACK has been returned
+	SR_ADR_DATA_NAK		= 0x88,	//  Previously addressed with own SLA+W; data has been received; NOT ACK has been returned
+	SR_GEN_DATA_ACK		= 0x90,	//  Previously addressed with general call; data has been received; ACK has been returned
+	SR_GEN_DATA_NAK	= 0x98,	//  Previously addressed with general call; data has been received; NOT ACK has been returned
+	SR_STOP_RESTART				= 0xA0,	//  A STOP condition or repeated START condition has been received while still addressed as slave
 
-	// Reception
-	S_SLA_ACK 							= 0xA8,	// Own SLA+R has been received; ACK has been returned
-	S_LOST_ARB_3						= 0xB0,	// Arbitration lost in SLA+R/W as master; own SLA+R has been received; ACK has been returned
-	S_SENT_BYTE_ACK 					= 0xB8,	// Data byte in TWDR has been transmitted; ACK has been received
-	S_SENT_BYTE_NOT_ACK 				= 0xC0,	// Data byte in TWDR has been transmitted; NOT ACK has been received
-	S_SENT_LAST_BYTE_SENT_ACK 			= 0xC8, 	// Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
+	// Slave Transmitter
+	ST_SLA_ACK 							= 0xA8,	//  Own SLA+R has been received; ACK has been returned
+	S_LOST_ARB_3						= 0xB0,	//  Arbitration lost in SLA+R/W as master; own SLA+R has been received; ACK has been returned
+	ST_DATA_ACK 					= 0xB8,	//  Data byte in TWDR has been transmitted; ACK has been received
+	ST_DATA_NAK 				= 0xC0,	//  Data byte in TWDR has been transmitted; NOT ACK has been received
+	ST_DATA_ACK_LAST_BYTE 			= 0xC8, 	//  Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
 
-  // Kevins made up debugging codes
-  SOMETHING_WENT_WRONG        = 0xD0
 };
 
-struct tx_type
+struct TWI_bus
 {
-	uint8_t slave_adr;				//Slave address and W/R byte
-	uint8_t bytes;						//Number of bytes to send or
-											//receive
-	uint8_t *data_ptr;				//Pointer to the bytes to send
+  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];       // TWI master transmitter data buffer.
+  volatile uint8_t TWI_MR_sla_adr;                     // TWI master receiver requires a variable to hold target address.
+  volatile uint8_t* TWI_MR_data_ptr;                   // TWI master receiver saves the data straight to the user data array.
+  volatile uint8_t TWI_ST_buf[TWI_BUFFER_SIZE];        // TWI slave transmitter buffer.
+  volatile uint8_t TWI_SR_buf[TWI_BUFFER_SIZE];        // TWI slave receiver buffer.
+
+  volatile bool TWI_gen_call;
+  volatile bool TWI_data_in_ST_buf;
+  volatile bool TWI_data_in_SR_buf;
+
+  uint8_t own_adr;
+  I2C_mode TWI_current_mode;
+  volatile uint8_t TWI_msg_size;
+  volatile uint8_t TWI_status_reg;
 };
+
 
 /**
  * @class
@@ -196,9 +198,14 @@ class I2C
 		~I2C(void);
 
     /**
-     * Enables the I2C/TWI interface by setting the enable bit in the control register.
+     * Enables the I2C/TWI interface by setting the enable bit in the control register. The
+     * CPU frequency must be at least 16x higher than the I2C frequency
+     *
+     * @param    CPU_CLK_speed    The CPU clock speed.
+     *           I2C_SCL_speed    I2C frequency.
+     *           slave_adr        The device slave address.
      */
-		void enable(void);
+		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
     /**
      * Disables the I2C/TWI register by un setting the enable bit in the control register.
@@ -206,43 +213,43 @@ class I2C
 		void disable(void);
 
     /**
-     * Initialise the parameters for I2C use.
-     *
-     * @param    I2C_bit_rate    The bitrate of the I2C/TWI interface.
-     *           I2C_prescalar    Prescale value of I2C/TWI interface.
-     */
-		I2C_return_status initialise(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed);
-
-    /**
-     * Send START signal of I2C.
-     */
-		void start();
-
-    /**
-     * Send STOP signal of I2C.
-     */
-		void stop();
-
-    /**
-     * Set the mode of I2C.
-     *
-     * @param    I2C_mode    A selection of operating modes for the device I2C.
+     * Wait for I2C to complete transmission.
      *
      */
-		I2C_status_code transmit(tx_type *data);
+    void wait_I2C();
 
     /**
-     * Set the slave mode for I2C.
      *
-     * @param    I2C_mode    A selection of operating modes for the device I2C.
+     *
+     * @param
      *
      */
-		I2C_status_code receive(tx_type *data);
+		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
-     * Check if the I2C Interrupt Service Routine is busy.
+     *
+     *
+     * @param
+     *
      */
-		I2C_status_code transceiver_busy();
+		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
+
+    /**
+     *
+     *
+     * @param
+     *
+     */
+    I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
+
+    /**
+     *
+     *
+     * @param
+     *
+     */
+    I2C_return_status slave_receive(uint8_t* data);
+
 
 	private:
 
@@ -259,6 +266,7 @@ class I2C
 		// Fields.
 
 		I2C_imp* imp;
+
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
