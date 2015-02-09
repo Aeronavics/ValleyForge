@@ -35,43 +35,16 @@ Limiting the users to a designed method of instantiating a Timer/ Counter unit r
 Data associated with controlling a Timer/ Counter unit are contained within registers in the target microcontroller. Implementation of the Timer/ Counter (Tc_imp) contains the links to the registers but are designed to be inaccessible to the user's instance of Timer/ Counter class.
 
 == Public ==
-Functions which the user calls to manipulate the Timer/ Counter unit to the desired behaviour. 
+Functions which the user calls to manipulate the Timer/ Counter unit to the desired behaviour. Each available funtion will be available to review on the Doxygen documentation for the Timer and Counter unit. 
 
-(link to Doxygen timer/ counter)
+It is highly advised that the user should read over the use of each Timer/ Counter modes of operation before testing code. The abstraction of each mode can be found in the Usage section of the Timer/ Counter sub page.
 
-=== Usage ===
-Summaries of the Timer/ Counter units to each target board can be found in the links below:
+== Public Target Dependent Information ==
+AVR micro controllers share very similar functional structures but do have several differences which are important to know when interfacing with. The links below will take you to the target specific characteristics.
 
-	(Link to each target device summary)
-
-
-== Initialisation ==
-
-Functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean variable can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
-
-== Example ==
-‎
-	‭''thasidoh ;asd fkasj;dl fisadj; fkljasd;lfjlasdk;j flk;asdjfkl;sjdkajs;dlk j;as''
-	
-	
-
-	''Tc timer0_pre1(TC_0);		// Creates an Instance of Timer/ Counter 0''
-	''Tc_rate timer0_rate;''
-	''timer0_rate.pre = TC_PRE_1;''
-	''timer0_rate.src = TC_SRC_INT;''
-	
-	''timer0_pre1.initialise();''
-	''timer0_pre1.set_rate(timer0_rate);''
-
-
-=== Setting the mode ===
-
-== Example ==
-
-=== Writing to the pin ===
-
-== Example ==
-
-=== Interrupts ===
 
 ==== Implementation Status ====
+
+Testing.
+8-bit Timer/Counter PWM generation does not work.
+Input Capture Unit - Most likely, incomplete. Do Testing

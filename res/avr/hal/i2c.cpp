@@ -1,5 +1,5 @@
 // Copyright (C) 2014  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -15,352 +15,640 @@
 
 /********************************************************************************************************************************
  *
- *  FILE: 			i2c.c
+ *  FILE: 			i2c.cpp
  *
  *  LIBRARY:		I2C
  *
- *  AUTHOR: 		Ben O'Brien, loosely based on Unison UAV CAN-bus code by Paul Davey & George Xian.
- * 					Documentation based on AT90CAN128 data sheet Rev. 7679H–CAN–08/08, by ATMEL
+ *  AUTHOR: 		Kevin Gong
+ *
  *
  *  DATE CREATED:	1-12-2014
  *
- *	An I2C interface for the ATmega8 - 16AU and AT90CAN128. 
- * 
- * 	AT90CAN128 implementation is currently being implemented. No ATmega8 - 16AU support exists at this point.
- * 	TODO: ATmega8 - 16AU implementation
+ *	Description here.
+ *
  *
  ********************************************************************************************************************************/
- 
+
 // INCLUDE THE MATCHING HEADER FILE.
 
 #include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
 
 // INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES
 
+#include <avr/io.h>
+
+
+#include <avr_magic/avr_magic.hpp>
+#include <avr/interrupt.h>
 #include "i2c_platform.hpp"
 
-//---------------------------------------------------------------------------------------------------------
-// Support Functions
-//---------------------------------------------------------------------------------------------------------
-void i2c_set_register(uint8_t address, uint8_t mask, uint8_t pin_config); //TODO - Fix addressing
-// TODO: Reimplement bit setting functions referring to GPIO
+// DEFINE PRIVATE MACROS.
 
+// DEFINE PRIVATE TYPES AND STRUCTS.
 
+// DECLARE IMPORTED GLOBAL VARIABLES.
 
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-//I2C_imp Class Definition
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// DEFINE PRIVATE CLASSES.
+
 /**
- * Private, target specific implementation class for public I2C class.
+ * A Class that provides device specific implementation class for I2C.
  */
 class I2C_imp
 {
 	public:
-		void enable(void);
+
+ 		// Methods.
+
+    // I2C_imp();
+
+		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
+
 		void disable(void);
-		I2C_return_status set_mode(I2C_mode_t new_mode);
-		I2C_status_code_t get_status();
-		I2C_return_status write(uint8_t write_value);
-		I2C_return_status start(uint8_t address);
-		I2C_return_status stop();
-		void set_prescaler(I2C_prescaler_value_t new_pre_scaler);
-		void set_bitrate_divider(uint8_t new_bitrate_divider);
-		
-		
-		// TODO - Functions below 
-		I2C_return_status read(uint8_t write_value); // Would this be better with an address specified as well?
-		I2C_return_status repeat_start();
-		
+
+    void wait_twi();
+
+ 		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
+
+ 		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
+
+    I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
+
+    I2C_return_status slave_receive(uint8_t* data);
+
+
 	private:
-		I2C_mode_t mode;
-		I2C_prescaler_value_t pre_scaler;
-		uint8_t bitrate_divider;
+
+    		// Functions
+
+    		// I2C_imp(void) = delete;
+
+    		// I2C_imp(I2C_imp*) = delete;
+
+    		I2C_imp operator = (I2C_imp const&) = delete;
+
+    		// Fields
+
 };
 
-// Declaring an instance of the I2c_imp class, to be used by instances of the I2C class
-I2C_imp I2C_implementation;
+// DECLARE PRIVATE GLOBAL VARIABLES.
 
+I2C_imp i2c_imp;
 
-void I2C_imp::enable(void)
+TWI_bus TWI_data;
+
+volatile bool TWI_bus_available;
+
+// DEFINE PRIVATE FUNCTION PROTOTYPES.
+
+// IMPLEMENT PUBLIC FUNCTIONS.
+
+I2C::I2C(I2C_imp* implementation)
 {
-	TWCR = ((1<<TWEN) | (1<<TWSTA));
+  	// Attach the implementation to the instance.
+  	imp = implementation;
 
-//	i2c_set_bit(TWCR, TWEN, 1);	// Set the interrupt bit, TWIE, in the TWCR register to true
-	//i2c_set_bit(TWCR, TWINT, 0);	// Set the interrupt bit, TWIE, in the TWCR register to true
+  	// All done.
+  	return;
 }
 
-// Sets the Clock Line (SCL) prescaler. 
-// Valid inputs are TW_PRESCALER_1, TW_PRESCALER_4, TW_PRESCALER_16, TW_PRESCALER_64
-void I2C_imp::set_prescaler(I2C_prescaler_value_t new_pre_scaler)
+I2C::I2C()
 {
-	pre_scaler = new_pre_scaler;
-	TWSR = (TWSR | pre_scaler & 0x3) | (TWSR & 0xf8);
+    imp = &i2c_imp;
 }
 
-void I2C_imp::set_bitrate_divider(uint8_t new_bitrate_divider)
+I2C::~I2C()
 {
-	bitrate_divider = 0xff & new_bitrate_divider;
-	TWBR = bitrate_divider;
+	return;
+}
+
+I2C_return_status I2C::enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr)
+{
+  	return (imp->enable(cpu_speed, scl_speed, slave_adr));
+}
+
+void I2C::disable(void)
+{
+ 	return (imp->disable());
+}
+
+void I2C::wait_I2C()
+{
+    return (imp->wait_twi());
+}
+
+I2C_return_status I2C::master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size)
+{
+  	return (imp->master_transmit(slave_adr, data, msg_size));
+}
+
+I2C_return_status I2C::master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size)
+{
+  	return (imp->master_receive(slave_adr, data, msg_size));
+}
+
+I2C_return_status I2C::slave_transmit(uint8_t* data, uint8_t msg_size)
+{
+    return (imp->slave_transmit(data, msg_size));
+}
+
+I2C_return_status I2C::slave_receive(uint8_t* data)
+{
+    return (imp->slave_receive(data));
+}
+
+
+/****************************************************************************/
+// IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+// IMPLEMENT PRIVATE CLASS FUNCTION (METHODS).
+
+/**
+ * I2C_imp private class functions
+ **/
+
+I2C_return_status I2C_imp::enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr)
+{
+    if (cpu_speed / scl_speed < MAX_SCL_CPU_RATIO)
+  	{
+    		return I2C_ERROR;
+  	}
+
+    TWI_data.TWI_gen_call = false;
+    TWI_data.TWI_data_in_ST_buf = false;
+    TWI_data.TWI_data_in_SR_buf = false;
+
+    TWI_data.own_adr = slave_adr;
+
+  	TWSR &= (~(1 << TWPS0) & ~(1 << TWPS1));         // prescaler value is always 0 (or prescale of 1)
+    TWDR = 0xFF;             // Default content
+    TWAR = (slave_adr << 1);
+
+    #ifdef __AVR_ATmega2560__
+    TWAMR = 0x00;             // no address mask.
+    #endif
+
+    TWI_bus_available == true;         // Signal that TWI bus is now available.
+
+  	switch (cpu_speed)
+  	{
+    		case CPU_1MHz:
+    		{
+      			switch (scl_speed)
+      			{
+                case I2C_10kHz:
+                {
+                    TWBR = 0x0B;
+                    break;
+                }
+                case I2C_100kHz:
+                {
+                    return I2C_ERROR;   // Not available at this CPU speed
+                }
+                case I2C_400kHz:
+                {
+                    return I2C_ERROR;
+                }
+                default:
+                {
+                    return I2C_ERROR;
+                }
+      			}
+
+            TWCR = (1<<TWEN)|        // Enable TWI-interface and release TWI pins.
+                (1<<TWIE)|(1<<TWINT)|
+                (1<<TWEA)|(0<<TWSTA)|(0<<TWSTO);
+      			return I2C_SUCCESS;
+    		}
+    		case CPU_8MHz:
+    		{
+      			switch (scl_speed)
+      			{
+                case I2C_10kHz:
+                {
+                    TWBR = 0x62;
+                    break;
+                }
+                case I2C_100kHz:
+                {
+                    TWBR = 0x08;
+                    break;
+                }
+                case I2C_400kHz:
+                {
+                    return I2C_ERROR;
+                }
+                default:
+                {
+                    return I2C_ERROR;
+                }
+      			}
+
+            TWCR = (1<<TWEN)|
+                (1<<TWIE)|(1<<TWINT)|
+                (1<<TWEA)|(0<<TWSTA)|(0<<TWSTO);
+      			return I2C_SUCCESS;
+    		}
+    		case CPU_16MHz:
+    		{
+      			switch (scl_speed)
+      			{
+                case I2C_10kHz:
+                {
+                    TWBR = 0xC6;
+                    break;
+                }
+                case I2C_100kHz:
+                {
+                    TWBR = 0x12;
+                    break;
+                }
+                case I2C_400kHz:
+                {
+                    TWBR = 0x03;
+                    break;
+                }
+                default:
+                {
+                    return I2C_ERROR;
+                }
+      			}
+
+            TWCR = (1<<TWEN)|
+                (1<<TWIE)|(1<<TWINT)|
+                (1<<TWEA)|(0<<TWSTA)|(0<<TWSTO);
+      			return I2C_SUCCESS;
+    		}
+    		default:
+    		{
+      			return I2C_ERROR;
+    		}
+  	}
+  	return I2C_ERROR;
 }
 
 void I2C_imp::disable(void)
 {
-	i2c_set_bit(TWCR, TWEN, 0);	// Set the interrupt bit, TWIE, in the TWCR register to true
+  	TWCR = (0<<TWEN)|(0<<TWIE)|(0<<TWINT);        // Disable TWI-interface and release TWI pins.
+
+  	return;
 }
 
-I2C_return_status I2C_imp::set_mode(I2C_mode_t new_mode, bool enable_general_call_recognition = false)
+void  I2C_imp::wait_twi()
 {
-	// TODO - handle mode negotiation
-	// Default to slave receiver
-	
-	if(new_mode & I2C_SLAVE)
-	{
-		// TODO - Replace 0x00 with variable that denotes the device's own slave address
-		if(enable_general_call_recognition)
-		{
-			// Enables the general call address response
-			TWAR = 0x00 | 0x01; 
-		} else 
-		{
-			TWAR = 0x00 & ^0x01;
-		}
-
-		TWCR = (1 << TWEA) | (1 << TWEN);
-		
-		// Waits until addressed by its own slave address (or the general call address if enabled)
-		while(!(TWCR & (1<< TWINT)))
-		{
-			continue;
-		}
-		
-		
-		// Check the data direction bit. If 0 (write) SR (Slave Reciever) mode is enabled.
-		// If 1, ST (Slave Transmitter) mode is enabled.
-		// Slave receiver or transmitter modes may also be entered if arbitration is lost while in the master mode
-		
-		// Status code is used to determine appropriate software action (see Table 18-5 and 18-6 in the 
-	} 
-	mode = new_mode;
-	
-	return (I2C_SUCCESS);
+    while (TWCR & (1<<TWIE));
 }
 
-I2C_return_status I2C_imp::start(uint8_t address)
+I2C_return_status I2C_imp::master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size)
 {
-	// Set Relevant flags
-	TWCR = I2C_COMMAND_START;
-	
-	//TODO: replace with interrupts in interrupt mode
-	// Busy wait until TWINT is set
-	while(!i2c_get_bit(TWCR, TWINT))
-	{
-		continue;
-	}
-	
-	uint8_t status = get_status();
-	// If the start send was succesful, proceed
-	if(status == MT_START || status == MT_REPEATED_START)
-	{
-		return (I2C_SUCCESS);
-	} else
-	{
-		return (I2C_ERROR);
-	}
+    while (TWI_bus_available == false);
+
+    if (slave_adr != TWI_data.own_adr)
+    {
+        TWI_data.TWI_current_mode = I2C_MT;
+
+        uint8_t foo;
+
+        slave_adr = ((slave_adr << 1) | WRITE);
+        TWI_data.TWI_msg_size = msg_size;
+        TWI_data.TWI_MT_buf[0] = slave_adr;
+
+        for (foo = 1 ; foo <= msg_size ; foo++)
+        {
+            TWI_data.TWI_MT_buf[foo] = *data;
+            data++;
+        }
+
+        // send START signal
+        TWCR = TWCR_START;
+
+        return I2C_SUCCESS;
+    }
+    else
+    {
+        TWI_data.TWI_status_reg = TWSR;
+        return I2C_ERROR;
+    }
+
+    TWI_data.TWI_status_reg = TWSR;
+    return I2C_ERROR;
 }
 
-
-I2C_return_status I2C_imp::stop()
+I2C_return_status I2C_imp::master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size)
 {
-	if(mode == I2C_MASTER_TRANSMITTER)
-	{
-		TWCR = I2C_COMMAND_STOP;
-	}
-	return (I2C_SUCCESS);
+    while (TWI_bus_available == false);
+
+    if (slave_adr != TWI_data.own_adr)
+    {
+        TWI_data.TWI_current_mode = I2C_MR;
+
+        slave_adr = ((slave_adr << 1) | READ);
+        TWI_data.TWI_msg_size = msg_size;
+        TWI_data.TWI_MR_sla_adr = slave_adr;
+
+        TWI_data.TWI_MR_data_ptr = data;
+
+        TWCR = TWCR_START;
+
+        return I2C_SUCCESS;
+    }
+    else
+    {
+        TWI_data.TWI_status_reg = TWSR;
+        return I2C_ERROR;
+    }
+    TWI_data.TWI_status_reg = TWSR;
+    return I2C_ERROR;
 }
 
-//TWSR Bit Functions
-I2C_status_code_t I2C_imp::get_status()
+I2C_return_status I2C_imp::slave_transmit(uint8_t* data, uint8_t msg_size)
 {
-	//Returns the 5bit status value, found in the upper part of the status register
-	return((I2C_status_code_t)(TWSR & 0xf8));
+    uint8_t foo;
+
+    TWI_data.TWI_current_mode = I2C_ST;
+
+    for (foo = 0 ; foo < msg_size ; foo++)
+    {
+        TWI_data.TWI_ST_buf[foo] = *data;
+        data++;
+    }
+    TWI_data.TWI_msg_size = msg_size;
+
+    TWI_data.TWI_data_in_ST_buf = true;
+
+    TWCR = TWCR_DATA_ACK;
+
+    return I2C_SUCCESS;
 }
 
-
-/* POSSIBLE TODO: Make the data sending queue based
- * 
- * */
-
-
-I2C_return_status I2C_imp::write_MT(uint8_t write_value)
+I2C_return_status I2C_imp::slave_receive(uint8_t* data)
 {
-	// Sends a start condition
-	if(start(0x00) == I2C_ERROR) 
-	{
-		return (I2C_ERROR);
-	}
-	
-	TWDR = write_value;
-	
-	//Set relevant flags in the control register
-	TWCR = (1<<TWINT) | (1<<TWEN);
-	
-	//TODO: replace with interrupts in interrupt mode
-	//Wait until TWINT is set
-	while(!(TWCR & (1<< TWINT)))
-	{
-		continue;
-	}
-	
-	// Error checking
-	uint8_t ic2_status = get_status();
-	if((ic2_status == MT_SLA_ACK) || (ic2_status == MT_DATA_ACK))
-	{
-		return (I2C_SUCCESS);
-	} else
-	{
-		return (I2C_ERROR);
-	}
+    uint8_t bar;
+
+    TWI_data.TWI_current_mode = I2C_SR;
+
+    if (TWI_data.TWI_data_in_SR_buf == true)
+    {
+        for (bar = 0; bar < TWI_data.TWI_msg_size; bar++)
+        {
+            *data = TWI_data.TWI_SR_buf[bar];
+            data++;
+        }
+
+        TWI_data.TWI_data_in_SR_buf = false;
+
+        return I2C_SUCCESS;
+    }
+    else
+    {
+        return I2C_ERROR;
+    }
+
+    return I2C_ERROR;
 }
 
 
-// Sets up a stream on MR. MR should inform 
-I2C_return_status I2C_imp::read_MR(uint8_t sla_r, uint8_t* read_bytes, uint8_t num_read_bytes_to_read)
-{
-	//ASSUMES MR
-	//TODO: Account for scenarios where the user wants to change from MR to another state
-	
-	// Sends a start condition
-	if(start(sla_r) == I2C_ERROR) // TODO: is sla_r correct???
-	{
-		return (I2C_ERROR);
-	}
-	
-	//Entering MR mode by transmitting SLA+R
-	TWDR = sla_r;
-	
-	//Clearing TWINT to continue the transfer
-	TWCR = (1 << TWINT) | (1 << TWEN);
-	
-	//TODO: replace with interrupts in interrupt mode
-	//Wait until TWINT is set
-	while(!(TWCR & (1<< TWINT)))
-	{
-		continue;
-	}
-	
-	uint8_t ic2_status = get_status();
-	
-	// If the transfer was succesful
-	if(ic2_status == M_SLA_P_R_SENT_ACK)
-	{
-		return (I2C_SUCCESS);
-	} else
-	{
-		return (I2C_ERROR);
-	}
-	
-	uint8_t num_bytes_read = 0;
-	
-	for(uint8_t i = 0; i < num_read_bytes_to_read; i++(
-	{
-		while(!(TWCR & (1<< TWINT)))
-		{
-			continue;
-		}
-		*(read_bytes++) = TWDR;
-	}
-	TWCR &= ^(1 << TWSTA);
-	//TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-	
-	//Writing a repeated start condition (could also be a stop condition if desired)
-	if(start(sla_r) == I2C_ERROR) // TODO: is sla_r correct???
-	{
-		return (I2C_ERROR);
-	}
-	
-	return (I2C_SUCCESS);
-}
-
-
-
-
-
-//---------------------------------------------------------------------------------------------------------
-// I2C Class Implementation
 //
-// The purpose of this class is to separate the implentation of the I2C library from each instance of the
-// class. This enables more efficient use of memory. It also ensures that the TWI hardware is accessed 
-// through a single interface.
-//---------------------------------------------------------------------------------------------------------
-I2C::I2C(I2C_mode_t new_mode)
+/////////////////////////////  Interrupt Vectors  /////////////////////////////
+
+volatile uint8_t TWI_buf_ptr;
+
+ISR(TWI_vect)
 {
-	implementation = &I2C_implementation;
-	implementation->set_mode(new_mode);
-	TWCR = 0;
-	// All done.
-	return;
+
+  switch (TWSR)
+  {
+      /////////////////////// General TWI statuses ///////////////////////
+      case NO_INFO_TWINT_NOT_SET:
+      case BUS_ERROR:
+      case TWI_START:
+      {
+          TWI_bus_available = false;
+          TWI_buf_ptr = 0;
+
+          switch (TWI_data.TWI_current_mode)
+          {
+              case I2C_MT:
+              {
+                  TWDR = TWI_data.TWI_MT_buf[TWI_buf_ptr++];
+                  TWCR = TWCR_DATA_ACK;
+                  break;
+              }
+              case I2C_MR:
+              {
+                  TWDR = TWI_data.TWI_MR_sla_adr;
+                  TWCR = TWCR_DATA_ACK;
+                  break;
+              }
+              default:
+              {
+                  break;
+              }
+          }
+          break;
+      }
+      case TWI_REP_START:
+      {
+          TWI_bus_available = false;
+          TWI_buf_ptr = 0;
+
+          switch (TWI_data.TWI_current_mode)
+          {
+              case I2C_MT:
+              {
+                  TWDR = TWI_data.TWI_MT_buf[TWI_buf_ptr++];
+                  TWCR = TWCR_DATA_ACK;
+                  break;
+              }
+              case I2C_MR:
+              {
+                  TWDR = TWI_data.TWI_MR_sla_adr;
+                  TWCR = TWCR_DATA_ACK;
+                  break;
+              }
+              default:
+              {
+                  break;
+              }
+          }
+          break;
+      }
+    case TWI_ARB_LOST:
+    {
+        TWCR = TWCR_STOP;
+        break;
+    }
+    /////////////////////// Master Transmitter statuses ///////////////////////
+    case MT_SLA_ACK:
+    {
+        TWDR = TWI_data.TWI_MT_buf[TWI_buf_ptr++];
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case MT_SLA_NAK:
+    {
+        TWI_bus_available = true;
+        TWCR = TWCR_STOP;
+        break;
+    }
+    case MT_DATA_ACK:
+    {
+        if (TWI_buf_ptr <= (TWI_data.TWI_msg_size))
+        {
+            TWDR = TWI_data.TWI_MT_buf[TWI_buf_ptr++];
+            TWCR = TWCR_DATA_ACK;
+        }
+        else
+        {
+            TWCR = TWCR_STOP;
+            TWI_bus_available = true;
+        }
+        break;
+    }
+    case MT_DATA_NAK:
+    {
+        TWCR = TWCR_STOP;
+        TWI_bus_available = true;
+        break;
+    }
+    /////////////////////// Master Receiver statuses ///////////////////////
+    case MR_SLA_ACK:
+    {
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case MR_SLA_NAK:
+    {
+        // TODO - this
+
+        // Byte sent but Not Acknowledged.
+        //
+        // Could try to resend byte or attempt to restart communications.
+
+        TWCR = TWCR_STOP;
+        TWI_bus_available = true;
+        break;
+    }
+    case MR_DATA_ACK:
+    {
+        if (TWI_buf_ptr < (TWI_data.TWI_msg_size - 2)) // have to pre-emptively know that the next byte will be the last
+        {
+            *TWI_data.TWI_MR_data_ptr = TWDR;
+            TWI_data.TWI_MR_data_ptr++;
+            TWI_buf_ptr++;
+            TWCR = TWCR_DATA_ACK;
+        }
+        else                                           // Last byte is saved with TWEA Not set.
+        {
+            *TWI_data.TWI_MR_data_ptr = TWDR;
+            TWCR = TWCR_DATA_NAK;
+        }
+        break;
+    }
+    case MR_DATA_NAK:
+    {
+        // Confirmation that the last byte has been transmitted.
+
+        TWCR = TWCR_STOP;
+        TWI_bus_available = true;
+        break;
+    }
+    /////////////////////// Slave Receiver ///////////////////////
+    case SR_SLA_ACK:
+    {
+        TWI_buf_ptr = 0;
+        TWI_bus_available = false;
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case S_LOST_ARB_1:
+    case SR_GEN_ACK:
+    {
+        // untested
+        TWI_buf_ptr = 0;
+        TWI_data.TWI_gen_call = true;
+        TWI_bus_available = false;
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case S_LOST_ARB_2:
+    case SR_ADR_DATA_ACK:
+    {
+        TWI_data.TWI_SR_buf[TWI_buf_ptr++] = TWDR;
+        TWI_data.TWI_data_in_SR_buf = true;
+        TWI_data.TWI_msg_size = TWI_buf_ptr;
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case SR_ADR_DATA_NAK:
+    case SR_GEN_DATA_ACK:
+    {
+        // untested
+        TWI_data.TWI_SR_buf[TWI_buf_ptr++] = TWDR;
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case SR_GEN_DATA_NAK:
+    case SR_STOP_RESTART:
+    {
+        TWI_bus_available = true;
+
+        TWCR = TWCR_DATA_ACK;
+
+        break;
+    }
+    /////////////////////// Slave Transmitter ///////////////////////
+    case ST_SLA_ACK:
+    {
+        TWI_buf_ptr = 0;
+        TWI_bus_available = false;
+
+        TWDR = TWI_data.TWI_ST_buf[TWI_buf_ptr++];
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    case S_LOST_ARB_3:
+    case ST_DATA_ACK:
+    {
+        if (TWI_buf_ptr < (TWI_data.TWI_msg_size - 1))     // Pre-emtively know the next byte is the last
+        {
+            TWDR = TWI_data.TWI_ST_buf[TWI_buf_ptr++];
+
+            TWCR = TWCR_DATA_ACK;
+        }
+        else                                   // Last byte
+        {
+            TWDR = TWI_data.TWI_ST_buf[TWI_buf_ptr];
+
+            TWCR = TWCR_DATA_NAK;
+        }
+        break;
+    }
+    case ST_DATA_NAK:
+    {
+        TWI_data.TWI_data_in_ST_buf = false;
+        TWI_bus_available = true;
+
+        TWCR = TWCR_DATA_ACK;
+
+        break;
+    }
+    case ST_DATA_ACK_LAST_BYTE:
+    {
+        TWI_data.TWI_data_in_ST_buf = false;
+        TWI_bus_available = true;
+
+        TWCR = TWCR_DATA_ACK;
+        break;
+    }
+    default :
+    {
+        break;
+    }
+  }
 }
 
-// I2C Destructor
-I2C::~I2C()
-{
-	// All done.
-	return;
-}
-
-// SEE I2C_imp::enable();
-void I2C::enable()
-{
-	implementation->enable();
-}
-
-// SEE I2C_imp::set_prescaler(I2C_prescaler_value_t new_pre_scaler);
-void I2C::set_prescaler(I2C_prescaler_value_t new_pre_scaler)
-{
-	implementation->set_prescaler(new_pre_scaler);
-}
-
-// SEE I2C_imp::set_bitrate_divider(I2C_prescaler_value_t new_bitrate_divider);
-// Sets the Clock Line (SCL) prescaler. 
-// Valid inputs are TW_PRESCALER_1, TW_PRESCALER_4, TW_PRESCALER_16, TW_PRESCALER_64
-void I2C::set_bitrate_divider(uint8_t new_bitrate_divider)
-{
-	implementation->set_bitrate_divider(new_bitrate_divider);
-}
-
-// SEE I2C_imp::disable();
-void I2C::disable()
-{
-	implementation->disable();
-}
-
-// SEE I2C_imp::set_mode(I2C_mode_t new_mode);
-I2C_return_status I2C::set_mode(I2C_mode_t new_mode)
-{
-	return (implementation->set_mode(new_mode));
-}
-
-// SEE I2C_imp::get_status();
-I2C_return_status I2C::write(uint8_t write_value)
-{
-	return (implementation->write(write_value));
-}
-
-// SEE I2C_imp::get_status();
-I2C_status_code_t I2C::get_status()
-{
-	return (implementation->get_status());
-}
-
-
-// SEE I2C_imp::start();
-I2C_return_status I2C::start(uint8_t address)
-{
-	return (implementation->start(address));
-}
-
-// SEE I2C_imp::stop();
-I2C_return_status I2C::stop()
-{
-	return (implementation->stop());
-}

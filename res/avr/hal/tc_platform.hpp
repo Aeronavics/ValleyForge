@@ -44,6 +44,8 @@
 #	define TIMSK1_ADDRESS		_SFR_MEM8(0x6F)
 #	define TIMSK0_ADDRESS		_SFR_MEM8(0x6E)
 
+#	define GTCCR_ADDRESS		_SFR_IO8(0x23)
+
 // Timer/Counter 0.
 #	define OCR0B_ADDRESS		_SFR_IO8(0x28)
 #	define OCR0A_ADDRESS		_SFR_IO8(0x27)
@@ -97,9 +99,9 @@
 #	define OCR5A_ADDRESS		_SFR_MEM16(0x128)
 #	define ICR5_ADDRESS		_SFR_MEM16(0x126)
 #	define TCNT5_ADDRESS		_SFR_MEM16(0x124)
-#	define TCCR5C_ADDRESS		_SFR_MEM16(0x122)
-#	define TCCR5B_ADDRESS		_SFR_MEM16(0x121)
-#	define TCCR5A_ADDRESS		_SFR_MEM16(0x120)
+#	define TCCR5C_ADDRESS		_SFR_MEM8(0x122)
+#	define TCCR5B_ADDRESS		_SFR_MEM8(0x121)
+#	define TCCR5A_ADDRESS		_SFR_MEM8(0x120)
 #endif
 
 // TIMSK generic bits.
@@ -141,6 +143,12 @@
 #	define WGM1_8BIT_BIT		3
 #endif
 
+ // GTCCR generic bits
+#	define TSM_BIT		7
+#	define ICPSEL1_BIT		6
+#	define PSRASY_BIT		1
+#	define PSRSYNC_BIT		0
+ 
 #ifdef __AVR_ATmega2560__
 // Timer/Counter Peripheral Pin Addresses and Associated Constants.
 #	define TC0_OC_A_PORT		PORT_B
@@ -226,6 +234,7 @@
 *	Port E of the ATmega64 series is not used. Avionics board connects the pins
 *	to an oscillator, effectively making it inaccessible.
 **/
+
 #	define TC0_OC_A_PORT		PORT_D
 #	define TC0_OC_A_PIN		PIN_3
 // #	define TC0_OC_B_PORT		PORT_E
