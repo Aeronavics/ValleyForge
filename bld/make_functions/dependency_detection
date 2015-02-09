@@ -57,13 +57,22 @@ find_source_dependencies()
 	CSRCS=
 	PSRCS=
 
+	# A flag we use to indicate if some source files don't meet our dependency detection specifications (but we can still guess our way through).
+	local VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=
+
+	# If the target file starts with "./" remove it, because that screws some things up.
+	local TARGET_FILE=$(echo "${2}" | sed "s#^\./##g")
+
 	# Find the source files required to build the application.
-	echo -e "${CYAN}\tDetecting source dependencies for ${2}...\n${NO_COLOUR}"
-	if ! find_source_dependencies_recursive $2; then
+	echo -e "${CYAN}\tDetecting source dependencies for ${TARGET_FILE}...\n${NO_COLOUR}"
+	if ! find_source_dependencies_recursive ${TARGET_FILE}; then
 		# Something went wrong.
-		echo -e "${RED}\tUnable to calculate source dependencies for ${2}.\n${NO_COLOUR}"
+		echo -e "${RED}\tUnable to calculate source dependencies for ${TARGET_FILE}.\n${NO_COLOUR}"
 		return 1
 	fi
+
+	# Remove anything where a relative path goes up a level, then down the same way again, because that might screw things up.
+	SRC_STRING=$(echo "$SRC_STRING" | sed -r "s^[^/]+/\\.\\./^^g" | sed -r "s^/\\./^/^g")
 
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
@@ -86,9 +95,15 @@ find_source_dependencies()
 	SRC_STRING="$(echo "$SRC_STRING" | sed 's/^ *//')"
 
 	# Print out the dependencies that we found.
-	echo -e "${CYAN}\tC source dependencies detected: ${CSRCS}${NO_COLOUR}"
-	echo -e "${CYAN}\tCPP source dependencies detected: ${PSRCS}${NO_COLOUR}"
-	echo -e "${CYAN}\tAssembly source dependencies detected: ${ASRCS}\n${NO_COLOUR}"
+	if [ -n "${CSRCS}" ]; then
+		echo -e "${CYAN}\tC source dependencies detected:\n\t${NO_COLOUR}${CSRCS}${NO_COLOUR}"
+	fi
+	if [ -n "${PSRCS}" ]; then
+		echo -e "${CYAN}\tCPP source dependencies detected:\n\t${NO_COLOUR}${PSRCS}${NO_COLOUR}"
+	fi
+	if [ -n "${ASRCS}" ]; then
+		echo -e "${CYAN}\tAssembly source dependencies detected:\n\t${NO_COLOUR}${ASRCS}\n${NO_COLOUR}"
+	fi
 
 	# Leave the folder containing the source.
 	popd >/dev/null
@@ -113,10 +128,36 @@ find_source_dependencies()
 find_source_dependencies_recursive()
 {
 	local DEPENDENCIES
-	local TARGET_FILE
+	local SRC_FILE
+
+	add_dependency_recursive()
+	{
+		#
+		#	We define this here, to avoid repeating this code block a bunch of times in the case statement below.
+		#
+		#	$1 - The relative path to the source file to add as a dependency (then recurse into, if we haven't already).
+		#
+
+		# If this source file is already listed as a dependency, then we don't add it again, to avoid circular dependencies.
+		if [ -n "$(echo ${SRC_STRING} | grep $1)" ]; then
+			# This source file has already been added, so we don't want to recurse into it again.
+			return 0
+		else
+			SRC_STRING="$1 ${SRC_STRING}"
+			if ! find_source_dependencies_recursive $1; then
+				return 1
+			fi
+		fi
+
+		# All done.
+		return 0
+	}
 
 	# The first argument is the relative path of the target file.
-	TARGET_FILE=${1}
+	local TARGET_FILE=${1}
+
+	# If the target file starts with "./" remove it, because that screws some things up.
+	TARGET_FILE=$(echo "${TARGET_FILE}" | sed "s#^\./##g")
 
 	# Find the basename of examined file by removing any directory or filetype components.
 	TARGET_BASENAME=${TARGET_FILE%.*}
@@ -155,36 +196,60 @@ find_source_dependencies_recursive()
 		return 1
 	fi
 
+	# Insert a line break after the target, so that each actual dependency is on its own line.
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g")
+
 	# Remove dependencies which share the target's basename, so that it doesn't depend on itself.
-	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s/${TARGET_BASENAME}\.\S*//g")
-	
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "\^${TARGET_FILE%.*}\.\S*^d")
+
 	# Add each dependency to the list and search of any dependencies of its own.
 
-	# For each .h/.hpp/.hs file, check if a respective source file exists and if so, add it SRC_STRING.
+	# Iterate over each .h/.hpp/.hs file that is a dependency.
 	for WORD in $DEPENDENCIES; do
+		# Obviously, skip the first line, which contains the target.
+		if [ "${WORD}" == "${TARGET_BASENAME}.o:" ]; then
+			continue
+		fi
+
+		# Also, every second word is going to be the dependency file line continuation symbol, which we should also ignore.
+		if [ "${WORD}" == "\\" ]; then
+			continue
+		fi
+
+		# Check if the header itself actually exists.
+		if [ ! -e ${WORD} ]; then
+			# The header doesn't exist.  That seems a bit concerning.
+			echo -e "${YELLOW}\tCannot find header: ${WORD}.  Build will probably fail.${NO_COLOUR}"
+			continue
+		fi
+
+		# Then, check if a respective source file exists and if so, add it SRC_STRING.  If necessary, then recurse its own dependencies.
 		case ${WORD##*.} in
 			"h")
 				if [ -e ${WORD%.*}.c ]; then
-					SRC_STRING="${WORD%.*}.c ${SRC_STRING}"
-					if ! find_source_dependencies_recursive ${WORD%.*}.c; then
-						return 1
-					fi
+					SRC_FILE="${WORD%.*}.c"
+					add_dependency_recursive ${SRC_FILE}
 				fi
+
+				if [ -e ${WORD%.*}.cpp ]; then
+					if [ -z "${VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE}" ]; then
+						echo -e "${YELLOW}\tC Header file (${WORD}) matches a CPP source file.  This is VF non-compliant. (Subsequent warnings will be suppressed.)${NO_COLOUR}"
+						VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=1
+					fi
+					SRC_FILE="${WORD%.*}.cpp"
+					add_dependency_recursive ${SRC_FILE}
+				fi				
 				;;
 			"hpp")
 				if [ -e ${WORD%.*}.cpp ]; then
-					SRC_STRING="${WORD%.*}.cpp ${SRC_STRING}"
-					if ! find_source_dependencies_recursive ${WORD%.*}.cpp; then
-						return 1
-					fi
+					SRC_FILE="${WORD%.*}.cpp"
+					add_dependency_recursive ${SRC_FILE}
 				fi
 				;;
 			"hs")
 				if [ -e ${WORD%.*}.s ]; then
-					SRC_STRING="${WORD%.*}.s ${SRC_STRING}"
-					if ! find_source_dependencies_recursive ${WORD%.*}.s; then
-						return 1
-					fi
+					SRC_FILE="${WORD%.*}.s"
+					add_dependency_recursive ${SRC_FILE}
 				fi
 				;;
 		esac
@@ -216,12 +281,15 @@ find_object_dependencies()
 	# Reset the OBJ_STRING variable
 	OBJ_STRING=
 	
+	# If the target file starts with "./" remove it, because that screws some things up.
+	local TARGET_FILE=$(echo "${2}" | sed "s#^\./##g")
+
 	# Ensure we were passed a source file, and not an object file.
-	if [ "${2##*.}" != "c" -a "${2##*.}" != "cpp" -a "${2##*.}" != "s" ]; then
-		echo -e "${RED}\tCannot perform object dependency detection on non-source file: ${2}\n${NO_COLOUR}"
+	if [ "${TARGET_FILE##*.}" != "c" -a "${TARGET_FILE##*.}" != "cpp" -a "${TARGET_FILE##*.}" != "s" ]; then
+		echo -e "${RED}\tCannot perform object dependency detection on non-source file: ${TARGET_FILE}\n${NO_COLOUR}"
 		return 1
 	fi
-	ROOT_FILE=$2
+	ROOT_FILE=${TARGET_FILE}
 	
 	# Find the list of source dependencies.
 	if ! find_source_dependencies . $ROOT_FILE; then
@@ -235,16 +303,21 @@ find_object_dependencies()
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
 
-	# Add the original file being examined to the list of objects. This is done here and not in find_source_dependencies since
-	# find_source_dependencies is also used for NuttX/Pixhawk, which do not want the main file being mixed in with the rest of the source files.
+	# Add the original file being examined to the list of objects. This is done here and not in find_source_dependencies since find_source_dependencies is also used for NuttX/Pixhawk, which do not want the main file being mixed in with the rest of the source files.
 	OBJ_STRING="${ROOT_FILE%.*}.o ${OBJ_STRING}"
+
+	# Append any loose objects (those which aren't detected by the dependency detection system) which the user might know are required.
+	if [ -n "${LOOSE_OBJECTS}" ]; then
+		echo -e "${YELLOW}\tIncluding loose objects: ${NO_COLOUR}${LOOSE_OBJECTS}${NO_COLOUR}"
+		OBJ_STRING="${OBJ_STRING} ${LOOSE_OBJECTS}"
+	fi
 	
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
 	# Remove any leading spaces.
 	OBJ_STRING="$(echo "$OBJ_STRING" | sed 's/^ *//')"
-	echo -e "${CYAN}\tObject file dependencies detected: ${OBJ_STRING}\n${NO_COLOUR}"
+	echo -e "${CYAN}\tObject file dependencies detected:\n\t${NO_COLOUR}${OBJ_STRING}\n${NO_COLOUR}"
 
 	# Leave the folder containing the source.
 	pushd >/dev/null
@@ -375,6 +448,26 @@ list_library_dependencies()
 
 generate_component_dependencies() 
 {
+	add_dependencies()
+	{
+		#
+		#	We define this here, to avoid repeating this code block a bunch of times in the case statement below.
+		#
+		#	$1 - The dependency string to be added to the makefile definitions.
+		#
+
+		local DEPENDENCIES=$1
+
+		# For some reason the target gets its base path chopped off, so we need to fix that back again incase of files with similar names.
+		DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed -r "s^.*:^${TARGET_FILE%.*}\.o:^g")
+
+		# Remove anything where a relative path goes up a level, then down the same way again, because that might screw things up.
+		DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed -r "s^[^/]+/\\.\\./^^g" | sed -r "s^/\\./^/^g")
+
+		echo "${DEPENDENCIES}" >> Make.deps
+		echo " " >> Make.deps		
+	}
+
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
 	
@@ -412,14 +505,17 @@ generate_component_dependencies()
 		TARGET_BASENAME=${TARGET_FILE%.*}
 		TARGET_BASENAME=${TARGET_BASENAME##*/}
 
+		local DEPENDENCIES
 		case ${SRC##*.} in
 			"c")
-				${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE} >> Make.deps
-				echo " " >> Make.deps
+				DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE})
+				
+				add_dependencies ${DEPENDENCIES}
 				;;
 			"cpp")
-				${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE} >> Make.deps
-				echo " " >> Make.deps
+				DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
+				
+				add_dependencies ${DEPENDENCIES}
 				;;
 			"s")
 				# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so need this craziness instead.
@@ -429,9 +525,10 @@ generate_component_dependencies()
 				if [ -z "$(cat ${TARGET_BASENAME}.d)" ]; then
 					false
 				fi
-				cat "${TARGET_BASENAME}.d" >> Make.deps
-				echo " " >> Make.deps
+				DEPENDENCIES=$(cat "${TARGET_BASENAME}.d")
 				rm "${TARGET_BASENAME}.d"
+
+				add_dependencies ${DEPENDENCIES}				
 				;;
 			*)
 				echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."

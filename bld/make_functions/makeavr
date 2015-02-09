@@ -93,7 +93,7 @@ makeavr()
     
 	# Generate the Make.deps dependency file.    
     pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)"
+	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c -o -iname ${COMPONENT_NAME}.s)"
 	popd >/dev/null
     
 	# Actually make the component.

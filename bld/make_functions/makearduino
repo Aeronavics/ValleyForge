@@ -115,7 +115,9 @@ makearduino()
 	# Then remove the PDE/INO files.
 	rm ${ARDUINO_PDE_FILES} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${ARDUINO_SKETCH}
 
-	# Since the common Makefile can't detect them, make a list of all the user libraries we expect to use.
+	# Since our usual dependency detection can't detect them, make a list of all the user libraries we expect to use.
+
+	# NOTE - The reason for this is that Ardupilot et al will include "library.h" instead of "lib_dir/library/library.h" as we expect.
 
 	# Only create a user library listing if we specified a library directory to use.
 	if [ -n "${ARDUINO_LIB_DIR}" ]; then
@@ -321,7 +323,7 @@ makearduino()
   
 	# Generate the Make.deps dependency file.    
     pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c)"
+	generate_component_dependencies . "$(find . -iname ${ARDUINO_CPP_FILE##*/})"
 	popd >/dev/null
 
 	# Actually make the component.
