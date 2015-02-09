@@ -142,7 +142,7 @@ upload_avrdude()
 	# Sort out which file needs to be uploaded.
 	if [ "${UPLOAD_APPLICATION}" -a "${UPLOAD_BOOTLOADER}" ]; then
 		# Create a combined binary temporarily to upload.
-		srec_cat "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT_NAME}_combined.hex" -I
+		srec_cat "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex" -I "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex" -I -o "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex" -I
 
 		# Set the file to flash to be the combined binary.
 		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"

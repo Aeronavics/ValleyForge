@@ -34,3 +34,21 @@ Also check that the clock frequency is set right (usually 16MHz)
 The ISP pins are connected to the GPIO headers (eg. PORTD).
 If there is anything loading down the ISP pins or shorting them out, the ISP cannot function!
 The LEDs aren't a problem though and can be safely connected.
+
+=== High Voltage Programming ===
+The process of High Voltage Programming a AVR device is very straight forward. Follow the steps above described under the VTarget for Windows configuration upto step 3. 
+
+In the //Device Programming //window, select the programmer tool (STK600) and the device (micro controller).
+
+Depending on the micro-controller, you will want to use the High Voltage Parallel Programming (HVPP) or High Voltage Serial Programming (HVSP) method. This information will be available on the data sheep for each micro controller. Both methods depend on supplying 12V to the RESET pin and the HVSP method is only found in controllers with a limited number of pins. Do NOT click Apply yet.
+
+On the STK600, connect the device with the ''PROGCTRL ''and'' PROGDATA ''headers. If a socket is being used, the headers can be connected to the headers adjacent but, if the controller is positioned on a circuit board, the pins required to us ''HVPP/HVSP ''must be broken out. 
+
+Connect the ''VTARGET ''and ''RESET ''jumpers and if check if ''AREF ''is shared with one of the High Voltage Prgramming Pins. If ''AREF ''is shared with a High Voltage pin, refer to the STK600 documentation for futher instructions. 
+
+Click Apply on the //Devince Programming //window, and proceed to read the device signature. The fuse bytes should now be configurable just as they were before being locked out. 
+
+If the device signature read fails, in the case of using a socket, try re-mounting the socket and routing card before jumping to any conclusions. 
+
+
+
