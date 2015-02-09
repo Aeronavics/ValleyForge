@@ -285,15 +285,29 @@ choose_bootloader()
 choose_executables() {
 	while :
 	do
-		# # Ask if the user wants multiple executable files.
-		echo -e -n "${GREEN}Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
+		# Ask if the user wants multiple executable files; the message depends on whether this is a new component or not.
+		if [ ${NEW} ]; then
+			# It's a new component, so there is no precedent to draw from.
+			echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
+		else
+			# The component is being reconfigured, so indicate the existing precedent.
+			if [ -n "${EXECUTABLES}" ]; then
+				echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Currently you DO.) (Y/N) ${NO_COLOUR}"
+			else
+				echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Currently you DON'T.) (Y/N) ${NO_COLOUR}"				
+			fi				
+		fi
 		read -n 1
 		echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
 		case "$REPLY" in
 			"Y" | "y" )
 				# If they responded YES, then ask for the names of the executables.
-				echo -e -n "${GREEN}What are the names of the executables? (Enter the names separated by a space) ${NO_COLOUR}"
+				if [ -z "${EXECUTABLES}" ]; then
+					echo -e -n "${GREEN}What are the names of the executables? (Enter the executable names separated by a space.) ${NO_COLOUR}"
+				else
+					echo -e -n "${GREEN}What are the names of the executables? (Enter the executable names separated by a space.) (Currently: ${NO_COLOUR}${EXECUTABLES}${GREEN}) ${NO_COLOUR}"
+				fi
 				read -e
 				echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
@@ -303,8 +317,9 @@ choose_executables() {
 				break
 				;;
 			"N" | "n" )
-				# Otherwise, default to one executable with the name of the component.
-				EXECUTABLES="$COMPONENT_NAME"
+				# Otherwise, default to no executables (which generally actually means one executable the same name as the component).
+				EXECUTABLES=
+				push_key ${CONFIG_FILE} "EXECUTABLES" "" --delete
 				break
 				;;
 		esac
@@ -781,12 +796,13 @@ fi
 run_bconf_specific_config
 
 # Check if we have been supplied some executable names and that we're not in batch mode.
-if [ -z $EXECUTABLES ] && [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ] && [ $NEW ]; then
+if [ ! $BATCHMODE ] && [ ! -z $MULTIPLE_EXECUTABLES ]; then
 	# Offer the user the opportunity to define some custom executable names.
 	choose_executables
 else
-	# Only one executable. Do nothing.
-	EXECUTABLES="$COMPONENT"
+	# Otherwise, default to no executables (which generally actually means one executable the same name as the component).
+	EXECUTABLES=
+	push_key ${CONFIG_FILE} "EXECUTABLES" "" --delete
 fi
 
 # Run any required bootloader specific config.
