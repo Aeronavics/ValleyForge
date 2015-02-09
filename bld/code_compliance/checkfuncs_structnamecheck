@@ -83,6 +83,9 @@ compliance_check_file_structnamecheck()
 	# Pattern to match the beginning of a struct declaration.
 	pattern_struct_start="struct(.*)"
 
+	# Pattern to match one line structure declarations.
+	pattern_struct_declar="struct ([a-zA-Z_]+) (.*);"
+
 	# Pattern to match end of structure.
 	pattern_struct_end="^(\s)*}(.*);"
 
@@ -93,6 +96,18 @@ compliance_check_file_structnamecheck()
 
   		if [ ${CHECKS_EN} ]; then
   			
+			# Condition to check for one line struct declarations.
+			if [[ $LINE =~ $pattern_struct_declar ]]; then
+				struct_name=${BASH_REMATCH[1]}
+				
+				# Check whether the structure name starts with lower case letter.	
+				if [[ ${struct_name:0:1} =~ [a-z] ]]; then
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_structurenamecheck" $1 $LINE_NUM "Non-compliant structure: $ERROR"
+				fi
+
+			fi
+
 			# Condition to check if the line matches struct pattern.
 			if [[ $LINE =~ $pattern_struct_start ]]; then
 
@@ -117,7 +132,6 @@ compliance_check_file_structnamecheck()
 			# Ok, so now we actually want to check this line for compliance.
 			if ! check_line "$LINE"; then
 				# Report the line has failed.
-				
 				compliance_fail_line "compliance_check_file_structurenamecheck" $1 $LINE_NUM "Non-compliant structure: $ERROR"
 		
 				# At least one thing is wrong in this file.
@@ -142,31 +156,34 @@ compliance_check_file_structnamecheck()
 	if [[ ${#start_line_array[@]} == ${#end_line_array[@]} ]]; then
 	
 		# Iterate through each match of structure name [ Format: struct { ... } XYZ; ].
-		for struct_name in `pcregrep -o3 -M 'struct[ ]*[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o3 -n -M 'struct[ ]*[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
 		do
+			# Obtain the structure name.
+			struct_name=${string#*:}
+			# Obtain the line number.
+			line_number_struct=${string%:*}
+
 			# Variable used to check whether the structure lies within code where checking is disabled.		
 			CHECK_WITHIN_BLOCK=
 			# Variable used to loop within while loop.
 			i=0
 
-			# Check whether the structure name starts with lower case letter.
+			# Check whether the structure name starts with lower case letter.	
 			if [[ ${struct_name:0:1} =~ [a-z] ]]; then
-			
-				# Obtain line number of the structure.
-				line_number_struct=$(grep -n "}[ ]*$struct_name" $FILE | cut -d : -f 1)
-
+	
 				# Iterate through the array to get line numbers of the pragmas for disabling code check.
 				while [[ $i -lt ${#start_line_array[@]} ]]
 				do
 					# Check if the structure lies within the check disabled block.
 					if [[ $line_number_struct -gt ${start_line_array[$i]} && $line_number_struct -lt ${end_line_array[$i]} ]]; then
-
+						
 						# Change the value to denote that it lies within check disabled block.
 						CHECK_WITHIN_BLOCK==1
 					fi
-					((i++))		
+					
+					((i++))
 				done
-
+	
 				# Check if the structure lies within check disabled block.
 				if [[ ! $CHECK_WITHIN_BLOCK ]]; then
 					compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure name: '$struct_name' starts with a lower case letter"
@@ -176,7 +193,44 @@ compliance_check_file_structnamecheck()
 		done
 
 		# Iterate through each match of structure name [ Format: struct XYZ { ... }; ].
-		for string in `pcregrep -n -o2 -M 'struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)\s*\n*{' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -o2 -M 'struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)\s*\n*{' $FILE`
+		do
+			# Obtain the structure name.
+			struct_name=${string#*:}
+			# Obtain the line number.
+			line_number_struct=${string%:*}
+
+			# Variable used to check whether the structure lies within code where checking is disabled.		
+			CHECK_WITHIN_BLOCK=
+			# Variable used to loop within while loop.
+			i=0
+
+			# Check whether the structure name starts with lower case letter.	
+			if [[ ${struct_name:0:1} =~ [a-z] ]]; then
+	
+				# Iterate through the array to get line numbers of the pragmas for disabling code check.
+				while [[ $i -lt ${#start_line_array[@]} ]]
+				do
+					# Check if the structure lies within the check disabled block.
+					if [[ $line_number_struct -gt ${start_line_array[$i]} && $line_number_struct -lt ${end_line_array[$i]} ]]; then
+						
+						# Change the value to denote that it lies within check disabled block.
+						CHECK_WITHIN_BLOCK==1
+					fi
+					
+					((i++))
+				done
+	
+				# Check if the structure lies within check disabled block.
+				if [[ ! $CHECK_WITHIN_BLOCK ]]; then
+					compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure name: '$struct_name' starts with a lower case letter"
+					CHECKS_OK=
+				fi
+			fi
+		done
+
+		# Iterate through each match of structure name [ Format: typedef struct XYZ { ... }ABC; ].
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -o4 -M 'typedef struct[ ]*([a-zA-Z]+)[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);' $FILE`
 		do
 			# Obtain the structure name.
 			struct_name=${string#*:}

@@ -110,7 +110,7 @@ compliance_check_directory()
 	COMPLIANCE_OUTPUT_FILEPATH=$2
 
 	# Empty the contents of the file before appending warning/error messages.
-	cp /dev/null $COMPLIANCE_OUTPUT_FILEPATH
+	#cp /dev/null $COMPLIANCE_OUTPUT_FILEPATH
 
 	# Record the input directory in a variable to be used by compliance scripts
 	COMPLIANCE_INPUT_DIRECTORY=$1

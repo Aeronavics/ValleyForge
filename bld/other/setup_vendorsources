@@ -60,6 +60,9 @@ VENDOR_UNCRUSTIFY_REMOTE="http://sourceforge.net/projects/uncrustify/files/lates
 VENDOR_OCLINT_LOCAL=${TCPATH}/res/vendor
 VENDOR_OCLINT_REMOTE="http://archives.oclint.org/releases/0.8/oclint-0.8.1-x86_64-linux-3.13.0-35-generic.tar.gz"
 
+VENDOR_PCREGREP_LOCAL=${TCPATH}/res/vendor
+VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
+
 ######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_mavlink							###
@@ -288,6 +291,7 @@ unpack_vendor_astyle()
 		tar -xzf ${TMP_CACHE}/astyle_vendor.tar.gz -C ${VENDOR_ASTYLE_LOCAL}
 		if [ $? -ne 0 ]; then
 			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract astyle_vendor.tar.gz\n${NO_COLOUR}"
 			return 1
 		fi
 		echo -e ""
@@ -306,7 +310,7 @@ unpack_vendor_astyle()
 		popd >/dev/null
 	else
 		# The source has already been downloaded.
-		echo -e "${CYAN}\tAstyle vendor source available...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tAstyle available...\n${NO_COLOUR}"
     	fi
 
 	# TODO - Test that now the required files actually exist.
@@ -336,6 +340,7 @@ unpack_vendor_uncrustify()
 		tar -xzf ${TMP_CACHE}/uncrustify_vendor.tar.gz -C ${VENDOR_UNCRUSTIFY_LOCAL}
 		if [ $? -ne 0 ]; then
 			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract uncrustify_vendor.tar.gz\n${NO_COLOUR}"
 			return 1
 		fi
 		echo -e ""
@@ -363,7 +368,7 @@ unpack_vendor_uncrustify()
 		popd >/dev/null
 	else
 		# The source has already been downloaded.
-		echo -e "${CYAN}\tUncrustify vendor source available...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tUncrustify available...\n${NO_COLOUR}"
 
 		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
     	fi
@@ -395,6 +400,7 @@ unpack_vendor_oclint()
 		tar -xzf ${TMP_CACHE}/oclint_vendor.tar.gz -C ${VENDOR_OCLINT_LOCAL}
 		if [ $? -ne 0 ]; then
 			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract oclint_vendor.tar.gz\n${NO_COLOUR}"
 			return 1
 		fi
 		echo -e ""
@@ -424,7 +430,67 @@ unpack_vendor_oclint()
 		popd >/dev/null 		
 	else
 		# The source has already been downloaded.
-		echo -e "${CYAN}\tOCLint vendor source available...\n${NO_COLOUR}"
+		echo -e "${CYAN}\tOCLint available...\n${NO_COLOUR}"
+
+		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_vendor_pcregrep						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if uncrustify is available for use, and			###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_vendor_pcregrep()
+{
+	# Check if pcregrep has been downloaded already.
+	if [ ! -d ${VENDOR_PCREGREP_LOCAL}/pcre-8.35 ]; then
+		# We need to download and unpack the source before we can use it.
+		echo -e "${CYAN}\tDownloading pcregrep...\n${NO_COLOUR}"
+		wget -O ${TMP_CACHE}/pcre_vendor.tar.gz ${VENDOR_PCREGREP_REMOTE}
+		tar -xzf ${TMP_CACHE}/pcre_vendor.tar.gz -C ${VENDOR_PCREGREP_LOCAL}
+		if [ $? -ne 0 ]; then
+			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract pcre_vendor.tar.gz\n${NO_COLOUR}"
+			return 1
+		fi
+		echo -e ""
+
+		pushd ${VENDOR_PCREGREP_LOCAL}/pcre-8.35 >/dev/null
+		${VENDOR_PCREGREP_LOCAL}/pcre-8.35/configure
+		
+		# Check if configuring worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Pcregrep: the 'configure' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		# Then we make.
+		make
+	
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Pcregrep: the 'make' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		popd >/dev/null
+	else
+		# The source has already been downloaded.
+		echo -e "${CYAN}\tPcregrep available...\n${NO_COLOUR}"
 
 		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
     	fi
@@ -457,6 +523,7 @@ pack_allv()
 	pack_vendor_astyle
 	pack_vendor_uncrustify
 	pack_vendor_oclint
+	pack_vendor_pcregrep
 }
 
 ######################################## FUNCTION #########################################
@@ -655,6 +722,32 @@ pack_vendor_oclint()
 		echo -e "${CYAN}\tCleaning up OCLint source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_OCLINT_LOCAL}/oclint-*
 		rm ${TMP_CACHE}/oclint_vendor.tar.gz
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_vendor_pcregrep						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if pcregrep was previously unpacked,			###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_vendor_pcregrep()
+{
+	# Check if pcregrep has been downloaded already.
+	if [ -d ${VENDOR_PCREGREP_LOCAL} ]; then
+		# We just delete the downloaded tar file and source files of pcregrep.		
+		echo -e "${CYAN}\tCleaning up pcregrep source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_PCREGREP_LOCAL}/pcre-8.35
+		rm ${TMP_CACHE}/pcregrep_vendor.tar.gz
     	fi
 		# Else, the source is already packed.
 

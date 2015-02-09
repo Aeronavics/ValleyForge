@@ -110,7 +110,6 @@ compliance_check_file_classnamecheck()
 				ERROR="'$str_enum_label' contains lowercase letters."
 
 				return 1
-
 			fi
 		fi
 	
@@ -120,7 +119,6 @@ compliance_check_file_classnamecheck()
 
 	check_declaration_order()
 	{
-
 		#
 		#	$1 - The file we are checking.
 		#
@@ -232,11 +230,8 @@ compliance_check_file_classnamecheck()
 		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
-
 			fi
-
   		else
-
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
@@ -245,7 +240,6 @@ compliance_check_file_classnamecheck()
   				CHECKS_EN=1
   			fi
   		fi
-
 	done < $FILE
 
 	# Call the function to check declaration order.

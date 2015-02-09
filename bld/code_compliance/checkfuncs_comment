@@ -171,14 +171,14 @@ compliance_check_file_comment()
 	local LINE_THRESH=$((LINE_NUM/10))
 
 	# Condition to check if the file has multiple C++ comments.
-	if pcregrep -q -M '(\/\/+(.*))+(\n([\/\/]+(.*))+)+' $1; then
+	if $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '(\/\/+(.*))+(\n([\/\/]+(.*))+)+' $1; then
 		compliance_fail_file "compliance_check_file_comment" $1 "This file has multiple single line C++ style comments."
 
 		CHECKS_OK=
 	fi
 
 	# Condition to check if the file has single line C style("/* .... */") comments.
-	if pcregrep -q -M '\/+\*+(.*)\*\/+' $1; then
+	if $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '\/+\*+(.*)\*\/+' $1; then
 		compliance_fail_file "compliance_check_file_comment" $1 "This file has single line C style comments."
 
 		CHECKS_OK=
@@ -193,7 +193,7 @@ compliance_check_file_comment()
 	check_c_style_comments $FILE
 
 	# Check for comment block at the start of the file.
-	if ! pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*\/' $1; then
+	if ! $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*\/' $1; then
 		compliance_fail_file "compliance_check_file_comment" $1 "This file is missing comment block at the beginning of file."
 	fi
 

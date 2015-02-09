@@ -66,7 +66,7 @@ gen_compliance()
 		sed -i 's/note[ -: ]*/ NOTE - /I' $1
 
 		# Get the line numbers of string containing single line C comments.
-		for str_line in `pcregrep -n -M '/\*.*?\*/\n' $1 | cut -d : -f 1`
+		for str_line in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -M '/\*.*?\*/\n' $1 | cut -d : -f 1`
 		do
 			string=$(awk 'NR == '"$str_line"' ' $1)
 	
