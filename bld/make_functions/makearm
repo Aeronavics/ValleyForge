@@ -124,7 +124,8 @@ makearm_linux()
 
 		# Generate the Make.deps dependency file.    
 		pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-		generate_component_dependencies . "$(find . -iname ${EXECUTABLE}.cpp -o -iname ${EXECUTABLE}.c -o -iname ${EXECUTABLE}.s)"
+		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | sed "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
+		generate_component_dependencies . ${PARENT_SOURCE_FILE}
 		popd >/dev/null
 
 		# Actually make the executable.

@@ -70,7 +70,8 @@ makeavr()
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 
-	# NOTE - AVR targets only support a single application executable, so it is named the same as the component.
+	# AVR targets only support a single application executable, so it is named the same as the component.
+	EXECUTABLE=${COMPONENT_NAME}
 
 	# Copy the relevant makefile in with the source.
 	echo -e "${CYAN}Constructing makefile for component $COMPONENT...\n${NO_COLOUR}"
@@ -92,8 +93,9 @@ makeavr()
 	sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
     
 	# Generate the Make.deps dependency file.    
-    pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-	generate_component_dependencies . "$(find . -iname ${COMPONENT_NAME}.cpp -o -iname ${COMPONENT_NAME}.c -o -iname ${COMPONENT_NAME}.s)"
+	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
+	local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | sed "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
+	generate_component_dependencies . ${PARENT_SOURCE_FILE}
 	popd >/dev/null
     
 	# Actually make the component.
