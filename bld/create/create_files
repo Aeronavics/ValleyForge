@@ -311,8 +311,15 @@ for FILENAME in $FILENAMES; do
 	fi
 
 	# If the following four variables are defined, we can simply use the template files stored at their location.
+
 	# There is also the option of a template suffix. If not defined, it resolves to an empty string which has no effect on the final file name.
+
 	if [ -n "${TEMPLATE_C_SOURCE}" -a -n "${TEMPLATE_H_SOURCE}" -a -n "${TEMPLATE_CPP_SOURCE}" -a -n "${TEMPLATE_HPP_SOURCE}" ]; then
+		# If the file basename actually contains some directory nesting, then we need to make sure these directories exist.
+		if [ "${FILENAME##*/}" != "${FILENAME}" ]; then
+			mkdir -p "$TCPATH/src/$COMPONENT/${FILENAME%/*}"
+		fi
+
 		# Check which kind of file we are creating.
 		if [ ${TYPE} == "C" ]; then
 			# Create the actual files by copying the templates into the source directory.
@@ -334,11 +341,15 @@ for FILENAME in $FILENAMES; do
 			echo -e "${RED}Correct options not specified to create files ${NO_COLOUR}\n"
 			exit -1
 		fi
-	# Template source files are not defined in the build config, we must determine where to look manually. Eventually this section will be unecessary.
+
+	# Else, the template source files are not defined in the build config, we must determine where to look manually. Eventually this section will be unecessary.
 	else
 		echo -e "${RED}Correct options not specified to create files. Please update the build configuration.\n${NO_COLOUR}"
+		exit 1
 	fi
 done
+
+# TODO - Does this still need to be here?  This is probably the old FreeRTOS stuff, which should be removed.
 
 # Create FreeRTOSConfig.h if it doesn't exist already.
 if [ ${PLATFORM,,} = "freertos" ]; then
