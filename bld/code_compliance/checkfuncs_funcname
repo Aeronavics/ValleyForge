@@ -102,7 +102,7 @@ compliance_check_file_funcname()
 
 			# Condition to check for malloc, realloc or free functions.
 			if [[ $1 =~ $pattern_memory_funcs ]]; then
-				ERROR="${BASH_REMATCH[1]} should not be used."
+				ERROR="'${BASH_REMATCH[1]}' should not be used."
 	
 				return 1
 			fi
@@ -161,8 +161,23 @@ compliance_check_file_funcname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
+	# Initially, we assume that the line is not a comment.
+	local CHECKS_COMMENT=
+
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
+	
+	# Pattern to match multi line comment start.
+	pattern_comment_start="^[ 	]*(\/\*)"
+
+	# Pattern to match multi line comment end.
+	pattern_comment_end="(.*)(\*\/)"
+
+	# Pattern to match single line comment.
+	pattern_comment_single="^[ 	]*(\/\*)(.*)(\*\/)"
+
+	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	pattern_comment_single_EOF="(\/\*)(.*)(\*\/)"
 
 	# Iterate over each of the lines in the file.
 	while read LINE
@@ -176,14 +191,30 @@ compliance_check_file_funcname()
   				CHECKS_EN=
   				continue
   			fi
+			
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_EOF ]]; then
+				CHECKS_COMMENT=1
+				continue
+			fi
 
-  			# Ok, so now we actually want to check this line for compliance.
-			if ! check_line "$LINE" $LINE_NUM; then
-				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_funcname" $1 $LINE_NUM "Non-compliant function name: $ERROR"
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_EOF ]]; then
+				CHECKS_COMMENT=
+				continue
+			fi
+			
+			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+				continue
+			fi
 
-				# At least one thing is wrong in this file.
-				CHECKS_OK=
+			if [[ ! ${CHECKS_COMMENT} ]]; then
+	  			# Ok, so now we actually want to check this line for compliance.
+				if ! check_line "$LINE" $LINE_NUM; then
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_funcname" $1 $LINE_NUM "Non-compliant function name: $ERROR"
+
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
 			fi
   		else
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
@@ -207,7 +238,7 @@ compliance_check_file_funcname()
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_funcname" $1 "This file contains non-compliant constant name(s)."
+		compliance_fail_file "compliance_check_file_funcname" $1 "This file contains non-compliant function name(s)."
 	fi
 
 	# All done.

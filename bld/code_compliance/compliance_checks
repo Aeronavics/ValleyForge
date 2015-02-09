@@ -109,16 +109,14 @@ compliance_check_directory()
 	# Record the output file.
 	COMPLIANCE_OUTPUT_FILEPATH=$2
 
-	# Empty the contents of the file before appending warning/error messages.
-	#cp /dev/null $COMPLIANCE_OUTPUT_FILEPATH
+	# Empty the contents of the output file.
+	cp /dev/null $COMPLIANCE_OUTPUT_FILEPATH
 
-	# Record the input directory in a variable to be used by compliance scripts
+	# Record the input directory in a variable to be used by compliance scripts.
 	COMPLIANCE_INPUT_DIRECTORY=$1
-
 
 	# The default directory for code compliance configuration files.
 	CODE_COMPLIANCE_CONFIG_DIRECTORY="bld/code_compliance/config_files"
-
 
 	# Initially, the number of errors or warnings is zero.
 	COMPLIANCE_NUM_ERRORS=0
