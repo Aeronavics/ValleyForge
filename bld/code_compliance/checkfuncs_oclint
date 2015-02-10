@@ -49,7 +49,7 @@ compliance_check_file_oclint()
 	pattern_oclint_output="(.*):([0-9]+):([0-9]+):(.*)"
 
 	# Run "OCLint" with the given file and store the output string.
-	output_string=$($TCPATH/res/vendor/oclint-0.8.1/bin/oclint -rc TOO_MANY_PARAMETERS=5 $1 -- -w -Zs)
+	output_string=$($TCPATH/res/vendor/oclint-0.8.1/bin/oclint -rc TOO_MANY_PARAMETERS=5 $FILE -- -w -Zs)
 
 	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
 	local CHECKS_OK=1
@@ -58,7 +58,7 @@ compliance_check_file_oclint()
 	do
 		if [[ $line == "Compiler Errors:" ]]; then
 			# Report that the file has failed.			
-			compliance_fail_file "compliance_check_file_oclint" $1 "The file has compiler errors."
+			compliance_fail_file "compliance_check_file_oclint" $FILE "The file has compiler errors."
 			return 1
 		fi
 
@@ -69,14 +69,14 @@ compliance_check_file_oclint()
 
 			# Store the error message from the matched pattern.
 			ERROR=${BASH_REMATCH[4]}
-			compliance_fail_line "compliance_check_file_oclint" $1 $LINE_NUM "${ERROR//P[0-9]/.}"
+			compliance_fail_line "compliance_check_file_oclint" $FILE $LINE_NUM "${ERROR//P[0-9]/.}"
 			CHECKS_OK=
 		fi
 	done <<< "$output_string"
 	
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_oclint" $1 "This file contains non-compliant code."
+		compliance_fail_file "compliance_check_file_oclint" $FILE "This file contains non-compliant code."
 	fi
 
 	# All done.

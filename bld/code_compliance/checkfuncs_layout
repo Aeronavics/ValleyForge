@@ -45,6 +45,7 @@ compliance_check_file_layout()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
+	# Variable to store the output from running AStyle.
 	local status=
 
 	# Run "Artistic Style" with the given file and store the output string with status of the operation. 

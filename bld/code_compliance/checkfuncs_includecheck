@@ -76,7 +76,7 @@ compliance_check_file_includecheck()
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_includecheck" $1 "This file contains non-compliant include statement(s)."
+		compliance_fail_file "compliance_check_file_includecheck" $FILE "This file contains non-compliant include statement(s)."
 	fi
 
 	return 0

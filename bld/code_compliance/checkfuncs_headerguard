@@ -148,7 +148,7 @@ compliance_check_file_headerguard()
 				# Ok, so now we actually want to check this line for compliance.
 				if ! check_line "$LINE" $LINE_NUM; then
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_headerguard" $1 $2 "Non-compliant macro name: $ERROR"
+					compliance_fail_line "compliance_check_file_headerguard" $FILE $LINE_NUM "Non-compliant macro name: $ERROR"
 				fi
   			else
 				DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
@@ -182,12 +182,12 @@ compliance_check_file_headerguard()
 	
 		# Check if the number of lines disabled is lesser than the threshold
 		if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-			compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+			compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 		fi   
 
 		if [ ! ${CHECKS_OK} ]; then
 			# Report that the file has failed along with the corresponding ERROR message.
-			compliance_fail_file "compliance_check_file_headerguard" $1 "File has non-compliant headerguards/macros."
+			compliance_fail_file "compliance_check_file_headerguard" $FILE "File has non-compliant headerguards/macros."
 		fi
 	fi
 
@@ -210,6 +210,7 @@ compliance_get_rules_headerguard()
 	echo "headerguard:"
 	echo "\tAll C++ anc C header files should contain header guards."
 	echo "\tThe name of the macro should be prefixed and suffixed with a pair of underscore characters."
+	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }
 

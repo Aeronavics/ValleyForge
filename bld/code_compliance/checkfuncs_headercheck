@@ -69,9 +69,9 @@ compliance_check_file_headercheck()
 		if [[ ! $(find $file_directory -type f -name $headerfile) ]]; then
 			compliance_fail_file "compliance_check_file_headercheck" $FILE "This file doesn't have a matching header"
 		fi
-
 	fi
 
+	# All done.
 	return 0
 }
 

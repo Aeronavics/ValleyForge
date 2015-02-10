@@ -79,7 +79,7 @@ compliance_check_file_funcname()
 		#	$2 - The line number we are up to.
 		#
 		
-		# Patterns to match function and eliminate constructors and destructors.
+		# Patterns to match functions and to eliminate constructors and destructors.
 		pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+[a-zA-Z0-9,_*& ]*\)+)"
 		pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
 		pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
@@ -161,7 +161,7 @@ compliance_check_file_funcname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
-	# Initially, we assume that the line is not a comment.
+	# Variable used to denote whether the line is a comment or not. Initially we assume that the line is not a comment.
 	local CHECKS_COMMENT=
 
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
@@ -177,7 +177,7 @@ compliance_check_file_funcname()
 	pattern_comment_single="^[ 	]*(\/\*)(.*)(\*\/)"
 
 	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
-	pattern_comment_single_EOF="(\/\*)(.*)(\*\/)"
+	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
 
 	# Iterate over each of the lines in the file.
 	while read LINE
@@ -192,25 +192,30 @@ compliance_check_file_funcname()
   				continue
   			fi
 			
-			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_EOF ]]; then
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 				CHECKS_COMMENT=1
 				continue
 			fi
 
-			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_EOF ]]; then
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 				CHECKS_COMMENT=
 				continue
 			fi
 			
+			# Check whether the line is a single comment line. If yes, read the next line.
 			if [[ "$LINE" =~ $pattern_comment_single ]]; then
 				continue
 			fi
 
+			# Proceed checking for compliance only if the line is not a comment.
 			if [[ ! ${CHECKS_COMMENT} ]]; then
+
 	  			# Ok, so now we actually want to check this line for compliance.
 				if ! check_line "$LINE" $LINE_NUM; then
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_funcname" $1 $LINE_NUM "Non-compliant function name: $ERROR"
+					compliance_fail_line "compliance_check_file_funcname" $FILE $LINE_NUM "Non-compliant function name: $ERROR"
 
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
@@ -233,12 +238,12 @@ compliance_check_file_funcname()
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_funcname" $1 "This file contains non-compliant function name(s)."
+		compliance_fail_file "compliance_check_file_funcname" $FILE "This file contains non-compliant function name(s)."
 	fi
 
 	# All done.
