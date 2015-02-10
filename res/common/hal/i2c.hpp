@@ -70,11 +70,14 @@
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 #ifdef __AVR_ATmega2560__
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_MEM8(0xB9)
 #elif defined (__AVR_AT90CAN128__)
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_MEM8(0xB9)
 #elif defined (__AVR_ATmega8__)
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_IO8(0x01)
 #endif
 
 class I2C_imp;
@@ -155,25 +158,6 @@ enum I2C_status_code
 	ST_DATA_ACK_LAST_BYTE 			= 0xC8, 	//  Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
 
 };
-
-struct TWI_bus
-{
-  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];       // TWI master transmitter data buffer.
-  volatile uint8_t TWI_MR_sla_adr;                     // TWI master receiver requires a variable to hold target address.
-  volatile uint8_t* TWI_MR_data_ptr;                   // TWI master receiver saves the data straight to the user data array.
-  volatile uint8_t TWI_ST_buf[TWI_BUFFER_SIZE];        // TWI slave transmitter buffer.
-  volatile uint8_t TWI_SR_buf[TWI_BUFFER_SIZE];        // TWI slave receiver buffer.
-
-  volatile bool TWI_gen_call;
-  volatile bool TWI_data_in_ST_buf;
-  volatile bool TWI_data_in_SR_buf;
-
-  uint8_t own_adr;
-  I2C_mode TWI_current_mode;
-  volatile uint8_t TWI_msg_size;
-  volatile uint8_t TWI_status_reg;
-};
-
 
 /**
  * @class

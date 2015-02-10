@@ -6,24 +6,35 @@ Creation-Date: 2014-12-19T12:44:29+13:00
 Created Friday 19 December 2014
 
 === Usage ===
-Summaries of the Timer/ Counter units to each target board can be found in the links below:
+The HAL library currently support three AVR devices, ATmega2560, ATmega64M1/C1 and AT90CAN128. The three devices have subtle difference that require aditional caution when programming. The main difference is that they have different numbers of Timer/ Counter (TC) units. 
 
-	(Link to each target device summary)
+**ATmega2560**
+'''
+	TC_0, TC_1, TC_2, TC_3, TC_4 and TC_5
+'''
+**ATmega64M1/C1**
+'''
+	TC_0 and TC_1
+'''
+**AT90CAN128**
+'''
+	TC_0, TC_1, TC_2 and TC_3
+'''
 
-The mode of operation/ behaviour of the Timer/ Counter and the output compare pins, is defined by the combination of the waveform generation mode (WGM02:0) and compare output mode [[(COMnx1:0)]] bits.
+All **TC_2 **units are asynchronous 8-bit TC, where as the **TC_0 **is a synchronous 8-bit TC and the rest are 16-bit synchronous TCs.
 
-The wavefrom generation mode bitts affect the counting sequence of the Timer/ Counter. Whereas the COM1:0 bits control whether the PWM output generated should be inverted or not.
-
-For non PWM modes the COMnx1:0 bits control whether the output should be set, cleared, or toggled at a compare match. 
+The mode of operation/ behaviour of the TC and the output compare pins is defined by the combination of the waveform generation mode (WGMn3:0) and compare output mode [[(COMnx1:0)]] bits. The wavefrom generation mode bits affect the counting sequence of the TC. Where as the COM1:0 bits control whether the PWM output generated should be inverted or not. For non PWM modes the COMnx1:0 bits control whether the output should be set, cleared, or toggled at a compare match. 
 
 == Initialisation ==
-Functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean check can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
-
-The initialization involves creating an instance of a timer/counter and setting up a corresponding timer rate. The available timer rates for sychronous timer counters are (1, 8, 64, 256, or 1024). The asynchronous timer/counter, timer/counter 2, has more prescaling options, which are (1, 8, 32, 64, 128, 256, or 1024). The values of these prescalers are passed through the following enumeration defines.
+The initialization involves creating an instance of a TC and setting up a corresponding parameters to gain the desired performance. The TC parameters are the prescale, TC source and the operating modes. The available timer rates for sychronous timer counters are (1, 8, 64, 256, or 1024). The asynchronous TC_2, has more prescaling options, which are (1, 8, 32, 64, 128, 256, or 1024). The values of these prescalers are passed through the following enumeration defines.
 
 	TC_PRE_1, TC_PRE_8, TC_PRE_32, TC_PRE_64, TC_PRE_128, TC_PRE_256, TC_PRE_1024
 	
 The prescaled clock have a frequency  of either {{./equation.png?type=equation}},  {{./equation001.png?type=equation}}, {{./equation002.png?type=equation}}, {{./equation003.png?type=equation}}. Where {{./equation004.png?type=equation}} is the I/O clock provided by an external 16MHz crystal oscillator in the case of the UAS project.
+
+In the UAS project, there are no external clock modules. Therefore, there is no support for the functionality of having an externally sources clock module.
+
+The TC class functions are designed to return an acknowledgement or a negative-acknowledgement depending on the validity of the user's use of each function. Therefore, a boolean check can be used to confirm each process has indeed been processesed without error. This is entirely optional, and the two examples show each method.
 
 == Example ==
 '''
@@ -68,33 +79,92 @@ if (Timer0.start() == TC_CMD_NAK)
 
 
 === Writing to the pin ===
-The Timer/Counter module is mapped to a pin for each separate channel. Without activating the pin, only the pin register will be updated to reflect the status of the Timer/Counter. To make the pins reflect the status of the pin register, the pin data direction must be set. 
+The TC module is mapped to a pin for each separate channel. Without activating the pin, only the pin register will be updated to reflect the status of the TC. To make the pins reflect the status of the pin register, the pin data direction must be set. 
 
-Refer to the 'Setting the Mode' section of GPIO HAL to see how this is executed. 
-
-== Example ==
-
-// TODO
+Refer to the '[[../../GPIO.txt|Setting the Mode]]' section of GPIO HAL to see how this is executed. 
 
 === Setting the mode ===
-Timer/counter modes are a collection of wave generation modes the timer/counter module can produce. It is impossible to understand the functionality of each mode by reading the variable names used in the HAL code. Therefore, users are recommended to read through each wavegeneration mode and the compare output modes before implementing a timer/counter. 
+TC modes are a collection of wave generation modes the TC module can produce. It is impossible to understand the functionality of each mode by reading the variable names used in the HAL code. Therefore, users are recommended to read through the descriptions of each wavegeneration mode and the compare output modes before implementing a TC. 
 
-There are five types of wave generation modes, but each mode has different operation modes which bloat the total number of modes. The list of Wave generation modes are described below.
+There are five types of wave generation modes, but each mode has different operation modes which makes each mode more customizable. The list of Wave generation modes are described below.
 
 For the **8-Bit Timer/Counters**
-{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.17.52%20AM.png?width=650}}
+'''
+  
+   Mode		WGM2	WGM1	WGM0	     Description	TOP	Update_of_OCRx	TOV_flag_sets
 
+TC_OC_NONE  	  0	  0	  0	       Normal		0xFF	    Immediate	     MAX
+TC_OC_MODE_1	  0	  0	  1	  PWM, Phase Correct	0xFF	       TOP	    BOTTOM
+TC_OC_MODE_2	  0	  1	  0		CTC		OCRA	    Immediate	     MAX
+TC_OC_MODE_3	  0	  1	  1	      Fast PWM		0xFF	      BOTTOM	     MAX
+TC_OC_MODE_4  	  1	  0	  0	      Reserved		 -		-	      -
+TC_OC_MODE_5	  1	  0	  1	  PWM, Phase Correct	OCRA	       TOP	    BOTTOM
+TC_OC_MODE_6      1	  1	  0	      Reserved		 -		-	      -
+TC_OC_MODE_7	  1	  1	  1	      Fast PWM		OCRA	      BOTTOM	     TOP
+
+'''
 For the **16-Bit Timer/Counters**
-{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.18.29%20AM.png?width=650}}
+'''
+  
+   Mode		WGM3	WGM2	WGM1	WGM0	     Description		 TOP	Update_of_OCRx	TOV_flag_sets
+
+TC_OC_NONE  	  0	  0	  0	  0	       Normal			0xFFFF	    Immediate	     MAX
+TC_OC_MODE_1	  0	  0	  0	  1	  PWM, Phase Correct, 8bit	0x00FF	       TOP	    BOTTOM
+TC_OC_MODE_2	  0	  0	  1	  0	  PWM, Phase Correct, 9bit	0x01FF	       TOP	    BOTTOM
+TC_OC_MODE_3	  0	  0	  1	  1	  PWM, Phase Correct, 10bit	0x03FF	       TOP	    BOTTOM
+TC_OC_MODE_4  	  0	  1	  0	  0	        CTC		 	OCRnA	    Immediate	     MAX
+TC_OC_MODE_5	  0	  1	  0	  1	      Fast PWM, 8bit		0x00FF	      BOTTOM	     TOP
+TC_OC_MODE_6      0	  1	  1	  0	      Fast PWM, 9bit	 	0x01FF	      BOTTOM	     TOP
+TC_OC_MODE_7	  0	  1	  1	  1	      Fast PWM, 10bit		0x03FF	      BOTTOM	     TOP
+TC_OC_MODE_8	  1	  0	  0	  0	  PWM, Phase & Freq Correct	ICRn	      BOTTOM	    BOTTOM
+TC_OC_MODE_9	  1	  0	  0	  1	  PWM, Phase & Freq Correct	OCRnA	      BOTTOM	    BOTTOM
+TC_OC_MODE_10	  1	  0	  1	  0	  PWM, Phase Correct		ICRn	       TOP	    BOTTOM
+TC_OC_MODE_11 	  1	  0	  1	  1	  PWM, Phase Correct	 	OCRnA	       TOP	    BOTTOM
+TC_OC_MODE_12	  1	  1	  0	  0	  	CTC			ICRn	    Immediate	     MAX
+TC_OC_MODE_13     1	  1	  0	  1	      Reserved		 	  -		-	      -
+TC_OC_MODE_14	  1	  1	  1	  0	      Fast PWM			ICRA	      BOTTOM	     TOP
+TC_OC_MODE_15	  1	  1	  1	  1	      Fast PWM			OCRA	      BOTTOM	     TOP
+
+'''
+
 	Note:	ICRn and OCRnA are registers which require configuration, for further explanation of setting these values refer to (where ever)
 	
 With each wave generation mode, four compare output modes can be selected. The compare output modes do not affect the counting sequence of the timer/counter unlike the wave generation modes. For non-PWM modes the compare output modes control whether the output should be set, cleared or toggle at a compare match. For PWM modes, the compare output modes control whether the ouput should be inverted or not. The variable names and their corresponding characteristics can be found in the diagrams below. 
 
-{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.18.45%20AM.png?width=650}}
+For Compare Output Mode, **non-PWM (normal and CTC)**
+'''
+  mode			COMnA1/B1/C1	COMnA0/B0/C0				Description
 
-{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.19.04%20AM.png?width=650}}
+TC_OC_CHANNEL_MODE_0		0		0		Normal port operation, OCnA/OCnB/OCnC disconnected
+TC_OC_CHANNEL_MODE_1		0		1		Toggle OCnA/OCnB/OCnC on compare match
+TC_OC_CHANNEL_MODE_2		1		0		Clear OCnA/OCnB/OCnC on compare match (set output to low level)
+TC_OC_CHANNEL_MODE_3		1		1		Set OCnA/OCnB/OCnC on compare match (set output to high level)
+'''
 
-{{file:///media/student/KEVIN_GONG/zim%20images/Screen%20Shot%202015-01-09%20at%2011.19.14%20AM.png?width=650}}
+For Compare Output Mode, **Fast PWM**
+'''
+  mode			COMnA1/B1/C1	COMnA0/B0/C0				Description
+
+TC_OC_CHANNEL_MODE_0		0		0		Normal port operation, OCnA/OCnB/OCnC disconnected
+TC_OC_CHANNEL_MODE_1		0		1		WGM13:0 = 14 or 15: Toggle OC1A on Compare Match, OC1B & OC1C disconnected (normal port 
+								operation). For all other WGM1 settings, normal por operation, OCnA/OCnB/OCnC disconnected.
+TC_OC_CHANNEL_MODE_2		1		0		Clear OCnA/OCnB/OCnC on compare match, set OCnA/OCnB/OCnC at BOTTOM (non-inverting mode)
+TC_OC_CHANNEL_MODE_3		1		1		Set OCnA/OCnB/OCnC on compare match, clear OCnA/OCnB/OCnC at BOTTOM (inverting mode)
+'''
+
+For Compare Output Mode, **Phase Correct and Phase and Frequency Correct PWM**
+'''
+  mode 			COMnA1/B1/C1	COMnA0/B0/C0				Description
+
+TC_OC_CHANNEL_MODE_0		0		0		Normal port operation, OCnA/OCnB/OCnC disconnected
+TC_OC_CHANNEL_MODE_1		0		1		WGM13:0 = 9 or 11: Toggle OC1A on Compare Match, OC1B & OC1C disconnected (normal port 
+								operation). For all other WGM1 settings, normal por operation, OCnA/OCnB/OCnC disconnected.
+TC_OC_CHANNEL_MODE_2		1		0		Clear OCnA/OCnB/OCnC on compare match when up-counting, 
+								set OCnA/OCnB/OCnC on compare match when down-counting
+TC_OC_CHANNEL_MODE_3		1		1		Set OCnA/OCnB/OCnC on compare match when up-counting,
+								clear OCnA/OCnB/OCnC on compare match when down-counting
+'''
+
 
 == Example ==
 '''
@@ -123,11 +193,11 @@ Timer0.enable_oc_interrupt(TC_OC_A, __user_ISR__);	// Enable Output Compare Pin 
 
 
 === Interrupts ===
-There are two types of Timer/Counter interrupts. In normal operation modes, the Timer Overflow (TOV) interrupts are used, whereas PWM modes largely implement the Output Compare Match Interrupts (OCIE) and some PWM modes use both. 
+There are two types of TC interrupts. In normal operation modes, the Timer Overflow (TOV) interrupts are used, whereas PWM modes largely implement the Output Compare Match Interrupts (OCIE) and some PWM modes use both. 
 
 To use the interrupts using the hardware abstraction code provided through Valley Forge. The user must identify the Interrupt Service Routine to go with the interrupt. This is so the controller can automatically clear the interrupt flags by monitoring the use of interrupt vectors. Also, the interrupts must be enabled Globally in SREG. 
 
-The heirarchy of interrupt priorities can be seen in the target specific pages, (_LINKS_). Additional indepth information on the consequences of triggering interrupts can be found in the diagram below. 
+The heirarchy of interrupt priorities can be seen in the datasheets of the controllers but generally, the TC_2 has the highest priority then TC_1 and TC_0, the other TC follow after. 
 
 Examples to show how each type of interrupt can be implemented using the Vally Forge Toolchain can be seen in the examples.
 
@@ -161,7 +231,7 @@ int main(void)
 	
 	Timer0.enable_tov_interrupt(__user_TOV_ISR__);		// Connects the Timer0 TOV interrupt with the user ISR
 	Timer0.enable_oc_interrupt(TC_OC_A, __user_OCIE_ISR__);		// Connects the Timer 0 Channel A Output Compare interrupt with the user ISR
-	int_on();	// global interrupts
+	int_on();	// Enable global interrupts
 
 	Timer0.start();
 }
@@ -169,20 +239,29 @@ int main(void)
 
 
 === Interacting with the Timer Content Registers ===
-Tc_command_status load_timer_value(Tc_value value);
-Tc_value get_timer_value(void);
-
-Each Timer/Counter has a register loaded with the current status of the timer/counter. This register can be interacted with using the ValleyForge HAL, to check the status or load a value to change the status of the Timer/Counter. 
+Each TC has a register loaded with the current count of the TC. This register can be interacted with using the ValleyForge HAL, to check the status or load a value to change the status of the TC. 
 
 When loading the timer with a new user defined value it is recommended never to load the TOP value when up-counting or BOTTOM when down-counting. In these situations, if the interrupt are enabled, the system will miss the interrupt. This behaviour can be especially critical when the Timer/Counters are used as PWM generators. Resulting in an incorrect waveform due to the missed interrupt. 
 
 == Example ==
+'''
+	Tc Timer0;
+	Tc_rate Timer0_rate;
 
+	Timer0_rate.pre = TC_PRE_256;
+	Timer0_rate.src = TC_SRC_INT;
+	
+	Timer0.set_rate(Timer0_rate);
+	Timer0.initialise();
+	Timer0.load_timer_value(0x10);
+	Timer0.start();
 
+	while (1)
+	{
+		Tc_value Timer0_value;
+		Timer0_value.from_uint8(Timer0.get_timer_value());
+		
+	}
 
+'''
 
-
-
-
-
-// TODO

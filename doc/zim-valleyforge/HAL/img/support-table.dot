@@ -79,10 +79,10 @@ struct1 [label=<
 </tr>
 
 <tr><td>I2C</td>
-	<td bgcolor="gray"></td>
+	<td bgcolor="forestgreen"></td>
 	<td bgcolor="red">Not Supported</td>
-	<td bgcolor="gray"></td>
-	<td bgcolor="gray"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="green"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
@@ -109,9 +109,9 @@ struct1 [label=<
 </tr>
 
 <tr><td>Timer</td>
-	<td bgcolor="orange"></td>
-	<td bgcolor="orange"></td>
-	<td bgcolor="orange"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
+	<td bgcolor="forestgreen"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>
 	<td bgcolor="gray"></td>

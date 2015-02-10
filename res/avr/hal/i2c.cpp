@@ -46,6 +46,24 @@
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
+struct TWI_bus
+{
+  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];       // TWI master transmitter data buffer.
+  volatile uint8_t TWI_MR_sla_adr;                     // TWI master receiver requires a variable to hold target address.
+  volatile uint8_t* TWI_MR_data_ptr;                   // TWI master receiver saves the data straight to the user data array.
+  volatile uint8_t TWI_ST_buf[TWI_BUFFER_SIZE];        // TWI slave transmitter buffer.
+  volatile uint8_t TWI_SR_buf[TWI_BUFFER_SIZE];        // TWI slave receiver buffer.
+
+  volatile bool TWI_gen_call;
+  volatile bool TWI_data_in_ST_buf;
+  volatile bool TWI_data_in_SR_buf;
+
+  uint8_t own_adr;
+  I2C_mode TWI_current_mode;
+  volatile uint8_t TWI_msg_size;
+  volatile uint8_t TWI_status_reg;
+};
+
 // DECLARE IMPORTED GLOBAL VARIABLES.
 
 // DEFINE PRIVATE CLASSES.
