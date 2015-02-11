@@ -56,17 +56,19 @@ gen_compliance()
 		#	$1 - The file to modified according to commenting conventions.
 		#
 
+		CONFIG_FILE_DIRECTORY=$TCPATH/bld/code_compliance/config_files
+
+		# Replace todo comment with the correct syntax
+		sed -i 's/todo[ -: ]*/TODO - /I' $1
+
+		# Replace note comment with the correct syntax
+		sed -i 's/note[ -: ]*/NOTE - /I' $1
+
 		# Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
 		$TCPATH/res/vendor/uncrustify/src/uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
 
-		# Replace todo comment with the correct syntax
-		sed -i 's/todo[ -: ]*/ TODO - /I' $1
-
-		# Replace note comment with the correct syntax
-		sed -i 's/note[ -: ]*/ NOTE - /I' $1
-
 		# Get the line numbers of string containing single line C comments.
-		for str_line in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -M '/\*.*?\*/\n' $1 | cut -d : -f 1`
+		for str_line in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -M '/\*.*?\*/' $1 | cut -d : -f 1`
 		do
 			string=$(awk 'NR == '"$str_line"' ' $1)
 	
@@ -75,7 +77,7 @@ gen_compliance()
 				:
 			else
 				# Replace C style comments with C++ style comments.
-				sed -i ''"$str_line"'s:\(.*\)/[*]\(.*\)[*]/:\1//\2:' $1
+				sed -i ''"$str_line"'s:\(.*\)\/[*][ ]*\(.*\)[*]\/:\1// \2:' $1
 			fi
 		done
 

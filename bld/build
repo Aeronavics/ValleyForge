@@ -361,7 +361,6 @@ generic_precompile()
 		# Install tools used for code compliance if not present already.
 		unpack_vendor_astyle
 		unpack_vendor_uncrustify
-		unpack_vendor_oclint
 		unpack_vendor_pcregrep
 
 		echo -e "${CYAN}Checking code compliance...\n${NO_COLOUR}"

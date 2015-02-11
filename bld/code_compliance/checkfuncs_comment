@@ -57,7 +57,7 @@ compliance_check_file_comment()
 		pattern_todo_correct="TODO - (.*)"
 
 		# Pattern to check for NOTE comments
-		pattern_note="[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)"
+		pattern_note="^[ 	]*((\/\/)|(\*))[ 	]*[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)"
 		pattern_note_correct="NOTE - (.*)"
 
 		if [[ $1 =~ $pattern_todo && ! $1 =~ $pattern_todo_correct ]]; then
@@ -185,7 +185,7 @@ compliance_check_file_comment()
 		IFS=$(echo -en "\n\b")
 
 		# Condition to check if the file has multiple C++ comments.
-		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o3 -M -n '((\/\/)+(.*))+(\n((\/\/)+(.*))+)+' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o3 -M -n '^((\/\/)+(.*))+(\n((\/\/)+(.*))+)+' $FILE`
 		do
 			# Variable used to check whether the comment block lies within code where checking is disabled.		
 			local CHECK_WITHIN_BLOCK=
