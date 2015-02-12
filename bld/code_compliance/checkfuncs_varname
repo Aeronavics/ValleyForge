@@ -69,6 +69,9 @@ compliance_check_file_varname()
 		pattern_mul_var="^([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"
 		pattern_mul_diff="([[a-zA-Z0-9_]+[ ]*)+]*(,[ ]*[a-zA-Z0-9_]*[ ]*[a-zA-Z0-9_]+)+;"
 
+		# Pattern to match keywords which should be immediately followed by colon but have space in between.
+		pattern_keywords_colon="^(\s)*(default|private|protected|public)(\s)+:"
+
 		# Pattern to match variables 'I' or 'O'.
 		pattern_confusing_var="\bl\b|\bO\b"	
 
@@ -84,7 +87,13 @@ compliance_check_file_varname()
 		elif [[ $1 =~ $pattern_confusing_var ]]; then
 			ERROR="This line contains variables composed of 'l' and 'O' characters only."		
 
-			return 1			
+			return 1
+
+		# Condition to check for keywords which immediately should be followed by colon but have spaces in between them.
+		elif [[ $1 =~ $pattern_keywords_colon ]]; then
+			ERROR="'${BASH_REMATCH[2]}' should be immediately followed by colon with no spaces in between them."		
+
+			return 1
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ $1 =~ $pattern_multiple_point_ref ]]; then
@@ -293,6 +302,7 @@ compliance_get_rules_varname()
 	echo "varname:"
 	echo "\tVariable names which contain upper case characters will fail."
 	echo "\tVariables composed of 'l' or 'O' characters only will fail."
+	echo "\tKeywords such as 'default','public','private' and 'protected' should be immediately followed by colon with no spaces in between them."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }

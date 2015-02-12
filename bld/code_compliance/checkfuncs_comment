@@ -155,8 +155,6 @@ compliance_check_file_comment()
 					fi
 				fi
 			else
-				DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
-
 	  			# Checking is temporarily disabled, so all we do is see if this line enables them again.
   				if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
 

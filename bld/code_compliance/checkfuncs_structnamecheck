@@ -44,9 +44,6 @@ compliance_check_file_structnamecheck()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
-	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
-	local CHECKS_OK=1
-
 	check_line()
 	{
 		#
@@ -255,6 +252,14 @@ compliance_check_file_structnamecheck()
 
 	# Check whether a structure has any access modifiers in it.
 	check_access_modifiers $FILE
+
+	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
+	local LINE_THRESH=$((LINE_NUM/10))
+	
+	# Check if the number of lines disabled is lesser than the threshold
+	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 
