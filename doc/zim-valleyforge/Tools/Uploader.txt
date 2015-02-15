@@ -1,0 +1,24 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-16T10:03:32+13:00
+
+====== Modular Code Uploading Tool ======
+The Modular Code Uploading Tool is designed to facilitate the uploading of software to target devices which use a single flat address space, which is loaded word by word from a binary file. 
+
+===== Information for Toolchain Users =====
+You should generally not need to interact with the Module Code Uploading Tool directly. The [[http://ucunison1.canterbury.ac.nz/trac/ValleyForge/wiki/Scripts/Load/upload_can|upload_can]] uploading method provided through the [[http://ucunison1.canterbury.ac.nz/trac/ValleyForge/wiki/Scripts/Load|load]] script is intended to be a easy method of using the tool. 
+
+===== File Parser Modules =====
+The tool allows support for a number of different targets, through the use of a modular design which allows different binary files types to be parsed into memory maps: 
+* [[+IHex|Intex Hex File Parser]]
+
+===== Communications Protocol Modules =====
+The tool allows for code to be uploaded to a target device over a number of different communications buses, through the use of different protocol modules:
+* [[+CAN|CAN Module]]
+* [[+Arduino|Arduino STK500v2 Serial Bootloader Module]]
+
+===== Command Line Syntax =====
+ The uploader tool is intended to be used by the load script so the command line syntax is somewhat cumbersome and the amount of information that you need to specify for programming with it is rather large. 
+
+The required parameters are as follows: 
+{{./diagram.png?type=diagram}}

@@ -1,0 +1,12 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-16T10:11:21+13:00
+
+====== Modular Code Uploading Tool: Arduino STK500v2 Serial Protocol Module ======
+This module can be used to program the ArduPilot Mega boards using the arduino serial bootloader on them.
+
+===== Module Parameters =====
+This module uses a number of parameters given to the uploader with the -C command line switch.
+{{./diagram.png?type=diagram}}
+
+

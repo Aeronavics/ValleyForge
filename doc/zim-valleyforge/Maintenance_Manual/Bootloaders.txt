@@ -1,0 +1,26 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-16T08:06:57+13:00
+
+====== Bootloaders ======
+
+The bootloader is used to transfer code to the microprocessor without use of an ISP programmer. Currently an AVR bootloader has been started, and its functionality is to be able to run a bootloader program, then switch to the application code when a button is pushed.
+There is a useful guide to writing bootloaders available [[http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=79206|here]]. You need to be logged in to access it though.
+
+===== General Design =====
+So far only the AVR bootloader has been implemented. It has one implementation file, ''bootloader.cpp'', located in ''res/avr/bootloader'', which takes care of writing to flash, flashing LEDs, running timers, receiving a signal of new available firmware, and switching to the application. Used in conjunction with this is the bootloader module. There are a few different modules corresponding to different transfer protocols. Which module is used depends on which is specified in the component's configuration file. The bootloader calls module functions for the transfer of data from the remote device. It then writes the flash a page at a time. When it is finished, it sets the microprocessor's register back to a default state and runs the application.
+
+===== Boot Address =====
+The boot address given in the datasheets is a **word** address, not a **byte** address. However the address entered into the makefile via the ''build_configs.cfg'' file is a **byte** address, and therefore the address needs to be converted. Take this into account if you want to change the boot size and therefore need a new boot address, or are re-implementing the bootloader. Make sure all of the fuses are correct. There are a few things that can happen with an incorrect boot address are:
+* The bootloader program may not run at all and go straight to the application code. This usually happens when the boot address given is lower than the actual. It means that the program counter No-Ops all the way around to the starting address again, without ever running the bootloader code.
+* Interrupts may not work. When you write a bootloader, it creates a new interrupt table at the bootloader start address. This means you will have two interrupt vector tables in your microprocessor. An instance occurred where the bootloader address was set too high. The bootloader code still ran, but because the interrupt vector table was not where it was expected to be, the interrupts did not fire.
+
+===== Fuses =====
+Make sure that the microprocessor's fuses are set to the correct values. This cannot be done through a bootloader, it must be done using an ISP, JTAG or HVPP programmer. The BOOTRST fuse is of course, important, but one must also make sure that the boot size is correct. Be careful also to make sure the fuses aren't set to some strange clock speed. This bricks the micro. It can be fixed using HVPP, but it is a right pain.
+
+===== Registers =====
+When the bootloader program has finished, make sure that before it starts running the application code, it resets hardware registers back to their original state. This can be done manually, or but resetting the micro (using the watchdog timer) and then going straight into the application code.
+
+===== Merging Hex Files =====
+The application and bootloader are built seperately, so to merge them into one hex file, one simply deletes the last line of one hex file and puts the contents of the other file after it in the hex editor. There are also [[http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=33291|scripts online]] that will do it for you.
+

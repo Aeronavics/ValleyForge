@@ -1,0 +1,39 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+
+<tr>
+	<td bgcolor="#EEEEEE"><b>Names</b></td>
+	<td bgcolor="#EEEEEE"><b>Values</b></td>
+	<td bgcolor="#EEEEEE"><b>Purpose</b></td>
+</tr>
+<tr>
+	<td>bitrate</td>
+	<td>Bitrate in bps, so 1000000 for 1Mbps</td>
+	<td>This parameter is used to set the bitrate of the CAN bus that will be used.</td>
+</tr>
+<tr>
+	<td>can-type</td>
+	<td>"socket" or "microchip" (defaults to microchip)</td>
+	<td>This parameter is used to select the CAN interface type used. There is an interface for the Microchip CAN Analyzer and<br/> one for the Linux SocketCAN interface which can be used with whatever physical CAN interface has Linux drivers.</td>
+</tr>
+<tr>
+	<td>iface</td>
+	<td>CAN interface name (e.g. can0)</td>
+	<td>This parameter is used with the socket CAN interface to tell the interface which network interface is the desired CAN interface.</td>
+</tr>
+<tr>
+	<td>termination</td>
+	<td>"on" or "off" (default off)</td>
+	<td>This parameter is used with the Microchip interface to set the termination resistance in the analyzer on or off.</td>
+</tr>
+<tr>
+	<td>target</td>
+	<td>Two hex digits (e.g. AA)</td>
+	<td>This parameter sets the single byte node ID of the CAN node to program.</td>
+</tr>
+
+</TABLE>
+>];
+}
