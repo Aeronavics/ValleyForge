@@ -63,11 +63,17 @@ compliance_check_file_varname()
 		pattern_both="^([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]*[a-zA-Z0-9_]*[, ]*)+[;]+"
 
 		# Pattern to match multiple pointer/reference types declared on a single line. 
-		pattern_multiple_point_ref="^[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]+[ ]*[a-zA-Z0-9_]+)+;"
+		pattern_multiple_point_ref="^[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]*[ ]*[a-zA-Z0-9_]+)+;"
 
 		# Patterns to check for declarations of variables of different types in the same line.
 		pattern_mul_var="^([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"
 		pattern_mul_diff="([[a-zA-Z0-9_]+[ ]*)+]*(,[ ]*[a-zA-Z0-9_]*[ ]*[a-zA-Z0-9_]+)+;"
+
+		# Pattern to match keywords which should be immediately followed by colon but have space in between.
+		pattern_keywords_colon="^(\s)*(default|private|protected|public)(\s)+:"
+
+		# Pattern to match variables 'I' or 'O'.
+		pattern_confusing_var="\bl\b|\bO\b"	
 
 		# Temporary variables to hold individual words in string and should not be empty at the beginning.
 		indiv_word1="just text"
@@ -77,21 +83,33 @@ compliance_check_file_varname()
 		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" || "$1" =~ "return" || "$1" =~ "struct" || "$1" =~ "class" ]]; then			
 			return 0
 
+		# Condition to check for variables composing only of characters 'l' or 'O'.
+		elif [[ $1 =~ $pattern_confusing_var ]]; then
+			ERROR="This line contains variables composed of 'l' and 'O' characters only."		
+
+			return 1
+
+		# Condition to check for keywords which immediately should be followed by colon but have spaces in between them.
+		elif [[ $1 =~ $pattern_keywords_colon ]]; then
+			ERROR="'${BASH_REMATCH[2]}' should be immediately followed by colon with no spaces in between them."		
+
+			return 1
+
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ $1 =~ $pattern_multiple_point_ref ]]; then
-			ERROR="$1 contains multiple reference/pointer type declarations"		
+			ERROR="This line contains multiple reference/pointer type declarations"		
 
 			return 1
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
 		elif [[ ! $1 =~ $pattern_mul_var && $1 =~ $pattern_mul_diff ]]; then
-			ERROR="$1 contains declarations of variables of different types"		
+			ERROR="This line contains declarations of variables of different types"		
 
 			return 1
 
 		# Condition to detect where a single line contains both declarations and initialisations.
 		elif [[ $1 =~ $pattern_both && ! $1 =~ $pattern_declar && ! $1 =~ $pattern_init ]]; then
-			ERROR="$1 contains both variable declarations and initialisations"		
+			ERROR="This line contains both variable declarations and initialisations"		
 
 			return 1
 
@@ -115,7 +133,7 @@ compliance_check_file_varname()
 
 					# Condition to check for variable name's validity
 					if [[ "$indiv_word1" =~ [A-Z] ]]; then
-						ERROR="$indiv_word1 contains upper case characters1."
+						ERROR="Non-compliant variable name: '${indiv_word1//[!a-zA-Z]}' contains upper case characters."
 
 						return 1
 					fi
@@ -149,7 +167,7 @@ compliance_check_file_varname()
 
 				# Condition to check for variable name's validity
 				if [[ "$req_str" =~ [A-Z] ]]; then
-					ERROR="$req_str contains upper case characters2."
+					ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
 					return 1
 				fi
 
@@ -179,7 +197,7 @@ compliance_check_file_varname()
 
 						# Condition to check for variable name's validity
 						if [[ "$req_str" =~ [A-Z] ]]; then
-							ERROR="$req_str contains upper case characters3."
+							ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
 
 							return 1
 						fi
@@ -190,7 +208,7 @@ compliance_check_file_varname()
 
 						# Condition to check for variable name's validity
 						if [[ "$str_var" =~ [A-Z] ]]; then
-							ERROR="$str_var contains upper case characters4."
+							ERROR="Non-compliant variable name: '${str_var//[!a-zA-Z]}' contains upper case characters."
 
 							return 1
 						fi
@@ -232,7 +250,7 @@ compliance_check_file_varname()
 			if ! check_line "$LINE" $LINE_NUM; then
 
 				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_varname" $1 $LINE_NUM "Non-compliant variable name: $ERROR"
+				compliance_fail_line "compliance_check_file_varname" $FILE $LINE_NUM "$ERROR"
 		
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
@@ -252,18 +270,17 @@ compliance_check_file_varname()
 
 	done < $FILE
 
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_varname" $1 "This file contains non-compliant variable name(s)."
+		compliance_fail_file "compliance_check_file_varname" $FILE "This file contains non-compliant variable name(s)."
 	fi
 
 	# All done.
@@ -284,6 +301,8 @@ compliance_get_rules_varname()
 {
 	echo "varname:"
 	echo "\tVariable names which contain upper case characters will fail."
+	echo "\tVariables composed of 'l' or 'O' characters only will fail."
+	echo "\tKeywords such as 'default','public','private' and 'protected' should be immediately followed by colon with no spaces in between them."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }

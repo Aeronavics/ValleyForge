@@ -1,0 +1,102 @@
+#!/bin/bash
+
+#	Copyright (C) 2011 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           	checkfuncs_includecheck
+###
+### Author:         	Ravi Shankar
+###
+### Date Created:	26-01-2015
+###
+### Type:           	Bash Function Definitions
+###
+### Purpose:        	Implements code compliance tests: tests whether the include statements appear at the top of the file.
+###
+###########################################################################################################################
+
+######################################## FUNCTION ###############################################################
+###
+### Name:		compliance_check_file_includecheck
+###
+### Inputs/Outputs:	Path to the file to test.
+###
+### Purpose:		Tests a single C/CPP source file for include statements violating the coding conventions.
+###
+#################################################################################################################
+
+compliance_check_file_includecheck()
+{
+	# The file we're checking was the first argument we received.
+	local FILE=$1
+
+	# Need to keep track of the line number we are up to.
+	local LINE_NUM=
+	
+	# If we encounter something wrong, then we make a note that there is at least some kind of issue with the file as a whole.
+	local CHECKS_OK=1
+
+	while read line
+	do
+		# Increment the line number.
+  		((LINE_NUM++))
+
+		# Condition to obtain the first line of the file excluding comments and empty lines. 
+		if ! [[ "$line" =~ ^/.*|^\*.* || "$line" == \#* || "$line" == "" || "$line" != [a-zA-Z]* ]]; then
+
+			while read line
+			do
+				# Increment the line number.
+		  		((LINE_NUM++))
+		
+				# Check for include statements
+				if [[ "$line" == \#include* ]]; then
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_includecheck" $FILE $LINE_NUM "Non-compliant include statements: Not appearing at the top of the file."
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
+			done
+		fi
+	done < $FILE
+
+	if [ ! ${CHECKS_OK} ]; then
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_includecheck" $FILE "This file contains non-compliant include statement(s)."
+	fi
+
+	return 0
+}
+
+######################################## FUNCTION #################################################
+###
+### Name:		compliance_get_rules_includecheck
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Prints out a summary of the code compliance rules for the includecheck test.
+###
+###################################################################################################
+
+compliance_get_rules_includecheck()
+{
+	echo "Header file conventions:"
+	echo "\tInclude statements must always appear at the top of the file."
+	echo ""
+}
+
+# ALL DONE.

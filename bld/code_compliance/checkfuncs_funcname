@@ -44,11 +44,6 @@ compliance_check_file_funcname()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 	
-	# Patterns to match function and eliminate constructors and destructors.
-	pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)\(+[a-zA-Z0-9,_*& ]*\)+"
-	pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
-	pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
-
 	# Variables used as counter for number of classes in the file.
 	local class_count=0
 
@@ -84,6 +79,14 @@ compliance_check_file_funcname()
 		#	$2 - The line number we are up to.
 		#
 		
+		# Patterns to match functions and to eliminate constructors and destructors.
+		pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+[a-zA-Z0-9,_*& ]*\)+)"
+		pattern_constructor="([a-zA-Z0-9]*):*([a-zA-Z0-9_*&]+)\(+[a-zA-Z0-9_*& ]*\)+"
+		pattern_class="class ([A-Za-z0-9_]+)([ :]*)"
+
+		# Pattern to match malloc, realloc and free functions.
+		pattern_memory_funcs="(malloc|free|realloc)[ ]?\(.*\);"
+
 		# Condition to avoid comment lines and destructors.
 		if ! [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "~" ]]; then
 
@@ -97,6 +100,13 @@ compliance_check_file_funcname()
 				
 			fi
 
+			# Condition to check for malloc, realloc or free functions.
+			if [[ $1 =~ $pattern_memory_funcs ]]; then
+				ERROR="'${BASH_REMATCH[1]}' should not be used."
+	
+				return 1
+			fi
+
 			# Condition to check for Constructors
 			if [[ $1 =~ "::" ]]; then
 				if [[ $1 =~ $pattern_constructor ]]; then
@@ -108,7 +118,8 @@ compliance_check_file_funcname()
 			if [[ ! $1 =~ "="|"#" && $1 =~ $pattern_function ]]; then
 				
 				function_name="${BASH_REMATCH[2]}"
-
+				function_args="${BASH_REMATCH[3]}"
+				
 				if [[ $function_name =~ "::" ]]; then
 					function_name=${function_name#*::}
 				fi
@@ -116,10 +127,23 @@ compliance_check_file_funcname()
 				# Condition to check whether the function is not a constructor/destructor and for uppercase characters
 				if ! array_contains class_array "$function_name"; then
 					if  [[ $function_name =~ [A-Z] && $temp_constructor != $function_name ]]; then
-						ERROR="$function_name has uppercase characters"
+						ERROR="'$function_name' has uppercase characters."
 
 						return 1
 					fi
+				fi
+
+				# Remove all characters other than commas.
+				comma="${function_args//[^,]}"
+
+				# Count the number of commas present. The number of arguments is one more than number of commas.
+				args_count="${#comma}"
+
+				# Report error if the number of arguments is greater than 5.
+				if [[ $((args_count+1)) -gt 5 ]]; then
+					ERROR="'$function_name' has more than 5 arguments."
+
+					return 1
 				fi
 			fi
 		fi
@@ -137,8 +161,23 @@ compliance_check_file_funcname()
 	# Initially, we are checking.
 	local CHECKS_EN=1
 
+	# Variable used to denote whether the line is a comment or not. Initially we assume that the line is not a comment.
+	local CHECKS_COMMENT=
+
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
+	
+	# Pattern to match multi line comment start.
+	pattern_comment_start="^[ 	]*(\/\*)"
+
+	# Pattern to match multi line comment end.
+	pattern_comment_end="(.*)(\*\/)"
+
+	# Pattern to match single line comment.
+	pattern_comment_single="^[ 	]*(\/\*)(.*)(\*\/)"
+
+	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
 
 	# Iterate over each of the lines in the file.
 	while read LINE
@@ -152,14 +191,35 @@ compliance_check_file_funcname()
   				CHECKS_EN=
   				continue
   			fi
+			
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+				CHECKS_COMMENT=1
+				continue
+			fi
 
-  			# Ok, so now we actually want to check this line for compliance.
-			if ! check_line "$LINE" $LINE_NUM; then
-				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_funcname" $1 $LINE_NUM "Non-compliant function name: $ERROR"
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+				CHECKS_COMMENT=
+				continue
+			fi
+			
+			# Check whether the line is a single comment line. If yes, read the next line.
+			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+				continue
+			fi
 
-				# At least one thing is wrong in this file.
-				CHECKS_OK=
+			# Proceed checking for compliance only if the line is not a comment.
+			if [[ ! ${CHECKS_COMMENT} ]]; then
+
+	  			# Ok, so now we actually want to check this line for compliance.
+				if ! check_line "$LINE" $LINE_NUM; then
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_funcname" $FILE $LINE_NUM "Non-compliant function name: $ERROR"
+
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
 			fi
   		else
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
@@ -178,12 +238,12 @@ compliance_check_file_funcname()
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_funcname" $1 "This file contains non-compliant constant name(s)."
+		compliance_fail_file "compliance_check_file_funcname" $FILE "This file contains non-compliant function name(s)."
 	fi
 
 	# All done.

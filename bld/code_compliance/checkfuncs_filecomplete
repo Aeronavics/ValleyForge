@@ -45,13 +45,13 @@ compliance_check_file_filecomplete()
 	local FILE=$1
 
 	# Get the line number of the last line of the current file.
-	local LINE_NUM=$(wc -l $1)
+	local LINE_NUM=$(wc -l $FILE)
 
 	# Get the last line of the current file.
-	str_lastline=$(tail -1 $1 | head -1)
+	str_lastline=$(tail -1 $FILE | head -1)
 
 	if [[ $str_lastline != "// ALL DONE." ]]; then
-		compliance_fail_file "compliance_check_file_filecomplete" $1 "This file doesn't conclude with the comment \" // ALL DONE.\""
+		compliance_fail_file "compliance_check_file_filecomplete" $FILE "This file doesn't conclude with the comment \"// ALL DONE.\""
 	fi
 
 	#All done.

@@ -57,6 +57,15 @@ VENDOR_LM4TOOLS_REMOTE="https://github.com/utzig/lm4tools.git"
 VENDOR_STLINK_LOCAL=${TCPATH}/res/vendor/stlink
 VENDOR_STLINK_REMOTE="https://github.com/texane/stlink.git"
 
+VENDOR_ASTYLE_LOCAL=${TCPATH}/res/vendor
+VENDOR_ASTYLE_REMOTE="http://sourceforge.net/projects/astyle/files/latest/download?source=files"
+
+VENDOR_UNCRUSTIFY_LOCAL=${TCPATH}/res/vendor
+VENDOR_UNCRUSTIFY_REMOTE="http://sourceforge.net/projects/uncrustify/files/latest/download?source=files"
+
+VENDOR_PCREGREP_LOCAL=${TCPATH}/res/vendor
+VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
+
 ######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_mavlink							###
@@ -140,14 +149,14 @@ unpack_freertos()
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:		unpack_nuttx															###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the NuttX vendor source is available for use, and			###
-###			if not, sets it up ready to go.												###
-###																						###
+###											###
+### NAME:		unpack_nuttx							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the NuttX vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
 ###########################################################################################
 
 unpack_nuttx()
@@ -367,6 +376,175 @@ unpack_vendor_stlink()
 
 ######################################## FUNCTION #########################################
 ###											###
+### NAME:		unpack_vendor_astyle						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if astyle is available for use, and			###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_vendor_astyle()
+{
+	# Check if the astyle source has been downloaded already.
+	if [ ! -d ${VENDOR_ASTYLE_LOCAL}/astyle ]; then
+		# We need to download and unpack the source before we can use it.
+		echo -e "${CYAN}\tDownloading the astyle vendor source...\n${NO_COLOUR}"
+		wget -O ${TMP_CACHE}/astyle_vendor.tar.gz ${VENDOR_ASTYLE_REMOTE}
+		tar -xzf ${TMP_CACHE}/astyle_vendor.tar.gz -C ${VENDOR_ASTYLE_LOCAL}
+		if [ $? -ne 0 ]; then
+			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract astyle_vendor.tar.gz\n${NO_COLOUR}"
+			return 1
+		fi
+		echo -e ""
+
+		# The newly unpacked directory will have some unhelpful nesting, so we flatten that.
+		pushd "${VENDOR_ASTYLE_LOCAL}/astyle/build/gcc" >/dev/null
+		make
+		
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build AStyle.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		popd >/dev/null
+	else
+		# The source has already been downloaded.
+		echo -e "${CYAN}\tAstyle available...\n${NO_COLOUR}"
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_vendor_uncrustify					###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if uncrustify is available for use, and			###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_vendor_uncrustify()
+{
+	# Check if the uncrustify source has been downloaded already.
+	if [ ! -d ${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify* ]; then
+		# We need to download and unpack the source before we can use it.
+		echo -e "${CYAN}\tDownloading the Uncrustify vendor source...\n${NO_COLOUR}"
+		wget -O ${TMP_CACHE}/uncrustify_vendor.tar.gz ${VENDOR_UNCRUSTIFY_REMOTE}
+		tar -xzf ${TMP_CACHE}/uncrustify_vendor.tar.gz -C ${VENDOR_UNCRUSTIFY_LOCAL}
+		if [ $? -ne 0 ]; then
+			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract uncrustify_vendor.tar.gz\n${NO_COLOUR}"
+			return 1
+		fi
+		echo -e ""
+
+		pushd ${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify* >/dev/null
+		${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify*/configure
+		
+		# Check if configuring worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Uncrustify: the 'configure' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		# Then we make.
+		make
+	
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Uncrustify: the 'make' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		popd >/dev/null
+	else
+		# The source has already been downloaded.
+		echo -e "${CYAN}\tUncrustify available...\n${NO_COLOUR}"
+
+		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_vendor_pcregrep						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if uncrustify is available for use, and			###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_vendor_pcregrep()
+{
+	# Check if pcregrep has been downloaded already.
+	if [ ! -d ${VENDOR_PCREGREP_LOCAL}/pcre-8.35 ]; then
+		# We need to download and unpack the source before we can use it.
+		echo -e "${CYAN}\tDownloading pcregrep...\n${NO_COLOUR}"
+		wget -O ${TMP_CACHE}/pcre_vendor.tar.gz ${VENDOR_PCREGREP_REMOTE}
+		tar -xzf ${TMP_CACHE}/pcre_vendor.tar.gz -C ${VENDOR_PCREGREP_LOCAL}
+		if [ $? -ne 0 ]; then
+			# We couldn't unzip the file, so something went wrong, and we abort.
+			echo -e "\n${RED}ERROR - Failed to extract pcre_vendor.tar.gz\n${NO_COLOUR}"
+			return 1
+		fi
+		echo -e ""
+
+		pushd ${VENDOR_PCREGREP_LOCAL}/pcre-8.35 >/dev/null
+		${VENDOR_PCREGREP_LOCAL}/pcre-8.35/configure
+		
+		# Check if configuring worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Pcregrep: the 'configure' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		# Then we make.
+		make
+	
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build Pcregrep: the 'make' stage failed.\n${NO_COLOUR}"
+			popd >/dev/null
+			return 1
+		fi
+		popd >/dev/null
+	else
+		# The source has already been downloaded.
+		echo -e "${CYAN}\tPcregrep available...\n${NO_COLOUR}"
+
+		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
+    	fi
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
 ### NAME:		pack_allv							###
 ###											###
 ### Inputs/Outputs:	None.								###
@@ -381,8 +559,12 @@ pack_allv()
 	# Just pack each of the vendor sources in turn.
 	pack_mavlink
 	pack_freertos
+	pack_vendor_nuttx
 	pack_vendor_lm4tools
 	pack_vendor_stlink
+	pack_vendor_astyle
+	pack_vendor_uncrustify
+	pack_vendor_pcregrep
 }
 
 ######################################## FUNCTION #########################################
@@ -436,14 +618,14 @@ pack_freertos()
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:		pack_nuttx																###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the NuttX vendor source was previously unpacked,			###
-###			and if it was, then packs it back up again.									###
-###																						###
+###											###
+### NAME:		pack_nuttx							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the NuttX vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
 ###########################################################################################
 
 pack_vendor_nuttx()
@@ -461,14 +643,14 @@ pack_vendor_nuttx()
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:			pack_vendor_lm4tools												###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the lm4tools vendor source was previously unpacked,		###
-###						and if it was, then packs it back up again.						###
-###																						###
+###											###
+### NAME:			pack_vendor_lm4tools					###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the lm4tools vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
 ###########################################################################################
 
 pack_vendor_lm4tools()
@@ -510,5 +692,82 @@ pack_vendor_stlink()
 	return	
 }
 
-# ALL DONE.
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_vendor_astyle						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if astyle was previously unpacked,			###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
 
+pack_vendor_astyle()
+{
+	# Check if astyle source has been downloaded already.
+	if [ -d ${VENDOR_ASTYLE_LOCAL} ]; then
+		# We just delete the downloaded tar file and source files of astyle.		
+		echo -e "${CYAN}\tCleaning up Astyle source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_ASTYLE_LOCAL}/astyle
+		rm ${TMP_CACHE}/astyle_vendor.tar.gz
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_vendor_uncrustify						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if uncrustify was previously unpacked,			###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_vendor_uncrustify()
+{
+	# Check if uncrustify source has been downloaded already.
+	if [ -d ${VENDOR_UNCRUSTIFY_LOCAL} ]; then
+		# We just delete the downloaded tar file and source files of uncrustify.		
+		echo -e "${CYAN}\tCleaning up Uncrustify source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify*
+		rm ${TMP_CACHE}/uncrustify_vendor.tar.gz
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_vendor_pcregrep						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if pcregrep was previously unpacked,			###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_vendor_pcregrep()
+{
+	# Check if pcregrep has been downloaded already.
+	if [ -d ${VENDOR_PCREGREP_LOCAL} ]; then
+		# We just delete the downloaded tar file and source files of pcregrep.		
+		echo -e "${CYAN}\tCleaning up pcregrep source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_PCREGREP_LOCAL}/pcre-8.35
+		rm ${TMP_CACHE}/pcregrep_vendor.tar.gz
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return	
+}
+
+# ALL DONE.
