@@ -32,6 +32,11 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported Compliance checking code generation functions.\n${NO_COLOUR}"
 
+# Install tools used for code compliance if not present already.
+unpack_vendor_astyle
+unpack_vendor_uncrustify
+unpack_vendor_pcregrep
+
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		gen_compliance							###
@@ -46,6 +51,10 @@ echo -e "${CYAN}Imported Compliance checking code generation functions.\n${NO_CO
 
 gen_compliance()
 {
+
+	# Hardcode the path of config files for uncrustify.
+	CONFIG_FILE_DIRECTORY=$TCPATH/bld/code_compliance/config_files
+
 	# Define internal functions.
 
 	# Function for modifying code according to commenting conventions
@@ -55,8 +64,6 @@ gen_compliance()
 		#	$1 - The file to modified according to commenting conventions.
 		#
 
-		CONFIG_FILE_DIRECTORY=$TCPATH/bld/code_compliance/config_files
-
 		# Replace todo comment with the correct syntax
 		sed -i 's/todo[ -: ]*/TODO - /I' $1
 
@@ -64,7 +71,7 @@ gen_compliance()
 		sed -i 's/note[ -: ]*/NOTE - /I' $1
 
 		# Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
-		$TCPATH/res/vendor/uncrustify/src/uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
+		$TCPATH/res/vendor/uncrustify-*/src/uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
 
 		# Get the line numbers of string containing single line C comments.
 		for str_line in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -M '/\*.*?\*/' $1 | cut -d : -f 1`
@@ -115,9 +122,6 @@ gen_compliance()
 
 	#Variables to check the status of the file modification operation.
 	local status_astyle=
-
-	# Hardcode the config file for uncrustify.
-	CONFIG_FILE_DIRECTORY="$TCPATH/bld/code_compliance/config_files"
 
 	# Check if the specified location is actually legit.
 	if [ ! -d $1 ]; then

@@ -124,11 +124,6 @@ compliance_check_file_classnamecheck()
 		local INSIDE_CLASS_OPENING=
 		local INSIDE_STRUCT_OPENING=
 
-		# Pattern to match comments.
-		pattern_block_comment_start="^[[:space:]]*/[*]"
-		pattern_block_comment_end="[*]/[[:space:]]*\$"
-		pattern_line_comment="^[[:space:]]*//"
-
 		# Pattern to match class declarations.
 		pattern_class_start="^[[:space:]]*class[[:space:]]+([^[:space:]:;]+):?[[:space:]]*\$"
 		pattern_class_opener="^[[:space:]]*[{]"
@@ -157,7 +152,7 @@ compliance_check_file_classnamecheck()
 	  			fi
 
 	  			# Check to see whether this line begins a block comment.
-	  			if [[ $LINE =~ $pattern_comment_start ]]; then
+	  			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 	  				if [ ! $INSIDE_BLOCK_COMMENT ]; then
 	  					# Inside block comment.
 	  					INSIDE_BLOCK_COMMENT=1
@@ -166,7 +161,7 @@ compliance_check_file_classnamecheck()
 	  			fi
 
 	  			# Check to see whether this line ends a block comment.
-	  			if [[ $LINE =~ $pattern_comment_end ]]; then
+	  			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 	  				if [ $INSIDE_BLOCK_COMMENT ]; then
 	  					# We're not inside the comment any more.
 	  					INSIDE_BLOCK_COMMENT=
@@ -181,12 +176,10 @@ compliance_check_file_classnamecheck()
 	  			fi
 
 	  			# Check if this line is commented out.
-	  			if [[ $LINE =~ $pattern_line_comment ]]; then
+	  			if [[ "$LINE" =~ $pattern_comment_single ]]; then
 	  				# We're on a line that is commented out.
 	  				continue
 	  			fi
-
-	  			# TODO - This comment thing will fail dismally if there is a comment with /* */ on a single line.  Is there a rule to exclude this?
 
 				# Check to see if this line begins a class opening.
 				if [[ $LINE =~ $pattern_class_start ]]; then
@@ -500,27 +493,6 @@ compliance_check_file_classnamecheck()
 
 	# All done.
 	return 0
-}
-
-######################################## FUNCTION ####################################################
-###
-### Name:		compliance_get_rules_classnamecheck
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the classnamecheck test.
-###
-######################################################################################################
-
-compliance_get_rules_classnamecheck()
-{
-	echo "classnamecheck:"
-	echo "\tClass names which begin with a lower case character will fail."
-	echo "\tClasses which do not follow the proper declaration order of access modifiers(public, protected then public) will fail."
-	echo "\tTemplate names which do not contain a single uppercase letter will fail."
-	echo "\tEnum labels which contain lower case letters will fail."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
 }
 
 # ALL DONE.

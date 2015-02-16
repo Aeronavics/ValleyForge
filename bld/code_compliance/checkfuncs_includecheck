@@ -85,21 +85,4 @@ compliance_check_file_includecheck()
 	# All done.
 }
 
-######################################## FUNCTION #################################################
-###
-### Name:		compliance_get_rules_includecheck
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the includecheck test.
-###
-###################################################################################################
-
-compliance_get_rules_includecheck()
-{
-	echo "Header file conventions:"
-	echo "\tInclude statements must always appear at the top of the file."
-	echo ""
-}
-
 # ALL DONE.

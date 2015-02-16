@@ -199,24 +199,4 @@ compliance_check_file_headerguard()
 	return 0
 }
 
-######################################## FUNCTION #################################################
-###
-### Name:		compliance_get_rules_headerguard
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the headerguard test.
-###
-###################################################################################################
-
-compliance_get_rules_headerguard()
-{
-	echo "headerguard:"
-	echo "\tAll C++ anc C header files should contain header guards."
-	echo "\tThe name of the macro should be prefixed and suffixed with a pair of underscore characters."
-	echo "\tMacro names should start with an uppercase letter."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.

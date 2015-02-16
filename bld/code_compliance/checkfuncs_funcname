@@ -260,22 +260,4 @@ compliance_check_file_funcname()
 	return 0
 }
 
-######################################## FUNCTION ##############################################
-###
-### Name:		compliance_get_rules_funcname
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the funcname test.
-###
-################################################################################################
-
-compliance_get_rules_funcname()
-{
-	echo "funcname:"
-	echo "\tFunction names should be all in lower case and underscore separated."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.
