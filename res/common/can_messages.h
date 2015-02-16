@@ -16,7 +16,7 @@
 /**
  *
  * 
- *  @file		can_messages.hpp
+ *  @file		can_messages.h
  *  A header file listing the CAN message IDs used by the toolchain.
  * 
  * 
@@ -43,6 +43,17 @@
  * 
  */
 
+// Support linking this C library from C++.
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Only include this header file once.
+#ifndef __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
+#define __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
+
+// DEFINE PUBLIC PREPROCESSOR MACROS.
+
 #define HOST_ALERT 0x2FF
 
 #define BASE_ID 0x120
@@ -53,5 +64,12 @@
 #define WRITE_DATA (BASE_ID+3)
 #define READ_MEMORY (BASE_ID+4)
 #define READ_DATA (BASE_ID+5)
+
+#endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
+
+// Support linking this C library from C++.
+#ifdef __cplusplus
+}
+#endif
 
 // ALL DONE.
