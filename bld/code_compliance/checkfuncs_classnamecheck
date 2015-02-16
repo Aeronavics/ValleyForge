@@ -133,11 +133,34 @@ compliance_check_file_classnamecheck()
 		# Initially, we are checking.
 		local CHECKS_EN=1
 
-		# Pattern to match the beginning of a class declaration.
-		pattern_class_start="class\s+([^\s]+)"
+		# Need to know if we're inside a block comment or not (initially, we're not).
+		local INSIDE_BLOCK_COMMENT=
+
+		# Need to know if we're inside a class/struct declaration or not (initially, we're not).
+		local INSIDE_CLASS=
+		local INSIDE_STRUCT=
+
+		# But since class/struct definitions can have initialiser lists, we also need to remember if we're inside one of these (initially we're not).
+		local INSIDE_CLASS_OPENING=
+		local INSIDE_STRUCT_OPENING=
+
+		# Pattern to match comments.
+		pattern_block_comment_start="^[[:space:]]*/[*]"
+		pattern_block_comment_end="[*]/[[:space:]]*\$"
+		pattern_line_comment="^[[:space:]]*//"
+
+		# Pattern to match class declarations.
+		pattern_class_start="^[[:space:]]*class[[:space:]]+([^[:space:]:;]+):?[[:space:]]*\$"
+		pattern_class_opener="^[[:space:]]*[{]"
+		pattern_class_end="^[[:space:]]*};"
+
+		# Pattern to match struct declarations.
+		pattern_struct_start="^[[:space:]]*struct[[:space:]]+([^[[:space:]]:;]+):?[[:space:]]*\$"
+		pattern_struct_opener="^[[:space:]]*[{]"
+		pattern_struct_end="^[[:space:]]*};"
 
 		# Pattern to match access modifier.
-		pattern_access_mod="^[a-z]+:"
+		pattern_access_mod="^[[:space:]]*(public|protected|private):"
 
 		# Read the contents of the file.
 		while read LINE
@@ -145,64 +168,208 @@ compliance_check_file_classnamecheck()
 			# Increment the line number.
 	  		((LINE_NUM++))
 
-			# Counter for array used to store the declaration order.
-			array_count=0
-
-			# Empty the contents of the array.
-			unset array_access_modifiers
-
 			if [ ${CHECKS_EN} ]; then
 	  			# Check to see whether this line disables checking temporarily.
 	  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
-				
+					# Disable checking until further notice.
 	  				CHECKS_EN=
 	  				continue
 	  			fi
 
-				# Condition to check if the line matches class pattern.
+	  			# Check to see whether this line begins a block comment.
+	  			if [[ $LINE =~ $pattern_comment_start ]]; then
+	  				if [ ! $INSIDE_BLOCK_COMMENT ]; then
+	  					# Inside block comment.
+	  					INSIDE_BLOCK_COMMENT=1
+	  					continue
+	  				fi
+	  			fi
+
+	  			# Check to see whether this line ends a block comment.
+	  			if [[ $LINE =~ $pattern_comment_end ]]; then
+	  				if [ $INSIDE_BLOCK_COMMENT ]; then
+	  					# We're not inside the comment any more.
+	  					INSIDE_BLOCK_COMMENT=
+	  					continue
+	  				fi
+	  			fi
+
+	  			# If we're in a block comment, no point checking any further.
+	  			if [ ${INSIDE_BLOCK_COMMENT} ]; then
+	  				# All of this line will be commented out.
+	  				continue
+	  			fi
+
+	  			# Check if this line is commented out.
+	  			if [[ $LINE =~ $pattern_line_comment ]]; then
+	  				# We're on a line that is commented out.
+	  				continue
+	  			fi
+
+	  			# TODO - This comment thing will fail dismally if there is a comment with /* */ on a single line.  Is there a rule to exclude this?
+
+				# Check to see if this line begins a class opening.
 				if [[ $LINE =~ $pattern_class_start ]]; then
-
-					# Read the next line to ensure that it is a class declaration.
-					read LINE
-					
-					# Increment the line number.
-			  		((LINE_NUM++))
-
-					if [[ $LINE =~ "{" ]]; then
-
-						# Continue reading inside the class declaration.
-						while read LINE
-						do
-							# Increment the line number.
-					  		((LINE_NUM++))
-
-							# Store the access modifiers of the class in the array and increment the array counter.
-							if [[ $LINE =~ $pattern_access_mod ]]; then
-								array_access_modifiers[$array_count]=${LINE%:*}
-								array_count=$((array_count+1))
-							fi
-							
-							# Check if the line denotes the end of class declaration.
-							if [[ $LINE =~ "};" ]]; then
-
-								# Sort the array contents in reverse order which is the required standard order.
-								readarray -t sorted < <(for a in "${array_access_modifiers[@]}"; do echo "$a"; done | sort -r)
-
-								original_array=${array[@]}
-								sorted_array=${sorted[@]}
-
-								# Check if the original array and sorted array are equal. If not, display warning message.
-								if [ "$original_array" != "$sorted_array" ]; then
-									compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class declaration order: The declaration order doesn't follow correct order."
-									# At least one thing is wrong in this file.
-									CHECKS_OK=
-								fi
-								
-								# We have reached the end of the class declaration. So break the loop.
-								break
-							fi
-						done
+					# Check we're not already inside a class declaration.
+					if [ ${INSIDE_CLASS} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
 					fi
+
+					# Check we're not already inside a class opening.
+					if [ ${INSIDE_CLASS_OPENING} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# Check we're not already inside a struct declaration.
+					if [ ${INSIDE_STRUCT} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# Check we're not already inside a struct opening.
+					if [ ${INSIDE_STRUCT_OPENING} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi		
+
+					# So, now we are inside a class opening, but now inside the actual class just yet.
+					INSIDE_CLASS_OPENING=1
+				fi
+
+				# Check to see if this line begins a class declaration.
+				if [[ $LINE =~ $pattern_class_opener ]]; then
+					# If we're not actually in a class opener right now, this could be anything, so we just ignore it.
+					if [ $INSIDE_CLASS_OPENING ]; then
+						# Ok, so we were actually in a class opener, which means that now, we should be inside a class.
+						INSIDE_CLASS_OPENING=
+						INSIDE_CLASS=1
+
+						# For each class, we put the access modifiers into an array in the order they appear.
+						local ARRAY_ACCESS_MODIFIERS=()
+					fi
+
+				fi
+
+				# Check to see if this line ends a class declaration.
+				if [[ $LINE =~ $pattern_class_end ]]; then
+					# Check if we know we're inside a class.
+					if [ $INSIDE_CLASS ]; then
+						# Check that there was at least one access modifier.
+						if [ -z "${ARRAY_ACCESS_MODIFIERS[*]}" ]; then
+							compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class should have at least one access modifier (public, protected or private)."
+							# At least one thing is wrong with this file.
+							CHECKS_OK=
+						fi
+						# We're not inside the class any more.
+						ARRAY_ACCESS_MODIFIERS=
+						INSIDE_CLASS=
+					fi
+				fi
+
+				# Check to see if this line begins a struct opening.
+				if [[ $LINE =~ $pattern_struct_start ]]; then
+					# Check we're not already inside a class declaration.
+					if [ ${INSIDE_CLASS} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# Check we're not already inside a class opening.
+					if [ ${INSIDE_CLASS_OPENING} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# Check we're not already inside a struct declaration.
+					if [ ${INSIDE_STRUCT} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# Check we're not already inside a struct opening.
+					if [ ${INSIDE_STRUCT_OPENING} ]; then
+						# That's bad.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=
+					fi
+
+					# So, now we are inside a struct opening, but now inside the actual struct just yet.
+					INSIDE_STRUCT_OPENING=1
+				fi
+
+				# Check to see if this line begins a struct declaration.
+				if [[ $LINE =~ $pattern_struct_opener ]]; then
+					# If we're not actually in a struct opener right now, this could be anything, so we just ignore it.
+					if [ $INSIDE_STRUCT_OPENING ]; then
+						# Ok, so we were actually in a struct opener, which means that now, we should be inside a struct.
+						INSIDE_STRUCT_OPENING=
+						INSIDE_STRUCT=1
+
+						# For each class, we put the access modifiers into an array in the order they appear.
+						local ARRAY_ACCESS_MODIFIERS=()
+					fi
+				fi
+
+				# Check to see if this line ends a struct declaration.
+				if [[ $LINE =~ $pattern_struct_end ]]; then
+					# Check if we know we're inside a struct.
+					if [ $INSIDE_STRUCT ]; then
+						# We're not inside the struct any more.
+						ARRAY_ACCESS_MODIFIERS=
+						INSIDE_STRUCT=
+					fi
+				fi
+
+				# Check to see if this line looks like an access modifier.
+				if [[ $LINE =~ $pattern_access_mod ]]; then
+					# Check if we're inside a class.
+					if [ $INSIDE_CLASS ]; then
+						# Append the access modifier to our array.
+						ARRAY_ACCESS_MODIFIERS+=("${LINE%:*}")
+
+						# Make a reverse sorted copy of the modifiers.  By conincidence, this is the order they SHOULD appear in.
+						SORTED_ARRAY=
+						readarray -t SORTED_ARRAY < <(for A in "${ARRAY_ACCESS_MODIFIERS[@]}"; do echo "$A"; done | sort -r)
+
+						# Check if the original array matches the sorted version.
+						if [ "${ARRAY_ACCESS_MODIFIERS[*]}" != "${SORTED_ARRAY[*]}" ]; then
+							compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class access modifiers should be declared in order: public, protected, then private."
+							# At least one thing is wrong with this file.
+							CHECKS_OK=
+						fi
+					else
+						# We've found an access modifier outside a class, which shouldn't happen.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class access modifiers shouldn't be outside class declarations.  This will probably fail to compile."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=						
+					fi
+
+					# Check if we're inside a struct.
+					if [ $INSIDE_STRUCT ]; then
+						# Structs shouldn't have access modifiers.
+						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Structs should not have access modifiers."
+						# At least one thing is wrong with this file.
+						CHECKS_OK=						
+					fi						
+
+					# Else, we can just ignore this.
 				fi
 			else
   				# Checking is temporarily disabled, so all we do is see if this line enables them again.

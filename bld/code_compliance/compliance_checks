@@ -149,7 +149,7 @@ compliance_check_directory()
 												 -o -name "*.c" -print \
 												 -o -name "*.h" -print \
 												 -o -name "*.pde" -print); do
-		echo -e "${CYAN}\tChecking code compliance: ${FILE}"
+		echo -e "${CYAN}\tChecking code compliance: ${FILE#${TCPATH}/}"
 
 		# Iterate over each of the checks.
 		for CHECK in ${CHECKS}; do
@@ -216,11 +216,11 @@ compliance_fail_file()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCOMPLIANCE ERROR in $1: $2: '$3'\n${NO_COLOUR}"
+			echo -e "${RED}\tError: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE ERROR in $1: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Error: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of errors.
@@ -232,11 +232,11 @@ compliance_fail_file()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCOMPLIANCE WARNING in $1: $2: '$3'\n${NO_COLOUR}"
+			echo -e "${YELLOW}\tWarning: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "COMPLIANCE WARNING in $1: $2: '$3'\n\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Warning: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of warnings.
@@ -272,11 +272,11 @@ compliance_fail_line()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error in $1: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${RED}\tError: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance error in $1: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Error: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_ERRORS++))
@@ -285,11 +285,11 @@ compliance_fail_line()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning in $1: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${YELLOW}\tWarning: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance warning in $1: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Warning: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_WARNINGS++))
