@@ -1,0 +1,31 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+
+<tr>
+	<td bgcolor="#EEEEEE"><b>Identifier Field</b></td>
+	<td bgcolor="#EEEEEE"><b>DLC Field</b></td>
+	<td colspan="8" bgcolor="#E6E6E6"><b>Data Field</b></td>
+</tr>
+<tr>
+	<td bgcolor="#EEEEEE">ID</td>
+	<td bgcolor="#EEEEEE">DLC</td>
+	<td bgcolor="#EEEEEE">0</td>
+	<td bgcolor="#EEEEEE">1</td>
+	<td bgcolor="#EEEEEE">2</td>
+	<td bgcolor="#EEEEEE">3</td>
+	<td bgcolor="#EEEEEE">4</td>
+	<td bgcolor="#EEEEEE">5</td>
+	<td bgcolor="#EEEEEE">6</td>
+	<td bgcolor="#EEEEEE">7</td>
+</tr>
+<tr>
+	<td>BASE_ID + 5</td>
+	<td>0 - 8</td>
+	<td colspan="8">Data Bytes</td>
+</tr>
+
+</TABLE>
+>];
+}

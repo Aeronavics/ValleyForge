@@ -1,0 +1,24 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+
+<tr>
+	<td bgcolor="#EEEEEE"><b>Name</b></td>
+	<td bgcolor="#EEEEEE"><b>Values</b></td>
+	<td bgcolor="#EEEEEE"><b>Purpose</b></td>
+</tr>
+<tr>
+	<td>tty</td>
+	<td>Serial port device file (e.g. /dev/ttyUSB0)</td>
+	<td align="left" balign="left">This parameter is used to set the serial port device to use.</td>
+</tr>
+<tr>
+	<td>speed</td>
+	<td>Baud rate to use. (e.g. 115200)</td>
+	<td align="left" balign="left">This parameter is used to set the baud rate to use on the serial port.</td>
+</tr>
+
+</TABLE>
+>];
+}

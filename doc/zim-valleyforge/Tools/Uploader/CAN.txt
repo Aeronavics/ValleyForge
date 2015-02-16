@@ -4,7 +4,78 @@ Creation-Date: 2015-01-22T10:23:48+13:00
 
 ====== Modular Code Uploading Tool: CAN Protocol Module ======
 
-This is primarily intended to support the [[Bootloaders:Modular AVR Bootloader:CAN|CAN module]] of the [[Modular AVR Bootloader]].
+This is primarily intended to support the [[Bootloaders:Modular AVR Bootloader:CAN|CAN module]] of the [[:Bootloaders:Modular AVR Bootloader|Modular AVR Bootloader]].
 
 ===== Module Parameters =====
 This module uses a number of parameters given to the uploader with the -C command line switch.
+{{./diagram.png?type=diagram}}
+
+===== The Protocol =====
+The protocol consists of serveral messages for communicating with the bootloader and uploading the images.
+{{./diagram001.png?type=diagram}}
+All messages in the protocol are addressed to a specific target on the network by means of a single byte identifier in the first data byte of the message. Each message type has its own CAN bus ID and bootloader responses are sent using the corresponding ID to the command they are replying to. It is assumed that there will be only one node being programmed and only one node doing programming, this is necessary to avoid the need to have the programming and programmed node exchange address information and to avoid having two addressing identifiers in each message, which would consume one quarter of the data space of each message.
+
+===== CAN Message Format =====
+The CAN messages are all of the standard format(11-bit Identifier field). The identifier field, data length code(DLC) field and the data field of all the messages are shown below. The command messages are the messages specified above. Confirmation messages are messages that are sent to confirm the command message has been received. 
+
+==== Uploader Messages ====
+The Uploader has five command messages and a single confirmation message.
+
+=== REQUEST_RESTART ===
+{{./diagram002.png?type=diagram}}
+
+=== GET_INFO ===
+{{./diagram003.png?type=diagram}}
+
+=== WRITE_MEMORY ===
+{{./diagram004.png?type=diagram}}
+Note: The flash address is a 32-bit number and spans 4 bytes in big endian format. The code length is a 16-bit number and spans two bytes in big endian format.
+
+=== WRITE_DATA ===
+{{./diagram005.png?type=diagram}}
+Note: The amount of code can be one to seven bytes long. 
+
+=== READ_MEMORY ===
+{{./diagram006.png?type=diagram}}
+Note: The Flash address is a 32-bit number and spans 4 bytes in Big endian format. The Code length is a 16-bit number and spans 2 bytes in Big endian format. 
+
+=== Confirmation Message ===
+{{./diagram007.png?type=diagram}}
+
+==== Bootloader Messages ====
+The bootloader has two command messages and five confirmation message.
+
+=== READ_DATA ===
+{{./diagram008.png?type=diagram}}
+Note: The amount of code can be zero to eight bytes long.
+
+=== ALERT_UPLOADER ===
+{{./diagram009.png?type=diagram}}
+
+=== Confirmation Message ===
+{{./diagram010.png?type=diagram}}
+Note: The Confirmation_state will indicate whether or not the bootloader received a message with the correct information.
+
+=== Get_info Reply ===
+{{./diagram011.png?type=diagram}}
+
+===== Communication Sequence =====
+The uploading sequence runs in the following order:
+* Initialization
+* Write Page 1
+* Verify Page 1
+...The remaining pages are written and verified in numeric order.
+* Start application
+The initialization, writing, verification and starting of application sections are shown in detail in the following communication sequence diagrams.
+
+=== Initialization Sequence Diagram: ===
+{{./pasted_image.png}}
+
+=== Writing Sequence Diagram: ===
+{{./pasted_image002.png}}
+
+=== Verifying Sequence Diagram: ===
+{{./pasted_image003.png}}
+
+=== Start Application Sequence Diagram: ===
+{{./pasted_image004.png}}

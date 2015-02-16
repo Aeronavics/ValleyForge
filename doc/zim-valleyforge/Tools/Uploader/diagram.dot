@@ -1,0 +1,37 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+
+<tr>
+	<td bgcolor="#EEEEEE"><b>Option</b></td>
+	<td bgcolor="#EEEEEE"><b>Purpose</b></td>
+</tr>
+<tr>
+	<td>-f</td>
+	<td align="left" balign="left">This specifies the hex file to be programmed into the device. </td>
+</tr>
+<tr>
+	<td>-s</td>
+	<td align="left" balign="left">This specifies the size of the target memory and is used for allocating a buffer for hexfile reading.</td>
+</tr>
+<tr>
+	<td>-p</td>
+	<td align="left" balign="left">This specifies the flash page size of the target memory and is used to split up programming operations into page sized chunks.</td>
+</tr>
+<tr>
+	<td>-S</td>
+	<td align="left" balign="left">This specifies the expected signature of the device.</td>
+</tr>
+<tr>
+	<td>-c</td>
+	<td align="left" balign="left">This specifies which communication module to use, currently stk500v2 and can are acceptable values though the stk500v2 one will only work with a serial arduino bootloader.</td>
+</tr>
+<tr>
+	<td>-C</td>
+	<td align="left" balign="left">This is for giving parameters to the communication module. This is a list of name=value pairs separated by colons e.g. bitrate=1000000:iface=can0.<br/>The specific meaning of these depends on the communication module.</td>
+</tr>
+
+</TABLE>
+>];
+}

@@ -1,0 +1,60 @@
+digraph structs {
+node [shape=plaintext]
+struct1 [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+
+<tr>
+	<td bgcolor="#EEEEEE"><b>Message</b></td>
+	<td bgcolor="#EEEEEE"><b>Purpose</b></td>
+</tr>
+<tr>
+	<td>REQUEST_RESTART</td>
+	<td align="left" balign="left">
+		This message is used for several purposes:<br/>
+		- It is used to request the application to restart and enter the bootloader for programming. This means that the application should recognise and respond correctly to this message.<br/>
+		- It is also used to request the bootloader to restart into the application or to just restart back into the bootloader if the need arises.
+	</td>
+</tr>
+<tr>
+	<td>GET_INFO</td>
+	<td align="left" balign="left">
+		This message is used to retrieve important identity information from the bootloader such as:<br/>
+		- The bootloader version<br/>
+		- The model and type of microcontroller it is running on.<br/>
+	</td>
+</tr>
+<tr>
+	<td>WRITE_MEMORY</td>
+	<td align="left" balign="left">
+		 	This message is used to start a write to memory, includes target address and length of data. This will be followed by one or more WRITE_DATA messages containing the actual data. 
+	</td>
+</tr>
+<tr>
+	<td>WRITE_DATA</td>
+	<td align="left" balign="left">
+		This message is used to send packets of data to the bootloader for programming.
+	</td>
+</tr>
+<tr>
+	<td>READ_MEMORY</td>
+	<td align="left" balign="left">
+		This message is used to inform the bootloader that the uploading program wishes to read memory, this message contains an address and a length.<br/>
+		The bootloader will reply with one or more READ_DATA messages containing the data for the region of memory read.
+	</td>
+</tr>
+<tr>
+	<td>READ_DATA</td>
+	<td align="left" balign="left">
+		This message is used to receive packets of data from the bootloader after a read memory request.
+	</td>
+</tr>
+<tr>
+	<td>ALERT_UPLOADER</td>
+	<td align="left" balign="left">
+		This message is used to inform the uploading program that the Bootloader is awaiting Uploader messages.
+	</td>
+</tr>
+
+</TABLE>
+>];
+}

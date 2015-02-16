@@ -1,0 +1,11 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-16T10:02:42+13:00
+
+====== Intel Hex File Parser ======
+Intel Hex files are one of the most common ways of storing the final code for microcontrollers and is a common input format for uploading tools. For this reason the code uploading tool can read code from Intel hex files. 
+
+===== Implementation =====
+ The support for reading IHex files is implemented in two parts. The first part is the IHexRecord class, this class is used for parsing a textual IHex record from a line in an IHex file into the data that it represents and exposing an interface for this data to be used by the application. The second part is implemented in the readFromIHexFile method of the MemoryMap class which uses the IHexRecord class to read an IHex file into a memory map.
+
+Other format support can be added to the MemoryMap class either by subclassing and using the readFromFile virtual method or by adding a suitable method for parsing the file into the memory map and then adding detection for the file type in readFromFile. Since the tool is distributed as source and not intended to support plugins the latter method is suitable, the former method may require some additional changes to make the tool use the subclass in the right instances so may be more troublesome. 
