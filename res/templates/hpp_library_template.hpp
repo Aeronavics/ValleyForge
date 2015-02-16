@@ -31,7 +31,7 @@
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-enum public_enum_type {PUBLIC_ENUM_TYPE_0, PUBLIC_ENUM_TYPE_1};
+enum Public_enum_type {PUBLIC_ENUM_TYPE_0, PUBLIC_ENUM_TYPE_1};
 
 class Public_class_type
 {
