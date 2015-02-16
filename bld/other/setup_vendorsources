@@ -375,14 +375,14 @@ unpack_vendor_stlink()
 }
 
 ######################################## FUNCTION #########################################
-###											###
-### NAME:		unpack_vendor_astyle						###
-###											###
-### Inputs/Outputs:	None.								###
-###											###
-### Purpose:		Checks if astyle is available for use, and			###
-###			if not, sets it up ready to go.					###
-###											###
+###
+### NAME:			unpack_vendor_astyle
+###
+### Inputs/Outputs:	None.
+###
+### Purpose:		Checks if astyle is available for use, and if not, sets it up ready
+###					to go.
+###
 ###########################################################################################
 
 unpack_vendor_astyle()
@@ -404,6 +404,8 @@ unpack_vendor_astyle()
 		pushd "${VENDOR_ASTYLE_LOCAL}/astyle/build/gcc" >/dev/null
 		make
 		
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
 		# Check if making worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -415,7 +417,9 @@ unpack_vendor_astyle()
 	else
 		# The source has already been downloaded.
 		echo -e "${CYAN}\tAstyle available...\n${NO_COLOUR}"
-    	fi
+    
+		# TODO - Maybe should check if the files are up to date.
+    fi
 
 	# TODO - Test that now the required files actually exist.
 
@@ -461,6 +465,8 @@ unpack_vendor_uncrustify()
 		fi
 		# Then we make.
 		make
+
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
 	
 		# Check if making worked.
 		if [ $? != 0 ]; then
@@ -470,12 +476,15 @@ unpack_vendor_uncrustify()
 			return 1
 		fi
 		popd >/dev/null
+
+		# Probably need a new line to keep things tidy.
+		echo ""
 	else
 		# The source has already been downloaded.
 		echo -e "${CYAN}\tUncrustify available...\n${NO_COLOUR}"
 
-		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
-    	fi
+		# TODO - Maybe should check if the existing files are up to date.
+    fi
 
 	# TODO - Test that now the required files actually exist.
 
@@ -521,6 +530,8 @@ unpack_vendor_pcregrep()
 		fi
 		# Then we make.
 		make
+
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.		
 	
 		# Check if making worked.
 		if [ $? != 0 ]; then
@@ -530,12 +541,15 @@ unpack_vendor_pcregrep()
 			return 1
 		fi
 		popd >/dev/null
+
+		# Probably need a new line to keep things tidy.
+		echo ""
 	else
 		# The source has already been downloaded.
 		echo -e "${CYAN}\tPcregrep available...\n${NO_COLOUR}"
 
-		# TODO - Maybe at some stage we might want to check if the existing files are up to date.
-    	fi
+		# TODO - Maybe should check if the existing files are up to date.
+    fi
 
 	# TODO - Test that now the required files actually exist.
 
