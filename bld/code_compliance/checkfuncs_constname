@@ -53,21 +53,40 @@ compliance_check_file_constname()
 		#	$2 - The line number we are up to.
 		#
 
+		local current_line=$1 
+
 		# Temporary variables to store individual words in the string and should not be empty at the beginning
 		indiv_word1="just text"
 		indiv_word2="just text"
+		
+		pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+([a-zA-Z0-9,_*& ]*)\)+)"
 
 		# Condition to avoid comment lines
-		if ! [[ $1 == "/"* || "$1" == "*"* ]]; then
+		if ! [[ $current_line == "/"* || "$current_line" == "*"* ]]; then
 
 			# Condition to obtain lines with constants.
-			if [[ $1 =~ "const " ]]; then
+			if [[ $current_line =~ "const " ]]; then
+
+				# Check if a constant is declared and provided as a function argument.
+				if [[ $current_line =~ $pattern_function ]]; then
+
+					# Remove leading and trailing whitespaces for processing.
+					temp_string=$(echo "${BASH_REMATCH[4]}" | awk '{gsub(/^ +| +$/,"")} {print $0}')
+
+					if [[ $temp_string ]]; then
+						# Add a semi-colon to the string in order to ease processing.
+						function_arguments="$temp_string;"
+
+						# Copy the function arguments string to current line variable to be processed.
+						current_line=$function_arguments
+					fi
+				fi
 
 				# Condition to check for single variable initialisation
-				if [[ $1 =~ \= && ! $1 =~ "," ]]; then					
+				if [[ $current_line =~ \= && ! $current_line =~ "," ]]; then					
 
 					# Obtain the part of string before "="				
-					first_str=${1%=*}
+					first_str=${current_line%=*}
 					strcount=0
 			
 					# Loop through the words in the line to get to the required constant name.
@@ -84,20 +103,20 @@ compliance_check_file_constname()
 	
 					# Condition to check for lower case characters in constant names.
 					if [[ "$req_str" =~ [a-z] ]]; then
-						ERROR="'$req_str' contains lower case characters."
 
+						ERROR="'$req_str' contains lower case characters."
 						return 1
 					fi
 				
 				# Condition to check for initialisation of multiple variables
-				elif [[ $1 =~ \= && $1 =~ "," ]]; then					
+				elif [[ $current_line =~ \= && $current_line =~ "," ]]; then					
 					strcount1=0
 
 					# Loop through the words in the line to get to the required constant name.
 					while [[ $indiv_word1 != "" ]];
 					do
 						strcount1=$((strcount1+1))
-						indiv_word1=`echo "$1" | cut -d ',' -f $strcount1`
+						indiv_word1=`echo "$current_line" | cut -d ',' -f $strcount1`
 					
 						# This is to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
 						if [[ $strcount1 == "1" ]]; then
@@ -118,8 +137,8 @@ compliance_check_file_constname()
 	
 							# Condition to check for lower case characters in constant names.
 							if [[ "$req_str" =~ [a-z] ]]; then
-								ERROR="'$req_str' contains lower case characters."
 
+								ERROR="'$req_str' contains lower case characters."
 								return 1
 							fi
 						else
@@ -127,22 +146,22 @@ compliance_check_file_constname()
 
 							# Condition to check for lower case characters in constant names.
 							if [[ "$str_var" =~ [a-z] ]]; then
-								ERROR="'$str_var' contains lower case characters."
 
+								ERROR="'$str_var' contains lower case characters."
 								return 1
 							fi
 						fi
 					done
 	
 				# This part is for const pointers
-				elif [[ $1 =~ "*" ]]; then
+				elif [[ $current_line =~ "*" ]]; then
 					strcount=0
 
 					# Loop through the words in the line before actual variable name
 					while [[ $indiv_word1 != "" ]];
 					do
 						strcount=$((strcount+1))
-						indiv_word1=`echo "$1" | cut -d ' ' -f $strcount`
+						indiv_word1=`echo "$current_line" | cut -d ' ' -f $strcount`
 	
 						# If the string contains "," or ";", it is a variable name
 						if [[ $indiv_word1 =~ "," || $indiv_word1 =~ ";" && ! $indiv_word1 =~ "(" ]]; then
@@ -153,8 +172,8 @@ compliance_check_file_constname()
 							
 							# Condition to check for lower case characters in constant names.
 							if [[ "$indiv_word1" =~ [a-z] ]]; then
+
 								ERROR="'$indiv_word1' contains lower case characters."
-	
 								return 1
 							fi
 						fi
@@ -179,6 +198,18 @@ compliance_check_file_constname()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
+	# Pattern to match multi line comment start.
+	pattern_comment_start="^[ \t]*(\/\*)"
+
+	# Pattern to match multi line comment end.
+	pattern_comment_end="(.*)(\*\/)"
+
+	# Pattern to match single line comment.
+	pattern_comment_single="^[ \t]*(\/\*)(.*)(\*\/)"
+
+	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
+
 	# Iterate over each of the lines in the file.
 	while read LINE
 	do
@@ -188,23 +219,49 @@ compliance_check_file_constname()
   		if [ ${CHECKS_EN} ]; then
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
+
   				CHECKS_EN=
   				continue
   			fi
 
-  			# Ok, so now we actually want to check this line for compliance.
-			if ! check_line "$LINE" $LINE_NUM; then
-				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_constname" $FILE $LINE_NUM "Non-compliant constant name: $ERROR"
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 
-				# At least one thing is wrong in this file.
-				CHECKS_OK=
+				CHECKS_COMMENT=1
+				continue
+			fi
+
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+				CHECKS_COMMENT=
+				continue
+			fi
+			
+			# Check whether the line is a single comment line. If yes, read the next line.
+			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+
+				continue
+			fi
+
+			# Proceed checking for compliance only if the line is not a comment.
+			if [[ ! ${CHECKS_COMMENT} ]]; then
+	
+	  			# Ok, so now we actually want to check this line for compliance.
+				if ! check_line "$LINE" $LINE_NUM; then
+					
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_constname" $FILE $LINE_NUM "Non-compliant constant name: $ERROR"
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
 			fi
   		else
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+
   				# Enable checking again.
   				CHECKS_EN=1
   			fi
@@ -216,10 +273,13 @@ compliance_check_file_constname()
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
+
 		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_constname" $FILE "This file contains non-compliant constant name(s)."
 	fi

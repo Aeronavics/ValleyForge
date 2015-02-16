@@ -51,6 +51,8 @@ compliance_check_file_filecomplete()
 	str_lastline=$(tail -1 $FILE | head -1)
 
 	if [[ $str_lastline != "// ALL DONE." ]]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_filecomplete" $FILE "This file doesn't conclude with the comment \"// ALL DONE.\""
 	fi
 

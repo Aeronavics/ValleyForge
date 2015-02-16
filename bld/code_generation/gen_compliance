@@ -51,7 +51,6 @@ gen_compliance()
 	# Function for modifying code according to commenting conventions
 	gen_comment()
 	{
-
 		#
 		#	$1 - The file to modified according to commenting conventions.
 		#
@@ -72,10 +71,8 @@ gen_compliance()
 		do
 			string=$(awk 'NR == '"$str_line"' ' $1)
 	
-			if [[ $string =~ "\\" ]]; then
-				# The line contains line breaks. Do nothing.
-				:
-			else
+			if [[ ! $string =~ "\\" ]]; then
+
 				# Replace C style comments with C++ style comments.
 				sed -i ''"$str_line"'s:\(.*\)\/[*][ ]*\(.*\)[*]\/:\1// \2:' $1
 			fi
@@ -132,6 +129,7 @@ gen_compliance()
 
 	# Obtain user's choice to modify entire directory or particular file.
 	echo -e "${GREEN}Which layout convention do you want to enforce?\n${NO_COLOUR}"
+
 	select choice in comment All_layout Exit
 	do
 		case $choice in
@@ -182,6 +180,7 @@ gen_compliance()
 		ALL_FILES+=("Exit")
 
 		PS3='Please enter a number from above list: '
+
 		# Create a menu of available files and have the user select one.
 		select FILE in ${ALL_FILES[@]}
 		do

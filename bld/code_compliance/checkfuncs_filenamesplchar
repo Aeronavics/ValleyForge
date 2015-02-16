@@ -54,6 +54,8 @@ compliance_check_file_filenamesplchar()
 	filename="${filename%.*}"
 
 	if [[ "$filename" =~ [^$valcase] ]]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_filenamesplchar" $FILE "This file's name contains invalid characters"	
 	fi
 	

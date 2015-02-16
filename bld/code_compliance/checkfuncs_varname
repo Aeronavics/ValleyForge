@@ -53,167 +53,190 @@ compliance_check_file_varname()
 		#	$2 - The line number we are up to.
 		#
 
+		local current_line=$1
+
 		# Pattern to match variable declarartions.
-		pattern_declar="^([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[, ]*)+[;]+" 
+		pattern_declar="^[ \t]*([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_*]+[[a-zA-Z0-9_*]*]*[, ]*)+[;]+" 
 
 		# Pattern to match variable initialisations.
-		pattern_init="^([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]+[a-zA-Z0-9_]+[, ]*)+[;]+" 
+		pattern_init="^[ \t]*([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]+[a-zA-Z0-9_]+[, ]*)+[;]+" 
 
 		# Pattern to match lines containing both variable declarations and initialisations.
-		pattern_both="^([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]*[a-zA-Z0-9_]*[, ]*)+[;]+"
+		pattern_both="^[ \t]*([a-zA-Z0-9_*]+[ ]+)+([a-zA-Z0-9_]+[[a-zA-Z0-9_]*]*[= ]*[a-zA-Z0-9_]*[, ]*)+[;]+"
 
 		# Pattern to match multiple pointer/reference types declared on a single line. 
-		pattern_multiple_point_ref="^[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]*[ ]*[a-zA-Z0-9_]+)+;"
+		pattern_multiple_point_ref="^[ \t]*[a-zA-Z0-9_]+[ ]*[*&]+[ ]*[a-zA-Z0-9_]+,([ ]*[*&]*[ ]*[a-zA-Z0-9_]+)+;"
 
 		# Patterns to check for declarations of variables of different types in the same line.
-		pattern_mul_var="^([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"
-		pattern_mul_diff="([[a-zA-Z0-9_]+[ ]*)+]*(,[ ]*[a-zA-Z0-9_]*[ ]*[a-zA-Z0-9_]+)+;"
+		pattern_mul_var="^[ \t]*([a-zA-Z0-9_]+[ ]*)+(,[ ]*[a-zA-Z0-9_]+)+;"
+		pattern_mul_diff="^[ \t]*([[a-zA-Z0-9_]+[ ]*)+]*(,[ ]*[a-zA-Z0-9_]*[ ]*[a-zA-Z0-9_]+)+;"
 
 		# Pattern to match keywords which should be immediately followed by colon but have space in between.
-		pattern_keywords_colon="^(\s)*(default|private|protected|public)(\s)+:"
+		pattern_keywords_colon="^[ \t]*(default|private|protected|public)(\s)+:"
 
 		# Pattern to match variables 'I' or 'O'.
 		pattern_confusing_var="\bl\b|\bO\b"	
+
+		pattern_function="([a-zA-Z0-9_*&]+) ([a-zA-Z0-9_*&:]+)(\(+([a-zA-Z0-9,_*& ]*)\)+)"
 
 		# Temporary variables to hold individual words in string and should not be empty at the beginning.
 		indiv_word1="just text"
 		indiv_word2="just text"
 
 		# Condition to avoid comment lines and false positives with pattern similar to variable declarations and initialisations.
-		if [[ $1 == "/"* || "$1" == "*"* || "$1" =~ "const" || "$1" =~ "return" || "$1" =~ "struct" || "$1" =~ "class" ]]; then			
+		if [[ $current_line == "/"* || "$current_line" == "*"* || "$current_line" =~ "const" || "$current_line" =~ "typedef" || "$current_line" =~ "return" || "$current_line" =~ "struct" || "$current_line" =~ "class" ]]; then	
+		
 			return 0
 
 		# Condition to check for variables composing only of characters 'l' or 'O'.
-		elif [[ $1 =~ $pattern_confusing_var ]]; then
-			ERROR="This line contains variables composed of 'l' and 'O' characters only."		
+		elif [[ $current_line =~ $pattern_confusing_var ]]; then
 
+			ERROR="This line contains variables composed of 'l' and 'O' characters only."		
 			return 1
 
 		# Condition to check for keywords which immediately should be followed by colon but have spaces in between them.
-		elif [[ $1 =~ $pattern_keywords_colon ]]; then
+		elif [[ $current_line =~ $pattern_keywords_colon ]]; then
 			ERROR="'${BASH_REMATCH[2]}' should be immediately followed by colon with no spaces in between them."		
 
 			return 1
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
-		elif [[ $1 =~ $pattern_multiple_point_ref ]]; then
-			ERROR="This line contains multiple reference/pointer type declarations"		
+		elif [[ $current_line =~ $pattern_multiple_point_ref ]]; then
 
+			ERROR="This line contains multiple reference/pointer type declarations"		
 			return 1
 
 		# Condition to detect where a single line contains multiple reference/pointer type declarations.
-		elif [[ ! $1 =~ $pattern_mul_var && $1 =~ $pattern_mul_diff ]]; then
-			ERROR="This line contains declarations of variables of different types"		
+		elif [[ ! $current_line =~ $pattern_mul_var && $current_line =~ $pattern_mul_diff ]]; then
 
+			ERROR="This line contains declarations of variables of different types"		
 			return 1
 
 		# Condition to detect where a single line contains both declarations and initialisations.
-		elif [[ $1 =~ $pattern_both && ! $1 =~ $pattern_declar && ! $1 =~ $pattern_init ]]; then
-			ERROR="This line contains both variable declarations and initialisations"		
+		elif [[ $current_line =~ $pattern_both && ! $current_line =~ $pattern_declar && ! $current_line =~ $pattern_init ]]; then
 
+			ERROR="This line contains both variable declarations and initialisations"		
 			return 1
 
-		# Condition to match lines which have multiple variables e.g. int a, b, c; Also single variable declarations e.g. int a;
-		elif [[ $1 =~ $pattern_declar ]]; then
-			strcount=0
+		else
+			if [[ $current_line =~ $pattern_function ]]; then
+				# Remove leading and trailing whitespaces for processing.
+				temp_string=$(echo "${BASH_REMATCH[4]}" | awk '{gsub(/^ +| +$/,"")} {print $0}')
 
-			# Loop to get the strings before actual variable name
-			while [[ $indiv_word1 != "" || $indiv_word1 =~ ";" ]];
-			do
-				strcount=$((strcount+1))
-				indiv_word1=`echo "$1" | cut -d ' ' -f $strcount`
+				if [[ $temp_string ]]; then
+					# Add a semi-colon to the string in order to ease processing.
+					function_arguments="$temp_string;"
 
-				# If the string contains "," or ";", it is a variable name
-				if [[ $indiv_word1 =~ "," || $indiv_word1 =~ ";" && ! $indiv_word1 =~ "(" ]]; then
+					# Copy the function arguments string to current line variable to be processed.
+					current_line=$function_arguments
+					echo "$2 -> $current_line"
+				fi
+			fi
 
-					# Condition to check the presence of array variables.
-					if [[ $indiv_word1 =~ "[" ]]; then
-						indiv_word1=${indiv_word1%[*}
+			# Condition to match lines which have multiple variables e.g. int a, b, c; Also single variable declarations e.g. int a;
+			if [[ $current_line =~ $pattern_declar ]]; then
+				strcount=0
+
+				# Loop to get the strings before actual variable name
+				while [[ $indiv_word1 != "" || $indiv_word1 =~ ";" ]];
+				do
+					strcount=$((strcount+1))
+					indiv_word1=`echo "$current_line" | cut -d ' ' -f $strcount`
+
+					# If the string contains "," or ";", it is a variable name
+					if [[ $indiv_word1 =~ "," || $indiv_word1 =~ ";" && ! $indiv_word1 =~ "(" ]]; then
+
+						# Condition to check the presence of array variables.
+						if [[ $indiv_word1 =~ "[" ]]; then
+							indiv_word1=${indiv_word1%[*}
+						fi
+
+						# Condition to check for variable name's validity
+						if [[ "$indiv_word1" =~ [A-Z] ]]; then
+
+							ERROR="Non-compliant variable name: '${indiv_word1//[!a-zA-Z]}' contains upper case characters."
+							return 1
+						fi
+
+						# Break the loop if semi-colon is encountered.
+						if [[ $indiv_word1 =~ ";" ]]; then
+
+							break
+						fi
 					fi
+				done
+
+			# Condition to match lines with variable initialisation as in int a=90;
+			elif [[ $current_line =~ $pattern_init ]]; then 
+
+				# Condition to check for initialisation of single variable.
+				if [[ $current_line =~ \= && ! $current_line =~ "," ]]; then			
+					first_str=${current_line%=*}
+					strcount=0
+					
+					# Loop to get the strings before actual variable name
+					while [[ $indiv_word1 != "" ]];
+					do
+						strcount=$((strcount+1))
+						indiv_word1=`echo "$first_str" | cut -d ' ' -f $strcount`
+
+						# Condition to obtain the required variable name
+						if [[ $indiv_word1 != "" ]]; then
+							req_str=$indiv_word1
+						fi	
+					done
 
 					# Condition to check for variable name's validity
-					if [[ "$indiv_word1" =~ [A-Z] ]]; then
-						ERROR="Non-compliant variable name: '${indiv_word1//[!a-zA-Z]}' contains upper case characters."
+					if [[ "$req_str" =~ [A-Z] ]]; then
 
+						ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
 						return 1
 					fi
 
-					# Break the loop if semi-colon is encountered.
-					if [[ $indiv_word1 =~ ";" ]]; then
-						break
-					fi
-				fi
-			done
+				# Condition to check for initialisation of multiple variables.
+				elif [[ $current_line =~ \= && $current_line =~ "," ]]; then
+					strcount1=0
 
-		# Condition to match lines with variable initialisation as in int a=90;
-		elif [[ $1 =~ $pattern_init ]]; then 
-
-			# Condition to check for initialisation of single variable.
-			if [[ $1 =~ \= && ! $1 =~ "," ]]; then			
-				first_str=${1%=*}
-				strcount=0
-				
-				# Loop to get the strings before actual variable name
-				while [[ $indiv_word1 != "" ]];
-				do
-					strcount=$((strcount+1))
-					indiv_word1=`echo "$first_str" | cut -d ' ' -f $strcount`
-
-					# Condition to obtain the required variable name
-					if [[ $indiv_word1 != "" ]]; then
-						req_str=$indiv_word1
-					fi	
-				done
-
-				# Condition to check for variable name's validity
-				if [[ "$req_str" =~ [A-Z] ]]; then
-					ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
-					return 1
-				fi
-
-			# Condition to check for initialisation of multiple variables.
-			elif [[ $1 =~ \= && $1 =~ "," ]]; then
-				strcount1=0
-
-				while [[ $indiv_word1 != "" ]];
-				do
-					strcount1=$((strcount1+1))
-					indiv_word1=`echo "$1" | cut -d ',' -f $strcount1`
+					while [[ $indiv_word1 != "" ]];
+					do
+						strcount1=$((strcount1+1))
+						indiv_word1=`echo "$current_line" | cut -d ',' -f $strcount1`
 						
-					# Condition to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
-					if [[ $strcount1 == "1" ]]; then
-						first_str=${indiv_word1%=*}
-						strcount=0
+						# Condition to match the first part of the string which is different from the rest. E.g. "static int a = 0", b = 10;
+						if [[ $strcount1 == "1" ]]; then
+							first_str=${indiv_word1%=*}
+							strcount=0
 				
-						while [[ $indiv_word2 != "" ]];
-						do
-							strcount=$((strcount+1))
-							indiv_word2=`echo "$first_str" | cut -d ' ' -f $strcount`
+							while [[ $indiv_word2 != "" ]];
+							do
+								strcount=$((strcount+1))
+								indiv_word2=`echo "$first_str" | cut -d ' ' -f $strcount`
 
-							if [[ $indiv_word2 != "" ]]; then
-								req_str=$indiv_word2
+								if [[ $indiv_word2 != "" ]]; then
+									req_str=$indiv_word2
+								fi
+							done
+
+							# Condition to check for variable name's validity
+							if [[ "$req_str" =~ [A-Z] ]]; then
+
+								ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
+								return 1
 							fi
-						done
 
-						# Condition to check for variable name's validity
-						if [[ "$req_str" =~ [A-Z] ]]; then
-							ERROR="Non-compliant variable name: '${req_str//[!a-zA-Z]}' contains upper case characters."
+						# Condition to match the latter parts of the string which are similiar. E.g. static int a = 0, "temp = 90, temp2 = 8;"  
+						else
+							str_var=${indiv_word1%=*}
 
-							return 1
-						fi
+							# Condition to check for variable name's validity
+							if [[ "$str_var" =~ [A-Z] ]]; then
 
-					# Condition to match the latter parts of the string which are similiar. E.g. static int a = 0, "temp = 90, temp2 = 8;"  
-					else
-						str_var=${indiv_word1%=*}
-
-						# Condition to check for variable name's validity
-						if [[ "$str_var" =~ [A-Z] ]]; then
-							ERROR="Non-compliant variable name: '${str_var//[!a-zA-Z]}' contains upper case characters."
-
-							return 1
-						fi
-					fi	
-				done				
+								ERROR="Non-compliant variable name: '${str_var//[!a-zA-Z]}' contains upper case characters."
+								return 1
+							fi
+						fi	
+					done				
+				fi
 			fi
 		fi
 
@@ -233,12 +256,25 @@ compliance_check_file_varname()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
+	# Pattern to match multi line comment start.
+	pattern_comment_start="^[ \t]*(\/\*)"
+
+	# Pattern to match multi line comment end.
+	pattern_comment_end="(.*)(\*\/)"
+
+	# Pattern to match single line comment.
+	pattern_comment_single="^[ \t]*(\/\*)(.*)(\*\/)"
+
+	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
+
 	while read LINE
 	do
 		# Increment the line number.
   		((LINE_NUM++))
 
   		if [ ${CHECKS_EN} ]; then
+
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
 				
@@ -246,18 +282,39 @@ compliance_check_file_varname()
   				continue
   			fi
 
-  			# Ok, so now we actually want to check this line for compliance.
-			if ! check_line "$LINE" $LINE_NUM; then
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
 
-				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_varname" $FILE $LINE_NUM "$ERROR"
-		
-				# At least one thing is wrong in this file.
-				CHECKS_OK=
+				CHECKS_COMMENT=1
+				continue
+			fi
 
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+				CHECKS_COMMENT=
+				continue
+			fi
+			
+			# Check whether the line is a single comment line. If yes, read the next line.
+			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+
+				continue
+			fi
+
+			# Proceed checking for compliance only if the line is not a comment.
+			if [[ ! ${CHECKS_COMMENT} ]]; then
+
+	  			# Ok, so now we actually want to check this line for compliance.
+				if ! check_line "$LINE" $LINE_NUM; then
+
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_varname" $FILE $LINE_NUM "$ERROR"
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
 			fi
   		else
-
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
@@ -267,7 +324,6 @@ compliance_check_file_varname()
   				CHECKS_EN=1
   			fi
   		fi
-
 	done < $FILE
 
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
@@ -275,10 +331,13 @@ compliance_check_file_varname()
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
+
 		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_varname" $FILE "This file contains non-compliant variable name(s)."
 	fi

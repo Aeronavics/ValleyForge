@@ -53,62 +53,49 @@ compliance_check_file_classnamecheck()
 		#	$2 - The line number we are up to.
 		#
 
+		local current_line=$1
+
 		# Regex pattern to match template names.
 		pattern_template="(template)+[ ]*<[a-zA-Z0-9_]+ ([a-zA-Z0-9_]+)>"
 	
 		# Regex pattern to match class names.
-		pattern_class="class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
-
-		# Regex pattern to match lines containing enum.
-		pattern_enum="enum[ 	]*[a-zA-Z_0-9]+[ 	]*\{(.*)\};"
+		pattern_class="^[ \t]*class ([A-Za-z0-9_]+)([ :a-zA-Z]*)"
 	
 		# Condition used for ignoring lines which include comments. 
-		if [[ "$1" =~ ^/.*|^\*.* ]]; then
+		if [[ "$current_line" =~ ^/.*|^\*.* ]]; then
 
 			# If it is a comment line, do nothing.
 			return 0	
 
 		# Condition to check for template names.
-		elif [[ $1 =~ $pattern_template ]]; then
+		elif [[ $current_line =~ $pattern_template ]]; then
 			
 			name_template=${BASH_REMATCH[2]}
 			template_size=${#name_template}
 
 			# Condition to check whether template names have more than one character.
 			if [[ $template_size != 1 ]]; then
-				ERROR="'$name_template' has more than one uppercase letter."
 
+				ERROR="'$name_template' has more than one uppercase letter."
 				return 1
 			fi
 
 			# Condition to check whether template names contain lower case letters.
 			if [[ $name_template =~ [a-z] ]]; then
-				ERROR="'$name_template' contains lowercase letters."
 
+				ERROR="'$name_template' contains lowercase letters."
 				return 1
 			fi	
 
 		# Condition to check for class names.
-		elif [[ $1 =~ $pattern_class ]]; then	
+		elif [[ $current_line =~ $pattern_class ]]; then	
         		
 			name_class=${BASH_REMATCH[1]}
 
 			# Condition to check for lowercase letters.
 			if [[ ${name_class:0:1} =~ [a-z] ]]; then
+
 				ERROR="'$name_class' doesn't begin with an uppercase letter."
-
-				return 1
-			fi
-
-		# Condition to check for enum labels.
-		elif [[ $1 =~ $pattern_enum ]]; then
-	
-			str_enum_label=${BASH_REMATCH[1]}
-
-			# Condition to check for lowercase letters in enum labels.
-			if [[ $str_enum_label =~ [a-z] ]]; then
-				ERROR="'$str_enum_label' contains lowercase letters."
-
 				return 1
 			fi
 		fi
@@ -120,23 +107,13 @@ compliance_check_file_classnamecheck()
 	# Function to check the declaration order of access modifiers in a class.
 	check_declaration_order()
 	{
-		#
-		#	$1 - The file we are checking.
-		#
-		
-		# The file we're checking was the first argument we received.
-		local FILE=$1
-
 		# Need to keep track of the line number we are up to.
 		local LINE_NUM=
 		
-		# Initially, we are checking.
-		local CHECKS_EN=1
-
-		# Pattern to match the beginning of a class declaration.
+		# Regex Pattern to match the beginning of a class declaration.
 		pattern_class_start="class\s+([^\s]+)"
 
-		# Pattern to match access modifier.
+		# Regex Pattern to match access modifier.
 		pattern_access_mod="^[a-z]+:"
 
 		# Read the contents of the file.
@@ -151,67 +128,54 @@ compliance_check_file_classnamecheck()
 			# Empty the contents of the array.
 			unset array_access_modifiers
 
-			if [ ${CHECKS_EN} ]; then
-	  			# Check to see whether this line disables checking temporarily.
-	  			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
-				
-	  				CHECKS_EN=
-	  				continue
-	  			fi
+			# Condition to check if the line matches class pattern.
+			if [[ $LINE =~ $pattern_class_start ]]; then
 
-				# Condition to check if the line matches class pattern.
-				if [[ $LINE =~ $pattern_class_start ]]; then
-
-					# Read the next line to ensure that it is a class declaration.
-					read LINE
+				# Store the line number in order to report if any issue arises.
+				class_line_number=$LINE_NUM					
+	
+				# Read the next line to ensure that it is a class declaration.
+				read LINE
 					
-					# Increment the line number.
-			  		((LINE_NUM++))
+				# Increment the line number.
+		  		((LINE_NUM++))
 
-					if [[ $LINE =~ "{" ]]; then
+				if [[ $LINE =~ "{" ]]; then
 
-						# Continue reading inside the class declaration.
-						while read LINE
-						do
-							# Increment the line number.
-					  		((LINE_NUM++))
+					# Continue reading inside the class declaration.
+					while read LINE
+					do
+						# Increment the line number.
+				  		((LINE_NUM++))
 
-							# Store the access modifiers of the class in the array and increment the array counter.
-							if [[ $LINE =~ $pattern_access_mod ]]; then
-								array_access_modifiers[$array_count]=${LINE%:*}
-								array_count=$((array_count+1))
-							fi
+						# Store the access modifiers of the class in the array and increment the array counter.
+						if [[ $LINE =~ $pattern_access_mod ]]; then
+							array_access_modifiers[$array_count]=${LINE%:*}
+							array_count=$((array_count+1))
+						fi
 							
-							# Check if the line denotes the end of class declaration.
-							if [[ $LINE =~ "};" ]]; then
+						# Check if the line denotes the end of class declaration.
+						if [[ $LINE =~ "};" ]]; then
 
-								# Sort the array contents in reverse order which is the required standard order.
-								readarray -t sorted < <(for a in "${array_access_modifiers[@]}"; do echo "$a"; done | sort -r)
+							# Sort the array contents in reverse order which is the required standard order.
+							readarray -t sorted < <(for a in "${array_access_modifiers[@]}"; do echo "$a"; done | sort -r)
 
-								original_array=${array[@]}
-								sorted_array=${sorted[@]}
+							original_array=${array_access_modifiers[@]}
+							sorted_array=${sorted[@]}
 
-								# Check if the original array and sorted array are equal. If not, display warning message.
-								if [ "$original_array" != "$sorted_array" ]; then
-									compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class declaration order: The declaration order doesn't follow correct order."
-									# At least one thing is wrong in this file.
-									CHECKS_OK=
-								fi
+							# Check if the original array and sorted array are equal.
+							if [ "$original_array" != "$sorted_array" ]; then
 								
-								# We have reached the end of the class declaration. So break the loop.
-								break
+								# Set the error flag.
+								array_error_flag_class[$class_line_number]=1
 							fi
-						done
-					fi
+								
+							# We have reached the end of the class declaration. So break the loop.
+							break
+						fi
+					done
 				fi
-			else
-  				# Checking is temporarily disabled, so all we do is see if this line enables them again.
-  				if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
-  					
-					# Enable checking again.
-  					CHECKS_EN=1
-  				fi
-  			fi
+			fi
 		done < $FILE
 
 		# All done.
@@ -232,18 +196,39 @@ compliance_check_file_classnamecheck()
 
 	# Variable used to denote whether the line is a comment or not. Initially we assume that the line is not a comment.
 	local CHECKS_COMMENT=
+	
+	# Arrays used as flag to check whether an error has occurred in classes/enum in a specific line. 
+	unset array_error_flag_class
+	unset array_error_flag_enum
 
-	# Pattern to match multi line comment start.
-	pattern_comment_start="^[ 	]*(\/\*)"
+	# Regex Pattern to match multi line comment start.
+	pattern_comment_start="^[ \t]*(\/\*)"
 
-	# Pattern to match multi line comment end.
+	# Regex Pattern to match multi line comment end.
 	pattern_comment_end="(.*)(\*\/)"
 
-	# Pattern to match single line comment.
-	pattern_comment_single="^[ 	]*(\/\*)(.*)(\*\/)"
+	# Regex Pattern to match single line comment.
+	pattern_comment_single="^[ \t]*(\/\*)(.*)(\*\/)"
 
-	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	# Regex Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
 	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
+
+	# Call the function to check declaration order.
+	check_declaration_order $FILE
+
+	# Iterate through each match of enum to check whether the name starts with an uppercase letter.
+	for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o1 -n -M '^[ \t]*enum[ 	]*([a-zA-Z_0-9]+)[ 	]*\n*\s*\{' $1`
+	do
+		enum_line_number=${string%:*}
+		enum_name=${string#*:}
+
+		# Condition to check for lowercase letters.				
+		if [[ ${enum_name:0:1} =~ [a-z] ]]; then
+
+			# Set the error flag.
+			array_error_flag_enum[$enum_line_number]=$enum_name
+		fi
+	done
 
 	while read LINE
 	do
@@ -251,6 +236,7 @@ compliance_check_file_classnamecheck()
   		((LINE_NUM++))
 
   		if [ ${CHECKS_EN} ]; then
+
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
 				
@@ -258,20 +244,23 @@ compliance_check_file_classnamecheck()
   				continue
   			fi
 			
-			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and continue to the next line.
 			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
 				CHECKS_COMMENT=1
 				continue
 			fi
 
-			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and continue to the next line.
 			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
 				CHECKS_COMMENT=
 				continue
 			fi
 			
-			# Check whether the line is a single comment line. If yes, read the next line.
+			# Check whether the line is a single comment line. If yes, continue to the next line.
 			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+
 				continue
 			fi
 
@@ -280,9 +269,27 @@ compliance_check_file_classnamecheck()
 
   				# Ok, so now we actually want to check this line for compliance.
 				if ! check_line "$LINE" $LINE_NUM; then
+
 					# Report the line has failed.	
-					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class/template/enum name: $ERROR"
-			
+					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class/template name: $ERROR"
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
+
+				# Check if the line has any errors with the declaration order in classes.
+				if [ ${array_error_flag_class[$LINE_NUM]} ]; then
+
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class declaration order: The declaration order doesn't follow correct order."
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
+
+				# Check if the line has any errors with enum names.
+				if [ ${array_error_flag_enum[$LINE_NUM]} ]; then
+
+					# Report the line has failed.
+					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant name: '${array_error_flag_enum[$LINE_NUM]}' starts with a lower case letter."
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -299,18 +306,18 @@ compliance_check_file_classnamecheck()
   		fi
 	done < $FILE
 
-	# Call the function to check declaration order.
-	check_declaration_order $FILE
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
+
 		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_classnamecheck" $FILE "This file contains non-compliant class/template/enum name(s)."
 	fi

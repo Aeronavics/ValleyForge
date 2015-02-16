@@ -67,6 +67,8 @@ compliance_check_file_headercheck()
 		
 		# Condition to check if the file has a matching header file in the same directory.
 		if [[ ! $(find $file_directory -type f -name $headerfile) ]]; then
+
+			# Report that the file has failed.
 			compliance_fail_file "compliance_check_file_headercheck" $FILE "This file doesn't have a matching header"
 		fi
 	fi
