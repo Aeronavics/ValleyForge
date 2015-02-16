@@ -44,6 +44,10 @@ compliance_check_file_structnamecheck()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
+	# Arrays which are used as flags to denote if any error occurs.
+	unset array_error_flag_struct_name
+	unset array_error_flag_access_mod
+
 	check_line()
 	{
 		#
@@ -51,7 +55,7 @@ compliance_check_file_structnamecheck()
 		#
 
 		# Pattern to match one line structure declarations.
-		pattern_struct_declar="struct ([a-zA-Z_]+) (.*);"
+		pattern_struct_declar="^[ \t]*struct ([a-zA-Z_]+) (.*);"
 
 		# Condition to check for one line struct declarations.
 		if [[ $LINE =~ $pattern_struct_declar ]]; then
@@ -59,9 +63,9 @@ compliance_check_file_structnamecheck()
 				
 			# Check whether the structure name starts with lower case letter.	
 			if [[ ${struct_name:0:1} =~ [a-z] ]]; then
+
 				# Report the line has failed.
 				ERROR="$struct_name starts with a lowercase letter."
-				
 				return 1
 			fi
 		fi
@@ -72,52 +76,21 @@ compliance_check_file_structnamecheck()
 
 	check_struct_name()
 	{
-		#
-		#	$1 - The file we are currently checking.
-		#
+		# Iterate through each match of structure name to check for compliance.
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -o4 -o7 -o12 -M '(struct[ ]*[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);)|(struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)\s*\n*{)|(typedef struct[ ]*([a-zA-Z]+)[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);)' $FILE`
+		do
+			# Obtain the structure name.
+			struct_name=${string#*:}
+			# Obtain the line number.
+			line_number_struct=${string%:*}
 
-		local FILE=$1
+			# Check whether the structure name starts with lower case letter.	
+			if [[ ${struct_name:0:1} =~ [a-z] ]]; then
 
-		# Proceed only when the number of pragmas for code compliance enabling/disabling match.
-		if [[ ${#start_line_array[@]} == ${#end_line_array[@]} ]]; then
-	
-			# Iterate through each match of structure name to check for compliance.
-			for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -n -o4 -o7 -o12 -M '(struct[ ]*[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);)|(struct ([a-zA-Z0-9_]*[ ])*([a-zA-Z0-9_]+)\s*\n*{)|(typedef struct[ ]*([a-zA-Z]+)[\n]*{(\n(.*?))+[}]+[ ]*([a-zA-Z0-9_]+);)' $FILE`
-			do
-				# Obtain the structure name.
-				struct_name=${string#*:}
-				# Obtain the line number.
-				line_number_struct=${string%:*}
-
-				# Variable used to check whether the structure lies within code where checking is disabled.		
-				CHECK_WITHIN_BLOCK=
-				# Variable used to loop within while loop.
-				i=0
-
-				# Check whether the structure name starts with lower case letter.	
-				if [[ ${struct_name:0:1} =~ [a-z] ]]; then
-	
-					# Iterate through the array to get line numbers of the pragmas for disabling code check.
-					while [[ $i -lt ${#start_line_array[@]} ]]
-					do
-						# Check if the structure lies within the check disabled block.
-						if [[ $line_number_struct -gt ${start_line_array[$i]} && $line_number_struct -lt ${end_line_array[$i]} ]]; then
-						
-							# Change the value to denote that it lies within check disabled block.
-							CHECK_WITHIN_BLOCK==1
-						fi
-					
-						((i++))
-					done
-	
-					# Check if the structure lies within check disabled block.
-					if [[ ! $CHECK_WITHIN_BLOCK ]]; then
-						compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure name: '$struct_name' starts with a lower case letter."
-						CHECKS_OK=
-					fi
-				fi
-			done
-		fi
+				# Set the error flag.
+				array_error_flag_struct_name[$line_number_struct]=$struct_name
+			fi
+		done
 	
 		# All done.
 		return 0
@@ -126,56 +99,31 @@ compliance_check_file_structnamecheck()
 
 	check_access_modifiers()
 	{
-		#
-		#	$1 - The file we are currently checking.
-		#
+		# Pattern to match access modifier.
+		pattern_access_mod="^[ \t]*(public|protected|private):"
 
-		local FILE=$1
+		# Pattern to match line number from output of pcregrep.
+		pattern_line_number="^[0-9]+:"
 
 		# Save the default IFS to a temporary variable.
 		SAVEIFS=$IFS
 		# Modify the internal field separator to process each lines separately.
 		IFS=$(echo -en "\n\b")
 
-		# Proceed only when the number of pragmas for code compliance enabling/disabling match.
-		if [[ ${#start_line_array[@]} == ${#end_line_array[@]} ]]; then
-	
-			# Iterate through each match of structure to check for access modifiers within structures [ Format: Any structure ].
-			for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o1 -n -M 'struct[ a-zA-Z_	]*[\n]*{((\n(.*?))+)[}]+[ ]*([a-zA-Z0-9_]*);' $FILE`
-			do
-				# Variable used to check whether the structure lies within code where checking is disabled.		
-				CHECK_WITHIN_BLOCK=
-				# Variable used to loop within while loop.
-				i=0
+		# Iterate through each match of structure to check for access modifiers within structures [ Format: Any structure ].
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o1 -n -M 'struct[ a-zA-Z_	]*[\n]*{((\n(.*?))+)[}]+[ ]*([a-zA-Z0-9_]*);' $FILE`
+		do
+			# Check whether the line is an access modifier.	
+			if [[ $string =~ $pattern_line_number ]]; then
+				line_number_struct=${struct_name%:*}
+			fi
 
-				# Check whether the line is an access modifier.	
-				if [[ $string =~ $pattern_line_number ]]; then
-					line_number_struct=${struct_name%:*}
-				fi
+			if [[ $string =~ $pattern_access_mod ]]; then
 
-				if [[ $string =~ $pattern_access_mod ]]; then
-
-					# Iterate through the array to get line numbers of the pragmas for disabling code check.
-					while [[ $i -lt ${#start_line_array[@]} ]]
-					do
-						# Check if the structure lies within the check disabled block.
-						if [[ $line_number_struct -gt ${start_line_array[$i]} && $line_number_struct -lt ${end_line_array[$i]} ]]; then
-						
-							# Change the value to denote that it lies within check disabled block.
-							CHECK_WITHIN_BLOCK==1
-						fi
-					
-						((i++))
-					done
-	
-					# Check if the structure lies within check disabled block.
-					if [[ ! $CHECK_WITHIN_BLOCK ]]; then
-						compliance_fail_line "compliance_check_file_structnamecheck" $FILE $line_number_struct "Non-compliant structure: contains access modifiers."
-						CHECKS_OK=
-					fi
-				fi
-			done
-		fi
+				# Set the error flag.
+				array_error_flag_access_mod[$line_number_struct]=1
+			fi
+		done
 
 		# Reset IFS to the default value.
 		IFS=$SAVEIFS
@@ -196,11 +144,23 @@ compliance_check_file_structnamecheck()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
-	# Pattern to match access modifier.
-	pattern_access_mod="^(\s)*(public|protected|private):"
+	# Check each structure name.
+	check_struct_name $FILE
 
-	# Pattern to match line number from output of pcregrep.
-	pattern_line_number="[0-9]+:"
+	# Check whether a structure has any access modifiers in it.
+	check_access_modifiers $FILE
+
+	# Pattern to match multi line comment start.
+	pattern_comment_start="^[ \t]*(\/\*)"
+
+	# Pattern to match multi line comment end.
+	pattern_comment_end="(.*)(\*\/)"
+
+	# Pattern to match single line comment.
+	pattern_comment_single="^[ \t]*(\/\*)(.*)(\*\/)"
+
+	# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+	pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
 
 	while read LINE
 	do
@@ -215,49 +175,75 @@ compliance_check_file_structnamecheck()
   				continue
   			fi
 
-  			# Ok, so now we actually want to check this line for compliance.
-			if ! check_line "$LINE" $LINE_NUM; then
+			# Check whether the line is the start of a multi line comment. If yes, set 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+				CHECKS_COMMENT=1
+				continue
+			fi
+
+			# Check whether the line is the end of a multi line comment. If yes, unset 'CHECKS_COMMENT' flag and read the next line.
+			if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+				CHECKS_COMMENT=
+				continue
+			fi
+			
+			# Check whether the line is a single comment line. If yes, read the next line.
+			if [[ "$LINE" =~ $pattern_comment_single ]]; then
+
+				continue
+			fi
+
+			# Check if the line has any errors with structure names.
+			if [ ${array_error_flag_struct_name[$LINE_NUM]} ]; then
+
 				# Report the line has failed.
-				
-				compliance_fail_line "compliance_check_file_structurenamecheck" $FILE $LINE_NUM "Non-compliant structure name: $ERROR"
-		
+				compliance_fail_line "compliance_check_file_structurenamecheck" $FILE $LINE_NUM "Non-compliant structure: '${array_error_flag_struct_name[$LINE_NUM]}' starts with a lowercase letter."
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
+			fi
+
+			# Check if the line has any access modifiers within structures.
+			if [ ${array_error_flag_access_mod[$LINE_NUM]} ]; then
+
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_structurenamecheck" $FILE $LINE_NUM "Non-compliant structure: contains access modifiers."
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+			# Proceed checking for compliance only if the line is not a comment.
+			if [[ ! ${CHECKS_COMMENT} ]]; then
+
+	  			# Ok, so now we actually want to check this line for compliance.
+				if ! check_line "$LINE" $LINE_NUM; then
+
+					# Report the line has failed.				
+					compliance_fail_line "compliance_check_file_structurenamecheck" $FILE $LINE_NUM "Non-compliant structure name: $ERROR"
+					# At least one thing is wrong in this file.
+					CHECKS_OK=
+				fi
 			fi
   		else
 			DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   			# Checking is temporarily disabled, so all we do is see if this line enables them again.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+
   				# Enable checking again.
   				CHECKS_EN=1
   			fi
   		fi
 	done < $FILE
 
-	# Obtain the line numbers containing pragma to disable code compliance checking.
-	for line_number in `grep $FILE -n -e "#pragma COMPL_DISAB_START" | cut -d : -f 1`
-	do
-		start_line_array+=($line_number)
-	done	
-
-	# Obtain the line numbers containing pragma to enable code compliance checking.
-	for line_number in `grep $FILE -n -e "#pragma COMPL_DISAB_END" | cut -d : -f 1`
-	do
-		end_line_array+=($line_number)
-	done
-
-	# Check each structure name.
-	check_struct_name $FILE
-
-	# Check whether a structure has any access modifiers in it.
-	check_access_modifiers $FILE
-
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 

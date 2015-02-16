@@ -52,7 +52,7 @@ compliance_check_file_headerguard()
 		#
 
 		# Pattern to match lines containing macro definitions.
-		pattern_macro="(#[ 	]*define)+[ 	]*([a-zA-Z_0-9]+)[ 	]+(.*)"
+		pattern_macro="(#[ \t]*define)+[ \t]*([a-zA-Z_0-9]+)[ \t]+(.*)"
 
 		# Increment the counter for line numbers.
 		if [[ ! "$1" =~ ^/.*|^\*.*|^\s*$ && $size != 1 ]]; then
@@ -69,9 +69,9 @@ compliance_check_file_headerguard()
 			# Obtain the macro name and check if it contains any lowercase letters.					
 			if [[ "$1" =~ $pattern_macro ]]; then
 				macro_name=${BASH_REMATCH[2]}
-				if [[ $macro_name =~ [a-z] ]]; then
-					ERROR="At line $2: The macro name '$macro_name' has lowercase letters."
+				if [[ ${macro_name:0:1} =~ [a-z] ]]; then
 
+					ERROR="At line $2: The macro name '$macro_name' starts with a lowercase letter."
 					return 1
 				fi
 			fi					
@@ -87,9 +87,7 @@ compliance_check_file_headerguard()
 					# Check if the macro name is prefixed and suffixed with a pair of underscore characters.
 					if [[ $macro_name != __* || $macro_name != *__ ]]; then
 
-						# Report the line has failed.
 						ERROR="'$macro_name' is missing a pair of underscore characters in the prefix/suffix."
-
 						return 1
 					fi
 				fi
@@ -147,14 +145,17 @@ compliance_check_file_headerguard()
 
 				# Ok, so now we actually want to check this line for compliance.
 				if ! check_line "$LINE" $LINE_NUM; then
+
 					# Report the line has failed.
 					compliance_fail_line "compliance_check_file_headerguard" $FILE $LINE_NUM "Non-compliant macro name: $ERROR"
+					CHECKS_OK=
 				fi
   			else
 				DISABLED_LINE_COUNT=$((DISABLED_LINE_COUNT+1))
 
   				# Checking is temporarily disabled, so all we do is see if this line enables them again.
   				if [[ "$LINE" =~ "#pragma COMPL_DISAB_END" ]]; then
+
   					# Enable checking again.
   					CHECKS_EN=1
   				fi
@@ -165,15 +166,15 @@ compliance_check_file_headerguard()
 
 			# Check whether the last line of the header file is #endif. Also check whether the number of occurrences of #ifndef and #endif match. 
 			if [[ "$spl_line_count" != "$endcount" ]]; then
-				ERROR="The header file doesn't have include guard. $spl_line_count, $endcount"
 
-				CHECKS_OK=
+				# Report that the file has failed.
+				compliance_fail_file "compliance_check_file_headerguard" $FILE "Non-compliant header guard: The file doesn't have an include guard."
 			fi
 
 			if [[ "$ifndef_count" != "$endif_count" ]]; then
-				ERROR="The header file has incorrect/incomplete include guard."
 
-				CHECKS_OK=
+				# Report that the file has failed.
+				compliance_fail_file "compliance_check_file_headerguard" $FILE "Non-compliant header guard: Incorrect/incomplete include guard."
 			fi
 		fi
 		
@@ -182,11 +183,14 @@ compliance_check_file_headerguard()
 	
 		# Check if the number of lines disabled is lesser than the threshold
 		if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+
+			# Report that the file has failed.
 			compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 		fi   
 
 		if [ ! ${CHECKS_OK} ]; then
-			# Report that the file has failed along with the corresponding ERROR message.
+
+			# Report that the file has failed.
 			compliance_fail_file "compliance_check_file_headerguard" $FILE "File has non-compliant headerguards/macros."
 		fi
 	fi
@@ -210,6 +214,7 @@ compliance_get_rules_headerguard()
 	echo "headerguard:"
 	echo "\tAll C++ anc C header files should contain header guards."
 	echo "\tThe name of the macro should be prefixed and suffixed with a pair of underscore characters."
+	echo "\tMacro names should start with an uppercase letter."
 	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
 	echo ""
 }

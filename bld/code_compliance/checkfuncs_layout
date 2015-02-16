@@ -54,6 +54,8 @@ compliance_check_file_layout()
 
 	# Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)
 	if [[ "$status" == "Formatted" ]]; then
+
+		# Report that the file has failed.
 		compliance_fail_file "compliance_check_file_layout" $FILE "This file doesn't follow proper layout conventions"
 	fi
 
