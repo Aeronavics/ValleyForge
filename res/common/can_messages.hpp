@@ -43,7 +43,6 @@
  * 
  */
 
-
 #define HOST_ALERT 0x2FF
 
 #define BASE_ID 0x120
@@ -56,4 +55,3 @@
 #define READ_DATA (BASE_ID+5)
 
 // ALL DONE.
-

@@ -60,7 +60,6 @@
 
 int s;	// unfortunately, the use of a tree data structure meant that the children can't readily access parent fields, thus the socket is global
 
-
 /**
  * Private, target specific implementation class for public Can_filmask class.
  */
