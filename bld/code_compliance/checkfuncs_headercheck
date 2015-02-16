@@ -77,21 +77,4 @@ compliance_check_file_headercheck()
 	return 0
 }
 
-######################################## FUNCTION #################################################
-###
-### Name:		compliance_get_rules_headercheck
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the headercheck test.
-###
-###################################################################################################
-
-compliance_get_rules_headercheck()
-{
-	echo "Header file conventions:"
-	echo "\tAll C++ anc C files should have a corresponding header file."
-	echo ""
-}
-
 # ALL DONE.

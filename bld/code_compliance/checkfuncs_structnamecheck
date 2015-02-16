@@ -257,23 +257,4 @@ compliance_check_file_structnamecheck()
 	return 0
 }
 
-######################################## FUNCTION #####################################################
-###
-### Name:		compliance_get_rules_structnamecheck
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the structnamecheck test.
-###
-#######################################################################################################
-
-compliance_get_rules_structnamecheck()
-{
-	echo "structnamecheck:"
-	echo "\tStructure names which begin with a lower case character will fail."
-	echo "\tStructures which contain access modifiers such as public, protected or private will fail."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.

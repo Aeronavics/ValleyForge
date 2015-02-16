@@ -63,21 +63,4 @@ compliance_check_file_filenamesplchar()
 	return 0
 }
 
-######################################## FUNCTION #####################################################
-###
-### Name:		compliance_get_rules_filenamesplchar
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the filenamesplchar test.
-###
-#######################################################################################################
-
-compliance_get_rules_filenamesplchar()
-{
-	echo "filenamesplchar:"
-	echo "\tFile names should not contain space characters or special characters other than underscore or uppercase letters"
-	echo ""
-}
-
 # ALL DONE.

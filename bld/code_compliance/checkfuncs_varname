@@ -345,24 +345,4 @@ compliance_check_file_varname()
 	return 0
 }
 
-######################################## FUNCTION #############################################
-###
-### Name:		compliance_get_rules_varname
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the varname test.
-###
-###############################################################################################
-
-compliance_get_rules_varname()
-{
-	echo "varname:"
-	echo "\tVariable names which contain upper case characters will fail."
-	echo "\tVariables composed of 'l' or 'O' characters only will fail."
-	echo "\tKeywords such as 'default','public','private' and 'protected' should be immediately followed by colon with no spaces in between them."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.

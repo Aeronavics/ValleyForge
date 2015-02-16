@@ -288,22 +288,4 @@ compliance_check_file_constname()
 	return 0
 }
 
-######################################## FUNCTION ###############################################
-###
-### Name:		compliance_get_rules_constname
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the constname test.
-###
-#################################################################################################
-
-compliance_get_rules_constname()
-{
-	echo "constname:"
-	echo "\tConstant names which contain lower case characters will fail."
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.

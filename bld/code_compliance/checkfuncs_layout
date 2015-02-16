@@ -63,36 +63,4 @@ compliance_check_file_layout()
 	return 0
 }
 
-######################################## FUNCTION ##########################################################
-###
-### Name:		compliance_get_rules_layout
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the "layout" test.
-###
-############################################################################################################
-
-compliance_get_rules_layout()
-{
-	echo "Layout conventions:"
-	echo "\tAll C++ anc C files should follow proper layout conventions."
-	echo "\tIndentation:"
-	echo "\tThe indentation style to be used is the 'Allman style'"
-	echo "\tLine Breaks:"
-	echo "\tConditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional."
-	echo "\tWhite spacing:"
-	echo "\tUnary operators do not require surrounding whitespace."
-	echo "\tBinary operators should be surrounded by single space characters."
-	echo "\tTernary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments."
-	echo "\tC++ reserved words should be followed by a single space character."
-	echo "\tCommas should be followed by a space character."
-	echo "\tSemi-colons in a 'for' statement should be followed by a single space character."
-	echo "\tAssignment operators should be surrounded by single space characters."
-	echo "\tWhen used in the declaration of a veriable of type 'pointer' or 'reference', the relevant operators are to be placed against the type of declaration, not the name of the variable."
-	echo "\tParantheses do not require surroundign white-space."
-	echo "\tAngle braces used for template declarations do not require surrounding white-space."
-	echo ""
-}
-
 # ALL DONE.

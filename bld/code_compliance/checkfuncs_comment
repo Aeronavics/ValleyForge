@@ -322,27 +322,4 @@ compliance_check_file_comment()
 	return 0
 }
 
-######################################## FUNCTION #############################################
-###
-### Name:		compliance_get_rules_comment
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the comment test.
-###
-###############################################################################################
-
-compliance_get_rules_comment()
-{
-	echo "Commenting conventions:"
-	echo "\tAll C++ anc C files should follow proper commenting conventions."
-	echo "\tAll C++ anc C files should contain copyrights information."
-	echo "\tAll C++ anc C files should start with a comment block which contains information about the author, date created and other important information."
-	echo "\tMultiple comment lines should be in C style(/* ... */) and single comment lines should be in C++ style(// ....)"
-	echo "\tTODO comments should be in the syntax '// TODO - ...'"
-	echo "\tNOTE comments should be in the syntax '// NOTE - ...'"
-	echo "\tThe check may be toggled on/off with \"#pragma COMPL_DISAB_START\" and \"#pragma COMPL_DISAB_END\"."
-	echo ""
-}
-
 # ALL DONE.
