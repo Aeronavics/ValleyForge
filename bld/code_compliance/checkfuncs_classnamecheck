@@ -120,7 +120,7 @@ compliance_check_file_classnamecheck()
 		local INSIDE_CLASS=
 		local INSIDE_STRUCT=
 
-		# But since class/struct definitions can have initialiser lists, we also need to remember if we're inside one of these (initially we're not).
+		# But since class/struct definitions can have in inheritance lists, we also need to remember if we're inside one of these (initially we're not).
 		local INSIDE_CLASS_OPENING=
 		local INSIDE_STRUCT_OPENING=
 
