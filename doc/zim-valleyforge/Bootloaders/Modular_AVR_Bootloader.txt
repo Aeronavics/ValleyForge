@@ -4,7 +4,8 @@ Creation-Date: 2015-01-22T09:12:24+13:00
 
 ====== Modular AVR Bootloader ======
 
-===== Boot Process on AVR Microcontrollers =====
+===== About the Boot Process on AVR Microcontrollers =====
+
 An excellent resource regarding the design and use of bootloaders for AVR devices is this  [[http://blog.schicks.net/wp-content/uploads/2009/09/bootloader_faq.pdf|FAQ]].
 
 Being simple devices, a bootloader is typically not required on an AVR microprocessor in order to allow application code to be started. Normally, the application code is started directly by CPU after a reset, by jumping to a known flash memory address at which the application code is located. However, a bootloader may still be desired:
@@ -14,28 +15,35 @@ The flash memory on AVR microcontrollers consists of two sections: the RWW (Read
 The bootloader code is placed in the RWW section of flash memory, and a fuse bit is configured to tell the processor that after a reset, execution should jump to the start of the bootloader, rather than the start of the application code. 
 
 ===== Design of the Modular AVR Bootloader =====
+
 The [[ValleyForge]] toolchain makes available a single bootloader suitable for AVR architecture [[Targets|targets]]. The 'Modular AVR Bootloader' is designed to facilitate the upload of new application code to a device whilst in the field. The modular design allow for uploading of code via one of a selection of communications peripherals.
 
-The bootloader consists of a bootloader 'shell', which provides common functionality, and a number of modules which implement mechanisms of transferring application code via a range of different communications peripherals. 
+The bootloader consists of a bootloader 'shell', which provides common functionality, and a number of modules which implement mechanisms for transferring application code via a range of different communications peripherals.  Only a single communications module is used by the bootloader, selected at compile-time; this means that only one communications interface may be used to upload application code, without reflashing a different bootloader.  This is deliberate, as it reduces the possibilty of the bootloader being triggered unintentionally in complex systems.
 
 ==== Implementation ====
- The Modular AVR Bootloader is distributed with the toolchain in source form, located in the folder res/avr/bootloader. The makeavr script file (located in bld/make_functions) contains a shell function makeavr_bootloader which is used to compile the bootloader when required.
 
-The bootloader shell is implemented in the file bootloader.cpp (and the matching header). An abstract class bootloader_module is defined by the file bootloader_module.hpp. Individual bootloader modules implement this abstract class. During compilation, the toolchain preprocesses the bootloader source file (bootloader.cpp) to set the macro definition BOOTLOADER_MODULE according to which peripheral the user has configured the component to communicate through. 
+ The Modular AVR Bootloader is distributed with the toolchain in source form, located in the folder ''res/avr/bootloader''. The ''makeavr'' script file (located in ''bld/make_functions'') contains a shell function ''makeavr_bootloader'' which is used to compile the bootloader when required.  Conventional  is [[Programming Languages:Dependency Detection|dependency detection]] used.
+
+The bootloader shell is implemented in the file ''bootloader.cpp'' (and the matching header). An abstract class ''bootloader_module'' is defined by the file ''bootloader_module.hpp''. Individual bootloader modules implement this abstract class. During compilation, the toolchain preprocesses the bootloader source file (''bootloader.cpp'') to set the macro definition ''BOOTLOADER_MODULE'' according to which peripheral the user has configured the bootloader to communicate through.
+
+The bootloader shell uses a single timer/counter (usually ''TIM0'') operating in output compare mode to queue any periodic behaviour.  The timer fires with a fixed period of 1ms; any period functions of the bootloader are timed in 1ms multiples.  This includes the bootloader timeout period, status LED flashing, and bootloader module periodic functions.
 
 ===== Operation of the Modular AVR Bootloader =====
-The general operation of the bootloader is the same, regardless of which peripheral module is in use. An LED is configured as the "Blink LED" which blinks continuously whilst the bootloader is operating correctly. A single byte of EEPROM memory is set aside for the bootloader to record a 'shutdown status flag'; the flag may either be 'clean' or 'dirty'. Before the bootloader starts the application code running, it sets the flag to be 'dirty'. The application code should set the flag back to 'clean' again when it shuts down successfully. After a CPU reset, the bootloader tests the flag, to determine whether the CPU shut down cleanly (which indicates the application code is probably working as expected), or if the flag is still 'dirty' (which probably indicates that the CPU reset was unexpected, and hence something is wrong).
 
-If the CPU reset was clean, then the bootloader starts the application code immediately. This ensures that there is minimal delay in the application code starting up under normal circumstances.
+The general operation of the bootloader is the same, regardless of which peripheral module is in use. An LED is configured as the "Blink LED" which indicates whilst the bootloader is operating correctly. A single byte of EEPROM memory is set aside for the bootloader to record a 'shutdown status flag'; the flag may either be 'clean' or 'dirty'. Before the bootloader starts the application code running, it sets the flag to be 'dirty'. The application code should set the flag back to 'clean' again when it shuts down successfully. After a CPU reset, the bootloader tests the flag, to determine whether the CPU shut down cleanly (which indicates the application code is probably working as expected), or if the flag is still 'dirty' (which probably indicates that the CPU reset was unexpected, and hence something is wrong).
 
-If the bootloader suspects the CPU reset was unclean, or if the GPIO input configured as the 'force bootloader' signal is asserted, then the bootloader does not start the application code. Instead, the bootloader remains resident for a while, to see if some new application software becomes available to download. This ensures that even if the application code is broken, it is always possible to upload new code to the device.
+If the CPU reset was clean, and if the GPIO input which is configured as the 'force bootloader' signal is not asserted, then the bootloader starts the application code immediately. This ensures that there is minimal delay in the application code starting up under normal circumstances.
+
+If the bootloader suspects the CPU reset was unclean, or if the 'force bootloader' signal is asserted, then the bootloader does not start the application code. Instead, the bootloader remains resident for a while, to see if some new application software becomes available to download. This ensures that even if the application code is broken, it is always possible to upload new code to the device.
 
 Once the bootloader has decided to check for new software, it waits until either a timeout elapses (this timeout is quite long, in an embedded systems sense, to allow enough time for things to happen, but still fairly short in a real world sense, so that even if the application code crashes whilst the embedded system is in the middle of doing something, it gets given a chance to recover before the situation gets too dire) or until the selected bootloader communications module receives communication from a host attempting to upload new application software. In the latter case, once communication has been received from a host, the bootloader remains resident until the bootloader communication module indicates that the transaction with the host has been completed. 
 
 ===== Using the Bootloader =====
 
 ==== Configuring a Component to Use the Bootloader ====
- When configuring a component through the VFstart utility, if a boot-loader is selected, then the toolchain will prompt the user for configuration details specific to the selected type of bootloader. In the case of selecting a boot-loader based upon the Modular AVR Bootloader, the following configuration details will be required:
+ 
+When configuring a component through the VFstart utility, if a boot-loader is selected, then the toolchain will prompt the user for configuration details specific to the selected type of bootloader. In the case of selecting a boot-loader based upon the Modular AVR Bootloader, the following configuration details will be required:
+
 * Blink LED Port. Specify which port will contain the pin that you will use as a bootloader status LED. 
 * Blink LED Pin. Specify which pin on this port will be the status LED. 
 * LED Logic. Specify which voltage level will turn the status LED on or off. 
@@ -47,20 +55,37 @@ Once the bootloader has decided to check for new software, it waits until either
 
 Additionally, there may be some further configuration parameters required, depending on the communications module which has been selected. Details of these configuration settings are detailed configuration sections of the individual communication module pages (see below). 
 
+==== Bootloader Behaviour ====
+
+=== Bootloader LED ===
+
+The bootloader status (blink) LED indicates what is going on with the bootloader:
+
+* Slow flashing (1600ms ON, 800ms OFF) - The bootloader is idle: it hasn't started communicating with anything trying to upload code yet.
+* Solidly on - The bootloader has begun communicating with something trying to upload code.
+* Fast flashing (200ms ON, 6000ms OFF) - The bootloader communications module has encountered some kind of error.  Probably a comms failure.
+* Solidly off - The bootloader isn't resident: application code is running instead.
+
 ==== Updating Component Software via the Bootloader ====
 
+**TODO** - This.
+
 ===== Communications Modules =====
+
 * [[Modular AVR Bootloader:ISP|ISP Module]]
 * [[Modular AVR Bootloader:CAN|CAN Module]]
 * [[Modular AVR Bootloader:CAN_SPI|CAN_SPI Module]]
 
 ===== Bootloader Shell/Module Interface =====
+
 Interaction between the bootloader shell, and whichever module is in use, is through a common interface: as defined in ''bootloader_module.hpp''. Typically, most of the module's behaviour will be asynchronous, driven by interrupts associated with the communications peripheral in question. However, a number of methods in the interface are called synchronously by the bootloader shell: 
- [TODO - This should really just be a link to Doxygen.]
+
+**TODO** - This should really just be a link to Doxygen.
+
 * ''void init(void)'' - This function is called when the bootloader initializes. It should set up any peripherals or interrupt behaviour required by the bootloader module.
 * ''void exit(void)'' - This function is called when the bootloader exits, with the intention of starting the application code. The function must return any peripherals whose state was modified by the bootloader module to their original condition, so that the application code begins from a known state.
 * ''void event_idle(void)'' - This function is called periodically by the main-loop of the bootloader shell. Consequently, it may contain any functionality which the bootloader module needs to be executed as rapidly as possible, such as decoding incoming messages from a host. The function should not block for extended periods, since this will result in a watchdog strike.
-* ''void event_periodic(void)'' - This function is called periodically by an ISR which is triggered by a hardware timer. The interrupt is triggered with a period of approximately 1ms, but the function may be called less frequently, with a period defined by the value MODULE_EVENT_PERIOD. This function may contain any functionality which the bootloader module needs to be executed with a fixed periodicity, such as transmitting unsolicited messages. The function should not block, and execute as rapidly as possible, since it is being called from an ISR. 
+* ''void event_periodic(void)'' - This function is called periodically by an ISR which is triggered by a hardware timer. The interrupt is triggered with a period of approximately 1ms, but the function may be called less frequently, with a period defined by the value ''MODULE_EVENT_PERIOD'' (defined in ''bootloader_module.hpp''). This function may contain any functionality which the bootloader module needs to be executed with a fixed periodicity, such as transmitting unsolicited messages. The function should not block, and execute as rapidly as possible, since it is being called from an ISR. 
 
 The class ''bootloader_module'' is abstract. In order to extend the class, any new bootloader module must implement these four methods. 
 
@@ -72,15 +97,17 @@ The class ''bootloader_module'' is abstract. In order to extend the class, any n
 * ''void set_bootloader_timeout(bool enable)'' - This function allows the status of the bootloader timeout to be set. Usually, the bootloader will time out after some period, at which point it will start the application regardless of whether any new software has been downloaded. However, the bootloader module may wish to disable or reset this timeout during communications, to avoid the timeout occurring part way through a legitimate transfer. Disabling then re-enabling the timeout will reset the timeout to begin timing from the beginning again. 
 
 Additionally, the bootloader module declares a number of external global variables, which can be accessed by both the bootloader shell and the module:
+
 * ''extern firmware_page buffer''
 
 The ''firmware_page'' type includes ''bool'' flags ''ready_to_write'' and ''ready_to_read''. The bootloader module should set these flags when it wishes the bootloader shell to read or write a page of flash memory. Once the flag has been set, the bootloader shell will complete the required operation, then clear the flag. The module can check whether the operation is still in progress by inspecting if the flag has been cleared yet (although, since EEPROM operations are blocking, and disable interrupts for the duration, the operation will probably appear to complete fairly quickly from the module's perspective). Read and write operations cannot occur concurrently. 
 
 ===== Bootloader/Application Interface =====
+
 The application can use specific functionality from the bootloader via the bootloader/application interface as defined in ''application_interface.hpp''. A jumptable ''shared_jumptable.s'', placed in a fixed address in the bootloader program memory, defines jumps to the shared functions. The ''application_interface.hpp'' contains function pointers to the jumptable to access the shared functions.
 
 Four bootloader functions are accessible by the application. Two of the functions set the 'shutdown status flag' to 'dirty' or 'clean'. The other two functions obtain important information from the component's bootloader and its communication module.[Link to Doxygen]
 
 The ''application_interface.hpp'' must be included to use the bootloader functions from the application code. Functions that are shared via the Bootloader/application interface must not use global variables.
 
-NOTE - for microcontrollers with program memory greater than 128k bytes, an trampoline (secondary jumptable) must be used to access the shared functions. This trampoline is placed in the application program memory and jumps to the bootloader jumptable. 
+**NOTE** - for microcontrollers with program memory greater than 128k bytes, an trampoline (secondary jumptable) must be used to access the shared functions. This trampoline is placed in the application program memory and jumps to the bootloader jumptable. 

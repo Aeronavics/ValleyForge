@@ -36,13 +36,13 @@
 #include <avr/interrupt.h>
 
 // Include can message ids.
-#include "can_messages.hpp"
+#include "can_messages.h"
 
 // DEFINE CONSTANTS
 
 	// Bootloader information.
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
-const uint8_t ALERT_UPLOADER_PERIOD = 10;// x10 the event_periodic() period. Period to send each alert_host message before communication has begun.
+const uint8_t ALERT_UPLOADER_PERIOD = 10; // x10 the event_periodic() period. Period to send each alert_host message before communication has begun.
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
 	// CAN peripheral infromation.

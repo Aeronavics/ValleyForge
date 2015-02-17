@@ -70,23 +70,19 @@ enum input_state {LO,HI};
 #define TM_CHAN_VAL		((CLK_SPEED / TM_PRSCL) / 1000)
 #define BOOT_TIMEOUT	10000	// Timeout in milliseconds.
 
-//Blink times for different states.
+// Blink times for different states. Times are in ms.
 
-//Idle
+// Idle.
 #define IDLE_ON	            1600
 #define IDLE_OFF            800
 
-//Communicating
+// Communicating.
 #define COMMUNICATING_ON    6000
 #define COMMUNICATING_OFF   0
 
-//Error
+// Error.
 #define ERROR_ON            200
 #define ERROR_OFF           6000
-
-
-#define LONG_FLASH		1600
-#define SHORT_FLASH		800
 
 #define SHUTDOWNSTATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 
@@ -104,7 +100,6 @@ enum input_state {LO,HI};
 	// Define the address at which the bootloader code starts (the RWW section).
 #define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
 
-
 	// Define the function used to read a flash byte.
 #if defined (__AVR_AT90CAN128__) || (__AVR_ATmega2560__)
 	#define READ_FLASH_BYTE(address) pgm_read_byte_far(address)
@@ -116,10 +111,15 @@ enum input_state {LO,HI};
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
+// All periodic functionality is queued by a 1ms timer interrupt.  To time longer periods, you need to accumulate a count of ticks.
+
 volatile uint16_t timeout_tick = 0;
 
-volatile uint8_t blink_tick;
+volatile uint16_t blink_tick = 0;
 
+volatile uint16_t blink_threshold = 0;
+
+// State the bootloader is in.  At the moment, all this determines is the LED flashing pattern.
 State state = IDLE;
 
 volatile uint16_t blink_on = IDLE_ON;
@@ -226,25 +226,18 @@ int main(void)
 	// Start up whichever peripherals are required by the modules we're using.
 	mod.init();
 	
-	// Set up a timer and interrupt to flash the blinkenlight.
-	
-	// Normal port operation, not connected to a pin.CTC on.
-	TCCR1A = 0b00000000;
-	OCR1AH = (uint8_t)( (uint16_t) LONG_FLASH >> 8 );
-	OCR1AL = (uint8_t)( (uint16_t) LONG_FLASH);
-	// Enable Timer Output Compare interrupt.
-	TIMSK1 = 0b00000010;
+	// Set up TIM0 into output compare mode as a free running 1ms timer to queue any periodic functionality.
 	
 #if defined (__AVR_AT90CAN128__)
 	// CTC, no clock yet.
 	TCCR0A = 0b00001000;
-	OCR0A = (uint8_t)TM_CHAN_VAL;
+	OCR0A = (uint8_t) TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;	
 #else
 	// CTC on.
 	TCCR0A = 0b00000010;
-	OCR0A = (uint8_t)TM_CHAN_VAL;
+	OCR0A = (uint8_t) TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;
 #endif	
@@ -253,20 +246,18 @@ int main(void)
 	sei();
 
 	// NOTE - Don't start the timer until after interrupts have been enabled!
-
-	// Prescalar: 1024
-	TCCR1B = 0b00001101;
 	
 #if defined (__AVR_AT90CAN128__)
-	// Prescalar: 1024
+	// Prescalar: 1024.  This starts the 1ms timer.
 	TCCR0A = 0b00001101;
 #else
-	// Prescalar: 1024
+	// Prescalar: 1024.  This starts the 1ms timer.
 	TCCR0B = 0b00000101;
 #endif
-
-
 	
+	// Set the bootloader into idle mode.
+	set_bootloader_state(IDLE);
+
 	// Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (true)
 	{
@@ -479,24 +470,22 @@ void run_application(void)
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
 	mod.exit();
 
-	// Stop the timer and interrupt for the blinkenlight.
-	TIMSK1 = 0b00000000;
+	// Stop the ms timer.
 	TIMSK0 = 0b00000000;
+
+	// Make sure the blinkenlight is disabled.
 	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
 
 	// Put interrupts back into application-land.
 	MCUCR = (1 << IVCE);
 	MCUCR = 0;
 	
-	// Stop timers and return them to original state.
-	TCCR1B = 0b00000000;
-	TCCR1A = 0b00000000;
+	// Stop the timer and return them to original state.
 #if defined (__AVR_AT90CAN128__)
 	TCCR0A = 0b00000000;
 #else
 	TCCR0B = 0b00000000;
 #endif	
-	OCR1A = 0;
 	OCR0A = 0;
 	
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
@@ -599,44 +588,8 @@ void read_flash_page(Firmware_page& buffer)
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
 /**
- *	This ISR is called by a timer compare event on Timer/Counter 1; this is used to flash the bootloader status LED.
- *
- */
-ISR(TIMER1_COMPA_vect)
-{
-	// NOTE - This can be edited to whatever is desired. Currently it toggles the bootloader status LED and then changes the time for the next toggle. 
-	// 	  This results in the LED duty cycle being greater than 50%.
-
-	static bool on = false;
-
-	// Toggle the blinkenlight.
-	if (on)
-	{
-		OCR1A = blink_off;
-		on = false;
-	}
-	else
-	{
-		OCR1A = blink_on;
-		on = true;
-	}
-	
-	if (on)
-	{
-		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE | BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
-	}
-	else
-	{
-		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
-	}
-	
-	// All done.
-	return;
-}
-
-/**
- *	This ISR is called by a timer compare event on Timer/Counter 0; this is used to provide a 1ms periodic event which is used for boot timeout detection
- *	and other periodic functionality.
+ * This ISR is called by a timer compare event on Timer/Counter 0; this is used to provide a 1ms periodic event which is used for boot
+ * timeout detection, status LED blinking, and other periodic functionality.
  *
  */
 #if defined (__AVR_AT90CAN128__)
@@ -674,6 +627,50 @@ ISR(TIMER0_COMPA_vect)
 		timeout_tick = 0;
 	}
 
+	// Static bool indicating if the blink LED is on or off.
+	static bool blink_state = false;
+
+	// Increment the blink LED tick.
+	blink_tick++;
+
+	// Check which state the LED should be in.
+	if (blink_state)
+	{
+		// Turn the LED on.
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE | BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
+
+		// If we've timed out, toggle the state of the LED.
+		if (blink_tick >= blink_off)
+		{
+			// Change state to off.
+			blink_state = false;
+
+			// Start the tick counter again.
+			blink_tick = 0;
+
+			// Set the threshold to be the off threshold.
+			blink_threshold = blink_off;
+		}
+	}
+	else
+	{
+		// Turn the LED off.
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
+
+		// If we've timed out, toggle the state of the LED.
+		if (blink_tick >= blink_on)
+		{
+			// Change state to on.
+			blink_state = true;
+
+			// State the tick counter again.
+			blink_tick = 0;
+
+			// Set the threshold to be the on threshold.
+			blink_threshold = blink_on;
+		}
+	}
+	
 	// All done.
 	return;
 }
