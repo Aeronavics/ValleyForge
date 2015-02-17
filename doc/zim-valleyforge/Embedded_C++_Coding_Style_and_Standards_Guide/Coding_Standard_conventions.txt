@@ -1,0 +1,20 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T18:01:47+13:00
+
+====== Coding Standard conventions ======
+
+
+The standards documented here are targeted at reducing errors while developing code. This includes both compile and run time errors. For the standards to be effective, strict enforcement is required. The following standards should not be violated. Every time a rule is broken, it must be clearly documented in the code. This documentation serves two purposes. First, it provides crucial information to other developers when maintaining the code. Second, it forces the original programmer to think about/fully justify why the standards do not apply.
+
+* [[Coding Standard conventions:Classes|Classes]]
+* [[+Comments|Comments]]
+* [[+Constants|Constants]]
+* [[+Flow control|Flow control]]
+* [[+Functions|Functions]]
+* [[+Memory and Resources|Memory and Resources]]
+* [[+Operators|Operators]]
+* [[+Pointers and References|Pointers and References]]
+* [[+Variables|Variables]]
+* [[+Expressions|Expressions]]
+

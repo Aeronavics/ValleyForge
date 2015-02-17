@@ -1,0 +1,23 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:32:13+13:00
+
+====== General Recommendations ======
+
+1. **Any violation to the guide is allowed if it enhances readability.**
+
+The main goal of the recommendation is to improve readability and thereby the understanding and the maintainability and general quality of the code. It is impossible to cover all the specific cases in a general guide and the programmer should be flexible.
+
+2. The choice of identifier names should:
+
+	* Suggest the usage of the identifier.
+	* Consist of a descriptive name that is short yet meaningful.
+	* Be long enough to avoid name conflicts, but not excessive in length.
+	* Include abbreviations that are generally accepted.
+
+	__Note:__ In general, the above guidelines should be followed. However, conventional usage of simple identifiers (//i, x,  y, p// etc.) in small scopes can lead to cleaner code and will therefore be permitted.
+	Additionally, the term 'word' in the following naming convention rules may be used to refer to a word, an acronym, an abbreviation, or a number.
+	
+3. If this style guide leaves anything unclear, see how it has been donen in the existing code base and do it accordingly.
+
+

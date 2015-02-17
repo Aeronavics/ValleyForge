@@ -1,0 +1,46 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:34:13+13:00
+
+====== Commenting conventions ======
+
+===== Block Comments =====
+
+===== Line Comments =====
+
+Line comments are the conventional comments which explain the structure and operation of the implementation of code.
+{{{code: lang="cpp" linenumbers="true"
+// TODO -This
+}}}
+
+
+===== Development Comments =====
+
+=== TODO Comments ===
+
+The opening of the ''TODO'' comment should be constructed exactly as in the example shown below, since this allows both syntax high-lighting of ''TODO'' comments, and also parsing and searching of ''TODO'' items by more sophisticated development tools:
+{{{code: lang="cpp" linenumbers="true"
+void get_something(void)
+{
+	// TODO - Implement this function properly.
+	
+	// TODO - The return type will need to be changed to non-void later.
+	return;
+}
+}}}
+
+
+Note that two comments are used: the first comment refers to the fact that the main functionality of the function has not yet been implemented; the second comment refers to the fact that (in order to allow the containing module to be compiled even before all the functionality is completed) the return type of the function has been altered temporarily and will need to be modified once the actual functionality of the function is completed.
+
+=== NOTE Comments ===
+
+The opening of the ''NOTE'' comment should be constructed exactly as in the example shown below, since this allows both syntax high-lighting of ''NOTE'' comments, and also parsing and searching of NOTE items by more sophisticated development tools:
+{{{code: lang="cpp" linenumbers="true"
+// NOTE - The variable some_mapped register is a peripheral control register, hardware magic means that writing a one to the register actually CLEARS the register to zero.
+
+// Clear the widget control register to restart the widget.
+some_mapped_register = 1;
+}}}
+
+
+Note that the line is question is still commented normally; the ''NOTE'' comment simply provides additional information which might be important if a developer wishes to understand how the code works.

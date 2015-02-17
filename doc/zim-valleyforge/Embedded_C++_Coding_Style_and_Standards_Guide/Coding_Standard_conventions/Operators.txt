@@ -1,0 +1,11 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:33:28+13:00
+
+====== Operators ======
+
+**Operators || , &&  and unary &  shall not be overloaded.**
+
+First the behaviour of the || and && operators depend on short-circuit evaluation of the operands. However, short-circuit evaluation is not possible for overloaded versions of the ''||''  and ''&&''  operators. Hence, overloading these operators may produce unexpected results.
+
+Next, if the address of an object of incomplete class type is taken, but the complete form of the type declares operator ''&()'' as a member function, the resulting behaviour is undefined.

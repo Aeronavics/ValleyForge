@@ -1,0 +1,74 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:32:33+13:00
+
+====== Comments ======
+
+=== TODO Comments ===
+
+Points at which code remains unfinished (either because all the required functionality has not yet been implemented, because the proper operation of the code has not been verified, or because some temporary code is necessarily required due to the unfinished nature of other sections of code) should be denoted with a  ''TODO'' comment indicating that unfinished nature of the code, and describing the nature of the work which remains to be completed.
+
+{{{code: lang="cpp" linenumbers="true"
+void get_something(void)
+{
+	// TODO - Implement this function properly.
+	
+	// TODO - The return type will need to be changed to non-void later.
+	return;
+}
+}}}
+
+
+=== NOTE Comments ===
+
+Points at which a developer should give specific attention to some item of code (probably because the operation of the code is non-trivial or unexpected) should be denoted with a ''NOTE'' comment indicating what is particularly note-worthy about the particular segment of code.
+
+{{{code: lang="cpp" linenumbers="true"
+// NOTE - The variable some_mapped register is a peripheral control register, hardware magic means that writing a one to the register actually CLEARS the register to zero.
+
+// Clear the widget control register to restart thw widget.
+some_mapped_register = 1;
+}}}
+
+
+=== Comments to Indicate Accidental Truncation ===
+
+	1. All files should conclude with the comment  ''// ALL DONE.'' This indicates that the file is present in its entirety and has not be accidentally truncated.
+{{{code: lang="cpp" linenumbers="true"
+void main(void)
+{
+	do_something();
+}
+
+// ALL DONE.
+}}}
+
+
+There should not be a line ending following this comment.
+
+	2. All functions which return void and in which control flow is expected to reach the end of the code block should end with a comment  ''// All done.'' prior to a final return statement. This indicates that the function has not been accidentally truncated.
+{{{code: lang="cpp" linenumbers="true"
+void something(void)
+{
+	do_something();
+	
+	// All done.
+	return;
+}
+}}}
+
+
+	3. Functions which return void but in which control flow is not expected to return from should end with a comment  ''// We should never reach here.'' prior to a final return statement. This indicates that the function has not been truncated, but notes the atypical control flow.
+{{{code: lang="cpp" linenumbers="true"
+void do_something(void)
+{
+	while (true)
+	{
+		// Do nothing.
+	}
+	
+	// We should never reach here.
+	return;
+}
+}}}
+

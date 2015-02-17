@@ -1,0 +1,9 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T18:08:05+13:00
+
+====== Expressions ======
+
+	**Floating point variables should not be tested for exact equality or inequality.**
+
+This is beacuse floating point numbers are subject to rounding and truncation errors, exact equality may not be achieved, even when expected.

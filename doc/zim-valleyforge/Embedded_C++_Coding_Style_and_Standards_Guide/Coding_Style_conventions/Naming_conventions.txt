@@ -1,0 +1,148 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:34:23+13:00
+
+====== Naming conventions ======
+
+In General, choose names that are meaningful and readable. If the name is appropriate everything fits together naturally, relationships are clear, meaning is derivable, and reasoning from common human expectations works as expected.
+
+=== File Names ===
+
+	1. C source files should have the file extension .c. Each source file should have a matching header file of the same name, with the file extension .h.
+	
+	2. C++ source files should have the file extension .cpp. Each source file should have a matching header file of the same name, with the file extension .hpp.
+	
+	3. File names should not contain space characters, or special characters other than underscore.
+	
+	4. File names should not contain upper-case characters (to avoid confusion in the case of file systems which are not case-sensitive).
+
+=== Naming identifiers ===
+
+	1. The choice of identifier names should:
+		* Suggest the usage of the identifier.
+		* Consist of a descriptive name that is short yet meaningful.
+		* Be long enough to avoid name conflicts, but not excessive in length.
+		* Include abbreviations that are generally accepted.
+
+__Note__: In general, the above guidelines should be followed. However, conventional usage of simple identifiers (i, x, y, p, etc.) in small scopes can lead to cleaner code and will 		    therefore be permitted. Additionally, the term ‘word’ in the following naming convention rules may be used to refer to a word, an acronym, an abbreviation, or a number.
+
+	2. All words in an identifier will be separated by the ‘_’ character.
+	3. Identifiers will not begin with the underscore character ‘_’.
+	4. Identifiers will not differ by:
+		* Only a mixture of case
+		* The presence/absence of the underscore character
+		* The interchange of the letter ‘O’, with the number ‘0’ or the letter ‘D’
+		* The interchange of the letter ‘I’, with the number ‘1’ or the letter ‘l’
+		* The interchange of the letter ‘S’ with the number ‘5’
+		* The interchange of the letter ‘Z’ with the number 2
+		* The interchange of the letter ‘n’ with the letter ‘h’.
+		* All acronyms in an identifier will be composed of uppercase letters.
+
+__Note:__ An acronym will always be in upper case, even if the acronym is located in a portion of an identifier that is specified to be lower case by other rules.
+
+== Class, Struct & Type Names ==
+
+	1. Names of classes and structures and types should begin with an upper case character, then be in lower case:
+{{{code: lang="cpp" linenumbers="true"
+class Dinosaur
+{
+	private:
+			void roar()
+			{
+				Uint32 = 128;
+				Noise rawwww = "Rawwww!!!";
+			}
+}
+}}}
+
+
+	2. Names of classes, structures and types should be underscore separated.
+{{{code: lang="cpp" linenumbers="true"
+class Bicycle_bell
+}}}
+
+
+	3. Names of class templates should be a single upper case letter:
+{{{code: lang="cpp" linenumbers="true"
+template<class T> void do_something(T a, T b)
+{
+	T c = T.new_widget();
+	a.do_something_else(b, c);
+}
+}}}
+
+
+== Function & Method Names ==
+
+	1. Names of functions and methods should be all lower case, underscore separated:
+{{{code: lang="cpp" linenumbers="true"
+void do_something()
+{
+	do_something_else();
+	eat_dinosaur(Dinosaur dinosaur);
+}
+}}}
+
+
+	2. Names of functions and methods should begin with a verb:
+{{{code: lang="cpp" linenumbers="true"
+void do_something()
+{
+	get_something();
+	catch_something();
+	enable_something_else();
+}
+}}}
+
+
+== Variable & Constant Names ==
+
+	1. Variable names should be all lower case, underscore separated:
+{{{code: lang="cpp" linenumbers="true"
+Uint16 critter_type = i + 1;
+Dinosaur dinosaur = Dinosaur.create_new_dinosaur(critter_type);
+}}}
+
+
+	2. Constant names should be all upper case, underscore separated:
+{{{code: lang="cpp" linenumbers="true"
+const Uint16 MAXIMUM_NUMBER_OF_HATS = 16;
+}}}
+
+
+	3. Variables of the same name as the underlying type are allowed:
+{{{code: lang="cpp" linenumbers="true"
+Address address = "69 Creyke Rd";
+House house = get_house(address);
+}}}
+
+
+	4. Literal suffixes should use uppercase letters rather than lowercase letters in order to improve readability.
+{{{code: lang="cpp" linenumbers="true"
+const int64 fs_frame_rate = 64l;	// Wrong! Looks too much like 641
+const int64 fs_frame_rate = 64L;	// Okay
+}}}
+
+
+	5. All words in an identifier should be separated by the '_' character.
+	
+	6. Identifiers should not begin with the underscore character '_'.
+	
+	7. Identifiers will not differ by:
+
+	* Only a mixture of case.
+	* The presence/absence of the underscore character.
+	* The interchange of the letter 'O' with the number '0' or the letter 'D'.
+	* The interchange of the letter 'I' with the number '1' or the letter 'l'.
+	* The interchange of the letter 'S' with the number '5'.
+	* The interchange of the letter 'Z' with the number '2'.
+	* The interchange of the letter 'n' with the letter 'h'.
+ 
+	8. All acronyms in an identifier will be composed of uppercase letters. 
+		
+	Note: An acronym will always be in uppercase, even if the acronym is located in a portion of an identifier that is specified to be lowercase by other rules.
+	
+	9. Numeric values in code will not be used; symbolic values will be used instead.
+	
+	10. Multiple variable declarations shall not be allowed on the same line. 
+

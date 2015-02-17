@@ -218,6 +218,7 @@ compliance_check_file_comment()
 			if [[ ! $line =~ $pattern_empty_lines ]]; then
 				# Set the flag if the line contains any characters.
 				flag_not_empty=1
+				break
 			fi
 		done < $FILE
 

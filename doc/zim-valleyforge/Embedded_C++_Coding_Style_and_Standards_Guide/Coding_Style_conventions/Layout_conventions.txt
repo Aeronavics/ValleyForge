@@ -1,0 +1,210 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:34:16+13:00
+
+====== Layout conventions ======
+
+=== Indentation ===
+
+	1. Indentation of statements should be performed using TAB characters. Note that INDENTATION is not the same as ALIGNMENT. By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
+
+	2. Alignment of statements should be performed using space characters. By using space characters for alignment, correct alignment remains, regardless of the size of the tab stop used in a particular contributor's IDE (assuming the IDE is using a mono-spaced font, as any sane programmer requires).
+
+	In the example below, TAB characters are indicated by "----->", whilst SPACE characters are represented by "."
+{{{code: lang="cpp" linenumbers="true"
+void some_function()
+{
+----->do_something();
+
+----->if.(some.expression.that.is.so.long.it.wont.fit.on.a
+----->....single.line)
+----->{
+----->----->something;
+----->}
+}	
+}}}
+
+
+	3. The indentation style to be used is the 'Allman Style' (see [[http://en.wikipedia.org/wiki/Indent_style#Allman_style|Wikipedia]]):
+{{{code: lang="cpp" linenumbers="true"
+void some_function()
+{
+	do_something();
+	
+	// Correct indentation of a IF-ELSE statement.
+	if (expression)
+	{
+		something;
+	}
+	else if (expression)
+	{
+		something;
+	}
+	else
+	{
+		something;
+	}
+	
+	// Correct indentation of a FOR statement.
+	for (something; expression; something)
+	{
+		something;
+	}
+	
+	// Correct indentation of a WHILE statement.
+	while (expression)
+	{
+		something;
+	}
+	
+	// Correct indentation of a DO-WHILE statement.
+	do
+	{
+		something;
+	}
+	while (expression);
+	
+	// Correct indentation of a SWITCH statement.
+	switch (expression)
+	{
+		case one:
+			something;
+			break;
+		
+		case two:
+			something;
+			break;
+			
+		default:
+			something;
+			break;
+	}
+}	
+}}}
+
+
+=== Line breaks ===
+	1. Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:
+{{{code: lang="cpp" linenumbers="true"
+if (something)
+{
+	do_something();
+}
+}}}
+
+
+	This means that during debugging, it is easy to tell whether a line number refers to the conditional itself, or the following statement.
+
+	2. Braces ("{}") which enclose a block will have nothing else on the line except comments (if necessary).
+
+=== White space ===
+	1. Unary operators as well as '.' or '->' do not require surrounding white-space:
+{{{code: lang="cpp" linenumbers="true"
+if (!something)
+{
+	a = &b;
+	c= !d;
+}
+}}}
+
+
+	2. Binary operators should be surrounded by single space characters.
+{{{code: lang="cpp" linenumbers="true"
+a + b * (c - d);
+e = f << g;
+}}}
+
+
+	3. Ternary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments.
+{{{code: lang="cpp" linenumbers="true"
+a = b ? c : d;
+}}}
+
+
+4. C++ reserved words should be followed by a single space character.
+{{{code: lang="cpp" linenumbers="true"
+class Some_class
+{
+	void some_function()
+	{
+		while (expression)
+		{
+			...
+		}
+		return (a+b);
+	}
+}		
+}}}
+
+
+5. Commas should be followed by a space character.
+{{{code: lang="cpp" linenumbers="true"
+some_function(a, b, c, d);
+}}}
+
+
+6. Semi-colons in a for statement should be followed by a single space character.
+{{{code: lang="cpp" linenumbers="true"
+for (uint i = 0; i < j; i++)
+{
+	for (;j < k; )
+	{
+		...
+	}
+}
+}}}
+
+
+7. Assignment operators should be surrounded by single space characters.
+{{{code: lang="cpp" linenumbers="true"
+a = 1;
+b = a;
+c = (a + b + 1);
+}}}
+
+
+8. When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.
+{{{code: lang="cpp" linenumbers="true"
+int* a;			// Correct.
+int* a,b;		// Bad since 'b' doesn't get declared as a pointer.
+int *a,*b;		// Wrong.
+
+int&c;
+char& d;
+}}}
+
+
+	Because this style appears confusing if two different variables of different types are declared on a single line (such as a pointer followed by a regular variable of the same base type), variables of different types are not to be declared on a single line. Similarly, for this reason, multiple pointer or reference types are not to be declared on a single line.
+
+9. Parentheses ("brackets") do not require surrounding white-space:
+{{{code: lang="cpp" linenumbers="true"
+a = ((1 + b) * ((c / d) / e));
+}}}
+
+
+10. Angle braces used for template declarations do not require surrounding white-space:
+{{{code: lang="cpp" linenumbers="true"
+template<class T>do something(T a)
+{
+	T a = do+something_else();
+	Uint8 b = 16;
+	do_some_other_thing<Uint8>(b, T a);
+}
+}}}
+
+
+=== Classes ===
+
+	1. The public, protected and private sections of a class will be declared in that order (the public section is declared before the protected section which is declared before the private section).
+{{{code: lang="cpp" linenumbers="true"
+class Bicycle
+{
+	public:
+		....
+	protected:
+		...
+	private:
+		...
+} 
+}}}
+
