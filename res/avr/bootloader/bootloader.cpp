@@ -73,8 +73,8 @@ enum input_state {LO,HI};
 // Blink times for different states. Times are in ms.
 
 // Idle.
-#define IDLE_ON	            1600
-#define IDLE_OFF            800
+#define IDLE_ON	            100
+#define IDLE_OFF            100
 
 // Communicating.
 #define COMMUNICATING_ON    6000
@@ -82,7 +82,7 @@ enum input_state {LO,HI};
 
 // Error.
 #define ERROR_ON            200
-#define ERROR_OFF           6000
+#define ERROR_OFF           1000
 
 #define SHUTDOWNSTATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 

@@ -120,10 +120,10 @@
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 // Time in units of MODULE_EVENT_PERIOD (in ms) between sending out ALERT_UPLOADER messages while the bootloader is waiting for communications to begin.
-const uint8_t ALERT_UPLOADER_TIMEOUT = 50;
+const uint16_t ALERT_UPLOADER_TIMEOUT = 50;
 
 // Time in units of MODULE_EVENT_PERIOD (in ms) between the last message arriving, and the bootloader giving up and assuming it has lost comms.
-const uint8_t COMMS_TIMEOUT = 1000;
+const uint16_t COMMS_TIMEOUT = 1000;
 
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
