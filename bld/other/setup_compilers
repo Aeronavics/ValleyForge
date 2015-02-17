@@ -355,7 +355,7 @@ unpack_uploader()
 
 	# Create a place for it.
 	rm -rf "$TCPATH/tmp/tmp_compiler/uploader"
-	mkdir "$TCPATH/tmp/tmp_compiler/uploader"
+	mkdir -p "$TCPATH/tmp/tmp_compiler/uploader"
 	cp $TCPATH/res/common/uploader/*.cpp "$TCPATH/tmp/tmp_compiler/uploader"
 	cp $TCPATH/res/common/uploader/*.hpp "$TCPATH/tmp/tmp_compiler/uploader"
 	cp $TCPATH/res/common/uploader/*.h "$TCPATH/tmp/tmp_compiler/uploader"

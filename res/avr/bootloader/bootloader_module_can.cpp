@@ -122,13 +122,20 @@
 // Time in units of MODULE_EVENT_PERIOD (in ms) between sending out ALERT_UPLOADER messages while the bootloader is waiting for communications to begin.
 const uint8_t ALERT_UPLOADER_TIMEOUT = 50;
 
+// Time in units of MODULE_EVENT_PERIOD (in ms) between the last message arriving, and the bootloader giving up and assuming it has lost comms.
+const uint8_t COMMS_TIMEOUT = 1000;
+
 const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 
-	// State flags.
+// State flags.
 bool communication_started;
+bool communication_recent;
 bool ready_to_send_page;
 bool message_confirmation_success; 
 bool write_details_stored;
+
+// Flag indicating an error has occurred.  Currently, once an error occurs, there is no way to clear it other than a reset.
+bool error;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -222,7 +229,7 @@ void bootloader_module_can::event_idle()
 void bootloader_module_can::event_periodic()
 {
 	// Number of ticks since an alert uploader message was last issued.
-	static uint8_t alert_ticks = 0;
+	static uint16_t alert_ticks = 0;
 
 	// Check if we've started communications yet.
 	if (!communication_started)
@@ -242,6 +249,44 @@ void bootloader_module_can::event_periodic()
 			alert_ticks = 0;
 		}
 	}
+	else
+	{
+		// Reset the alert ticks.
+		alert_ticks = 0;
+	}
+
+	// Number of ticks since a message was last received.
+	static uint16_t comms_ticks = 0;
+
+	if (communication_started && !communication_recent)
+	{
+		// Increment the number of ticks since we've heard from the uploader.
+		comms_ticks++;
+
+		// Check if it seems like the comms have died.
+		if (comms_ticks >= COMMS_TIMEOUT)
+		{
+			// Reset the comms timeout
+			comms_ticks = 0;
+		}
+	}
+	else
+	{
+		// Clear the comms timeout.
+		comms_ticks = 0;
+
+		// We're back to square one again.
+		communication_started = false;
+
+		// Change the status of the bootloader.
+		if (!error)
+		{
+			set_bootloader_state(IDLE);
+		}
+	}
+
+	// Communications have no longer been received 'recently'.
+	communication_recent = false;
 	 
 	// All done.
 	return;
@@ -399,7 +444,11 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 	//If the loop exited but did not do so due to a TXOK condition we set the error state.
 	if (!(CANSTMOB & (1 << TXOK)))
 	{
+		// Change the bootloader status to indicate an error.
 		set_bootloader_state(ERROR);
+
+		// Set our own error flag.
+		error = true;
 	}
 
 	// Disable transmit.
@@ -445,9 +494,7 @@ void bootloader_module_can::request_reset_procedure()
 }
 
 void bootloader_module_can::get_info_procedure(void)
-{
-	set_bootloader_state(COMMUNICATING);
-	
+{	
 	transmission_message.dlc = 6;
 	transmission_message.message_type = CANID_GET_INFO;
 	
@@ -467,8 +514,6 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
-	
-	set_bootloader_state(IDLE);
 
 	// All done.
 	return;
@@ -476,8 +521,6 @@ void bootloader_module_can::get_info_procedure(void)
 
 void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmware_page)
 {
-	set_bootloader_state(COMMUNICATING);
-	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -534,7 +577,6 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 			current_firmware_page.ready_to_write = true;
 			current_firmware_page.current_byte = 0;
 			write_details_stored = false;
-			set_bootloader_state(IDLE);
 		}
 	}
 	else
@@ -550,9 +592,7 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 }
 
 void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmware_page)
-{
-	set_bootloader_state(COMMUNICATING);
-	
+{	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -626,8 +666,7 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 
 		reception_message.confirmed_send = false;
 	}
-	
-	set_bootloader_state(IDLE);
+
 	// All done.
 	return;
 }
@@ -693,13 +732,17 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 
 	// We've now started communications.
 	communication_started = true;
+	communication_recent = true;
 
 	// Change the status of the bootloader.
-	set_bootloader_state(COMMUNICATING);
+	if (!error)
+	{
+		set_bootloader_state(COMMUNICATING);
+	}
 
 	// Restart the bootloader timeout, so we don't reboot halfway through a transfer.
 	set_bootloader_timeout(false);
-	set_bootloader_timeout(true);	
+	set_bootloader_timeout(true);
 	
 	// All done.
 	return;

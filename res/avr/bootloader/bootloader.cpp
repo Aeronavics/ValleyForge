@@ -117,8 +117,6 @@ volatile uint16_t timeout_tick = 0;
 
 volatile uint16_t blink_tick = 0;
 
-volatile uint16_t blink_threshold = 0;
-
 // State the bootloader is in.  At the moment, all this determines is the LED flashing pattern.
 State state = IDLE;
 
@@ -647,9 +645,6 @@ ISR(TIMER0_COMPA_vect)
 
 			// Start the tick counter again.
 			blink_tick = 0;
-
-			// Set the threshold to be the off threshold.
-			blink_threshold = blink_off;
 		}
 	}
 	else
@@ -665,9 +660,6 @@ ISR(TIMER0_COMPA_vect)
 
 			// State the tick counter again.
 			blink_tick = 0;
-
-			// Set the threshold to be the on threshold.
-			blink_threshold = blink_on;
 		}
 	}
 	

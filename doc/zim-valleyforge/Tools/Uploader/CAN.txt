@@ -54,6 +54,11 @@ The bootloader has two command messages and five confirmation message.
 
 === ALERT_UPLOADER ===
 {{./diagram009.png?type=diagram}}
+'''
+ID		DLC		D0		D1		D2		D3		D4		D5		D6		D7
+ALERT_HOST	1		NODE_ID
+'''
+
 
 === Confirmation Message ===
 {{./diagram010.png?type=diagram}}
