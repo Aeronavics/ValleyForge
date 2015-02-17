@@ -244,7 +244,7 @@ compliance_check_file_funcname()
 	local LINE_THRESH=$((LINE_NUM/10))
 	
 	# Check if the number of lines disabled is lesser than the threshold
-	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+	if [ $DISABLED_LINE_COUNT -gt $LINE_THRESH ]; then
 
 		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
