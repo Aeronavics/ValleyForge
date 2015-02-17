@@ -22,15 +22,15 @@ struct1 [label=<
 </tr>
 <tr>
 	<td>Alert_Host ID</td>
-	<td>0</td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
-	<td></td>
+	<td>8</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
+	<td>0xFF</td>
 </tr>
 
 </TABLE>
