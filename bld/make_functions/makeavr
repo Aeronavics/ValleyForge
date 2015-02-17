@@ -247,6 +247,7 @@ makeavr_bootloader()
 	fi
 	
 	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
 	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/${COMPONENT}_bootloader/bootloader $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex
 
 	# Check the return value from the object copy.
