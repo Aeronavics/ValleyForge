@@ -33,7 +33,7 @@
 
 #include "comm_CAN.hpp"
 
-// INCLUDE IMPLEMENTATION SPECIFIC HEADER FILES.
+// INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
 #include <iostream>
 
@@ -46,38 +46,49 @@
 #include "microchipcannetworkinterface.hpp"
 #include "socketcannetworkinterface.hpp"
 
-#include "can_messages.hpp"
-
+#include "can_messages.h"
 
 // DEFINE PRIVATE MACROS.
 
+// Number of tries to attempt (for the overall uploading process) before declaring failure.
 #define MAX_RETRIES 5
-#define TIMEOUT 10
 
-// DEFINE PRIVATE TYPES AND STRUCTS.
+// Timeout for CAN RX (and TX) operations, in ms. 
+#define TIMEOUT 10000
 
-// DECLARE IMPORTED GLOBAL VARIABLES.
+// SELECT NAMESPACES.
+
+// DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
 static CAN_module module;
 
-// DEFINE PRIVATE FUNCTION PROTOTYPES.
+// DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
 
 CAN_message make_command(uint32_t id, uint8_t target, size_t length);
+
 bool check_reply(CAN_message& msg);
 
-// IMPLEMENT PUBLIC FUNCTIONS.
+// IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
-CAN_module::CAN_module() :
-	Comm_module("can")
+// IMPLEMENT PUBLIC CLASS FUNCTIONS.
+
+CAN_module::CAN_module() : Comm_module("can")
 {
-	//Nothing to do here.
+	// Nothing to do here.
+
+	// All done.
+	return;
 }
 
 CAN_module::~CAN_module()
 {
+	// Release the underlying interface.
 	delete iface;
+
+	// All done.
+	return;
 }
 
 bool CAN_module::init(Params params)
@@ -137,85 +148,87 @@ bool CAN_module::init(Params params)
 	{
 		std::cerr << "Failed to clear filters." << std::endl;
 	}
-	//~ if (!iface->set_filter(HOST_ALERT, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(REQUEST_RESET, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(GET_INFO, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(WRITE_MEMORY, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(WRITE_DATA, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(READ_MEMORY, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	//~ if (!iface->set_filter(READ_DATA, CAN_network_interface::INCLUDE))
-	//~ {
-		//~ std::cerr << "Failed to set filter" << std::endl;
-		//~ return false;
-	//~ }
-	
-	return reset_device(false);
+
+	// All done.
+	return true;
 }
 
 bool CAN_module::connect_to_device()
 {
-	CAN_message msg;
-	if (!iface->set_filter(HOST_ALERT, CAN_network_interface::INCLUDE))
+	// Attempt to reset the device we're interested in.
+	if (!reset_device(false))
 	{
-		std::cerr << "Failed to set filter" << std::endl;
+		// We failed to reset the device for whatever reason.
+		std::cerr << "Uploader:connect_to_device - Failed to reset device." << std::endl;
 		return false;
 	}
-	if (!iface->receive_message(msg, TIMEOUT*1000))
+
+	CAN_message msg_rx_host_alert;
+	if (!iface->set_filter(CANID_HOST_ALERT, CAN_network_interface::INCLUDE))
 	{
-		std::cerr << "Failed to receive reply." << std::endl;
+		// Something went wrong internally.
+		std::cerr << "Uploader:connect_to_device - Failed to set interface filter." << std::endl;
 		return false;
 	}
-	if (msg.get_id() == 0x2FF)
+
+	// TODO - The obvious problem here is that if more than one device reset at the same time, this may fail since it is only filtering by message ID.
+
+	// Listen until we hear a message from the device.
+	if (!iface->receive_message(msg_rx_host_alert, TIMEOUT))
 	{
-		
-		Device_info temp;
-		if (get_device_info(temp))
-		{
-			connected = true;
-		}
+		// The device doesn't seem to be ready, so we bail.
+		std::cerr << "Uploader:connect_to_device - Timed out while waiting on ALERT_HOST message." << std::endl;
+		return false;
 	}
-	if (connected)
+
+	// Check that the message was what we expected.
+	if (msg_rx_host_alert.get_id() == CANID_HOST_ALERT)
 	{
-		return true;
+		// Something went wrong internally.
+		std::cerr << "Uploader:connect_to_device - Invalid filtering on RX ALERT_HOST message." << std::endl;
+		return false;
+	}
+
+	// Check whether the ALERT_HOST message contained some data.
+	if (msg_rx_host_alert.get_length() != 1)
+	{
+		// The content of the message wasn't what we were expecting.
+		std::cerr << "Uploader:connect_to_device - RX ALERT_HOST message didn't have DLC of 1." << std::endl;
+		return false;
+	}
+
+	// Check that the responding device was the one we want.
+	if (msg_rx_host_alert.get_content()[0] != target)
+	{
+		// This doesn't seem to be from the device we wanted.
+		std::cerr << "Uploader:connect_to_device - RX ALERT_HOST message was from wrong device.  We can't handle multiple devices right now." << std::endl;
+		return false;
 	}
 	
-	std::cerr << "Failed to Connect to device." << std::endl;
-	return false;
+	// Read device-info from the device.
+	Device_info devinfo;
+	if (!get_device_info(devinfo))
+	{
+		// We failed to read from the device for whatever reason.
+		std::cerr << "Uploader:connect_to_device - Failed to read device-info from device." << std::endl;
+		return false;
+	}
+
+	// Otherwise, if we make it all the way here, we should be good to go.
+
+	// All done.
+	return true;
 }
 
 bool CAN_module::get_device_info( Device_info& info)
 {
-	CAN_message get_info = make_command(GET_INFO, target, 1);
+	CAN_message get_info = make_command(CANID_GET_INFO, target, 1);
 	if (!iface->clear_filter())
 	{
 		return false;
 	}
 	
-	if (!iface->set_filter(GET_INFO, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_GET_INFO, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -224,15 +237,15 @@ bool CAN_module::get_device_info( Device_info& info)
 	{
 		return false;
 	}
-	if (!iface->send_message(get_info, TIMEOUT*1000))
+	if (!iface->send_message(get_info, TIMEOUT))
 	{
 		return false;
 	}
-	if (!iface->receive_message(get_info, TIMEOUT*1000))
+	if (!iface->receive_message(get_info, TIMEOUT))
 	{
 		return false;
 	}
-	if (get_info.get_id() != GET_INFO || get_info.get_length() < 6)
+	if (get_info.get_id() != CANID_GET_INFO || get_info.get_length() < 6)
 	{
 		return false;
 	}
@@ -247,7 +260,7 @@ bool CAN_module::get_device_info( Device_info& info)
 
 bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 {
-	CAN_message write_memory = make_command(WRITE_MEMORY, target, 7);
+	CAN_message write_memory = make_command(CANID_WRITE_MEMORY, target, 7);
 	uint8_t* data = write_memory.get_content();
 	data[1] = (address >> 24) & 0xFF;
 	data[2] = (address >> 16) & 0xFF;
@@ -259,7 +272,7 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(WRITE_MEMORY, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_WRITE_MEMORY, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -268,12 +281,12 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->send_message(write_memory, TIMEOUT*1000))
+	if (!iface->send_message(write_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to send read memory command" << std::endl;
 		return false;
 	}
-	if (!iface->receive_message(write_memory, TIMEOUT*1000))
+	if (!iface->receive_message(write_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
@@ -287,7 +300,7 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(WRITE_DATA, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_WRITE_DATA, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -298,7 +311,7 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 	{
 		//std::cout << "Sending Message: " << current_message << std::endl;
 		size_t packet_size = (remaining > 7) ? 7 : remaining;
-		write_memory = make_command(WRITE_DATA, target, packet_size+1);
+		write_memory = make_command(CANID_WRITE_DATA, target, packet_size+1);
 		for (size_t j = 0; j < packet_size; j++)
 		{
 			if (source.get_allocated_map()[address+(current_message*7)+j] == Memory_map::ALLOCATED)
@@ -311,12 +324,12 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 			}
 		}
 		
-		if (!iface->send_message(write_memory, TIMEOUT*1000))
+		if (!iface->send_message(write_memory, TIMEOUT))
 		{
 			std::cerr << "Failed to send data packet: " << current_message << std::endl;
 			return false;
 		}
-		if (!iface->receive_message(write_memory, TIMEOUT*1000))
+		if (!iface->receive_message(write_memory, TIMEOUT))
 		{
 			std::cerr << "Failed to receive message acknowledge, WritePage: " << current_message << std::endl;
 			return false;
@@ -334,7 +347,7 @@ bool CAN_module::write_page(Memory_map& source, size_t size, size_t address)
 
 bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 {
-	CAN_message read_memory = make_command(READ_MEMORY, target, 7);
+	CAN_message read_memory = make_command(CANID_READ_MEMORY, target, 7);
 	uint8_t* data = read_memory.get_content();
 	data[1] = (address >> 24) & 0xFF;
 	data[2] = (address >> 16) & 0xFF;
@@ -349,7 +362,7 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(READ_MEMORY, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_READ_MEMORY, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -358,12 +371,12 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->send_message(read_memory, TIMEOUT*1000))
+	if (!iface->send_message(read_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to send read memory command" << std::endl;
 		return false;
 	}
-	if (!iface->receive_message(read_memory, TIMEOUT*1000))
+	if (!iface->receive_message(read_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
@@ -377,7 +390,7 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(READ_DATA, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_READ_DATA, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -385,7 +398,7 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 	bool verified = true;
 	for (int i = 0; i < number_of_messages; i++)
 	{
-		if (!iface->receive_message(read_memory, TIMEOUT*1000))
+		if (!iface->receive_message(read_memory, TIMEOUT))
 		{
 			std::cerr << "Failed to receive message: " << i << std::endl;
 			return false;
@@ -402,9 +415,9 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 				}
 			}
 		}
-		read_memory = make_command(READ_DATA, target, 1);
+		read_memory = make_command(CANID_READ_DATA, target, 1);
 		//usleep(1*1000);
-		if (!iface->send_message(read_memory, TIMEOUT*1000))
+		if (!iface->send_message(read_memory, TIMEOUT))
 		{
 			bool check_reply(CAN_message& msg);
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;
@@ -416,7 +429,7 @@ bool CAN_module::verify_page(Memory_map& expected, size_t size, size_t address)
 
 bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 {
-	CAN_message read_memory = make_command(READ_MEMORY, target, 7);
+	CAN_message read_memory = make_command(CANID_READ_MEMORY, target, 7);
 	uint8_t* data = read_memory.get_content();
 	data[1] = (address >> 24) & 0xFF;
 	data[2] = (address >> 16) & 0xFF;
@@ -430,7 +443,7 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(READ_MEMORY, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_READ_MEMORY, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
@@ -439,12 +452,12 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->send_message(read_memory, TIMEOUT*1000))
+	if (!iface->send_message(read_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to send read memory command" << std::endl;
 		return false;
 	}
-	if (!iface->receive_message(read_memory, TIMEOUT*1000))
+	if (!iface->receive_message(read_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to receive reply" << std::endl;
 		return false;
@@ -458,14 +471,14 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 	{
 		return false;
 	}
-	if (!iface->set_filter(READ_DATA, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_READ_DATA, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
 	}
 	for (int i = 0; i < number_of_messages; i++)
 	{
-		if (!iface->receive_message(read_memory, TIMEOUT*1000))
+		if (!iface->receive_message(read_memory, TIMEOUT))
 		{
 			std::cerr << "Failed to receive message: " << i << std::endl;
 			return false;
@@ -476,9 +489,9 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 			destination.get_memory()[address+(i*8)+j] = read_memory.get_data()[j];
 			destination.get_allocated_map()[address+(i*8)+j] = Memory_map::ALLOCATED;
 		}
-		read_memory = make_command(READ_DATA, target, 1);
+		read_memory = make_command(CANID_READ_DATA, target, 1);
 		//usleep(1*1000);bool check_reply(CAN_message& msg);
-		if (!iface->send_message(read_memory, TIMEOUT*1000))
+		if (!iface->send_message(read_memory, TIMEOUT))
 		{
 			std::cerr << "Failed to send acknowledgement for message: " << i << std::endl;
 			return false;
@@ -489,7 +502,7 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 
 bool CAN_module::reset_device(bool run_application)
 {
-	CAN_message reset_message = make_command(REQUEST_RESET, target, 2);
+	CAN_message reset_message = make_command(CANID_REQUEST_RESET, target, 2);
 	reset_message.get_content()[1] = run_application ? 1 : 0;
 	if (! iface->drain_messages())
 	{
@@ -499,22 +512,22 @@ bool CAN_module::reset_device(bool run_application)
 	{
 		return false;
 	}
-	if (!iface->set_filter(REQUEST_RESET, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_REQUEST_RESET, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
 	}
-	if (!iface->send_message(reset_message, TIMEOUT*1000))
+	if (!iface->send_message(reset_message, TIMEOUT))
 	{
 		return false;
 	}
-	if (!iface->receive_message(reset_message, TIMEOUT*1000))
+	if (!iface->receive_message(reset_message, TIMEOUT))
 	{
 		std::cerr << "Warning did not receive reset reply." << std::endl;
 	}
 	else
 	{
-		if (reset_message.get_id() != REQUEST_RESET)
+		if (reset_message.get_id() != CANID_REQUEST_RESET)
 		{
 			std::cerr << "Did not receive reset confirmation instead received something else." << std::endl;
 			return false;
@@ -540,7 +553,7 @@ bool CAN_module::reset_device(bool run_application)
 	{
 		return true;
 	}
-	if (!iface->set_filter(HOST_ALERT, CAN_network_interface::INCLUDE))
+	if (!iface->set_filter(CANID_HOST_ALERT, CAN_network_interface::INCLUDE))
 	{
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;

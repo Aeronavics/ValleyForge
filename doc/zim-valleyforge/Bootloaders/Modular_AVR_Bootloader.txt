@@ -26,7 +26,7 @@ The bootloader consists of a bootloader 'shell', which provides common functiona
 
 The bootloader shell is implemented in the file ''bootloader.cpp'' (and the matching header). An abstract class ''bootloader_module'' is defined by the file ''bootloader_module.hpp''. Individual bootloader modules implement this abstract class. During compilation, the toolchain preprocesses the bootloader source file (''bootloader.cpp'') to set the macro definition ''BOOTLOADER_MODULE'' according to which peripheral the user has configured the bootloader to communicate through.
 
-The bootloader shell uses a single timer/counter (usually ''TIM0'') operating in output compare mode to queue any periodic behaviour.  The timer fires with a fixed period of 1ms; any period functions of the bootloader are timed in 1ms multiples.  This includes the bootloader timeout period, status LED flashing, and bootloader module periodic functions.
+The bootloader shell uses a single timer/counter (usually ''TIM0'') operating in output compare mode to queue any periodic behaviour.  The timer fires with a fixed period of 1ms; any period functions of the bootloader are hence timed in multiple 1ms 'ticks'.  This includes the bootloader timeout period, status LED flashing, and bootloader module periodic functions.
 
 ===== Operation of the Modular AVR Bootloader =====
 

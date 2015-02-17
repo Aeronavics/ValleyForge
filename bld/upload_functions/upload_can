@@ -129,7 +129,9 @@ upload_can()
 	unpack_avrc
 	
 	# Unpack the actual uploader.
-	unpack_uploader
+	if ! unpack_uploader; then
+		return 1
+	fi
 
 	# Set the file to flash to be the application binary.
 	CAN_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.hex"
@@ -372,7 +374,7 @@ upload_can()
 		echo -e "${CYAN}Uploading files for component $COMPONENT via the CAN bootloader.\n${NO_COLOUR}"
 		
 		# Upload the application code to flash.
-		sudo $TCPATH/res/common/uploader/bin/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
+		sudo $TCPATH/tmp/tmp_compiler/uploader/uploader -c can -C "$CAN_PARAMS" -S "$SIGNATURE" -p "$FLASH_PAGE_SIZE" -s "$APPLICATION_FLASH_SIZE" -f "$CAN_BINARY"
 
 		echo -e ""
 
