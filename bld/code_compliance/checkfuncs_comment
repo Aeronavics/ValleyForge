@@ -205,7 +205,7 @@ compliance_check_file_comment()
 		return 0
 	}
 
-	# Function to check whether the file is empty without any non whitespace characters.
+	# Function to check whether the file is empty. We consider lines which contain only whitespace characters[spaces,tab] also as empty.
 	check_file_empty()
 	{
 		local flag_not_empty=
