@@ -14,12 +14,7 @@ res/arm/omap4/angstrom/images/*
 res/arm/omap4/ubuntu-core/images/*
 res/arm/omap4/ubuntu-prebuilt/images/*
 res/avr32/avr32comp/*
-res/vendor/mavlink/*
-res/vendor/freertos/*
-res/vendor/stlink/*
-res/vendor/nuttx/*
-res/vendor/lm4tools/*
-res/vendor/pixhawk/*
+res/vendor/*
 
 doc/zim-valleyforge/.zim/*
 

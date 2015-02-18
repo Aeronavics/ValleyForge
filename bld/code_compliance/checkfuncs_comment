@@ -44,6 +44,11 @@ compliance_check_file_comment()
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
+	# Arrays used as flags for reporting errors. 
+	unset array_error_flag_c_multiline_comments 
+	unset array_error_flag_cpp_multiline_comments 
+	unset array_error_flag_c_single_line_comments
+
 	# Define internal functions.
 
 	check_line()
@@ -53,27 +58,151 @@ compliance_check_file_comment()
 		#	
 
 		# Pattern to check for TODO comments
-		pattern_todo="[Tt][Oo][Dd][Oo][ -:]*(.*)"
+		pattern_todo="^[ \t]*((\/\/)|(\*))[ \t]*[Tt][Oo][Dd][Oo][ -:]*(.*)" 
 		pattern_todo_correct="TODO - (.*)"
 
 		# Pattern to check for NOTE comments
-		pattern_note="[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)"
+		pattern_note="^[ \t]*((\/\/)|(\*))[ \t]*[Nn][Oo][Tt][Ee][ ]*[-:]+(.*)" 
 		pattern_note_correct="NOTE - (.*)"
 
 		if [[ $1 =~ $pattern_todo && ! $1 =~ $pattern_todo_correct ]]; then
-			ERROR="This line doesn't follow proper syntax for TODO comments"
-	
+
+			ERROR="This line doesn't follow proper syntax for TODO comments."
 			return 1
 		fi
 	
 		if [[ $1 =~ $pattern_note && ! $1 =~ $pattern_note_correct ]]; then
-			ERROR="This line doesn't follow proper syntax for NOTE comments"
-	
+
+			ERROR="This line doesn't follow proper syntax for NOTE comments."
 			return 1
 		fi
 	
 		# All done.
 		return 0	
+	}
+
+	# Function to check whether multi-line comments follow proper conventions.
+	check_c_style_comments()
+	{
+		# Flag to denote whether lines in between the start and end of a multi line comment block follows conventions. Initially, we assume that it follows.
+		local CHECKS_COMMENT_MIDDLE=1
+
+		# Need to keep track of the line number we are up to.
+		local LINE_NUM=
+
+		# Pattern to match lines in between /* and */
+		pattern_middle="^[\s\*](.*)"
+
+		# Pattern to match multi line comment start.
+		pattern_comment_start="^[ \t]*(\/\*)" 
+	
+		# Pattern to match multi line comment end.
+		pattern_comment_end="(.*)(\*\/)"
+
+		# Pattern to match single line comment which appear after the statements Eg. int a; /* Used to declare a variable */
+		pattern_comment_single_after_statement="(\/\*)(.*)(\*\/)"
+
+		while read LINE
+		do
+			# Increment the line number.
+	  		((LINE_NUM++))
+
+			CHECKS_COMMENT_MIDDLE=1
+
+			# Check if the line is the start of a multi-line comment block.
+			if [[ "$LINE" =~ $pattern_comment_start && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+				# Store the starting line of the multi-line comment block to report if any error arises.
+				LINE_NUM_COMMENT_BLOCK=$LINE_NUM
+
+				while read LINE
+				do
+					# Increment the line number.
+			  		((LINE_NUM++))
+
+					# Break from the loop if the end of the comment block is found.
+					if [[ "$LINE" =~ $pattern_comment_end && ! "$LINE" =~ $pattern_comment_single_after_statement ]]; then
+
+						break
+					fi
+
+					# Check whether the lines in the comment block follow proper conventions.
+					if [[ ! "$LINE" =~ $pattern_middle ]]; then
+						
+						# Report that the line doesn't follow conventions.
+						CHECKS_COMMENT_MIDDLE=
+					fi
+				done
+				
+				# If the flag is not set,set the error flag to report that the comment block doesn't follow conventions.
+				if [[ ! ${CHECKS_COMMENT_MIDDLE} ]]; then
+	
+					# Set the error flag.
+					array_error_flag_c_multiline_comments[$LINE_NUM_COMMENT_BLOCK]=1				
+				fi
+			fi
+		done < $FILE
+		
+		# All done.
+		return 0
+	}
+
+	# Function to identify multi line comments which are in C++ style.
+	check_multiline_cpp_comments()
+	{
+		# Save the default IFS to a temporary variable.
+		SAVEIFS=$IFS
+		# Modify the internal field separator to process each lines separately.
+		IFS=$(echo -en "\n\b")
+
+		# Condition to check if the file has multiple C++ comments.
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o3 -M -n '^((\/\/)+(.*))+(\n((\/\/)+(.*))+)+' $FILE`
+		do
+			# Obtain the line number of the comment block.
+			line_number_comment=${string%%:*}
+	
+			# If there are multi line C++ comments, set the error flag to report an error for the corresponding line.
+			if [[ $string ]]; then
+
+				# Set the error flag.
+				array_error_flag_cpp_multiline_comments[$line_number_comment]=1
+			fi
+		done
+
+		# Reset IFS to the default value.
+		IFS=$SAVEIFS
+
+		# All done.
+		return 0
+	}
+
+	# Function to identify single line comments which are in C style. E.g. /* This is a comment. */
+	check_single_line_c_comments()
+	{
+		# Save the default IFS to a temporary variable.
+		SAVEIFS=$IFS
+		# Modify the internal field separator to process each lines separately.
+		IFS=$(echo -en "\n\b")
+
+		#Condition to check if the file has single line C style comments.
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '(\/\*)+(.*)(\*\/)+' $FILE`
+		do
+			# Obtain the line number of the comment block.
+			line_number_comment=${string%%:*}
+	
+			# If there are single line C style comments, set the error flag to report an error for the corresponding line.
+			if [[ $string ]]; then
+
+				# Set the error flag.
+				array_error_flag_c_single_line_comments[$line_number_comment]=1 
+			fi
+		done
+
+		# Reset IFS to the default value.
+		IFS=$SAVEIFS
+
+		# All done.
+		return 0
 	}
 
 	# Need to keep track of the line number we are up to.
@@ -88,6 +217,15 @@ compliance_check_file_comment()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local DISABLED_LINE_COUNT=0
 
+	# Check for proper syntax of multiple C style comments.
+	check_c_style_comments
+
+	# Check for multi-line comments in C++ style.
+	check_multiline_cpp_comments
+
+	# Check for multi-line comments in C++ style.
+	check_single_line_c_comments
+
 	# Iterate over each of the lines in the file.
 	while read LINE
 	do
@@ -95,6 +233,7 @@ compliance_check_file_comment()
   		((LINE_NUM++))
 
   		if [ ${CHECKS_EN} ]; then
+
   			# Check to see whether this line disables checking temporarily.
   			if [[ "$LINE" =~ "#pragma COMPL_DISAB_START" ]]; then
 
@@ -104,9 +243,36 @@ compliance_check_file_comment()
 
   			# Ok, so now we actually want to check this line for compliance.
 			if ! check_line "$LINE"; then
-				# Report the line has failed.
-				compliance_fail_line "compliance_check_file_comment" $1 $LINE_NUM "Non-compliant comment: $ERROR"
 
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_comment" $FILE $LINE_NUM "Non-compliant comment: $ERROR"
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+			# Check if there are multiline C comments.
+			if [ ${array_error_flag_c_multiline_comments[$LINE_NUM]} ]; then
+
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_comment" $FILE $LINE_NUM "Non-compliant comment block: Doesn't follow proper commenting standards."
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+			# Check if there are multiline C++ comments.
+			if [ ${array_error_flag_cpp_multiline_comments[$LINE_NUM]} ]; then
+				
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_comment" $FILE $LINE_NUM "Non-compliant comment block: Multi-line comments should not be in C++ style."
+				# At least one thing is wrong in this file.
+				CHECKS_OK=
+			fi
+
+			# Check if there are single line C comments.
+			if [ ${array_error_flag_c_single_line_comments[$LINE_NUM]} ]; then
+
+				# Report the line has failed.
+				compliance_fail_line "compliance_check_file_comment" $FILE $LINE_NUM "Non-compliant comment: Single line C style comment is not allowed."
 				# At least one thing is wrong in this file.
 				CHECKS_OK=
 			fi
@@ -120,58 +286,40 @@ compliance_check_file_comment()
   				CHECKS_EN=1
   			fi
   		fi
-
 	done < $FILE
 
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 
-	# Condition to check if the file has multiple C++ comments.
-	if pcregrep -q -M '(\/\/+(.*))+(\n([\/\/]+(.*))+)+' $1; then
-		compliance_fail_file "compliance_check_file_comment" $1 "This file has multiple single line C++ style comments."
+	# Condition to check for copyrights information in the file.
+	if ! grep -qi 'Copyright (C) [0-9]*[ ]*Unison Networks Ltd' $FILE; then
 
-		CHECKS_OK=
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing Unison Copyrights header comment."
 	fi
 
-	# Condition to check if the file has single line C style("/* .... */") comments.
-	if pcregrep -q -M '\/+\*+(.*)\*\/+' $1; then
-		compliance_fail_file "compliance_check_file_comment" $1 "This file has single line C style comments."
-
-		CHECKS_OK=
+	# Check for comment block at the start of the file.
+	if ! $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*)*(COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*(\*)*\/' $FILE; then
+		
+		# Report that the file has failed.		
+		compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing comment block at the beginning of file."
 	fi
 
 	# Check if the number of lines disabled is lesser than the threshold
 	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
-		compliance_fail_file "exception_limits" $1 "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
+
+		# Report that the file has failed.
+		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
 	fi   
 
 	if [ ! ${CHECKS_OK} ]; then
+
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_comment" $1 "This file contains non-compliant comment(s)."
+		compliance_fail_file "compliance_check_file_comment" $FILE "This file contains non-compliant comment(s)."
 	fi
 
 	# All done.
 	return 0
-}
-
-######################################## FUNCTION #############################################
-###
-### Name:		compliance_get_rules_comment
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the comment test.
-###
-###############################################################################################
-
-compliance_get_rules_comment()
-{
-	echo "Commenting conventions:"
-	echo "\tAll C++ anc C files should follow proper commenting conventions."
-	echo "\tMultiple comment lines should be in C style(/* ... */) and single comment lines should be in C++ style(// ....)"
-	echo "\tTODO comments should be in the syntax '// TODO - ...'"
-	echo "\tNOTE comments should be in the syntax '// NOTE - ...'"
-	echo ""
 }
 
 # ALL DONE.

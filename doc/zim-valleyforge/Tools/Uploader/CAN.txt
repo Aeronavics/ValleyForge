@@ -11,14 +11,16 @@ This module uses a number of parameters given to the uploader with the -C comman
 {{./diagram.png?type=diagram}}
 
 ===== The Protocol =====
-The protocol consists of serveral messages for communicating with the bootloader and uploading the images.
+
+The protocol consists of several messages for communicating with the bootloader and uploading the images.
 {{./diagram001.png?type=diagram}}
 All messages in the protocol are addressed to a specific target on the network by means of a single byte identifier in the first data byte of the message. Each message type has its own CAN bus ID and bootloader responses are sent using the corresponding ID to the command they are replying to. It is assumed that there will be only one node being programmed and only one node doing programming, this is necessary to avoid the need to have the programming and programmed node exchange address information and to avoid having two addressing identifiers in each message, which would consume one quarter of the data space of each message.
 
 ===== CAN Message Format =====
 The CAN messages are all of the standard format(11-bit Identifier field). The identifier field, data length code(DLC) field and the data field of all the messages are shown below. The command messages are the messages specified above. Confirmation messages are messages that are sent to confirm the command message has been received. 
 
-==== Uploader Messages ====
+==== Messages from the Uploader ====
+
 The Uploader has five command messages and a single confirmation message.
 
 === REQUEST_RESTART ===
@@ -42,19 +44,25 @@ Note: The Flash address is a 32-bit number and spans 4 bytes in Big endian forma
 === Confirmation Message ===
 {{./diagram007.png?type=diagram}}
 
-==== Bootloader Messages ====
+==== Messages from the Bootloader ====
+
 The bootloader has two command messages and five confirmation message.
 
 === READ_DATA ===
 {{./diagram008.png?type=diagram}}
-Note: The amount of code can be zero to eight bytes long.
+**NOTE** - The amount of code can be zero to eight bytes long.
 
 === ALERT_UPLOADER ===
 {{./diagram009.png?type=diagram}}
+'''
+ID		DLC		D0		D1		D2		D3		D4		D5		D6		D7
+ALERT_HOST	1		NODE_ID
+'''
+
 
 === Confirmation Message ===
 {{./diagram010.png?type=diagram}}
-Note: The Confirmation_state will indicate whether or not the bootloader received a message with the correct information.
+**NOTE** - The Confirmation_state will indicate whether or not the bootloader received a message with the correct information.
 
 === Get_info Reply ===
 {{./diagram011.png?type=diagram}}

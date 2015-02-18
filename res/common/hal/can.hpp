@@ -631,4 +631,3 @@ class Can
 #endif // __CAN_H__
 
 // ALL DONE.
-

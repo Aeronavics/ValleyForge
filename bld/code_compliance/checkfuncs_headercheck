@@ -67,29 +67,14 @@ compliance_check_file_headercheck()
 		
 		# Condition to check if the file has a matching header file in the same directory.
 		if [[ ! $(find $file_directory -type f -name $headerfile) ]]; then
+
+			# Report that the file has failed.
 			compliance_fail_file "compliance_check_file_headercheck" $FILE "This file doesn't have a matching header"
 		fi
-
 	fi
 
+	# All done.
 	return 0
-}
-
-######################################## FUNCTION #################################################
-###
-### Name:		compliance_get_rules_headercheck
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the headercheck test.
-###
-###################################################################################################
-
-compliance_get_rules_headercheck()
-{
-	echo "Header file conventions:"
-	echo "\tAll C++ anc C files should have a corresponding header file."
-	echo ""
 }
 
 # ALL DONE.

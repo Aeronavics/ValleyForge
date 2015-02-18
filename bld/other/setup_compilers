@@ -344,16 +344,24 @@ unpack_nativec()
 
 unpack_uploader()
 {
-	
-	# We need to compile the uploader before we continue.		
+	# Check if there is a cached copy of the compiler.
+	if [ -f "${TCPATH}/tmp/tmp_compiler/uploader/uploader" ]; then
+		# Seems like the uploader is already sorted.
+		echo -e "${CYAN}Uploading tool (already) available.\n${NO_COLOUR}"
+		return 0
+	fi
+	# Else we'll to build the uploading tool before we continue.
 	echo -e "${CYAN}Compiling the Uploader tool...\n${NO_COLOUR}"
-	mkdir $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/uploader/*.cpp $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/uploader/*.hpp $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/uploader/*.h $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/uploader/Makefile $TCPATH/tmp/uploader
-	cp $TCPATH/res/common/can_messages.hpp $TCPATH/tmp/uploader
-	make -C $TCPATH/tmp/uploader all
+
+	# Create a place for it.
+	rm -rf "$TCPATH/tmp/tmp_compiler/uploader"
+	mkdir -p "$TCPATH/tmp/tmp_compiler/uploader"
+	cp $TCPATH/res/common/uploader/*.cpp "$TCPATH/tmp/tmp_compiler/uploader"
+	cp $TCPATH/res/common/uploader/*.hpp "$TCPATH/tmp/tmp_compiler/uploader"
+	cp $TCPATH/res/common/uploader/*.h "$TCPATH/tmp/tmp_compiler/uploader"
+	cp "$TCPATH/res/common/uploader/Makefile" "$TCPATH/tmp/tmp_compiler/uploader"
+	cp "$TCPATH/res/common/can_messages.h" "$TCPATH/tmp/tmp_compiler/uploader"
+	make -C $TCPATH/tmp/tmp_compiler/uploader all
 	
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 
@@ -363,17 +371,6 @@ unpack_uploader()
 		echo -e "\n${RED}Compilation error.  Failed to build uploader.\n${NO_COLOUR}"
 		return 1
 	fi
-	
-	mkdir -p $TCPATH/res/common/uploader/bin
-	cp $TCPATH/tmp/uploader/uploader $TCPATH/res/common/uploader/bin
-	
-	rm -rf $TCPATH/tmp/uploader
-
-	if [ ! -f $TCPATH/res/common/uploader/bin/uploader ]; then
-		echo -e "${RED}Uploader binary does not exist after compiling.\n${NO_COLOUR}"
-		return 1
-	fi
-	
 	echo -e ""
 
 	# All done.

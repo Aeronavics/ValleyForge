@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_layout_indentation
+### Name:           	checkfuncs_layout
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -25,55 +25,42 @@
 ###
 ### Type:           	Bash Function Definitions
 ###
-### Purpose:        	Implements code compliance tests: tests for proper layout conventions(indentation) in files.
+### Purpose:        	Implements code compliance tests: tests for proper layout conventions in files.
 ###
 ###########################################################################################################################
 
 ######################################## FUNCTION ##################################################
 ###
-### Name:		compliance_check_file_layout_indentation
+### Name:		compliance_check_file_layout
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
-### Purpose:		Tests a single C/CPP source file for proper layout conventions(indentation).
+### Purpose:		Tests a single C/CPP source file for proper layout conventions.
 ###
 ####################################################################################################
 
 
-compliance_check_file_layout_indentation()
+compliance_check_file_layout()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
 
+	# Variable to store the output from running AStyle.
+	local status=
+
 	# Run "Artistic Style" with the given file and store the output string with status of the operation. 
-	str=$(astyle --style=allman -t -C -S -N -xW --dry-run $FILE) 			
+	str=$($TCPATH/res/vendor/astyle/build/gcc/bin/astyle --style=allman -t -C -S -N -p -k1 -U -H -xy -j --dry-run $FILE) 			
 	status=${str%% *}
 
 	# Condition to check the status of the operation(Formatted - changes present, Unchanged - no changes required)
 	if [[ "$status" == "Formatted" ]]; then
-		compliance_fail_file "compliance_check_file_layout_indentation" $FILE "This file doesn't follow proper layout conventions(indentation)"
+
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_layout" $FILE "This file doesn't follow proper layout conventions"
 	fi
 
 	# All done.
 	return 0
-}
-
-######################################## FUNCTION ##########################################################
-###
-### Name:		compliance_get_rules_layout_indentation
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the "layout_indentation" test.
-###
-############################################################################################################
-
-compliance_get_rules_layout_indentation()
-{
-	echo "Layout conventions(indentation):"
-	echo "\tAll C++ anc C files should follow proper layout conventions(indentation)."
-	echo "\tThe indentation style to be used is the 'Allman style'"
-	echo ""
 }
 
 # ALL DONE.

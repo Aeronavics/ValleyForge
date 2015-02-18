@@ -17,15 +17,15 @@
 
 ###########################################################################################################################
 ###
-### Name:           compliance_checks
+### Name:           	compliance_checks
 ###
-### Author:         Edwin Hayes
+### Author:         	Edwin Hayes
 ###
 ### Date Created:	16-12-2014
 ###
-### Type:           Bash Function Definitions
+### Type:           	Bash Function Definitions
 ###
-### Purpose:        Provides functions to perform code compliance tests.
+### Purpose:        	Provides functions to perform code compliance tests.
 ###
 ###########################################################################################################################
 
@@ -37,17 +37,17 @@ done
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported top level code compliance functions.\n${NO_COLOUR}"
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ###############################################
 ###
 ### Name:		compliance_load_config
 ###
 ### Inputs/Outputs:	None.
 ###
-### Purpose:	Load code compliance configuration settings from file.  For now, the path
-###             to load is hard coded in, but actually, it should take this from the user
-###             configuration file.
+### Purpose:		Load code compliance configuration settings from file.  For now, the path
+###             	to load is hard coded in, but actually, it should take this from the user
+###             	configuration file.
 ###
-###########################################################################################
+#################################################################################################
 
 compliance_load_config()
 {
@@ -70,19 +70,19 @@ compliance_load_config()
 	return 0
 }
 
-######################################## FUNCTION #########################################
+######################################## FUNCTION ###############################################
 ###
 ### Name:		compliance_check_directory
 ###
 ### Inputs/Outputs:	Path to the directory containing source file to check.
-###					Path to the file to write compliance results to.
+###			Path to the file to write compliance results to.
 ###
-### Purpose:	Performs code compliance checks on all the source files in the specified
-###				directory.
+### Purpose:		Performs code compliance checks on all the source files in the specified
+###			directory.
 ###
-###				At the moment, this is essentially just a wrapper for Ravi's scripts.
+###			At the moment, this is essentially just a wrapper for Ravi's scripts.
 ###
-###########################################################################################
+#################################################################################################
 
 compliance_check_directory()
 {
@@ -94,6 +94,7 @@ compliance_check_directory()
 
 	# Check if the specified location is actually legit.
 	if [ ! -d "$1" ]; then
+
 		# The specified location is not a directory.
 		echo -e "${RED}Invalid source location to test for code compliance.\n${NO_COLOUR}"
 		return 1
@@ -101,6 +102,7 @@ compliance_check_directory()
 
 	# Check if the specified location is actually legit.
 	if [ ! -n "$2" ]; then
+
 		# The specified location is not a directory.
 		echo -e "${RED}Invalid output location for code compliance results.\n${NO_COLOUR}"
 		return 1
@@ -109,13 +111,14 @@ compliance_check_directory()
 	# Record the output file.
 	COMPLIANCE_OUTPUT_FILEPATH=$2
 
-	# Record the input directory in a variable to be used by compliance scripts
-	COMPLIANCE_INPUT_DIRECTORY=$1
+	# Empty the contents of the output file.
+	cp /dev/null $COMPLIANCE_OUTPUT_FILEPATH
 
+	# Record the input directory in a variable to be used by compliance scripts.
+	COMPLIANCE_INPUT_DIRECTORY=$1
 
 	# The default directory for code compliance configuration files.
 	CODE_COMPLIANCE_CONFIG_DIRECTORY="bld/code_compliance/config_files"
-
 
 	# Initially, the number of errors or warnings is zero.
 	COMPLIANCE_NUM_ERRORS=0
@@ -128,6 +131,7 @@ compliance_check_directory()
 
 	# Check if at least one type of check if available.
 	if [ -z "${CHECKS}" ]; then
+
 		# There aren't any checks to perform.
 		echo -e "${YELLOW}\tNo code compliance checks seem to be available.\n${NO_COLOUR}"
 		return 0
@@ -137,6 +141,7 @@ compliance_check_directory()
 	COMPLIANCE_MASK_STRING=
 	if [ -n "${COMPLIANCE_MASK}" ]; then
 		echo -e "${YELLOW}\tNot checking some files according to mask: ${COMPLIANCE_MASK}\n${NO_COLOUR}"
+
 		for COMPLIANCE_MASK_WORD in ${COMPLIANCE_MASK}; do
 			COMPLIANCE_MASK_STRING+=" -wholename $1/${COMPLIANCE_MASK_WORD} -prune -o"
 		done
@@ -148,7 +153,7 @@ compliance_check_directory()
 												 -o -name "*.c" -print \
 												 -o -name "*.h" -print \
 												 -o -name "*.pde" -print); do
-		echo -e "${CYAN}\tChecking code compliance: ${FILE}"
+		echo -e "${CYAN}\tChecking code compliance: ${FILE#${TCPATH}/}"
 
 		# Iterate over each of the checks.
 		for CHECK in ${CHECKS}; do
@@ -162,6 +167,7 @@ compliance_check_directory()
 
 	# Check whether any error were reported.
 	if [ ${COMPLIANCE_NUM_ERRORS} -gt 0 ]; then
+
 		# At least one error occurred, so we return indicating there is a problem.
 		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${RED}${COMPLIANCE_NUM_ERRORS} errors${CYAN}, and ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 1
@@ -169,6 +175,7 @@ compliance_check_directory()
 
 	# Check whether any warnings were reported.
 	if [ ${COMPLIANCE_NUM_WARNINGS} -gt 0 ]; then
+
 		# At least one warning occurred, so we print a message, but return that everything seemed ok.
 		echo -e "\n${CYAN}\tCode compliance testing complete.  Found ${YELLOW}${COMPLIANCE_NUM_WARNINGS} warnings${CYAN}.\n${NO_COLOUR}"
 		return 0
@@ -192,8 +199,10 @@ compliance_lookup_test()
 	KEY=$(eval "echo \"\${COMPLIANCE_EN_$1}\"")
 
 	if [ "${KEY}" == "ERROR" ]; then
+
 		return 2
 	elif [ "${KEY}" == "WARNING" ]; then
+
 		return 1
 	fi
 
@@ -215,14 +224,14 @@ compliance_fail_file()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error in $1: $2: '$3'${NO_COLOUR}"
+			echo -e "${RED}\tError: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance error in $1: $2: '$3' " >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Error: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of errors.
+		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of errors.
 		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_ERRORS++))
 		fi
@@ -231,14 +240,14 @@ compliance_fail_file()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning in $1: $2: '$3'${NO_COLOUR}"
+			echo -e "${YELLOW}\tWarning: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance warning in $1: $2: '$3'" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Warning: ${2#${TCPATH}/}: ${1#compliance_check_file_} - $3\n" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
-		# Since these scripts deal with a file in general rather than line by line, increment the counter for number of warnings.
+		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of warnings.
 		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
@@ -271,11 +280,11 @@ compliance_fail_line()
 		# The failure should generate an error.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${RED}\tCompliance error: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${RED}\tError: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance error: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Error: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_ERRORS++))
@@ -284,15 +293,14 @@ compliance_fail_line()
 		# The failure should generate a warning.
 
 		if [ -n "${COMPLIANCE_OUTPUT_CONSOLE}" ]; then
-			echo -e "${YELLOW}\tCompliance warning: $2 line $3: $4${NO_COLOUR}"
+			echo -e "${YELLOW}\tWarning: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4${NO_COLOUR}"
 		fi
 
 		if [ -n "${COMPLIANCE_OUTPUT_FILE}" ]; then
-			echo -e "Compliance warning: $2 line $3: $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
+			echo -e "Warning: ${2#${TCPATH}/} line $3: ${1#compliance_check_file_} - $4" >> ${COMPLIANCE_OUTPUT_FILEPATH}
 		fi
 
 		((COMPLIANCE_NUM_WARNINGS++))
-
 	fi
 	# Else, the test wasn't even enabled, so why does it matter that it failed?  Why did we even run the test?
 

@@ -36,7 +36,7 @@
 #include <avr/interrupt.h>
 
 // Include can message ids.
-#include "can_messages.hpp"
+#include "can_messages.h"
 
 	// Delay used for reseting the mcp2515 .
 #define F_CPU 16000000UL  // 16 MHz crystal oscillator on the mcp2515.

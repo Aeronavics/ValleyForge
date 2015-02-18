@@ -197,7 +197,7 @@ find_source_dependencies_recursive()
 	fi
 
 	# Insert a line break after the target, so that each actual dependency is on its own line.
-	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g")
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g" | sed "s^ ^ \\\\\n^g" | sed "/^[\\ ]*$/d")
 
 	# Remove dependencies which share the target's basename, so that it doesn't depend on itself.
 	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "\^${TARGET_FILE%.*}\.\S*^d")

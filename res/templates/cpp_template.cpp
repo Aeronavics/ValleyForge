@@ -30,7 +30,7 @@
 
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
-enum private_enum_type {PRIVATE_ENUM_TYPE_0, PRIVATE_ENUM_TYPE_1};
+enum Private_enum_type {PRIVATE_ENUM_TYPE_0, PRIVATE_ENUM_TYPE_1};
 
 class Private_class_type
 {

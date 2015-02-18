@@ -36,25 +36,24 @@
 #include <avr/interrupt.h>
 
 // Include can message ids.
-#include "can_messages.hpp"
+#include "can_messages.h"
 
-// DEFINE CONSTANTS
+// DEFINE PRIVATE MACROS.
 
-	// Bootloader information.
-#define BOOTLOADER_START_ADDRESS	<<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
-const uint8_t ALERT_UPLOADER_PERIOD = 10;// x10 the event_periodic() period. Period to send each alert_host message before communication has begun.
-const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
+// Bootloader information.
 
-	// CAN peripheral infromation.
+#define BOOTLOADER_START_ADDRESS <<<TC_INSERTS_BOOTLOADER_START_ADDRESS_HERE>>>
+
+// CAN peripheral information.
 #if defined (__AVR_AT90CAN128__)
 	#define NUMBER_OF_MOB_PAGES 15
 #else
 	#define NUMBER_OF_MOB_PAGES 6
 #endif
 
-	// CAN Baud rate values.
-#define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>
-#define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
+// CAN Baud rate values.
+#define CAN_BAUD_RATE <<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>
+#define CLK_SPEED_IN_MHZ <<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
 
 #if (CLK_SPEED_IN_MHZ == 16)
 	#if (CAN_BAUD_RATE == 1000)
@@ -81,6 +80,8 @@ const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 		#define CAN_BAUD_RATE_CONFIG_1	0x26
 		#define CAN_BAUD_RATE_CONFIG_2	0x04
 		#define CAN_BAUD_RATE_CONFIG_3	0x13
+ 	#else
+ 		#error "Invalid CAN baud rate."
 	#endif
 #elif (CLK_SPEED_IN_MHZ == 8)
 	#if (CAN_BAUD_RATE == 1000)
@@ -107,18 +108,34 @@ const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
 		#define CAN_BAUD_RATE_CONFIG_1	0x12
 		#define CAN_BAUD_RATE_CONFIG_2	0x04
 		#define CAN_BAUD_RATE_CONFIG_3	0x13
+ 	#else
+ 		#error "Invalid CAN baud rate."
 	#endif
+#else
+ 	#error "CAN bootloader module does not have a CAN baud rate configuration for this CPU clock rate."
 #endif
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-	// State flags.
+// Time in units of MODULE_EVENT_PERIOD (in ms) between sending out ALERT_UPLOADER messages while the bootloader is waiting for communications to begin.
+const uint16_t ALERT_UPLOADER_TIMEOUT = 50;
+
+// Time in units of MODULE_EVENT_PERIOD (in ms) between the last message arriving, and the bootloader giving up and assuming it has lost comms.
+const uint16_t COMMS_TIMEOUT = 1000;
+
+const uint8_t NODE_ID = <<<TC_INSERTS_NODE_ID_HERE>>>;
+
+// State flags.
 bool communication_started;
+bool communication_recent;
 bool ready_to_send_page;
 bool message_confirmation_success; 
 bool write_details_stored;
+
+// Flag indicating an error has occurred.  Currently, once an error occurs, there is no way to clear it other than a reset.
+bool error;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
@@ -172,13 +189,7 @@ bootloader_module_can::~bootloader_module_can()
 }
 
 void bootloader_module_can::init(void)
-{
-	// Initialize flags.
-	communication_started = false;
-	ready_to_send_page = false;
-	write_details_stored = false;
-	reception_message.message_received = false;
-	
+{	
 	// Initialize the CAN controller.
 	init_can();
 	
@@ -188,6 +199,7 @@ void bootloader_module_can::init(void)
 
 void bootloader_module_can::exit(void)
 {
+	// Reset the CAN controller so that application code finds it untouched.
 	reset_can();
 
 	// All done.
@@ -202,6 +214,13 @@ void bootloader_module_can::event_idle()
 		ready_to_send_page = false;
 		send_flash_page(buffer);
 	}
+
+	// Check if we've recieved a new message.
+	if (reception_message.message_received)
+	{		
+		// Handle the incoming message.
+		filter_message(buffer);
+	}	
 	
 	// All done.
 	return;
@@ -209,34 +228,66 @@ void bootloader_module_can::event_idle()
 
 void bootloader_module_can::event_periodic()
 {
-	static uint8_t alert_count = 0; 
-	 
-	// Check for a new message.
-	if (!reception_message.message_received)
+	// Number of ticks since an alert uploader message was last issued.
+	static uint16_t alert_ticks = 0;
+
+	// Check if we've started communications yet.
+	if (!communication_started)
 	{
-		// Check if communication with host has already occured.
-		if (!communication_started)
+		// We haven't started communication yet, so we post a messages every so often to alert the uploader that we're ready.
+
+		// Increment the number of ticks since we last posted an alert.
+		alert_ticks++;
+
+		// Check if we're due to post another message.
+		if (alert_ticks >= ALERT_UPLOADER_TIMEOUT)
 		{
-			alert_count++;
-			if (alert_count == ALERT_UPLOADER_PERIOD)
-			{
-				// Send message to uploader to inform that the bootloader is awaiting messages.
-				alert_uploader();
-				alert_count = 0;
-			}
+			// Send the ALERT_UPLOADER message.
+			alert_uploader();
+
+			// Reset the number of alert ticks since the last message.
+			alert_ticks = 0;
 		}
 	}
 	else
 	{
-		communication_started = true;
-		
-		filter_message(buffer);
-
-		// Restart the bootloader timeout.
-		set_bootloader_timeout(false);
-		set_bootloader_timeout(true);
+		// Reset the alert ticks.
+		alert_ticks = 0;
 	}
 
+	// Number of ticks since a message was last received.
+	static uint16_t comms_ticks = 0;
+
+	if (communication_started && !communication_recent)
+	{
+		// Increment the number of ticks since we've heard from the uploader.
+		comms_ticks++;
+
+		// Check if it seems like the comms have died.
+		if (comms_ticks >= COMMS_TIMEOUT)
+		{
+			// Reset the comms timeout
+			comms_ticks = 0;
+		}
+	}
+	else
+	{
+		// Clear the comms timeout.
+		comms_ticks = 0;
+
+		// We're back to square one again.
+		communication_started = false;
+
+		// Change the status of the bootloader.
+		if (!error)
+		{
+			set_bootloader_state(IDLE);
+		}
+	}
+
+	// Communications have no longer been received 'recently'.
+	communication_recent = false;
+	 
 	// All done.
 	return;
 }
@@ -250,8 +301,9 @@ void get_bootloader_module_information(Shared_bootloader_module_constants* bootl
 	return;
 }
 	// Avoids name mangling for the shared jumptable.
-extern "C" void get_bootloader_module_information_BL(Shared_bootloader_module_constants* arg){
-	get_bootloader_module_information(arg);
+extern "C" void get_bootloader_module_information_BL(Shared_bootloader_module_constants* bootloader_module_information)
+{
+	get_bootloader_module_information(bootloader_module_information);
 }
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
@@ -301,7 +353,7 @@ void init_can(void)
 	CANBT3 = CAN_BAUD_RATE_CONFIG_3;
 
 	// Id's for reception.
-	uint16_t id = BASE_ID;
+	uint16_t id = CANID_BASE_ID;
 
 	// Choose the MObs to set up.
 	//
@@ -392,7 +444,11 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 	//If the loop exited but did not do so due to a TXOK condition we set the error state.
 	if (!(CANSTMOB & (1 << TXOK)))
 	{
+		// Change the bootloader status to indicate an error.
 		set_bootloader_state(ERROR);
+
+		// Set our own error flag.
+		error = true;
 	}
 
 	// Disable transmit.
@@ -407,6 +463,7 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 
 void reset_can(void)
 {
+	// Just disable the CAN controller.  The rest doesn't matter.
 	CANGCON = (1 << SWRES);
 
 	// All done.
@@ -417,7 +474,7 @@ void reset_can(void)
 
 void bootloader_module_can::request_reset_procedure()
 {
-	confirm_reception(message_confirmation_success);// Always successful.
+	confirm_reception(message_confirmation_success); // Always successful.
 	
 	if (reception_message.message[0] == 0)
 	{
@@ -437,11 +494,9 @@ void bootloader_module_can::request_reset_procedure()
 }
 
 void bootloader_module_can::get_info_procedure(void)
-{
-	set_bootloader_state(COMMUNICATING);
-	
+{	
 	transmission_message.dlc = 6;
-	transmission_message.message_type = GET_INFO;
+	transmission_message.message_type = CANID_GET_INFO;
 	
 	// Insert Device signaure.
 	uint8_t device_signature[4];
@@ -459,8 +514,6 @@ void bootloader_module_can::get_info_procedure(void)
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
 	
 	transmit_CAN_message(transmission_message);
-	
-	set_bootloader_state(IDLE);
 
 	// All done.
 	return;
@@ -468,8 +521,6 @@ void bootloader_module_can::get_info_procedure(void)
 
 void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmware_page)
 {
-	set_bootloader_state(COMMUNICATING);
-	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -526,7 +577,6 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 			current_firmware_page.ready_to_write = true;
 			current_firmware_page.current_byte = 0;
 			write_details_stored = false;
-			set_bootloader_state(IDLE);
 		}
 	}
 	else
@@ -542,9 +592,7 @@ void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware
 }
 
 void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmware_page)
-{
-	set_bootloader_state(COMMUNICATING);
-	
+{	
 	// Store the 32 bit page number.
 	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
 								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
@@ -576,7 +624,7 @@ void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmwar
 
 void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page)
 {
-	transmission_message.message_type = READ_DATA;
+	transmission_message.message_type = CANID_READ_DATA;
 	current_firmware_page.current_byte = 0;
 	reception_message.confirmed_send = false;
 	
@@ -618,43 +666,83 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 
 		reception_message.confirmed_send = false;
 	}
-	
-	set_bootloader_state(IDLE);
+
 	// All done.
 	return;
 }
 
 void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 {
-	// Determine the corresponding procedure for the received message.
+	// NOTE - Testing the NODE_ID shouldn't actually be required, because the ISR should have filtered other messages out.
+
+	// NOTE - We test the NODE_ID first, then the actual message type, solely because it makes the code a little tidier.
+
+	// If this message is intended for this node, then data[0] should match our own NODE_ID.
+	if (reception_message.dlc < 1)
+	{
+		// This can't possibly be a message for us, because it doesn't have any data, and all our messages should.
+		reception_message.message_received = false;
+		return;
+	}
+	else
+	{
+		// This might be a message for us; check if the NODE_ID matches.
+		if (reception_message.message[0] != NODE_ID)
+		{
+			// This isn't a message for us, because the ID doesn't match.
+			reception_message.message_received = false;
+			return;
+		}
+	}
+	// Else, it might be a message for us, depending on what the actual message ID is.
+
+	// NOTE - If a message is intended for us, we BREAK, but if its not one of ours, we RETURN.
+
+	// Determine the corresponding behavior for the received message.
 	switch (reception_message.message_type)
 	{
-		case REQUEST_RESET:
+		case CANID_REQUEST_RESET:
 			request_reset_procedure();
 			break;
-			// We will never reach here.
 
-		case GET_INFO:
+		case CANID_GET_INFO:
 			get_info_procedure();
-			reception_message.message_received = false;
 			break;
 			
-		case WRITE_MEMORY:
+		case CANID_WRITE_MEMORY:
 			write_memory_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
 
-		case WRITE_DATA:
+		case CANID_WRITE_DATA:
 			write_data_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
 
-		case READ_MEMORY:
+		case CANID_READ_MEMORY:
 			read_memory_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
-			
+
+		default:
+			// This message isn't for us, because it's not an ID which we recognise.
+			reception_message.message_received = false;
+			return;
 	}
+
+	// Now that we've handled the message, don't need to worry about it again.
+	reception_message.message_received = false;
+
+	// We've now started communications.
+	communication_started = true;
+	communication_recent = true;
+
+	// Change the status of the bootloader.
+	if (!error)
+	{
+		set_bootloader_state(COMMUNICATING);
+	}
+
+	// Restart the bootloader timeout, so we don't reboot halfway through a transfer.
+	set_bootloader_timeout(false);
+	set_bootloader_timeout(true);
 	
 	// All done.
 	return;
@@ -662,12 +750,12 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 
 void bootloader_module_can::alert_uploader(void)
 {
-	transmission_message.dlc = 8;
-	transmission_message.message_type = HOST_ALERT;
-	for(uint8_t i = 0; i < transmission_message.dlc; i++)
-	{
-		transmission_message.message[i] = 0xFF; // No significance.
-	}
+	// Assemble the message to send.
+	transmission_message.message_type = CANID_HOST_ALERT;
+	transmission_message.dlc = 1;
+	transmission_message.message[0] = NODE_ID;
+
+	// Actually send the message.
 	transmit_CAN_message(transmission_message);
 
 	// All done.
@@ -705,7 +793,7 @@ ISR(CAN_INT_vect)
 			module.reception_message.message_type = ((CANIDT1 << 3) | (CANIDT2 >> 5));
 			
 			// A confirmation message received.
-			if (module.reception_message.message_type == READ_DATA)
+			if (module.reception_message.message_type == CANID_READ_DATA)
 			{
 				module.reception_message.confirmed_send = true;
 			}				

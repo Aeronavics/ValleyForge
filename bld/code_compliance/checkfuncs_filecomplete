@@ -45,34 +45,29 @@ compliance_check_file_filecomplete()
 	local FILE=$1
 
 	# Get the line number of the last line of the current file.
-	local LINE_NUM=$(wc -l $1)
+	local LINE_NUM=$(wc -l $FILE)
 
 	# Get the last line of the current file.
-	str_lastline=$(tail -1 $1 | head -1)
+	str_lastline=$(tail -1 $FILE | head -1)
+	str_lastline=${str_lastline^^}
+
+	# Get the last non-empty line of the current file.
+	str_last_non_empty_line=$(awk 'NF{p=$0}END{print p}' $FILE)
+	str_last_non_empty_line=${str_last_non_empty_line^^}
 
 	if [[ $str_lastline != "// ALL DONE." ]]; then
-		compliance_fail_file "compliance_check_file_filecomplete" $1 "This file doesn't conclude with the comment \" // ALL DONE.\""
+
+		if [[ $str_last_non_empty_line == "// ALL DONE." ]]; then
+			# Report that the file has failed.
+			compliance_fail_file "compliance_check_file_filecomplete" $FILE "There are a number of blank lines at the end of the file."
+		else
+			# Report that the file has failed.
+			compliance_fail_file "compliance_check_file_filecomplete" $FILE "This file doesn't conclude with the comment \"// ALL DONE.\""
+		fi
 	fi
 
 	#All done.
 	return 0
-}
-
-######################################## FUNCTION ##################################################
-###
-### Name:		compliance_get_rules_filecomplete
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the filecomplete test.
-###
-####################################################################################################
-
-compliance_get_rules_filecomplete()
-{
-	echo "filecomplete:"
-	echo "\tFiles which do not conclude with the comment \"// ALL DONE.\" will fail."
-	echo ""
 }
 
 # ALL DONE.

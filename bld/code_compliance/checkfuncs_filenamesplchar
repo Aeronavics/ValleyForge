@@ -45,7 +45,7 @@ compliance_check_file_filenamesplchar()
 	local FILE=$1
 
 	# Remove the path to the file and retrieve the file name alone.
-	filename=$(basename "$1")
+	filename=$(basename "$FILE")
 
 	# String containing allowed characters in file names.
 	valcase='0-9a-z_.'
@@ -54,28 +54,13 @@ compliance_check_file_filenamesplchar()
 	filename="${filename%.*}"
 
 	if [[ "$filename" =~ [^$valcase] ]]; then
-		compliance_fail_file "compliance_check_file_filenamesplchar" $1 "This file's name contains invalid characters"	
+
+		# Report that the file has failed.
+		compliance_fail_file "compliance_check_file_filenamesplchar" $FILE "This file's name contains invalid characters"	
 	fi
 	
 	# All done.
 	return 0
-}
-
-######################################## FUNCTION #####################################################
-###
-### Name:		compliance_get_rules_filenamesplchar
-###
-### Inputs/Outputs:	None.
-###
-### Purpose:		Prints out a summary of the code compliance rules for the filenamesplchar test.
-###
-#######################################################################################################
-
-compliance_get_rules_filenamesplchar()
-{
-	echo "filenamesplchar:"
-	echo "\tFile names should not contain space characters or special characters other than underscore or uppercase letters"
-	echo ""
 }
 
 # ALL DONE.

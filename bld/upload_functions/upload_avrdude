@@ -111,7 +111,7 @@ upload_avrdude()
 	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
 	
 	# Check if we should be uploading a bootloader but aren't.
-	if [ $BOOTLOADER -a ! $UPLOAD_BOOTLOADER ]; then
+	if [ "$BOOTLOADER" -a -z "$UPLOAD_BOOTLOADER" ]; then
 		#  Warn the user that this will erase any existing bootloader.
 		echo -e "${YELLOW}Warning, not writing the bootloader with this upload method will result in erasing the bootloader in the device without replacing it.\n${NO_COLOUR}"
 	fi
