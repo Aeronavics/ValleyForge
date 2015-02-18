@@ -3,6 +3,7 @@
 #include "stm32f4xx/stm32f4xx.h"
 #include "stm32f4xx/stm32f4xx_flash.h"
 #include "stm32f4xx/misc.h"
+#include "CMSIS/core_cm4.h"
 
 // DEFINE CONSTANTS
 
@@ -56,25 +57,22 @@ enum input_state {LO, HI};
 
 #define APP_START_ADDRESS	0x08004000
 
-// Blink times for different states.
+// Blink times for different states. Times are in ms.
 
 #define BLINK_PRSCL			(8400 - 1)
 #define BLINK_RELOAD		(10000 - 1)
 
 // Idle
-#define IDLE_ON				16000
-#define IDLE_OFF			8000
+#define IDLE_ON				1600
+#define IDLE_OFF			800
 
 // Communicating
-#define COMMUNICATING_ON	60000
+#define COMMUNICATING_ON	6000
 #define COMMUNICATING_OFF	0
 
 // Error
-#define ERROR_ON			2000
-#define ERROR_OFF			60000
-
-#define LONG_FLASH			16000
-#define SHORT_FLASH			8000
+#define ERROR_ON			200
+#define ERROR_OFF			6000
 
 // #define SHUTDOWN_STATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 // #define SHUTDOWN_STATE_MEM	0x08003FFF
@@ -99,8 +97,12 @@ enum input_state {LO, HI};
 
 // DECLARE PRIVATE GLOBAL VARIABLES
 
+// All periodic functionality is queued by the 1ms systick interrupt. To time longer periods, you need to accumulate a count of ticks.
 volatile uint16_t timeout_tick = 0;
 
+volatile uint16_t blink_tick = 0;
+
+// State the bootloader is in.  At the moment, all this determines is the LED flashing pattern.
 State state = BOOT_IDLE;
 
 volatile uint16_t blink_on = IDLE_ON;
@@ -192,7 +194,6 @@ int main(void)
 	// GPIOA_BASE results in 0x00, GPIOB_BASE results in 0x01, etc.
 	RCC->AHB1ENR 		|= (1 << ((BLINK_PORT_NUM & 0xFFFF)/0x400));  // Enable the LED port peripheral clock
 	RCC->AHB1ENR 		|= (1 << ((FORCE_BL_PORT_NUM & 0xFFFF)/0x400));  // Enable the FORCE_BL port peripheral clock
-	RCC->APB1ENR		|= RCC_APB1ENR_TIM2EN;  // Enable the TIM2 clock for the blinking LED interrupt
 
 	// Configure the Blink LED GPIO
 	BLINK_MODE	 		|= (((uint32_t)0x1) << (BLINK_PIN_NUM*2));  // Set LED pin as output
@@ -219,39 +220,20 @@ int main(void)
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	mod.init();
+	#warning mod.init();
 
-	// Set up a timer and interrupt to flash the blinkenlight.
-
-	// Enable the TIM2 Interrupt
-	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
-
-    // Set the prescaler
-    TIM2->PSC = (uint16_t)BLINK_PRSCL;  // 24 MHz clock down to 1 kHz
-    // Set the auto-reload register value
-    TIM2->ARR = (uint32_t)BLINK_RELOAD;  // 10 kHz clock down to 1 Hz
-    // Set the counter mode to count up
-    TIM2->CR1 |= (uint16_t)(0 << 4);
-    // Set the timer clock divider to 1
-    TIM2->CR1 |= (uint16_t)(0 << 8);
-    // Enable the interrupt on channel 1
-    TIM2->DIER |= (uint16_t)(1 << 0);
-    // Enable the timer
-    TIM2->CR1 |= (uint16_t)(1 << 0);
-
-    // Set up the SysTick Interrupt to produce a 1ms interrupt for the timeout.
+    // Set up the SysTick Interrupt to produce a 1ms interrupt for any periodic functionality.
     if (SysTick_Config(SystemCoreClock/(8*SYSTICK_FREQ_HZ)))
     {
     	// There was an error while configuring the SysTick.
     	while (true);
     }
-    // SysTick_Config(uint32_t(SystemCoreClock/(8*SYSTICK_FREQ_HZ)));
     SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+
+    // Set the bootloader into idle mode.
+    set_bootloader_state(BOOT_IDLE);
+
+    while (1);
 
     // Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (true)
@@ -447,21 +429,24 @@ void run_application(void)
 	// Shut down whatever module we're using. This should return any affected peripherals to their initial states.
 	mod.exit();
 
-	// Stop the timer and interrupt for the blinkenlight.
+	// Stop the Systick interrupt.
 	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannel = SysTick_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
-	// Reset all of the timers and GPIO
-	RCC->APB1RSTR |= (uint32_t)0x1FF;  // Reset all the of timers on APB1
-	RCC->APB2RSTR |= (uint32_t)((0x7 << 16) | (0x3 << 0));  // Reset all of the timers on APB2
-	RCC->AHB1RSTR |= (uint32_t)0x7FF;  // Reset all of the GPIO on AHB1
+	// Disable the Systick timer and interrupt.
+	SysTick->CTRL &= ~(SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk);
+
+	// Reset all of the GPIO
+	RCC->AHB1RSTR |= (RCC_AHB1RSTR_GPIOARST | RCC_AHB1RSTR_GPIOBRST | RCC_AHB1RSTR_GPIOCRST | RCC_AHB1RSTR_GPIODRST | RCC_AHB1RSTR_GPIOERST |
+						RCC_AHB1RSTR_GPIOFRST | RCC_AHB1RSTR_GPIOGRST | RCC_AHB1RSTR_GPIOHRST | RCC_AHB1RSTR_GPIOIRST);
 
 	// If the watchdog was enabled, it cannot be disabled without a hardware reset. The application will have to use it too.
 
+	// Start execution of the application code.
 	const uint32_t app_start_address = APP_START_ADDRESS;  // Load the #define into a variable for the extended asm command.
 	asm("ldr R0, %[app_address]"::[app_address] "m" (app_start_address):);  // Load the firmware address into register 0 using an extended asm command.
 	asm("ldr sp, [R0]");  // Load the stack pointer with the value stored at the firmware start address.
@@ -531,34 +516,27 @@ void read_flash_page(Firmware_page& buffer)
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
 /*
- * This ISR is called by a timer compare event on TIM2. This is used to flash the bootloader status LED.
+ * This ISR is called every millisecond. This is used to cue any periodic events.
  *
  */
-extern "C" void TIM2_IRQHandler(void) {
-	// Clear the interrupt.
-	TIM2->SR &= ~(1 << 0);
-	// Toggle Blinking GPIO.
-	BLINK_WRITE ^= BLINK_PIN;
-}
-
 extern "C" void SysTick_Handler(void) 
 {
 	// NOTE - The SysTick interrupt does not need clearing.
-	// BLINK_WRITE ^= BLINK_PIN;
 
 	// Count how long has elapsed since the last time the module periodic event was fired.
 	static uint16_t module_periodic_count = 0;
 	module_periodic_count++;
 
-	// Check if it is time for the event to be fired again.
-	if (module_periodic_count >= MODULE_EVENT_PERIOD)
-	{
-		// Perform any module specific functionality which needs to be performed on a periodic basis.
-		mod.event_periodic();
+	#warning
+	// // Check if it is time for the event to be fired again.
+	// if (module_periodic_count >= MODULE_EVENT_PERIOD)
+	// {
+	// 	// Perform any module specific functionality which needs to be performed on a periodic basis.
+	// 	mod.event_periodic();
 
-		// Start counting again.
-		module_periodic_count = 0;
-	}
+	// 	// Start counting again.
+	// 	module_periodic_count = 0;
+	// }
 
 	// Check if the bootloader timeout is actually enabled.
 	if (timeout_enable)
@@ -575,6 +553,46 @@ extern "C" void SysTick_Handler(void)
 		timeout_tick = 0;
 	}
 
+	// Static bool indicating if the blink LED is on or off.
+	static bool blink_state = false;
+
+	// Increment the blink LED tick.
+	blink_tick++;
+
+	// Check which state the LED should be in.
+	if (blink_state)
+	{
+		// Turn the LED on.
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE | BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
+
+		// If we've timed out, toggle the state of the LED.
+		if (blink_tick >= blink_off)
+		{
+			// Change state to off.
+			blink_state = false;
+
+			// Start the tick counter again.
+			blink_tick = 0;
+		}
+	}
+	else
+	{
+		// Turn the LED off.
+		BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
+
+		// If we've timed out, toggle the state of the LED.
+		if (blink_tick >= blink_on)
+		{
+			// Change state to on.
+			blink_state = true;
+
+			// State the tick counter again.
+			blink_tick = 0;
+		}
+	}
+
 	// All done.
 	return;
 }
+
+// ALL DONE.
