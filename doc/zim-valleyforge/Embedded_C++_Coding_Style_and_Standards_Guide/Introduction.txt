@@ -4,33 +4,34 @@ Creation-Date: 2015-02-17T17:31:53+13:00
 
 ====== Introduction ======
 
-As every C++ programmer knows, the language has many powerful features, but this power brings with it complexity, which in turn can make code more bug-prone and harder to read and maintain.
+As every C++ programmer knows, the language has many powerful features, but this power brings with it complexity, which in turn can make code more bug-prone and harder to read and maintain. While a given development environment (IDE) can improve the readability of code by access visibility, color coding, automatic formatting and so on, the programmer should never rely on such features. Source code should always be considered larger than the IDE it is developed within and should be written in a way that maximize its readability independent of any IDE.
 
-The goal of this guide is to manage this complexity by describing in detail the dos and don'ts of writing C++ code. These rules exist to keep the code base manageable while still allowing coders to use C++ language features productively.
+===== Goal =====
+The goal of this guide is to manage this complexity by describing in detail the dos and don'ts of writing C++ code. These rules exist to keep the [[ValleyForge]] code base manageable while still allowing coders to use C++ language features productively.
 
-One way in which we keep the code base manageable is by enforcing consistency. It is very important that any programmer be able to look at another's code and quickly understand it. Maintaining a uniform style and following conventions means that we can more easily use "pattern-matching" to infer what various symbols are and what invariants are true about them. Creating common, required idioms and patterns makes code much easier to understand. In some cases there might be good arguments for changing certain style rules, but we nonetheless keep things as they are in order to preserve consistency.
+===== How? =====
+One way in which we keep the code base manageable is by enforcing consistency. It is very important that any programmer be able to look at another programmer's code and quickly understand it. Maintaining a uniform style and following conventions means that we can more easily use "pattern-matching" to infer what various symbols are and what in-variants are true about them. Creating common, required idioms and patterns makes code much easier to understand. In some cases there might be good arguments for changing certain style rules, but we nonetheless keep things as they are in order to preserve consistency.
 
-While a given development environment (IDE) can improve the readability of code by access visibility, color coding, automatic formatting and so on, the programmer should never rely on such features. Source code should always be considered larger than the IDE it is developed within and should be written in a way that maximise its readability independent of any IDE.
+===== What does it contain? =====
+This guide includes both [[Coding Style conventions]] as well as [[Coding Standard conventions|Coding standard conventions]]. 
 
-This guide includes both Styling conventions as well as Programming conventions. Style conventions refer to those conventions that focus mainly on programming styles such as Layout, Naming, Commenting styles etc. The major focus of Style conventions is to //increase readability and clarity// of the code. Programming conventions mainly consist of technical recommendations. The major focus of Programming conventions is to //improve the quality of code//.
+* Style conventions refer to those conventions that focus mainly on programming styles such as Layout, Naming, Commenting styles etc. The major focus of Style conventions is to //increase readability and clarity// of the code. 
 
-Using coding standards makes code easier to read and maintain. Some general principles that maximize the readability and maintainability of C++ are:
-	* Enhance readability through the use of indentation and blank lines.
-	* Add comments to header files to help users of classes.
-	* Add comments to implementation files to help maintainers of classes.
-	* Create names that are meaningful and readable.
+* Programming conventions mainly consist of technical recommendations. The major focus of Programming conventions is to //improve the quality of code//.
 
-The recommendations are based on established standards collected from a number of sources, individual experience, local requirements/needs, as well as suggestions given in [[References]]
+The rules are based on established standards collected from a number of sources, individual experience, local requirements/needs, as well as suggestions given in [[References]]
 
-=== 1.1 Layout of the recommendations ===
+===== Layout of the recommendations =====
 
-	n. **Guideline short description**
+The rules present in this guide are specified in the following format:
+
+n. **Rule short description**
 
 {{{code: lang="cpp" linenumbers="true"
 Example if applicable
 }}}
 
 
-	Motivation, background and additional information.
+Motivation, background and additional information if applicable.
 
-	The motivation section is important. Coding standards and guidelines tend to start "religious wars", and it is important to state the background for the recommendation.
+'n' refers to the Rule number.

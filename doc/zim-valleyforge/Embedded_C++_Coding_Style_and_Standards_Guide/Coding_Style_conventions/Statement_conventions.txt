@@ -4,25 +4,8 @@ Creation-Date: 2015-02-17T18:05:01+13:00
 
 ====== Statement conventions ======
 
-	1. Each expression statement will be on a separate line.
-
-=== Including Files ===
-
-	1. All header files should contain a mechanism ([[https://en.wikipedia.org/wiki/Include_guard|include guard]]) that prevents multiple inclusions of itself.
-{{{code: lang="cpp" linenumbers="true"
-// Ensure we only include this header file once.
-#ifndef __PATH_TO_HEADER_FILE_NAME_HPP__
-#define __PATH_TO_HEADER_FILE_NAME_HPP__
-...
-#endif // __PATH_TO_HEADER_FILE_NAME_HPP__
-}}}
-
-
-	The name of the guard macro should be based on the relative path of the file, within the component's source tree: this avoids the possibility of naming conflicts. The name of the macro is prefixed and suffixed with a pair of underscore characters.
-
-	2. Header files should only include those files necessary to compile the header file. Files which are necessary to compile the corresponding source file should be included in the source file directly.
-
-	3. Include statements should be sorted and grouped:
+===== Including Files =====
+51. **Include statements should be sorted and grouped:**
 {{{code: lang="cpp" linenumbers="true"
 // INCLUDE REQUIRED DEPENDENCIES.
 
@@ -36,17 +19,17 @@ Creation-Date: 2015-02-17T18:05:01+13:00
 }}}
 
 
-	Include statements should be sorted such that the lowest level dependencies are included first.
+Include statements should be sorted such that the lowest level dependencies are included first. Include statements for related dependencies should be grouped together, separated by a single blank line.
 
-	Include statements for related dependencies should be grouped together, separated by a single blank line.
 
-	4. Include statements should always use relative path-names. Absolute path-names are not allowed.
+52. **Include statements should always use relative path-names. Absolute path-names are not allowed.**
 
-	5. Include statements must always appear at the top of the file.
 
-=== Flow Control Statements ===
+53. **Include statements must always appear at the top of the file.**
 
-	1. Flow control statements (if, for, while, switch and do) should be followed by a block, even if the block is empty:
+
+===== Flow Control Statements =====
+54. **Flow control statements (if, for, while, switch and do) should be followed by a block, even if the block is empty:**
 {{{code: lang="cpp" linenumbers="true"
 while (something)
 {
@@ -55,34 +38,58 @@ while (something)
 }}}
 
 
-	An empty block should be explained by a comment, to indicate that this expected.
+An empty block should be explained by a comment, to indicate that this expected.
 
-	2. The block following a flow control statement should be contained within braces, even if only a single line:
+
+55. **Only loop control statements must be included in the for() construction.**
 {{{code: lang="cpp" linenumbers="true"
-if (something)
-{
-	do_something();
+sum = 0;						// NOT: for (i = 0, sum = 0; i < 100; i++)
+for (i = 0; i < 100; i++)		//		{
+{								//			sum += value[i];
+	sum += value[i];			//		}
 }
 }}}
 
 
-	3. There shall be no unreachable code. If any such code is present, it should be denoted using the comment ''// We should not reach here.''
+This increases maintainability and readability. It is also helpful to make a clear distinction of what controls and what is contained in the loop.
 
-	4. Labels will not be used, except in switch statements.
 
-	5. The ''goto'' statement should not be used.
+56. **Loop variables should be initialized immediately before the loop.**
+{{{code: lang="cpp" linenumbers="true"
+is_done = false;			// NOT: bool is_done = false;
+while (!is_done)			// ...
+{							// while (!is_done)
+...							// {
+}							//		...
+							// }
+}}}
 
-=== Functions ===
 
-	1. All exit points of value-returning functions shall be through return statements.
 
-=== Constants ===
+57. **The form while (true) should be used for infinite loops.**
+{{{code: lang="cpp" linenumbers="true"
+while (true)
+{
+	...
+}
 
-	1. Numeric values in code will not be used; symbolic values will be used instead. 
+for (;;)		// NO!
+{
+	...
+}
 
-	**Rationale:** Improved readability and maintenance.
+while (1)		// NO!
+{
+	...
+}
+}}}
+
+
+Testing against 1 is neither necessary nor meaningful. The form ''for (;;)'' is not very readable and is not apparent that this actually is an infinite loop.
 	
-	**Exception:** A class/structure constructor may initialize an array member with numeric values.
+
+===== Constants =====
+58. **Numeric values in code will not be used; symbolic values will be used instead.** 
 {{{code: lang="cpp" linenumbers="true"
 class A
 {
@@ -99,4 +106,85 @@ class A
 }}}
 
 
-	**Note:** In many cases ‘0’ and ‘1’ are not magic numbers but are part of the fundamental logic of the code (e.g. ‘0’ often represents a NULL pointer). In such cases, ‘0’ and ‘1’ may be used. 
+This is to improve readability and maintenance. Note that an exception is when a class/structure constructor initializes an array member with numeric values.
+**Note:** In many cases ‘0’ and ‘1’ are not magic numbers but are part of the fundamental logic of the code (e.g. ‘0’ often represents a NULL pointer). In such cases, ‘0’ and ‘1’ may be used. 
+
+
+59. **Floating point constants should always be written with decimal point and at least one decimal.**
+{{{code: lang="cpp" linenumbers="true"
+double total = 0.0;		// NOT: double total = 0;
+double speed = 3.0e8;	// NOT: double speed = 3e8;
+}}}
+
+
+This emphasizes the different nature of integer and floating point numbers. Mathematically the two model completely different and non-compatible concepts.
+
+
+60. **Floating point constants should always be written with a digit before the decimal point.**
+{{{code: lang="cpp" linenumbers="true"
+double total = 0.5;		// NOT: double total = .5;
+}}}
+
+
+The number and expression system in C++ is borrowed from mathematics and one should adhere to mathematical conventions for syntax wherever possible. Also, 0.5 is a lot more readable than .5; There is no way it can be mixed with the integer 5.
+
+
+61. **When comparing with constants, the constant should be the second operand.**
+{{{code: lang="cpp" linenumbers="true"
+if (i == 5)		// NOT: if (5 == i)
+}}}
+
+
+
+===== Variables =====
+62. **Multiple variable declarations shall not be allowed on the same line.**
+{{{code: lang="cpp" linenumbers="true"
+int32* p,q;									// Probably error.
+int32 first_button_on_top, i;				// Bad: easy to overlook 'i'.
+}}}
+
+
+
+===== Conditionals =====
+63. **Complex conditional expressions must be avoided. Introduce temporary Boolean variables instead.**
+{{{code: lang="cpp" linenumbers="true"
+bool is_finsished = (element_no < 0) || (element_no > max_element);
+bool is_repeated_entry = element_no == last_element;
+if (is_finished || is_repeated_entry)
+{
+	...
+}
+
+// NOT:
+if (element_no < 0) || (element_no > max_element) ||
+	element_no == last_element)
+{
+	...
+}
+}}}
+
+
+By assigning Boolean variables to expressions, the program gets automatic documentation. The construction will be easier to read, debug and maintain.
+
+
+64. **When assigning to bool variables, the logical expression should be parenthesized.**
+{{{code: lang="cpp" linenumbers="true"
+bool b = (i > j);
+}}}
+
+
+
+65. **Do not compare bool variables and expressions to true or false; use the value of bool or its negated value:**
+{{{code: lang="cpp" linenumbers="true"
+bool b = true;
+if (b)		// NOT: if (b == true)
+{
+	...
+}
+
+if (!b)		// NOT: if (b == false)
+{
+	...
+}
+}}}
+ 

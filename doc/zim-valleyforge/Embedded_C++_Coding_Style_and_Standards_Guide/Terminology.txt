@@ -10,15 +10,15 @@ Creation-Date: 2015-02-17T17:32:03+13:00
 
 	3. An **accessor** function is a function which returns the value of a data member.
 
-	4. A **catch clause** is code that is executed when an exception of a given type is raised. The definition of an exception handler begins with the keyword catch.
+	4. A **built-in data type** is a type which is defined in the language itself, such as int.
 
-	5. A **class** is a user-defined data type which consists of data elements and functions which operate on that data. In C++, this may be declared as a class; it may also be declared as a struct or a union. Data defined in a class is called member data and functions defined in a class are called member functions.
+	5. A **catch clause** is code that is executed when an exception of a given type is raised. The definition of an exception handler begins with the keyword catch.
 
-	6. A **class template** defines a family of classes. A new class may be created from a class template by providing values for a number of arguments. These values may be names of types or constant expressions.
+	6. A **class** is a user-defined data type which consists of data elements and functions which operate on that data. In C++, this may be declared as a class; it may also be declared as a struct or a union. Data defined in a class is called member data and functions defined in a class are called member functions.
 
-	7. A **compilation unit** is the source code (after preprocessing) that is submitted to a compiler for compilation (including syntax checking).
+	7. A **class template** defines a family of classes. A new class may be created from a class template by providing values for a number of arguments. These values may be names of types or constant expressions.
 
-	8. A **concrete type** is a type without virtual functions, so that objects of the type can be allocated on the stack and manipulated directly (without a need to use pointers or references to allow the possibility for derived classes). Often, small self-contained classes. [3]
+	8. A **concrete type** is a type without virtual functions, so that objects of the type can be allocated on the stack and manipulated directly (without a need to use pointers or references to allow the possibility for derived classes). Often, small self-contained classes.
 
 	9. A **constant member function** is a function which may not modify data members.
 
@@ -26,7 +26,7 @@ Creation-Date: 2015-02-17T17:32:03+13:00
 
 	11. A **copy constructor** is a constructor in which the first argument is a reference to an object that has the same type as the object to be initialized.
 
-	12. **Dead code** is “executable object code (or data) which, as a result of a design error cannot be executed (code) or used (data) in an operational configuration of the target computer environment and is not traceable to a system or software requirement.” [9]
+	12. **Dead code** is “executable object code (or data) which, as a result of a design error cannot be executed (code) or used (data) in an operational configuration of the target computer environment and is not traceable to a system or software requirement.”
 
 	13. A **declaration** of a variable or function announces the properties of the variable or function; it consists of a type name and then the variable or function name. For functions, it tells the compiler the name, return type and parameters. For variables, it tells the compiler the name and type. 
 
@@ -52,47 +52,26 @@ int32 foo()
 
 	17. An **exception** is a run-time program anomaly that is detected in a function or member function. Exception handling provides for the uniform management of exceptions.
 
-	18. A **forwarding function** is a function which does nothing more than call another function.
+	18. An **identifier** is a name which is used to refer to a variable, constant, function or type in C++. When necessary, an identifier may have an internal structure which consists of a prefix, a name, and a suffix (in that order).
 
-	19. A **function template** defines a family of functions. A new function may be created from a function template by providing values for a number of arguments. These values may be names of types or constant expressions.
+	19. An **iterator** is an object that con be used to traverse a data structure.
 
-	20. An **identifier** is a name which is used to refer to a variable, constant, function or type in C++. When necessary, an identifier may have an internal structure which consists of a prefix, a name, and a suffix (in that order).
+	20. A **macro** is a name for a text string which is defined in a #define statement. When this name appears in source code, the compiler replaces it with the defined text string.
 
-	21. An **iterator** is an object that con be used to traverse a data structure.
+	21. **Multiple inheritance** is the derivation of a new class from more than one base class.
 
-	22. A **macro** is a name for a text string which is defined in a #define statement. When this name appears in source code, the compiler replaces it with the defined text string.
+	22. A **mutator** function is a function which sets the value of a data member.
 
-	23. **Multiple inheritance** is the derivation of a new class from more than one base class.
+	23. **Protected members** of a class are member data and member functions which are accessible by specifying the name within member functions of derived classes.
 
-	24. A **mutator** function is a function which sets the value of a data member.
+	24. **Public members** of a class are member data and member functions which are accessible everywhere by specifying an instance of the class and the name.
 
-	25. The **one definition rule** - there must be exactly one [[http://www.research.att.com/%7Ebs/glossary.html|definition]] of each entity in a [[http://www.research.att.com/%7Ebs/glossary.html|program]]. If more than one definition appears, say because of replication through [[http://www.research.att.com/%7Ebs/glossary.html|header files]], the meaning of all such duplicates must be identical. [3]
+	25. A **reference** is another name for a given variable. In C++, the ‘address of’ (&) operator is used immediately after the data type to indicate that the declared variable, constant, or function argument is a reference.
 
-	26. An **overloaded function name** is a name which is used for two or more functions or member functions having different argument types.
+	26. The **scope** of a name refers to the context in which it is visible. [Context, here, means the functions or blocks in which a given variable name can be used.]
 
-	27. An **overridden member function** is a member function in a base class which is re-defined in a derived class.
+	27. A **side effect** is the change of a variable as a by-product of an evaluation of an expression.
 
-	28. A **built-in data type** is a type which is defined in the language itself, such as int.
+	28. A **structure** is a user-defined type for which all members are public by default.
 
-	29. **Protected members** of a class are member data and member functions which are accessible by specifying the name within member functions of derived classes.
-
-	30. **Public members** of a class are member data and member functions which are accessible everywhere by specifying an instance of the class and the name.
-
-	31. A **pure virtual function** is one with an initializer = 0 in its declaration. Making a virtual function pure makes the class abstract. A pure virtual function must be overridden in at least one derived class.
-
-	32. A **reference** is another name for a given variable. In C++, the ‘address of’ (&) operator is used immediately after the data type to indicate that the declared variable, constant, or function argument is a reference.
-
-	33. The **scope** of a name refers to the context in which it is visible. [Context, here, means the functions or blocks in which a given variable name can be used.]
-
-	34. A **side effect** is the change of a variable as a by-product of an evaluation of an expression.
-
-	35. A **structure** is a user-defined type for which all members are public by default.
-
-	36. A **typedef** is another name for a data type, specified in C++ using a typedef declaration.
-
-	37. **Unqualified type** is a type that does not have const or volatile as a qualifier.
-
-	38. A **user-defined data type** is a type which is defined by a programmer in a class, struct, union, or enum definition or as an instantiation of a class template.
-	
-	39. A **pre-defined data type** is a type defined in the language itself, such as ''bool''  or ''int.'' 
-
+	29. A **typedef** is another name for a data type, specified in C++ using a typedef declaration.

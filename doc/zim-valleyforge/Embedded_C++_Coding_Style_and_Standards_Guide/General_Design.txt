@@ -6,21 +6,21 @@ Creation-Date: 2015-02-17T17:32:23+13:00
 
 In general, the code produced should exhibit the following important qualities: 
 
-**Reliability:** Executable code should consistently fulfill all requirements in a predictable manner. 
+* **Reliability:** Executable code should consistently fulfill all requirements in a predictable manner. 
 
-**Portability:** Source code should be portable (i.e. not compiler or linker dependent).
+* **Portability:** Source code should be portable (i.e. not compiler or linker dependent).
 
-**Maintainability:** Source code should be written in a manner that is consistent, readable, simple in design, and easy to debug.
+* **Maintainability:** Source code should be written in a manner that is consistent, readable, simple in design, and easy to debug.
 
-**Testability:** Source code should be written to facilitate testability. Minimizing the following characteristics for each software module will facilitate a more testable and maintainable module:
+* **Testability:** Source code should be written to facilitate testability. Minimizing the following characteristics for each software module will facilitate a more testable and maintainable module:
 	1. code size
 	2. complexity
 	3. static path count (number of paths through a piece of code)
 
-**Reusability:** The design of reusable components is encouraged. Component reuse can eliminate redundant development and test activities (i.e. reduce costs).
+* **Reusability:** The design of reusable components is encouraged. Component reuse can eliminate redundant development and test activities (i.e. reduce costs).
 
-**Extensibility:** Requirements are expected to evolve over the life of a product. Thus, a system should be developed in an extensible manner (i.e. perturbations in requirements may be managed through local extensions rather than wholesale modifications).
+* **Extensibility:** Requirements are expected to evolve over the life of a product. Thus, a system should be developed in an extensible manner (i.e. perturbations in requirements may be managed through local extensions rather than wholesale modifications).
 
-**Readability:** Source code should be written in a manner that is easy to read, understand and comprehend.
+* **Readability:** Source code should be written in a manner that is easy to read, understand and comprehend.
 
 Adherence to these guidelines, will help programmers produce clean designs that minimize common sources of mistakes and errors.

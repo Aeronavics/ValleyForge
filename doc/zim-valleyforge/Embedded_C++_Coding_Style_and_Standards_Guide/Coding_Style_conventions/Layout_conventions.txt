@@ -4,13 +4,17 @@ Creation-Date: 2015-02-17T17:34:16+13:00
 
 ====== Layout conventions ======
 
-=== Indentation ===
+===== Indentation =====
+6. **Indentation of statements should be performed using TAB characters.** 
 
-	1. Indentation of statements should be performed using TAB characters. Note that INDENTATION is not the same as ALIGNMENT. By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
+Note that INDENTATION is not the same as ALIGNMENT. By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
 
-	2. Alignment of statements should be performed using space characters. By using space characters for alignment, correct alignment remains, regardless of the size of the tab stop used in a particular contributor's IDE (assuming the IDE is using a mono-spaced font, as any sane programmer requires).
 
-	In the example below, TAB characters are indicated by "----->", whilst SPACE characters are represented by "."
+7. **Alignment of statements should be performed using space characters.**
+
+By using space characters for alignment, correct alignment remains, regardless of the size of the tab stop used in a particular contributor's IDE (assuming the IDE is using a mono-spaced font, as any sane programmer requires).
+
+In the example below, TAB characters are indicated by "----->", whilst SPACE characters are represented by "."
 {{{code: lang="cpp" linenumbers="true"
 void some_function()
 {
@@ -25,7 +29,8 @@ void some_function()
 }}}
 
 
-	3. The indentation style to be used is the 'Allman Style' (see [[http://en.wikipedia.org/wiki/Indent_style#Allman_style|Wikipedia]]):
+
+8. **The indentation style to be used is the 'Allman Style' (see** [[http://en.wikipedia.org/wiki/Indent_style#Allman_style|Wikipedia]]**):**
 {{{code: lang="cpp" linenumbers="true"
 void some_function()
 {
@@ -83,8 +88,9 @@ void some_function()
 }}}
 
 
-=== Line breaks ===
-	1. Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:
+
+===== Line breaks =====
+9. **Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:**
 {{{code: lang="cpp" linenumbers="true"
 if (something)
 {
@@ -93,12 +99,47 @@ if (something)
 }}}
 
 
-	This means that during debugging, it is easy to tell whether a line number refers to the conditional itself, or the following statement.
+This means that during debugging, it is easy to tell whether a line number refers to the conditional itself, or the following statement.
+	
 
-	2. Braces ("{}") which enclose a block will have nothing else on the line except comments (if necessary).
+10. **The statements forming the body of an if, else if, else, while, do ... while or for statements should always be enclosed in braces, even if the braces form an empty block.** 
 
-=== White space ===
-	1. Unary operators as well as '.' or '->' do not require surrounding white-space:
+It improves readability and it can be difficult to see ";" when it appears by itself. Note that braces are not required if there is any print statement for debugging purposes.
+	
+
+11. **Braces ("{}") which enclose a block will have nothing else on the line except comments (if necessary).**
+	
+
+12. **The incompleteness of split lines must be made obvious.** 
+{{{code: lang="cpp" linenumbers="true"
+total_sum = a + b + c +
+			d + e;
+			
+function(param1, param2,
+		 param3);
+		 
+set_text("Long line split"
+		 "into two parts.");
+		 
+for (int i = 0; i < n; 
+	 i += step)
+{
+	...
+}   
+}}}
+
+
+Split lines occurs when a statement exceed the 80 column limit given above. It is difficult to give rigid rules for how lines should be split, but the examples above should give a general hint. In general:
+	* Break after a comma.
+	* Break after an operator.
+	* Align the new line with the beginning of the expression on the previous line.
+
+
+13. **Use blank lines to organize statements into paragraphs and to separate logically related statements.**
+
+
+===== White space =====
+14. **Spaces should not be used around '.' or '->', nor between unary operators and operands.**
 {{{code: lang="cpp" linenumbers="true"
 if (!something)
 {
@@ -108,20 +149,23 @@ if (!something)
 }}}
 
 
-	2. Binary operators should be surrounded by single space characters.
+
+15. **Binary operators should be surrounded by single space characters.**
 {{{code: lang="cpp" linenumbers="true"
 a + b * (c - d);
 e = f << g;
 }}}
 
 
-	3. Ternary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments.
+
+16. **Ternary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments.**
 {{{code: lang="cpp" linenumbers="true"
 a = b ? c : d;
 }}}
 
 
-4. C++ reserved words should be followed by a single space character.
+
+17. **C++ reserved words should be followed by a single space character.**
 {{{code: lang="cpp" linenumbers="true"
 class Some_class
 {
@@ -137,13 +181,15 @@ class Some_class
 }}}
 
 
-5. Commas should be followed by a space character.
+
+18. **Commas should be followed by a space character.**
 {{{code: lang="cpp" linenumbers="true"
 some_function(a, b, c, d);
 }}}
 
 
-6. Semi-colons in a for statement should be followed by a single space character.
+
+19. **Semi-colons in a for statement should be followed by a single space character.**
 {{{code: lang="cpp" linenumbers="true"
 for (uint i = 0; i < j; i++)
 {
@@ -155,7 +201,8 @@ for (uint i = 0; i < j; i++)
 }}}
 
 
-7. Assignment operators should be surrounded by single space characters.
+
+20. **Assignment operators should be surrounded by single space characters.**
 {{{code: lang="cpp" linenumbers="true"
 a = 1;
 b = a;
@@ -163,7 +210,16 @@ c = (a + b + 1);
 }}}
 
 
-8. When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.
+
+21. **There should be no space in between the function name, the opening brace and the first argument declaration.**
+{{{code: lang="cpp" linenumbers="true"
+int do_something()		// NOT: int do_something ()
+{						//		{
+}}}
+
+
+
+22. **When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.**
 {{{code: lang="cpp" linenumbers="true"
 int* a;			// Correct.
 int* a,b;		// Bad since 'b' doesn't get declared as a pointer.
@@ -174,15 +230,17 @@ char& d;
 }}}
 
 
-	Because this style appears confusing if two different variables of different types are declared on a single line (such as a pointer followed by a regular variable of the same base type), variables of different types are not to be declared on a single line. Similarly, for this reason, multiple pointer or reference types are not to be declared on a single line.
+Because this style appears confusing if two different variables of different types are declared on a single line (such as a pointer followed by a regular variable of the same base type), variables of different types are not to be declared on a single line. Similarly, for this reason, multiple pointer or reference types are not to be declared on a single line.
 
-9. Parentheses ("brackets") do not require surrounding white-space:
+
+23. **Parentheses ("brackets") do not require surrounding white-space:**
 {{{code: lang="cpp" linenumbers="true"
 a = ((1 + b) * ((c / d) / e));
 }}}
 
 
-10. Angle braces used for template declarations do not require surrounding white-space:
+
+24. **Angle braces used for template declarations do not require surrounding white-space:**
 {{{code: lang="cpp" linenumbers="true"
 template<class T>do something(T a)
 {
@@ -191,20 +249,3 @@ template<class T>do something(T a)
 	do_some_other_thing<Uint8>(b, T a);
 }
 }}}
-
-
-=== Classes ===
-
-	1. The public, protected and private sections of a class will be declared in that order (the public section is declared before the protected section which is declared before the private section).
-{{{code: lang="cpp" linenumbers="true"
-class Bicycle
-{
-	public:
-		....
-	protected:
-		...
-	private:
-		...
-} 
-}}}
-

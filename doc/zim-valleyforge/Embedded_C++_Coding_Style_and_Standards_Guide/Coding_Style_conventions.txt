@@ -4,18 +4,16 @@ Creation-Date: 2015-02-17T18:02:44+13:00
 
 ====== Coding Style conventions ======
 
-The intent of the style guide is to establish a "style baseline" that all developers are required to follow. This baseline provides a consistence across the source code files that aids in reading/maintain the code. In addition, following a common programming style will enable the construction of tools that incorporate knowledge of these standards to help in the development and maintenance of the code.
+The intent of the style guide is to establish a "**style baseline**" that all developers are required to follow. This baseline provides a consistence across the source code files that aids in reading/maintain the code. In addition, following a common programming style will enable the construction of tools that incorporate knowledge of these standards to help in the development and maintenance of the code.
 
-This guide specifies only basic requirements — the individual programmer is allowed to impose his/her own style/preferences on top of these requirements. There are only two absolute rules to observe when it comes to "creating your own" coding style. 
+This guide specifies only basic requirements — the individual programmer is allowed to impose his/her own style/preferences on top of these requirements. There are only **two absolute rules** to observe when it comes to "creating your own" coding style. 
 
-=== Consistency ===
-	//Establish a style and stick to it.//
+**Consistency - **//Establish a style and stick to it.//
 
+**Tolerance - **//When you must modify code written by others, conforming to a different style, adopt that style, do not convert the code to your style.//
 
-=== Tolerance ===
-	//When you must modify code written by others, conforming to a different style, adopt that style, do not convert the code to your style.//
-
-* [[Coding Style conventions:Commenting conventions|Commenting conventions]]
-* [[Coding Style conventions:Layout conventions|Layout conventions]]
-* [[Coding Style conventions:Naming conventions|Naming conventions]]
-* [[+Statement conventions|Statement conventions]]
+===== Categories =====
+	* [[Coding Style conventions:Commenting conventions|Commenting conventions]]
+	* [[Coding Style conventions:Layout conventions|Layout conventions]]
+	* [[Coding Style conventions:Naming conventions|Naming conventions]]
+	* [[+Statement conventions|Statement conventions]]

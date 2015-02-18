@@ -4,6 +4,7 @@ Creation-Date: 2015-02-17T17:30:24+13:00
 
 ====== Embedded C++ Coding Style and Standards Guide ======
 
+
 [[+Introduction|Introduction]]
 
 [[+Terminology|Terminology]]
@@ -18,14 +19,8 @@ Creation-Date: 2015-02-17T17:30:24+13:00
 	* [[+Coding Style conventions:Naming conventions|Naming conventions]]
 
 [[Embedded C++ Coding Style and Standards Guide:Coding Standard conventions|Coding Standard Conventions]]
-	* [[+Coding Standard conventions:Classes|Classes]]
 	* [[+Coding Standard conventions:Comments|Comments]]
-	* [[+Coding Standard conventions:Constants|Constants]]
 	* [[+Coding Standard conventions:Flow control|Flow control]]
-	* [[+Coding Standard conventions:Functions|Functions]]
-	* [[+Coding Standard conventions:Memory and Resources|Memory and Resources]]
-	* [[+Coding Standard conventions:Operators|Operators]]
-	* [[+Coding Standard conventions:Pointers and References|Pointers and References]]
-	* [[+Coding Standard conventions:Variables|Variables]]
+	* [[+Coding Standard conventions:Miscellaneous|Miscellaneous]]
 
 [[Embedded C++ Coding Style and Standards Guide:References|References]]

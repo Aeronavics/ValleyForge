@@ -4,20 +4,15 @@ Creation-Date: 2015-02-17T17:32:13+13:00
 
 ====== General Recommendations ======
 
-1. **Any violation to the guide is allowed if it enhances readability.**
+* **Any violation to the guide is allowed if it enhances readability.**
 
 The main goal of the recommendation is to improve readability and thereby the understanding and the maintainability and general quality of the code. It is impossible to cover all the specific cases in a general guide and the programmer should be flexible.
 
-2. The choice of identifier names should:
 
-	* Suggest the usage of the identifier.
-	* Consist of a descriptive name that is short yet meaningful.
-	* Be long enough to avoid name conflicts, but not excessive in length.
-	* Include abbreviations that are generally accepted.
+* **The rules can be violated if there are strong personal objections against them.** 
 
-	__Note:__ In general, the above guidelines should be followed. However, conventional usage of simple identifiers (//i, x,  y, p// etc.) in small scopes can lead to cleaner code and will therefore be permitted.
-	Additionally, the term 'word' in the following naming convention rules may be used to refer to a word, an acronym, an abbreviation, or a number.
-	
-3. If this style guide leaves anything unclear, see how it has been donen in the existing code base and do it accordingly.
+The attempt is to make a guideline, not to force a particular coding style onto individuals. Experienced programmers normally want to adopt a style like this anyway but having one, and at least requiring everyone to get familiar with it, usually makes people start thinking about programming style and evaluate their own habits in this area. 
+On the other hand, new and inexperienced programmers normally use a style guide as a convenience to getting into the programming jargon more easily.
 
 
+* **If this style guide leaves anything unclear, see how it has been done in the existing code base and do it accordingly.**
