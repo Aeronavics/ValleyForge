@@ -45,21 +45,22 @@ class bootloader_module_can : public Bootloader_module
 {
 	public:
 		
-			// Struct for CAN message information.
+		// Struct for CAN message information.
 		struct Message_info
 		{
 			bool confirmed_send;
 			bool message_received;
 			uint16_t message_type;
 			uint16_t dlc;
-			uint8_t message[8];// CAN messages can only be 8 bytes long.
+			uint8_t message[8];  // CAN messages can only be 8 bytes long.
 		};
 
-		// Class fields.
+		// Fields.
 		volatile Message_info reception_message; // This will be updated by CANIT ISR.
+
 		Message_info transmission_message;
 
-		// Class methods.
+		// methods.
 	
 		/**
 		 *	Destroys the module when it goes out of scope.  Note - that this DOESN'T exit the module properly, so the exit function
