@@ -83,7 +83,7 @@ enum input_state {LO, HI};
 #define CLEAN_FLAG			0xAFAF
 
 // #define BOOTLOADER_MODULE	<<<TC_INSERTS_BOOTLOADER_ACTIVE_MODULE_HERE>>>
-#define BOOTLOADER_MODULE	bootloader_module_stlink
+#define BOOTLOADER_MODULE	bootloader_module_can
 
 #define BOOTLOADER_VERSION	0x001  // TODO - how is this updated.
 
@@ -192,7 +192,7 @@ int main(void)
 	// GPIOA_BASE results in 0x00, GPIOB_BASE results in 0x01, etc.
 	RCC->AHB1ENR 		|= (1 << ((BLINK_PORT_NUM & 0xFFFF)/0x400));  // Enable the LED port peripheral clock
 	RCC->AHB1ENR 		|= (1 << ((FORCE_BL_PORT_NUM & 0xFFFF)/0x400));  // Enable the FORCE_BL port peripheral clock
-	RCC->APB1ENR		|= (1 << 0);  // Enable the TIM2 clock for the blinking LED interrupt
+	RCC->APB1ENR		|= RCC_APB1ENR_TIM2EN;  // Enable the TIM2 clock for the blinking LED interrupt
 
 	// Configure the Blink LED GPIO
 	BLINK_MODE	 		|= (((uint32_t)0x1) << (BLINK_PIN_NUM*2));  // Set LED pin as output

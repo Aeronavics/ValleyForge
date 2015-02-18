@@ -8,10 +8,10 @@
 #include "bootloader_module.hpp"
 
 // Include the bootloader information sharing struct type.
-#include "application_interface_module_constants_stlink.hpp"
+#include "application_interface_module_constants_can.hpp"
 
 // Include the specific bootloader module header file.
-#include "bootloader_module_stlink.hpp"
+#include "bootloader_module_can.hpp"
 
 // DEFINE PUBLIC TYPES AND ENUMERATIONS.
 
