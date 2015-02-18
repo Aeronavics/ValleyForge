@@ -156,13 +156,13 @@ compliance_check_file_comment()
 		IFS=$(echo -en "\n\b")
 
 		# Condition to check if the file has multiple C++ comments.
-		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -o3 -M -n '^((\/\/)+(.*))+(\n((\/\/)+(.*))+)+' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '([ \t]*\/\/(.*?)(\n[ \t]*((\/\/)(.*))+)+)' $FILE`
 		do
 			# Obtain the line number of the comment block.
 			line_number_comment=${string%%:*}
 	
 			# If there are multi line C++ comments, set the error flag to report an error for the corresponding line.
-			if [[ $string ]]; then
+			if [[ $line_number_comment == [0-9]* ]]; then
 
 				# Set the error flag.
 				array_error_flag_cpp_multiline_comments[$line_number_comment]=1
@@ -204,6 +204,32 @@ compliance_check_file_comment()
 		# All done.
 		return 0
 	}
+
+	# Function to check whether the file is empty. We consider lines which contain only whitespace characters[spaces,tab] also as empty.
+	check_file_empty()
+	{
+		local flag_not_empty=
+		pattern_empty_lines="(^$)|(^[ \t]*$)"
+
+		# Loop through each line of the current file to check whether it contains any non-empty lines.
+		while read line
+		do
+			# Check if the line is empty or contains just whitespaces.
+			if [[ ! $line =~ $pattern_empty_lines ]]; then
+				# Set the flag if the line contains any characters.
+				flag_not_empty=1
+				break
+			fi
+		done < $FILE
+
+		# Check the status of the flag and return corresponding value.
+		if [[ ${flag_not_empty} ]]; then
+			return 1
+		else
+			return 0
+		fi
+	}
+
 
 	# Need to keep track of the line number we are up to.
 	local LINE_NUM=
@@ -291,22 +317,24 @@ compliance_check_file_comment()
 	# Calculate the maximum number of lines which could sensibly have compliance disabled before we suspect something is amiss.
 	local LINE_THRESH=$((LINE_NUM/10))
 
-	# Condition to check for copyrights information in the file.
-	if ! grep -qi 'Copyright (C) [0-9]*[ ]*Unison Networks Ltd' $FILE; then
+	if ! check_file_empty $FILE; then
+		# Condition to check for copyrights information in the file.
+		if ! grep -qi 'Copyright (C) [0-9]*[ ]*Unison Networks Ltd' $FILE; then
 
-		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing Unison Copyrights header comment."
-	fi
+			# Report that the file has failed.
+			compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing Unison Copyrights header comment."
+		fi
 
-	# Check for comment block at the start of the file.
-	if ! $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*)*(COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*(\*)*\/' $FILE; then
+		# Check for comment block at the start of the file.
+		if ! $TCPATH/res/vendor/pcre-8.35/pcregrep -q -M '\/(\*)*\n(\s)*\*(\s)*\*(\s)*FILE:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(SUB-SYSTEM:(\s)*(.+)+\n(\s)*\*(\s)*\*(\s)*)*(COMPONENT:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*TARGET:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*(PLATFORM:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*)*AUTHOR:(\s)*(.+)\n(\s)*\*(\s)*\*(\s)*DATE CREATED:(\s)*(.+)\n(\s)*\*(\s)*(.*\n)*?(\*)*(\s)*(\*)*\/' $FILE; then
 		
-		# Report that the file has failed.		
-		compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing comment block at the beginning of file."
+			# Report that the file has failed.		
+			compliance_fail_file "compliance_check_file_comment" $FILE "This file is missing comment block at the beginning of file."
+		fi
 	fi
 
 	# Check if the number of lines disabled is lesser than the threshold
-	if [ $DISABLED_LINE_COUNT -ge $LINE_THRESH ]; then
+	if [ $DISABLED_LINE_COUNT -gt $LINE_THRESH ]; then
 
 		# Report that the file has failed.
 		compliance_fail_file "exception_limits" $FILE "A suspiciously high number of lines '$DISABLED_LINE_COUNT' have compliance testing disabled."
