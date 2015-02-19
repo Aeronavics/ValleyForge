@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:34:23+13:00
 
+
+
 ====== Naming conventions ======
 
 In General, choose names that are meaningful and readable. If the name is appropriate everything fits together naturally, relationships are clear, meaning is derivable, and reasoning from common human expectations works as expected.
@@ -9,16 +11,16 @@ In General, choose names that are meaningful and readable. If the name is approp
 All names should be written in English.
 
 ===== File Names =====
-25. **C source files should have the file extension .c. Each source file should have a matching header file of the same name, with the file extension .h.**
+	**1.3.1** **C source files should have the file extension .c. Each source file should have a matching header file of the same name, with the file extension .h.**
 	
 
-26. **C++ source files should have the file extension .cpp. Each source file should have a matching header file of the same name, with the file extension .hpp.**
+	**1.3.2 C++ source files should have the file extension .cpp. Each source file should have a matching header file of the same name, with the file extension .hpp.**
 	
 
-27. **File names should not contain space characters, or special characters other than underscore.**
+	**1.3.3 File names should not contain space characters, or special characters other than underscore.**
 	
 
-28. **File names should not contain upper-case characters (to avoid confusion in the case of file systems** **which are not case-sensitive).**
+	**1.3.4 File names should not contain upper-case characters (to avoid confusion in the case of file systems** **which are not case-sensitive).**
 
 
 ===== Naming identifiers =====
@@ -31,13 +33,13 @@ The choice of identifier names should:
 
 __Note__: In general, the above guidelines should be followed. However, conventional usage of simple identifiers (i, x, y, p, etc.) in small scopes can lead to cleaner code and will 		    therefore be permitted. Additionally, the term ‘word’ in the following naming convention rules may be used to refer to a word, an acronym, an abbreviation, or a number.
 
-29. **All words in an identifier will be separated by the ‘_’ character.**
+	**1.3.5 All words in an identifier will be separated by the ‘_’ character.**
 	
 
-30. **Identifiers will not begin with the underscore character ‘_’.**
+	**1.3.6 Identifiers will not begin with the underscore character ‘_’.**
 	
 
-31. **Identifiers will not differ by:**
+	**1.3.7 Identifiers will not differ by:**
 	* **Only a mixture of case**
 	* **The presence/absence of the underscore character**
 	* **The interchange of the letter ‘O’, with the number ‘0’ or the letter ‘D’**
@@ -49,7 +51,7 @@ __Note__: In general, the above guidelines should be followed. However, conventi
 
 
 ==== Class, Struct & Type Names ====
-32. **Names of classes, structures, namespaces, enumeration and types created with typedef should begin with an upper case character, then be in lower case:**
+	**1.3.8 Names of classes, structures, namespaces, enumeration and types created with 'typedef' should begin with an upper case character, then be in lower case:**
 {{{code: lang="cpp" linenumbers="true"
 class Dinosaur
 {
@@ -64,14 +66,14 @@ class Dinosaur
 
 
 
-33. **Names of classes, structures and types should be underscore separated.**
+	**1.3.9 Names of classes, structures and types should be underscore separated.**
 {{{code: lang="cpp" linenumbers="true"
 class Bicycle_bell
 }}}
 
 
 
-34. **Names of class templates should be a single upper case letter:**
+	**1.3.10 Names of class templates should be a single upper case letter:**
 {{{code: lang="cpp" linenumbers="true"
 template<class T> void do_something(T a, T b)
 {
@@ -83,7 +85,7 @@ template<class T> void do_something(T a, T b)
 
 
 ==== Function & Method Names ====
-35. **Names of functions and methods should be all lower case, underscore separated:**
+	**1.3.11 Names of functions and methods should be all lower case, underscore separated:**
 {{{code: lang="cpp" linenumbers="true"
 void do_something()
 {
@@ -94,7 +96,7 @@ void do_something()
 
 
 
-36. **Names of functions and methods should begin with a verb:**
+	**1.3.12 Names of functions and methods should begin with a verb:**
 {{{code: lang="cpp" linenumbers="true"
 void do_something()
 {
@@ -107,7 +109,7 @@ void do_something()
 
 
 ==== Variable & Constant Names ====
-37. **Variable names should be all lower case, underscore separated:**
+	**1.3.13 Variable names should be all lower case, underscore separated:**
 {{{code: lang="cpp" linenumbers="true"
 Uint16 critter_type = i + 1;
 Dinosaur dinosaur = Dinosaur.create_new_dinosaur(critter_type);
@@ -115,14 +117,14 @@ Dinosaur dinosaur = Dinosaur.create_new_dinosaur(critter_type);
 
 
 
-38. **Constant names should be all upper case, underscore separated:**
+	**1.3.14 Constant names should be all upper case, underscore separated:**
 {{{code: lang="cpp" linenumbers="true"
 const Uint16 MAXIMUM_NUMBER_OF_HATS = 16;
 }}}
 
 
 
-39. **Variables of the same name as the underlying type are allowed:**
+	**1.3.15 Variables of the same name as the underlying type are allowed:**
 {{{code: lang="cpp" linenumbers="true"
 Address address = "69 Creyke Rd";
 House house = get_house(address);
@@ -130,7 +132,7 @@ House house = get_house(address);
 
 
 
-40. **Generic variables should have the same name as their type.**
+	**1.3.16 Generic variables should have the same name as their type.**
 {{{code: lang="cpp" linenumbers="true"
 void set_topic(Topic* topic)	// NOT: void set_topic(Topic* value)
 								// NOT: void set_topic(Topic* a_topic)
@@ -141,7 +143,7 @@ void set_topic(Topic* topic)	// NOT: void set_topic(Topic* value)
 This reduces the complexity by reducing the number of terms and names used. Also makes it easy to deduce the type given a variable name only.
 	
 
-41. **Literal suffixes should use uppercase letters rather than lowercase letters in order to improve readability.**
+	**1.3.17 Literal suffixes should use uppercase letters rather than lowercase letters in order to improve readability.**
 {{{code: lang="cpp" linenumbers="true"
 const int64 fs_frame_rate = 64l;	// Wrong! Looks too much like 641
 const int64 fs_frame_rate = 64L;	// Okay
@@ -149,7 +151,7 @@ const int64 fs_frame_rate = 64L;	// Okay
 
 	
 
-42. **Plural form should be used on names representing a collection of objects.**
+	**1.3.18 Plural form should be used on names representing a collection of objects.**
 {{{code: lang="cpp" linenumbers="true"
 vector<Point> points;
 int values[];
@@ -159,7 +161,7 @@ int values[];
 This enhances readability since the name gives the user an immediate clue of the type of the variable and the operations that can be performed on its elements.
 
 
-43. **The prefix n should be used for variables representing a number of objects.**
+	**1.3.19 The prefix **//n//** should be used for variables representing a number of objects.**
 {{{code: lang="cpp" linenumbers="true"
 nPoints, nLines;
 }}}
@@ -168,7 +170,7 @@ nPoints, nLines;
 The notation is taken from mathematics where it is an established convention for indicating a number of objects.
 	
 
-44. **Iterator variables should be called i,j,k etc.**
+	**1.3.20 Iterator variables should be called **//i,j,k//** etc.**
 {{{code: lang="cpp" linenumbers="true"
 for (int i = 0; i < ntables; i++)
 {
@@ -185,7 +187,7 @@ for (vector<my_class>::iterator i = list.begin(); i != list.end(); i++)
 Variables named j, k etc. should be used for nested loops only.
 
 
-45. **The prefix is should be used for boolean variables and methods.**
+	**1.3.21 The prefix **//is//** should be used for boolean variables and methods.**
 {{{code: lang="cpp" linenumbers="true"
 is_set, is_visible, is_finished, is_found, is_open
 }}}
@@ -194,7 +196,7 @@ is_set, is_visible, is_finished, is_found, is_open
 Common practice in the C++ development community and partially enforced in Java. Using the //is// prefix solves a common problem of choosing bad boolean names like //status// or //flag//. //isStatus// or //isFlag// simply doesn't fit, and the programmer is forced to choose more meaningful names.
 
 
-46. **Complement names must be used for complement operations.**
+	**1.3.22 Complement names must be used for complement operations.**
 {{{code: lang="cpp" linenumbers="true"
 get/set, add/remove, create/destroy, start/stop, insert/delete,
 increment/decrement, old/new, begin/end, first/last, up/down, min/max,
@@ -205,7 +207,7 @@ next/previous, old/new, open/close, show/hide, suspend/resume etc.
 Reduce complex by symmetry. 
 
 
-47. **Abbreviations in names should be avoided.**
+	**1.3.23 Abbreviations in names should be avoided.**
 {{{code: lang="cpp" linenumbers="true"
 compute_average();		// NOT: comp_avg();
 }}}
@@ -224,7 +226,7 @@ Then there are domain specific phrases that are more naturally known through the
 	''PriceEarningRatio''        instead of   ''pe ''etc.
 	
 
-48. **Naming pointers specifically should be avoided.**
+	**1.3.24 Naming pointers specifically should be avoided.**
 {{{code: lang="cpp" linenumbers="true"
 Line* line;		// NOT: Line* p_line;
 				// NOT: Line* line_ptr;
@@ -234,7 +236,7 @@ Line* line;		// NOT: Line* p_line;
 Many variables in a C/C++ environment are pointers, so a convention like this is almost impossible to follow. Also objects in C++ are often oblique types where the specific implementation should be ignored by the programmer. Only when the actual type of an object is of special significance, the name should emphasize the type.
 	
 
-49. **Negated Boolean variable names must be avoided.**
+	**1.3.25 Negated Boolean variable names must be avoided.**
 {{{code: lang="cpp" linenumbers="true"
 bool is_error;		// NOT: is_not_error
 bool is_found;		// NOT: is_not_found
@@ -244,7 +246,7 @@ bool is_found;		// NOT: is_not_found
 The problem arises when such a name is used in conjunction with the logical negation operator as this results in a double negative. It is not immediately apparent what !isNotFound means.
 	
 
-50. **Enumeration constants can be prefixed by a common type name.**
+	**1.3.26 Enumeration constants can be prefixed by a common type name.**
 {{{code: lang="cpp" linenumbers="true"
 enum Color
 {
@@ -256,3 +258,6 @@ enum Color
 
 
 This gives additional information of where the declaration can be found, which constants belongs together, and what concept the constants represent.
+
+																	[[Layout conventions|<<<	PrevTitle]]		       |		|          		[[Statement conventions|NextTitle	>>>]]
+

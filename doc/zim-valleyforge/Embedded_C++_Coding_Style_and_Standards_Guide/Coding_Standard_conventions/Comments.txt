@@ -34,7 +34,7 @@ some_mapped_register = 1;
 
 
 ===== Comments to Indicate Accidental Truncation =====
-66. **All files should conclude with the comment  // ALL DONE. This indicates that the file is present in its entirety and has not be accidentally truncated.**
+	**2.1.1** **All files should conclude with the comment **''// ALL DONE.''** This indicates that the file is present in its entirety and has not be accidentally truncated.**
 {{{code: lang="cpp" linenumbers="true"
 void main(void)
 {
@@ -48,7 +48,7 @@ void main(void)
 There should not be a line ending following this comment.
 
 
-67. **All functions which return void and in which control flow is expected to reach the end of the code block should end with a comment  // All done. prior to a final return statement.**
+	**2.1.2 All functions which return void and in which control flow is expected to reach the end of the code block should end with a comment **''// All done.''** prior to a final return statement.**
 {{{code: lang="cpp" linenumbers="true"
 void something(void)
 {
@@ -63,7 +63,7 @@ void something(void)
 This indicates that the function has not been accidentally truncated.
 
 
-68. **Functions which return void but in which control flow is not expected to return from should end with a comment  // We should never reach here. prior to a final return statement.**
+	**2.1.3 Functions which return void but in which control flow is not expected to return from should end with a comment **''// We should never reach here. prior to a final return statement.''
 {{{code: lang="cpp" linenumbers="true"
 void do_something(void)
 {
@@ -82,7 +82,7 @@ This indicates that the function has not been truncated, but notes the atypical 
 
 
 ===== Header Files =====
-69. **Header files must be completely documented.**
+	**2.1.4 Header files must be completely documented.**
 
 This means every class, method and data member must have comments. Header files describe the interfaces of the system and as such, should contain all the information a developer needs to use/understand the interface.
 
@@ -107,4 +107,7 @@ class Test
 	 	int value;		//!< an integer value
 };	
 }}}
+
+
+																	[[Coding Standard conventions|<<<	PrevTitle]]		       |		|          		[[Flow control|NextTitle	>>>]]
 

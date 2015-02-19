@@ -2,17 +2,23 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:31:53+13:00
 
+
+
 ====== Introduction ======
+								
 
 As every C++ programmer knows, the language has many powerful features, but this power brings with it complexity, which in turn can make code more bug-prone and harder to read and maintain. While a given development environment (IDE) can improve the readability of code by access visibility, color coding, automatic formatting and so on, the programmer should never rely on such features. Source code should always be considered larger than the IDE it is developed within and should be written in a way that maximize its readability independent of any IDE.
 
 ===== Goal =====
+
 The goal of this guide is to manage this complexity by describing in detail the dos and don'ts of writing C++ code. These rules exist to keep the [[ValleyForge]] code base manageable while still allowing coders to use C++ language features productively.
 
 ===== How? =====
+
 One way in which we keep the code base manageable is by enforcing consistency. It is very important that any programmer be able to look at another programmer's code and quickly understand it. Maintaining a uniform style and following conventions means that we can more easily use "pattern-matching" to infer what various symbols are and what in-variants are true about them. Creating common, required idioms and patterns makes code much easier to understand. In some cases there might be good arguments for changing certain style rules, but we nonetheless keep things as they are in order to preserve consistency.
 
 ===== What does it contain? =====
+
 This guide includes both [[Coding Style conventions]] as well as [[Coding Standard conventions|Coding standard conventions]]. 
 
 * Style conventions refer to those conventions that focus mainly on programming styles such as Layout, Naming, Commenting styles etc. The major focus of Style conventions is to //increase readability and clarity// of the code. 
@@ -35,3 +41,6 @@ Example if applicable
 Motivation, background and additional information if applicable.
 
 'n' refers to the Rule number.
+
+																	[[Embedded C++ Coding Style and Standards Guide|<<<	PrevTitle]]		       |		|          		[[General Design|NextTitle	>>>]]
+

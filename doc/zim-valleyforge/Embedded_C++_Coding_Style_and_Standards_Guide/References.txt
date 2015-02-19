@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:34:39+13:00
 
+
+
 ====== References ======
 
 1. Joint Strike Fighter Air Vehicle, C++ Coding Standards http://www.stroustrup.com/JSF-AV-rules.pdf
@@ -13,3 +15,6 @@ Creation-Date: 2015-02-17T17:34:39+13:00
 4. Quantum Leaps, C/C++ Coding Standard http://www.state-machine.com/doc/AN_QL_Coding_Standard.pdf
 
 5. NASA's  General Mission Analysis Tool (GMAT) Project, C++ Coding Standards and Style Guide http://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20080039927.pdf 
+
+																				[[Coding Standard conventions:Miscellaneous|<<<	PrevTitle]]
+
