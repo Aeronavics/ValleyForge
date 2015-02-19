@@ -38,7 +38,7 @@
 // Include can message ids.
 #include "can_messages.h"
 
-// DEFINE PRIVATE MACROS
+// DEFINE PRIVATE MACROS.
 
 // Bootloader Information.
 
@@ -47,7 +47,7 @@
 // CAN baud rate values.
 #warning #define CAN_BAUD_RATE	<<<TC_INSERTS_CAN_BAUD_RATE_HERE>>>
 #warning #define CLK_SPEED_IN_MHZ	<<<TC_INSERTS_CLK_SPEED_IN_MHZ_HERE>>>
-#define CAN_BAUD_RATE	1000
+#define CAN_BAUD_RATE	250
 #define CLK_SPEED_IN_MHZ	168
 #define APB1_PRESCALER	4
 
@@ -103,7 +103,7 @@ bool ready_to_send_page;
 bool message_confirmation_success; 
 bool write_details_stored;
 
-// Flag indicating an error has occurred. Currently, once an error occurs, there's no way to clear it other than a reset.
+// Flag indicating an error has occurred.  Currently, once an error occurs, there is no way to clear it other than a reset.
 bool error;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
@@ -168,7 +168,7 @@ void bootloader_module_can::init(void)
 
 void bootloader_module_can::exit(void)
 {
-	// Reset the CAN controller so that the application finds it untouched.
+	// Reset the CAN controller so that the application code finds it untouched.
 	reset_can();
 
 	// All done.
@@ -208,7 +208,7 @@ void bootloader_module_can::event_periodic()
 		// Increment the number of ticks since we last posted an alert.
 		alert_ticks++;
 
-		// Check if we're due to send another message.
+		// Check if we're due to post another message.
 		if (alert_ticks >= ALERT_UPLOADER_TIMEOUT)
 		{
 			// Send the ALERT_UPLOADER message.
@@ -283,7 +283,7 @@ void confirm_reception(bool confirmation_successful)
 	}
 	else
 	{
-		module.transmission_message.message[0] = 1;
+		module.transmission_message.message[0] = 0;
 	}
 
 	// Confirmation message will have the same ID as the message it is confirming.
@@ -404,6 +404,7 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 
 void reset_can(void)
 {
+	// Reset the CAN controller to it's state after a hardware reset.
 	RCC->APB1RSTR |= (RCC_APB1RSTR_CAN1RST | RCC_APB1RSTR_CAN2RST);
 
 	// All done.
@@ -570,7 +571,7 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 	// Send the flash page in 8-byte messages. Confirmation message must be received from the uploader after each message.
 	while (current_firmware_page.current_byte < current_firmware_page.code_length)
 	{
-		// Determine the length of the message, just in case we are closer than 8 bytes and need a smaller message.
+		// Determine the length of the message, just in case we are closer than 8 bytes and need to send a smaller message.
 		transmission_message.dlc = (current_firmware_page.code_length - current_firmware_page.current_byte);
 		if (transmission_message.dlc > 8)
 		{
@@ -583,7 +584,7 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 			transmission_message.message[i] = current_firmware_page.data[current_firmware_page.current_byte + i];
 		}
 
-		// Increment the current byte for the next iteration.
+		// Increment current_byte for the next iteration.
 		current_firmware_page.current_byte += transmission_message.dlc;
 
 		transmit_CAN_message(transmission_message);
@@ -604,8 +605,6 @@ void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page
 
 		reception_message.confirmed_send = false;
 	}
-
-	set_bootloader_state(BOOT_IDLE);
 
 	// All done.
 	return;
@@ -644,26 +643,21 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 		case CANID_REQUEST_RESET:
 			request_reset_procedure();
 			break;
-			// We will never reach here.
 
 		case CANID_GET_INFO:
 			get_info_procedure();
-			reception_message.message_received = false;
 			break;
 			
 		case CANID_WRITE_MEMORY:
 			write_memory_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
 
 		case CANID_WRITE_DATA:
 			write_data_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
 
 		case CANID_READ_MEMORY:
 			read_memory_procedure(current_firmware_page);
-			reception_message.message_received = false;
 			break;
 
 		default:
@@ -709,15 +703,11 @@ void bootloader_module_can::alert_uploader(void)
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
-// struct Message_info
-// {
-// 	bool confirmed_send;
-// 	bool message_received;
-// 	uint16_t message_type;
-// 	uint16_t dlc;
-// 	uint8_t message[8];// CAN messages can only be 8 bytes long.
-// };
-
+/**
+ * ISR for interupts from CAN controller.
+ * This routine only operates on received messages, it reads the ID, DLC and data from the CAN controller into a Message_info object.
+ * The ISR also sets a flag to tell Bootloader that a new message has been received, or that a confirmation message has been received.
+ */
 extern "C" void CAN1_RX0_IRQHandler(void)
 {
 	// Store the message ID.
@@ -761,3 +751,5 @@ extern "C" void CAN1_RX0_IRQHandler(void)
 	// All done.
 	return;
 }
+	
+// ALL DONE.

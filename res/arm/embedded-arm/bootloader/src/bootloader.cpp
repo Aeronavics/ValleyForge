@@ -1,3 +1,33 @@
+// Copyright (C) 2011  Unison Networks Ltd
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+/********************************************************************************************************************************
+ *
+ *  FILE: 		bootloader.c
+ *
+ *  TARGET:		STM32F4xx
+ *
+ *  AUTHOR: 		Zane Barker
+ *
+ *  DATE CREATED:	5-12-2011
+ *
+ *	This is the generic modular bootloader used for STM32F4 targets.  It is able to utilize different peripherals for the
+ *	download of new application firmware, though the use of modular plugins.
+ *
+ ********************************************************************************************************************************/
+
 // INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION
 #include "bootloader.hpp"
 #include "stm32f4xx/stm32f4xx.h"
@@ -55,7 +85,7 @@ enum input_state {LO, HI};
 #define SYSTICK_FREQ_HZ		1000
 #define BOOT_TIMEOUT		10000  // Timeout in milliseconds.
 
-#define APP_START_ADDRESS	0x08004000
+#define APP_START_ADDRESS	0x08020000
 
 // Blink times for different states. Times are in ms.
 
@@ -75,8 +105,7 @@ enum input_state {LO, HI};
 #define ERROR_OFF			1000
 
 // #define SHUTDOWN_STATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
-// #define SHUTDOWN_STATE_MEM	0x08003FFF
-#define SHUTDOWN_STATE_MEM	0x080E0000
+#define SHUTDOWN_STATE_MEM	0x08013000
 
 #define CLEAN_FLAG			0xAFAF
 
@@ -112,11 +141,11 @@ volatile bool timeout_expired = false;
 volatile bool timeout_enable = true;
 
 BOOTLOADER_MODULE module; // This means all the communication modules must have an object defined in them called - extern <class name> module.
-Bootloader_module& mod = module;
+#warning Bootloader_module& mod = module;
 
 Firmware_page buffer;
 
-// DEFINE PRIVATE FUNCTION PROTOTYPES
+// DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 /**
  *	Forces a CPU reset by striking the watchdog.
@@ -173,7 +202,7 @@ void write_flash_page(Firmware_page& buffer);
  */
 void read_flash_page(Firmware_page& buffer);
 
-// IMPLEMENT PUBLIC STATIC FUNCTIONS
+// IMPLEMENT PUBLIC STATIC FUNCTIONS.
 
 int main(void)
 {
@@ -220,7 +249,7 @@ int main(void)
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
-	#warning mod.init();
+	module.init();
 
     // Set up the SysTick Interrupt to produce a 1ms interrupt for any periodic functionality.
     if (SysTick_Config(SystemCoreClock/(8*SYSTICK_FREQ_HZ)))
@@ -232,8 +261,6 @@ int main(void)
 
     // Set the bootloader into idle mode.
     set_bootloader_state(BOOT_IDLE);
-
-    while (1);
 
     // Now we loop continuously until either some firmware arrives or we decide to try the application code anyway.
 	while (true)
@@ -253,7 +280,7 @@ int main(void)
 		}
 
 		// Perform any module specific functionality which needs to be executed as fast as possible.
-		mod.event_idle();
+		module.event_idle();
 
 		// If the buffer is ready to be written, write it to memory.
 		if (buffer.ready_to_write)
@@ -334,7 +361,7 @@ void reboot_to_application(void)
 
 void start_application(void)
 {
-	// Run the application
+	// Run the application.
 	run_application();
 
 	// We should never reach here.
@@ -427,7 +454,7 @@ void run_application(void)
 	// TODO - Make sure we're all good to go.
 
 	// Shut down whatever module we're using. This should return any affected peripherals to their initial states.
-	mod.exit();
+	module.exit();
 
 	// Stop the Systick interrupt.
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -527,16 +554,15 @@ extern "C" void SysTick_Handler(void)
 	static uint16_t module_periodic_count = 0;
 	module_periodic_count++;
 
-	#warning
-	// // Check if it is time for the event to be fired again.
-	// if (module_periodic_count >= MODULE_EVENT_PERIOD)
-	// {
-	// 	// Perform any module specific functionality which needs to be performed on a periodic basis.
-	// 	mod.event_periodic();
+	// Check if it is time for the event to be fired again.
+	if (module_periodic_count >= MODULE_EVENT_PERIOD)
+	{
+		// Perform any module specific functionality which needs to be performed on a periodic basis.
+		module.event_periodic();
 
-	// 	// Start counting again.
-	// 	module_periodic_count = 0;
-	// }
+		// Start counting again.
+		module_periodic_count = 0;
+	}
 
 	// Check if the bootloader timeout is actually enabled.
 	if (timeout_enable)
