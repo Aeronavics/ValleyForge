@@ -486,14 +486,14 @@ void bootloader_module_can::handle_write_memory(void)
 	else
 	{
 		// Store the 32 bit page number.
-		buffer.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-									 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-									 ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-									 (static_cast<uint32_t>(reception_message.message[3])));
+		buffer.page = (((static_cast<uint32_t>(reception_message.message[1])) << 24) |
+									 ((static_cast<uint32_t>(reception_message.message[2])) << 16) |
+									 ((static_cast<uint32_t>(reception_message.message[3])) << 8) |
+									 (static_cast<uint32_t>(reception_message.message[4])));
 
 		// Store the 16 bit code_length.
-		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-											(static_cast<uint16_t>(reception_message.message[5])));
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+											(static_cast<uint16_t>(reception_message.message[6])));
 
 		// Check for errors in message details.
 		if ((buffer.code_length > SPM_PAGESIZE) || (buffer.page >= BOOTLOADER_START_ADDRESS))
@@ -593,14 +593,14 @@ void bootloader_module_can::handle_read_memory(void)
 	else
 	{
 		// Store the 32 bit page number.
-		buffer.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-									 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-									 ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-									 (static_cast<uint32_t>(reception_message.message[3])));
+		buffer.page = (((static_cast<uint32_t>(reception_message.message[1])) << 24) |
+									 ((static_cast<uint32_t>(reception_message.message[2])) << 16) |
+									 ((static_cast<uint32_t>(reception_message.message[3])) << 8) |
+									 (static_cast<uint32_t>(reception_message.message[4])));
 
 		// Store the 16 bit code_length.
-		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-											(static_cast<uint16_t>(reception_message.message[5])));
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+											(static_cast<uint16_t>(reception_message.message[6])));
 
 		// Start from the first byte.
 		buffer.current_byte = 0;
