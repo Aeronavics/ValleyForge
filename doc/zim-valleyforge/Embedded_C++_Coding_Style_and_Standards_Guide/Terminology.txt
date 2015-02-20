@@ -1,0 +1,80 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:32:03+13:00
+
+====== Terminology ======
+
+	1. An **abstract base class** is a class from which no objects may be created; it is only used as a base class for the derivation of other classes. A class is abstract if it includes at least one member function that is declared as pure virtual.
+
+	2. An **abstract data type** is a type whose internal form is hidden behind a set of access functions. Objects of the type are created and inspected only by calls to the access functions. This allows the implementation of the type to be changed without requiring any changes outside the module in which it is defined.
+
+	3. An **accessor** function is a function which returns the value of a data member.
+
+	4. A **built-in data type** is a type which is defined in the language itself, such as int.
+
+	5. A **catch clause** is code that is executed when an exception of a given type is raised. The definition of an exception handler begins with the keyword catch.
+
+	6. A **class** is a user-defined data type which consists of data elements and functions which operate on that data. In C++, this may be declared as a class; it may also be declared as a struct or a union. Data defined in a class is called member data and functions defined in a class are called member functions.
+
+	7. A **class template** defines a family of classes. A new class may be created from a class template by providing values for a number of arguments. These values may be names of types or constant expressions.
+
+	8. A **concrete type** is a type without virtual functions, so that objects of the type can be allocated on the stack and manipulated directly (without a need to use pointers or references to allow the possibility for derived classes). Often, small self-contained classes.
+
+	9. A **constant member function** is a function which may not modify data members.
+
+	10. A **constructor** is a function which initializes an object.
+
+	11. A **copy constructor** is a constructor in which the first argument is a reference to an object that has the same type as the object to be initialized.
+
+	12. **Dead code** is “executable object code (or data) which, as a result of a design error cannot be executed (code) or used (data) in an operational configuration of the target computer environment and is not traceable to a system or software requirement.”
+
+	13. A **declaration** of a variable or function announces the properties of the variable or function; it consists of a type name and then the variable or function name. For functions, it tells the compiler the name, return type and parameters. For variables, it tells the compiler the name and type. 
+
+'''
+int32 fahr();
+int32 foo();
+'''
+
+
+	14. A **default constructor** is a constructor which needs no arguments.
+
+	15. A **definition** of a function tells the compiler how the function works. It shows what instructions are executed for the function.
+
+'''
+int32 foo()
+{
+'''
+	'''
+	//Statements
+	}
+	'''
+	
+
+
+	16. An **enumeration type** is an explicitly declared set of symbolic integer constants. In C++ it is declared as an enum.
+
+	17. An **exception** is a run-time program anomaly that is detected in a function or member function. Exception handling provides for the uniform management of exceptions.
+
+	18. An **identifier** is a name which is used to refer to a variable, constant, function or type in C++. When necessary, an identifier may have an internal structure which consists of a prefix, a name, and a suffix (in that order).
+
+	19. An **iterator** is an object that con be used to traverse a data structure.
+
+	20. A **macro** is a name for a text string which is defined in a #define statement. When this name appears in source code, the compiler replaces it with the defined text string.
+
+	21. **Multiple inheritance** is the derivation of a new class from more than one base class.
+
+	22. A **mutator** function is a function which sets the value of a data member.
+
+	23. **Protected members** of a class are member data and member functions which are accessible by specifying the name within member functions of derived classes.
+
+	24. **Public members** of a class are member data and member functions which are accessible everywhere by specifying an instance of the class and the name.
+
+	25. A **reference** is another name for a given variable. In C++, the ‘address of’ (&) operator is used immediately after the data type to indicate that the declared variable, constant, or function argument is a reference.
+
+	26. The **scope** of a name refers to the context in which it is visible. [Context, here, means the functions or blocks in which a given variable name can be used.]
+
+	27. A **side effect** is the change of a variable as a by-product of an evaluation of an expression.
+
+	28. A **structure** is a user-defined type for which all members are public by default.
+
+	29. A **typedef** is another name for a data type, specified in C++ using a typedef declaration.
