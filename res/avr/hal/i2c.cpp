@@ -37,7 +37,6 @@
 
 #include <avr/io.h>
 
-
 #include <avr_magic/avr_magic.hpp>
 #include <avr/interrupt.h>
 #include "i2c_platform.hpp"
@@ -59,8 +58,6 @@ class I2C_imp
 
  		// Methods.
 
-    // I2C_imp();
-
 		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
 		void disable(void);
@@ -80,13 +77,7 @@ class I2C_imp
 
     		// Functions
 
-    		// I2C_imp(void) = delete;
-
-    		// I2C_imp(I2C_imp*) = delete;
-
     		I2C_imp operator = (I2C_imp const&) = delete;
-
-    		// Fields
 
 };
 
@@ -156,8 +147,6 @@ I2C_return_status I2C::slave_receive(uint8_t* data)
     return (imp->slave_receive(data));
 }
 
-
-/****************************************************************************/
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
 // IMPLEMENT PRIVATE CLASS FUNCTION (METHODS).
@@ -165,7 +154,6 @@ I2C_return_status I2C::slave_receive(uint8_t* data)
 /**
  * I2C_imp private class functions
  **/
-
 I2C_return_status I2C_imp::enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr)
 {
     if (cpu_speed / scl_speed < MAX_SCL_CPU_RATIO)
@@ -318,7 +306,6 @@ I2C_return_status I2C_imp::master_transmit(uint8_t slave_adr, uint8_t* data, uin
             data++;
         }
 
-        // send START signal
         TWCR = TWCR_START;
 
         return I2C_SUCCESS;
@@ -651,4 +638,3 @@ ISR(TWI_vect)
     }
   }
 }
-

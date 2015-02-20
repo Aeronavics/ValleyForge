@@ -5,7 +5,6 @@ Creation-Date: 2014-12-19T12:44:29+13:00
 ====== Usage ======
 Created Friday 19 December 2014
 
-=== Usage ===
 Summaries of the Timer/ Counter units to each target board can be found in the links below:
 
 	(Link to each target device summary)

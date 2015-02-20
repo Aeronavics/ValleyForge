@@ -158,7 +158,7 @@ enum I2C_status_code
 
 struct TWI_bus
 {
-  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];       // TWI master transmitter data buffer.
+  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];        // TWI master transmitter data buffer.
   volatile uint8_t TWI_MR_sla_adr;                     // TWI master receiver requires a variable to hold target address.
   volatile uint8_t* TWI_MR_data_ptr;                   // TWI master receiver saves the data straight to the user data array.
   volatile uint8_t TWI_ST_buf[TWI_BUFFER_SIZE];        // TWI slave transmitter buffer.
@@ -201,51 +201,68 @@ class I2C
      * Enables the I2C/TWI interface by setting the enable bit in the control register. The
      * CPU frequency must be at least 16x higher than the I2C frequency
      *
-     * @param    CPU_CLK_speed    The CPU clock speed.
-     *           I2C_SCL_speed    I2C frequency.
-     *           slave_adr        The device slave address.
+     * @param    CPU_CLK_speed      The CPU clock speed.
+     * @param    I2C_SCL_speed      I2C frequency.
+     * @param    slave_adr          The device slave address.
+     *
+     * @return   I2C_return_status  returns a success or fail
      */
 		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
     /**
      * Disables the I2C/TWI register by un setting the enable bit in the control register.
+     *
+     * @param
+     *
+     * @return
      */
 		void disable(void);
 
     /**
      * Wait for I2C to complete transmission.
      *
+     * @param
+     *
+     * @return
      */
     void wait_I2C();
 
     /**
+     * Controller takes up the I2C master role and transmits a message to a desired slave controller.
      *
+     * @param   uint8_t slave_adr   User assigned slave address.
+     * @param   uint8_t data        The data byte.
+     * @param   uint8_t msg_size    The number of data bytes.
      *
-     * @param
-     *
+     * @return  I2C_return_status   Success or failure.
      */
 		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
+     * Controller takes up the I2C master role and requests for data from a slave controller.
      *
+     * @param   uint8_t slave_adr   User assigned slave address.
+     * @param   uint8_t data        The data byte.
+     * @param   uint8_t msg_size    The number of data bytes.
      *
-     * @param
-     *
+     * @return  I2C_return_status   Success or failure.
      */
 		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
+     * Controller behaves as the slave and transmits any data stored in the buffer.
      *
+     * @param   uint8_t data        The data byte.
+     * @param   uint8_t msg_size    The number of data bytes.
      *
-     * @param
-     *
+     * @return  I2C_return_status   Success or failure.
      */
     I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
 
     /**
+     * Controller behaves as the slave and receives data from a master controller.
      *
-     *
-     * @param
+     * @param   uint8_t data        The data byte.
      *
      */
     I2C_return_status slave_receive(uint8_t* data);
@@ -255,13 +272,7 @@ class I2C
 
 		// Methods.
 
-		// I2C(void) = delete;	// Poisoned.
-
-		// I2C(I2C*) = delete;	// Poisoned.
-
 		I2C(I2C_imp*);
-
-		//I2C operator = (I2C const&) = delete;	// Poisoned.
 
 		// Fields.
 

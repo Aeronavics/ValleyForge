@@ -1,0 +1,238 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-21T11:52:21+13:00
+
+====== Usage ======
+Created Saturday 21 February 2015
+
+=== Accessing Elements on the Tree ===
+ This abstraction model encapsulates the functionality of each hardware element to the software object that represents it. Users must therefore traverse the tree to access all functionality.
+
+From ''Can'':
+
+    ''get_buffers()'' to get an array of pointers to all ''Can_buffer'' instances in the controller
+    ''get_filter_banks()'' to get an array of pointers to all ''Can_filter_bank'' instances in the controller 
+
+From ''Can_filter_bank'':
+
+    ''get_filmasks()'' to get an array of pointers to all ''Can_filmask'' instances that are a member of this bank
+    ''get_buffer()'' to get a pointer to the buffer this bank is attached to 
+
+=== Initialisation ===
+User must first create an instance of a ''Can'' class then requesting access and binding the interface to a hardware implementation. This is done by invoking the 'bind()' method of the ''Can'' class.
+
+Before communicating with CAN, the baud rate must be set. This is done invoking the 'initialise()' method of the ''Can'' class. 
+
+== Example ==
+ This example shows a simple initialisation of a Can controller to 500kBaud: 
+
+'''
+	Can my_can = Can::bind(CAN_0);      //declaring an instance of Can class and linking it to the CAN_0 controller
+	my_can.initialise(CAN_500K);        //initialising controller to 500Kbaud
+'''
+
+
+=== Transmitting ===
+ Transmitting involves the following process:
+
+* Setting the ID of the message
+* Setting the length of the message
+* Writing the payload message to the transmission buffer
+* Clearing the status of the buffer once transmission is complete
+* Disabling the buffer once transmission is complete (optional, important on some targets) 
+
+The first step in transmission is to create a ''Can_message'' instance. This struct abstracts the entirety of a Can frame including extended identifier, data length code and payload message. Once all these fields are set, the instance is passed as an argument into the ''write()'' method of the chosen ''Can_buffer'' instance. This operation will fail if the chosen buffer is in reception mode. This operation also changes the mode of the buffer to transmit mode on some targets.
+
+Once a transmission is complete, the status of the buffer must be cleared by invoking the ''clear_status()'' method of the ''Can_buffer'' instance that sent the message. For targets with unidirectional buffers, it is recommended to disable the buffer after transmission complete by invoking the ''set_mode()'' of the corresponding ''Can_buffer'' instance. 
+
+== Example ==
+ This example shows a transmission with a single buffer with error handling. Buffer is polled after the transmission event is initiated so when the status reports complete, the buffer can be cleared. 
+
+'''
+	Can_message my_msg;    // declare new message
+	my_msg.ext = 1;        // set extended frame
+	my_msg.rtr = 0;        // not a remote request frame
+	my_msg.dlc = 7;        // set length
+
+	Can_send_status ret_code = my_can.get_buffers()[0]->write(my_msg);     // send message on buffer 0
+
+	if (ret_code == CAN_SND_SUCCESS)
+	{
+    		// send success case
+    		while (my_can.get_buffers()[0]->get_status() != BUF_TX_COMPLETED); // poll until buffer completes message sending
+    		my_can.get_buffers()[0]->clear_status();                           // erase message from tx mailbox to complete transmission
+    		my_can.get_buffers()[0]->set_mode(CAN_OBJ_DISABLE);                // hardware specific optional, disable buffer 0
+	}
+	else if (ret_code == CAN_SND_MODERR)
+	{
+    		// the buffer was set as FIFO buffer instead of transmit mailbox
+	}
+	else if (ret_code == CAN_SND_DLCERR)
+	{
+    		// the dlc user specified exceeds 8
+	}
+'''
+
+
+=== Receiving ===
+ Receiving involves the following process:
+
+* Optionally on some targets:
+	* Configure filter banks
+	* Connect filter bank to chosen buffer (reception without filters will cause the buffer to receive all message broadcast on the network)
+	* Set the buffer instance to reception mode 
+* On the buffers intended to be used for reception, set the identifier value and mask value of the connected filter/masks
+* Copy message from the buffer into memory
+* Clearing the status of the buffer so it can continue to receive messages 
+
+Access banks by traversing the children of the ''Can'' class by calling the ''get_banks()'' method. The user can use the ''set_buffer()'' method of the chosen ''Can_bank'' instance to connect it to a buffer. The user can configure the number of filters and masks in the bank by using the ''set_mode()'' method. Using the ''get()'' and ''set()'' methods of the ''Can_filmask'' instance will allow the user to read the value or set the value of the corresponding filter/mask.
+
+Create an instance of ''Can_filmask_value'' and set the values of all the relavent fields. Then pass this instance as an argument into ''set()'' to set the filter/mask value. 
+
+== Example ==
+This example shows setting one buffer to receive mode. The buffer's status is polled to catch incoming messages. 
+
+'''
+	Can_filmask_value filter_value;
+	filter_value.id = 0x00000001;   // want ID == 0x01 bit must make at least 29bit long as using extended identifier
+	filter_value.ext = 1;           // want extended messages
+	filter_value.rtr = 0;           // want non-remote request messages
+
+	Can_filmask_value mask_value;
+	mask_value.id = 0xFFFFFFFF;     // care about all the digits 
+	mask_value.ext = 1;             // care about whether message is standard or extended identifier
+	mask_value.rtr = 0;             // don't care about whether the message is a remote request
+
+	my_can.get_banks()[0]->set_mode(CAN_BNK_MODE_FM);             // hardware specific optional, set filter bank to filter-mask mode, note that modes are hardware specific
+	my_can.get_banks()[0]->set_buffer(my_can.get_buffers()[0]);   // hardware specific optional, connect filter bank 0 to buffer 0
+	my_can.get_banks()[0]->get_filmasks()[0]->set(filter_value);  // assuming that filter is element 0 in the bank, this sets the filter value
+	my_can.get_banks()[0]->get_filmasks()[1]->set(mask_value);    // assuming that mask is element 1 in the bank, this sets the mask value
+	my_can.get_buffers()[0]->set_mode(CAN_OBJ_RX);                // hardware specific optional, set buffer 0 to reception mode
+
+	Can_message rec_msg;
+
+	while (my_can.get_buffers()[0]->get_status() != BUF_RX_COMPLETED);         // wait until message is received
+	Can_send_status ret_code = my_can.get_buffers()[0]->read(rec_msg);         // copy the received message into the create Can_message instance (note rec_msg is passed in by reference)
+
+	if (ret_code == CAN_SND_SUCCESS)
+	{
+    		uint8_t no_msg_in_buffer = my_can.get_buffers()[0]->queue_length();    // get number of messages stored in the buffer, useful for targets with multi-length FIFOs
+    		my_can.get_buffers()[0]->set_mode(CAN_OBJ_DISABLE);                    // hardware specific optional, must perform on unidirectional buffers, disable buffer
+    		my_can.get_buffers()[0]->free_message();                               // releases the first message received in the FIFO (only works if buffer is set to FIFO mode)
+    		my_can.get_buffers()[0]->set_mode(CAN_OBJ_RX);                         // hardware specific optional, must perform on unidirectional buffers, set buffer to reception mode again
+	}
+	else if (ret_code == CAN_SND_MODERR)
+	{
+    		// buffer was set to transmission mode
+	}
+	else if (ret_code == CAN_SND_BUSY)
+	{
+    		// reception was not complete
+	}
+	else if (ret_code == CAN_SND_DLCERR)
+	{
+    		// dlc received was > 8
+	}
+'''
+
+
+=== Interrupts ===
+ The currently API supports user interrupt handlers on the following CANbus events:
+
+* Buffer based interrupts:
+	* Reception complete
+	* Transmission complete
+	* Transfer error (specific error vectors are hardware specific) 
+* Channel based interrupts:
+	* CAN timer overrun
+	* Bus off 
+
+The API supports attaching and detaching interrupt callbacks to any of the supported interrupt events at any time. It is recommended that the master interrupt flag is disabled before re-configuring interrupts. There is no interrupt pre-emption in this API.
+
+The recommended procedure for re-configuring interrupt handlers:
+
+* Master disabling CAN interrupts by invoking the 'disable_interrupts()' method of the Can class
+* Creating an interrupt handler function
+* Configuring can be attaching or detaching:
+	* Attach buffer based events onto a selected buffer by traversing the tree and calling the ''attach_interrupt()'' method of corresponding ''Can_buffer'' instance
+	* Attach channel based events onto the channel by calling the ''attach_interrupt()'' method of the root node 
+* Buffer based interrupts has individual switches on each buffer, invoke the ''enable_interrupt()'' and ''disable_interrupt()'' method of the selected buffer 
+
+The API does not automatically reset the interrupt flag, the user's interrupt handling callback must perform this.
+
+* Clear buffer based interrupt flags by calling the ''clear_interrupt_flags()'' method of the buffer instance that set the flag
+* Clear channel based interrupt flags by calling the ''clear_interrupt_flags()'' method of the root node 
+
+Auxiliary functions include:
+
+* Testing whether event has an existing callback by invoking the 'test_interrupt()' method of the object concerned with the event\
+* For buffer based events, user can determine which buffer triggered the interrupt by calling the 'get_interrupt_buffer()' method inside the interrupt handler. 
+
+== Example ==
+This example configures an interrupt driven message reception on buffer 0. 
+
+'''
+	Can_message rec_msg;               //declare a global Can_message struct for data sharing between interrupts and background tasks
+
+	/* create an interrupt callback */
+	void receive_callback(void)
+	{
+    		interrupt_buffer = my_can.get_interrupted_buffer();   // get pointer to buffer which triggered the interrupt (only call inside interrupt callback)
+    		interrupt_buffer->read(rec_msg);                      // copy the contents of the buffer into rec_msg
+    		interrupt_buffer->set_mode(CAN_OBJ_DISABLE);          // hardware specific optional, must perform on unidirectional buffers, disable buffer
+    		interrupt_buffer->clear_interrupt_flags();            // reset the interrupt flag
+    		interrupt_buffer->set_mode(CAN_OBJ_RX);                         // hardware specific optional, must perform on unidirectional buffers, set buffer to reception mode again
+	}
+
+	/* configure reception */
+	Can_filmask_value filter_value;
+	filter_value.id = 0x00000001;   // want ID == 0x01 bit must make at least 29bit long as using extended identifier
+	filter_value.ext = 1;           // want extended messages
+	filter_value.rtr = 0;           // want non-remote request messages
+
+	Can_filmask_value mask_value;
+	mask_value.id = 0xFFFFFFFF;     // care about all the digits 
+	mask_value.ext = 1;             // care about whether message is standard or extended identifier
+	mask_value.rtr = 0;             // don't care about whether the message is a remote request
+
+	my_can.get_banks()[0]->set_mode(CAN_BNK_MODE_FM);             // hardware specific optional, set filter bank to filter-mask mode, note that modes are hardware specific
+	my_can.get_banks()[0]->set_buffer(my_can.get_buffers()[0]);   // hardware specific optional, connect filter bank 0 to buffer 0
+	my_can.get_banks()[0]->get_filmasks()[0]->set(filter_value);  // assuming that filter is element 0 in the bank, this sets the filter value
+	my_can.get_banks()[0]->get_filmasks()[1]->set(mask_value);    // assuming that mask is element 1 in the bank, this sets the mask value
+	my_can.get_buffers()[0]->set_mode(CAN_OBJ_RX);                // hardware specific optional, set buffer 0 to reception mode
+
+	/* configure interrupts */
+	my_can.disable_interrupts();                                                       // master disable interrupt
+	my_can.get_buffers()[0]->attach_interrupts(CAN_RX_COMPLETE, receive_callback);     // attach receive_interrupt() callback onto CAN_RX_COMPLETE event on buffer 0
+	my_can.get_buffers()[0]->enable_interrupt()                                        // enable buffer based interrupt events on buffer 0
+	my_can.enable_interrupts();                                                        // master enable interrupts
+
+'''
+=== Important Usage Notes ===
+* When specifying transmission message ID or reception filter ID, the number passed in the ''id'' field of either ''Can_message'' or ''Can_filmask_value'' must have the correct length required for the identifier spec (e.g. 11bit for standard identifier and 29bit for extended). Passing in a shorter than required number has undefined behavior. 
+* Instances of ''Can'' are user declared and thus have limited scope. However, the corresponding ''Can_imp'' instance and hardware retains its last configured status throughout the lifetime of the program. 
+
+=== Implementation Status ===
+ ValleyForge is a work in progress; some features are not yet complete. Accordingly, the list below summarises the degree to which the HAL's CAN module supports individual targets.
+
+AVR
+
+    ATmega2560 - SPI MCP2515 - No support.
+    AT90CAN128 - Native - Implementation partially completed.
+    ATmega64M1 - Native - Implementation partially completed. 
+
+AVR32
+
+    AT32UC33C0512C - Native - No support. 
+
+ARM
+
+    LM3S1968 - SPI MCP2515 - No support. 
+
+Arduino
+
+    ArduPilotMega - SPI MCP2515 - No support. 
+
+Linux
+
+    Native - SocketCAN - Implementation partially completed 

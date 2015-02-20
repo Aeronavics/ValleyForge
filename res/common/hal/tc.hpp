@@ -1,5 +1,5 @@
 // Copyright (C) 2011  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,22 +16,23 @@
 /**
  *
  *  @addtogroup		hal Hardware Abstraction Library
- * 
+ *
  *  @file		tc.hpp
  *  A header file for the Timer/Counter Module of the HAL. Implements common timer functionality.
- * 
- *  @brief 
+ *
+ *  @brief
  *  A class for the Timer/Counter Module of the HAL. Implements common timer functionality.
- * 
- *  @author 		Zac Frank
+ *
+ *  @author   Kevin Gong
+ *  @author 	Zac Frank
  *  @author		Paul Bowler
  *
- *  @date		13-12-2011
- * 
+ *  @date		13-01-2014
+ *
  *  @section 		Licence
- * 
+ *
  * Copyright (C) 2011  Unison Networks Ltd
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -44,37 +45,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  *  @section Description
  *
- * This is the header file which matches tc.cpp  
+ * This is the header file which matches tc.cpp
  * Implements various functions relating to timers, input capture and output
  * compare functionality (and hence PWM).
  * Not all timer functionality is accessible through this module, as specifications
- * between different architectures and models varies significantly.
- * 
- * @section Example
- * @code
- * #include "tc.h"
- * 
- * uint8_t duty = 256/2; 		// 50 %
- * 
- * // Get the chosen timer
- * timer my_timer = timer::grab(TC_0);
- * 
- * // Set the timer to be run off the internal oscillator, with a prescalar of 1024
- * my_timer.set_rate(INT,TC_PRE_1024)
- * 
- * // Set up Output Compare unit on Channel A for Fast PWM
- * my_timer.enable_oc(TC_OC_A, OC_MODE_3);
- * 
- * // Set duty cycle
- * my_timer.set_ocR<uint8_t>(TC_OC_A,duty);
- * 
- * // Start the timer
- * my_timer.start();
- * 
- * @endcode
+ * between different architectures and models varies significantly. 8-bit PWM functionality
+ * does not work for unknown reasons.
+ *
  */
 
 // Only include this header file once.
@@ -85,8 +65,6 @@
 
 // Include the required IO header file.
 #include <<<TC_INSERTS_IO_FILE_NAME_HERE>>>
-
-// TODO - Remove me.  Did we actually need this?
 
 // Include the standard C++ definitions.
 //#include <stddef.h>
@@ -130,7 +108,6 @@ struct Tc_value
 		register_value.type = TC_8BIT;
 		register_value.value.as_8bit = v;
 
-		// All done.
 		return register_value;
 	}
 
@@ -141,7 +118,6 @@ struct Tc_value
 		register_value.type = TC_16BIT;
 		register_value.value.as_16bit = v;
 
-		// All done.
 		return register_value;
 	}
 };
@@ -149,15 +125,14 @@ struct Tc_value
 struct Tc_pins
 {
 	IO_pin_address address;
-	// we need a semaphore here
-	// POSIX?
 };
+
 // DEFINE PUBLIC CLASSES.
 
 /**
  * @class
  * This class implements various functions relating to timer/counters, including input capture and output compare functionality (and hence PWM).
- * 
+ *
  * NOTE - Because timer/counter peripheral architectures differ significantly between targets, the timer/counter abstraction provided by the HAL is somewhat simplified,
  *        and may not expose all the functionality available in a specific peripheral.
  *
@@ -172,9 +147,10 @@ class Tc
 
 		/**
 		 * Create Tc instance abstracting the specified timer/counter hardware peripheral.
+     *
 		 */
 		Tc(Tc_number timer);
-		
+
 		/**
 		 * Called when Tc instance goes out of scope
 		 */
@@ -182,7 +158,7 @@ class Tc
 
 		/**
 		 * Initializes peripheral for first use.
-		 * 
+		 *
 		 * @param    Nothing.
 		 * @return   TC_CMD_ACK if the peripheral was successfully initialised, or TC_CMD_NAK if the operation failed.
 		 */
@@ -190,28 +166,28 @@ class Tc
 
 		/**
 		 * Master interrupt enable; enable interrupts for all sources in this timer/counter peripheral.
-		 * 
-	     * @param	 Nothing.
+		 *
+	   * @param	 Nothing.
 		 * @return    Nothing.
 		 */
 		void enable_interrupts(void);
-	    
+
 		/**
 		 * Master interrupt disable; disable interrupts for all sources in this timer/counter peripheral.
-		 * 
+		 *
 		 * @param	 Nothing.
 		 * @return    Nothing.
 		 */
 		void disable_interrupts(void);
-		
+
 		/**
 		 * Sets the timer rate by selecting the clk src and prescaler.
-		 * 
+		 *
 		 * @param  Tc_rate	Settings for clock source and prescaler.
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status set_rate(Tc_rate rate);
-		
+
 		/**
 		 * Loads the timer with a value.
 		 *
@@ -219,15 +195,15 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status load_timer_value(Tc_value value);
-		
+
 		/**
 		 * Gets the value of the timer register.
 		 *
 		 * @param Nothing.
-		 * @return The timer value.
+		 * @return The timer value in either 16-bit or 8-bit.
 		 */
 		Tc_value get_timer_value(void);
-		
+
 		/**
 		 * Starts the timer.
 		 *
@@ -235,7 +211,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status start(void);
-		
+
 		/**
 		 * Stops the timer.
 		 *
@@ -251,7 +227,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_tov_interrupt(IsrHandler callback);
-		
+
 		/**
 		 * Disables the overflow interrupt on this timer
 		 *
@@ -259,7 +235,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status disable_tov_interrupt(void);
-		
+
 		/**
 		 * Enables output compare mode for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode operation.
 		 *
@@ -270,7 +246,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_oc(Tc_oc_mode mode);
-		
+
 		/**
 		 * Enables output channel attached to each timer/counter for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode operation for this channel.
 		 *
@@ -288,7 +264,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback);
-		
+
 		/**
 		 * Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the OC mode operation itself.
 		 *
@@ -318,7 +294,7 @@ class Tc
 		 * @return The OC register value.
 		 */
 		Tc_value get_ocR(Tc_oc_channel channel);
-		
+
 		/**
 		 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
 		 * operation for the specified channel.
@@ -337,7 +313,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_ic_interrupt(Tc_ic_channel channel, IsrHandler callback);
-		
+
 		/**
 		 * Disables the input compare interrupt on this timer
 		 *
@@ -345,7 +321,7 @@ class Tc
 		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status disable_ic_interrupt(Tc_ic_channel channel);
-		
+
 		/**
 		 * Sets the channel value for input capture.
 		 *
@@ -378,7 +354,7 @@ class Tc
 
 		// Pointer to the target specific implementation of the timer/counter.
 		Tc_imp* imp;
-		
+
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
