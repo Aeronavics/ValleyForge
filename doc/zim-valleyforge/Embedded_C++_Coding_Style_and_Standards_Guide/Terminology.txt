@@ -32,24 +32,22 @@ Creation-Date: 2015-02-17T17:32:03+13:00
 
 	13. A **declaration** of a variable or function announces the properties of the variable or function; it consists of a type name and then the variable or function name. For functions, it tells the compiler the name, return type and parameters. For variables, it tells the compiler the name and type. 
 
-{{{code: lang="cpp" linenumbers="true"
+'''
 int32 fahr();
 int32 foo();
-}}}
-
+'''
 
 	14. A **default constructor** is a constructor which needs no arguments.
 
 	15. A **definition** of a function tells the compiler how the function works. It shows what instructions are executed for the function.
 
-{{{code: lang="cpp" linenumbers="true"
+'''
 int32 foo()
 {
 	//Statements
-}	
-}}}
+}
 
-
+'''
 	16. An **enumeration type** is an explicitly declared set of symbolic integer constants. In C++ it is declared as an enum.
 
 	17. An **exception** is a run-time program anomaly that is detected in a function or member function. Exception handling provides for the uniform management of exceptions.
