@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_varname
+### Name:           	checkfuncs_variablename
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_varname
+### Name:		compliance_check_file_variablename
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 ###########################################################################################
 
-compliance_check_file_varname()
+compliance_check_file_variablename()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -308,7 +308,7 @@ compliance_check_file_varname()
 				if ! check_line "$LINE" $LINE_NUM; then
 
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_varname" $FILE $LINE_NUM "$ERROR"
+					compliance_fail_line "compliance_check_file_variablename" $FILE $LINE_NUM "$ERROR"
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -338,7 +338,7 @@ compliance_check_file_varname()
 	if [ ! ${CHECKS_OK} ]; then
 
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_varname" $FILE "This file contains non-compliant variable name(s)."
+		compliance_fail_file "compliance_check_file_variablename" $FILE "This file contains non-compliant variable name(s)."
 	fi
 
 	# All done.

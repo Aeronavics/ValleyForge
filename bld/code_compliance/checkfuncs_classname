@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_classnamecheck
+### Name:           	checkfuncs_classname
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION ####################################################
 ###
-### Name:		compliance_check_file_classnamecheck
+### Name:		compliance_check_file_classname
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 ######################################################################################################
 
-compliance_check_file_classnamecheck()
+compliance_check_file_classname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -186,7 +186,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a class declaration.
 					if [ ${INSIDE_CLASS} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -194,7 +194,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a class opening.
 					if [ ${INSIDE_CLASS_OPENING} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -202,7 +202,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a struct declaration.
 					if [ ${INSIDE_STRUCT} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -210,7 +210,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a struct opening.
 					if [ ${INSIDE_STRUCT_OPENING} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi		
@@ -239,7 +239,7 @@ compliance_check_file_classnamecheck()
 					if [ $INSIDE_CLASS ]; then
 						# Check that there was at least one access modifier.
 						if [ -z "${ARRAY_ACCESS_MODIFIERS[*]}" ]; then
-							compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class should have at least one access modifier (public, protected or private)."
+							compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class should have at least one access modifier (public, protected or private)."
 							# At least one thing is wrong with this file.
 							CHECKS_OK=
 						fi
@@ -254,7 +254,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a class declaration.
 					if [ ${INSIDE_CLASS} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -262,7 +262,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a class opening.
 					if [ ${INSIDE_CLASS_OPENING} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -270,7 +270,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a struct declaration.
 					if [ ${INSIDE_STRUCT} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -278,7 +278,7 @@ compliance_check_file_classnamecheck()
 					# Check we're not already inside a struct opening.
 					if [ ${INSIDE_STRUCT_OPENING} ]; then
 						# That's bad.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class/struct declarations shouldn't be nested.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=
 					fi
@@ -317,19 +317,19 @@ compliance_check_file_classnamecheck()
 						# Append the access modifier to our array.
 						ARRAY_ACCESS_MODIFIERS+=("${LINE%:*}")
 
-						# Make a reverse sorted copy of the modifiers.  By conincidence, this is the order they SHOULD appear in.
+						# Make a reverse sorted copy of the modifiers.  By coincidence, this is the order they SHOULD appear in.
 						SORTED_ARRAY=
 						readarray -t SORTED_ARRAY < <(for A in "${ARRAY_ACCESS_MODIFIERS[@]}"; do echo "$A"; done | sort -r)
 
 						# Check if the original array matches the sorted version.
 						if [ "${ARRAY_ACCESS_MODIFIERS[*]}" != "${SORTED_ARRAY[*]}" ]; then
-							compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class access modifiers should be declared in order: public, protected, then private."
+							compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class access modifiers should be declared in order: public, protected, then private."
 							# At least one thing is wrong with this file.
 							CHECKS_OK=
 						fi
 					else
 						# We've found an access modifier outside a class, which shouldn't happen.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Class access modifiers shouldn't be outside class declarations.  This will probably fail to compile."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Class access modifiers shouldn't be outside class declarations.  This will probably fail to compile."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=						
 					fi
@@ -337,7 +337,7 @@ compliance_check_file_classnamecheck()
 					# Check if we're inside a struct.
 					if [ $INSIDE_STRUCT ]; then
 						# Structs shouldn't have access modifiers.
-						compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Structs should not have access modifiers."
+						compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Structs should not have access modifiers."
 						# At least one thing is wrong with this file.
 						CHECKS_OK=						
 					fi						
@@ -366,8 +366,7 @@ compliance_check_file_classnamecheck()
 	# Variable used to denote whether the line is a comment or not. Initially we assume that the line is not a comment.
 	local CHECKS_COMMENT=
 	
-	# Arrays used as flag to check whether an error has occurred in classes/enum in a specific line. 
-	unset array_error_flag_class
+	# Array used as flag to check whether an error has occurred in enum in a specific line. 
 	unset array_error_flag_enum
 
 	# Regex Pattern to match multi line comment start.
@@ -440,16 +439,7 @@ compliance_check_file_classnamecheck()
 				if ! check_line "$LINE" $LINE_NUM; then
 
 					# Report the line has failed.	
-					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class/template name: $ERROR"
-					# At least one thing is wrong in this file.
-					CHECKS_OK=
-				fi
-
-				# Check if the line has any errors with the declaration order in classes.
-				if [ ${array_error_flag_class[$LINE_NUM]} ]; then
-
-					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant class declaration order: The declaration order doesn't follow correct order."
+					compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Non-compliant class/template name: $ERROR"
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -458,7 +448,7 @@ compliance_check_file_classnamecheck()
 				if [ ${array_error_flag_enum[$LINE_NUM]} ]; then
 
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_classnamecheck" $FILE $LINE_NUM "Non-compliant name: '${array_error_flag_enum[$LINE_NUM]}' starts with a lower case letter."
+					compliance_fail_line "compliance_check_file_classname" $FILE $LINE_NUM "Non-compliant enum name:'${array_error_flag_enum[$LINE_NUM]}' starts with a lower case letter."
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -488,7 +478,7 @@ compliance_check_file_classnamecheck()
 	if [ ! ${CHECKS_OK} ]; then
 
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_classnamecheck" $FILE "This file contains non-compliant class/template/enum name(s)."
+		compliance_fail_file "compliance_check_file_classname" $FILE "This file contains non-compliant class/template/enum name(s)."
 	fi
 
 	# All done.
