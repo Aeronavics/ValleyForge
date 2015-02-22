@@ -1,0 +1,142 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-17T17:32:43+13:00
+
+====== Flow control ======
+
+70. **There shall be no unreachable code.**
+
+If there exists any unreachable code, it should be explained using a ''// We should not reach here'' comment.
+
+
+71. **Labels should not be used, except in switch statements.**
+	
+
+72. **The **//goto//** statement shall not be used.**
+
+Frequent use of //goto //statement tends to lead to code that is both difficult to read and maintain.
+
+
+73. **All if, else if constructs will contain either a final else clause or a comment indicating why a final else clause is not necessary.**
+__Example A:__ Final //else// clause not needed since there is no //else if//.
+{{{code: lang="cpp" linenumbers="true"
+if (a > b)
+{
+	foo();
+}
+}}}
+
+
+__Example B:__ Final //else// clause needed in case none of the prior conditions are satisfied.
+{{{code: lang="cpp" linenumbers="true"
+if (a < b)
+{
+	...
+}
+else if (b < c)
+{
+	...
+}
+else if (c < d)
+{
+	...
+}
+else	// Final else clause needed.
+{
+	handle_error();
+}
+
+}}}
+
+
+__Example C:__ Final else clause not needed, since all possible conditions are handled. Therefore, a comment is included to clarify this condition.
+{{{code: lang="cpp" linenumbers="true"
+if (status == error1)
+{
+	handle_error1();
+}
+else if (status == error2)
+{
+	handle_error2();
+}
+else if (status == error3)
+{
+	handle_error3();
+}		// No final else needed; all possible errors are accounted for.
+
+}}}
+
+
+Providing a final //else// clause (or comment indicating why a final //else// clause is unnecessary) ensures all cases are handled in an //else if// series as illustrated by the above examples. Also, it is to be noted that this rule applies only when an //if// statement is followed by one or more //else if//'s.
+
+
+74. **The nominal case should be put in the if-part and the exception in the else-part of an if statement.**
+{{{code: lang="cpp" linenumbers="true"
+bool is_okay = read_file(filename);
+if (is_okay)
+{
+	...
+}
+else
+{
+	...
+}
+}}}
+
+
+This makes sure that the exceptions don't obscure the normal path of execution. This is important for both the readability and performance.  
+
+
+75. **Every non-empty 'case' clause in a 'switch' statement shall be terminated with a 'break', 'return'  or a 'throw' statement.**
+{{{code: lang="cpp" linenumbers="true"
+switch(value)
+{
+	case red:									// empty since primary_colour() should be called.
+	case green:									// empty since primary_colour() should be called.
+	case blue: 		primary_colour(value);
+					break;						// Must break to end primary colour handling.
+	case cyan:
+	case magenta:
+	case yellow:	secondary_colour(value);	
+					break;						// Must break to end secondary color handling.
+	case black:		black(value);
+					break;
+	case white:		white(value);
+					break;
+}
+}}}
+
+
+Terminating a non-empty case clause in a switch statement with a break statement eliminates potentially confusing behavior by prohibiting control from falling through to subsequent statements. In the example below, primary and secondary colors are handled similarly so break statements are unneeded within each group. However, every non empty case clause must be terminated with a break statement for this segment of code to work as intended. 
+Note: Omitting the final default clause allows the compiler to provide a warning if all enumeration values are not tested in the switch statement.
+
+
+76. **All **//switch//** statements should contain a final default clause.**
+
+
+77. **Floating point variables should not be used as loop counters.**
+
+Floating point variables subject the loop counter t rounding and truncation errors.
+
+
+78. **The intialization expression in a for loop will perform no actions other than to initialize the value of a single for loop parameter.**
+{{{code: lang="cpp" linenumbers="true"
+for (Iter_type p = c.begin(); p != c.end(); ++p)		// Good
+{
+	...
+}
+}}}
+
+ 
+Note that the initialization expression may invoke an accessor that returns an intial element in a sequence.
+
+
+79. **The increment expression in a for  loop will perform no action other than to change a single loop paremeter to the next value for the loop.**
+
+
+80. **Numeric values being used within a for loop for iteration counting should not be modified in the body of the loop.**
+	
+
+81. **The choice of loop construct ( for , while or do while ) should depend on the specific use of the loop.**
+
+Each loop construct has a specific usage. A for loop is used only when the loop variable is increased by a constant amount for each iteration and when the termination of the loop is determined by a constant expression. In other cases, while or do while should be used. When the terminating condition can be evaluated at the beginning of the loop, while should be used; do while is used when the terminating condition is best evaluated at the end of the loop.

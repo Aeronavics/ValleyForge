@@ -48,18 +48,24 @@ class bootloader_module_can : public Bootloader_module
 		// Struct for CAN message information.
 		struct Message_info
 		{
-			bool confirmed_send;
-			bool message_received;
 			uint16_t message_type;
 			uint16_t dlc;
-			uint8_t message[8]; // CAN messages can only be 8 bytes long.
+			uint8_t message[8]; // CAN message payloads can only be 8 bytes long.
 		};
 
 		// Fields.
 
 		volatile Message_info reception_message; // This will be updated by CANIT ISR.
+
+		volatile bool message_received; // This will be updated by CANIT ISR.
 		
 		Message_info transmission_message;
+
+		// Flag indicating we are in the process of sending the current flash page as a series of messages.
+		bool transmission_queued;
+
+		// Flag indicating that we're waiting for a transmitted message to be confirmed by the uploader.
+		bool transmission_unconfirmed;
 
 		// Methods.
 	
@@ -126,13 +132,24 @@ class bootloader_module_can : public Bootloader_module
 		// Class methods.
 
 		/**
+		 *	Sends the current TX message over CAN.
+		 *
+		 *	NOTE - Message details are defined in the transmit_message field.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void transmit_CAN_message();
+
+		/**
 		 *	Procedure when a REQUEST_RESET message is received. Either starts the application or resets the Bootloader.
 		 *
 		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void request_reset_procedure();
+		void handle_request_reset();
 
 		/**
 		 *	Procedure when a GET_INFO message is received. Sends the host information about the microcontroller.
@@ -143,52 +160,45 @@ class bootloader_module_can : public Bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void get_info_procedure(void);
+		void handle_get_info(void);
 
 		/**
 		 *	Procedure when a WRITE_MEMORY message is received. Saves the Flash page number and the length of code that is to be written to.
 		 *
-		 *	TAKES:		buffer			The firmware_page buffer for flash writing details to be stored in.
+		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_memory_procedure(Firmware_page& current_firmware_page);
+		void handle_write_memory(void);
 
 		/**
 		 *	Procedure when a WRITE_DATA message is received. Saves message data into a buffer which can then be written to the FLASH.
 		 *
-		 *	TAKES:		buffer			The firmware_page buffer to be written to.
+		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void write_data_procedure(Firmware_page& current_firmware_page);
+		void handle_write_data(void);
 	
 		/**
 		 *	Procedure when a READ_MEMORY message is received. Saves the Flash page number and the length of code to read.
 		 *
-		 *	TAKES:		buffer			The firmware_page buffer for flash reading details to be stored in.
+		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void read_memory_procedure(Firmware_page& current_firmware_page);
+		void handle_read_memory(void);
 
 		/**
-		 *	Sends the copy of the FLASH page in CAN messages.
+		 *	Handles incoming CAN messages, performing the appropriate behaviour depending on the type of message.
 		 *
-		 *	TAKES:		buffer			The firmware_page buffer that the flash page has been copied to.
+		 *	NOTE - Message details are defined in the reception_message field.
 		 *
-		 *	RETURNS:	Nothing.
-		 */
-		void send_flash_page(Firmware_page& current_firmware_page);
-
-		/**
-		 *	Executes the corresnponding procedure for a uploader command message received.
-		 *
-		 *	TAKES:		buffer			The firmware_page buffer that is used for reading and writing the flash memory.
+		 *	TAKES:		Nothing.
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void filter_message(Firmware_page& current_firmware_page);
+		void filter_message(void);
 
 		/**
 		 *	Sends the uploader a message informing it that the microcontroller is awaiting firmware messages.
@@ -197,7 +207,35 @@ class bootloader_module_can : public Bootloader_module
 		 *
 		 *	RETURNS:	Nothing.
 		 */
-		void alert_uploader(void);
+		void send_alert_host(void);
+
+		/**
+		 * Sends the uploader a message confirming the receipt of a command message.
+		 *
+		 * TAKES:	id		The CAN message ID of the command message which was received.
+		 *			success	Flag indicating whether the received command was successful or not.
+		 *
+		 * RETURNS:	Nothing.
+		 */
+		void send_confirm_rxup(uint16_t id, bool success);
+
+		/**
+		 * Sends the uploader a message containing information about this device information.
+		 *
+		 * TAKES:	Nothing.
+		 *
+		 * RETURNS: Nothing.
+		 */
+		 void send_device_info(void);
+
+		/**
+		 *	Sends the uploader a message containing some bytes from the current firmware page.
+		 *
+		 *	TAKES:		Nothing.
+		 *
+		 *	RETURNS:	Nothing.
+		 */
+		void send_read_data(void);		 
 };
 
 // DECLARE PUBLIC GLOBAL VARIABLES.

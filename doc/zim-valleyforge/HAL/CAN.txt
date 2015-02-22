@@ -1,0 +1,93 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-02-21T11:41:34+13:00
+
+====== CAN ======
+Created Saturday 21 February 2015
+
+=== Goal ===
+
+[ ] Unify the programming interface for accessing the CAN peripheral/s functionality in the supported targets
+[ ] To create an object orientated interface that is stateless 
+[ ] Make minimal compromises to the CAN peripheral/s' functionality and performance in the process of unification 
+[ ] To be self-contained and not require the user to manage dependencies 
+[ ] Allowing user source code to be portable to all supported targets with minimal change in source code 
+
+=== General Abstraction Model ===
+
+ CAN peripherals vary significantly across different targets, they can have a different number of channels and offer different levels of functionality and performance. The CAN module for the HAL provides a single unified interface for these different peripheral configurations.
+
+A CAN peripheral of various targets are composed of the following hardware elements:
+
+    FIFO buffers/transmit mailbox
+    Filter banks (encompasses group configurations of filters and masks)
+        Filters
+        Masks 
+
+A tree data structure is used to abstract the target's configuration of these hardware elements. Each hardware element type is abstracted by two classes, an interfacer and an implementation (or 'imp') class. Imp classes have the same name as its interfacer but with an '_imp' suffix.
+
+Interfacers:
+
+    Publicly declared
+    Provide public methods
+    Store abstract information about the element it abstracts
+    Only has a pointer to it's imp instance 
+
+Implementations:
+
+    Privately declared
+    Methods perform hardware level processes
+    Stores hardware specific information about the hardware element it abstracts
+    Has pointers to child elements in the tree (all child elements are interface classes) 
+
+Here is how each hardware element is represented in software: 
+
+'''
+Hadrware Element:		Imp name:		Interfacer name:
+FIFO buffer/Transmit mailbox	Can_buffer_imp		Can_buffer
+Filter bank			Can_filter_bank_imp	Can_filter_bank
+Filter				Can_filmask_imp		Can_fillmask
+Mask				Can_filmask_imp		Can_fillmask
+'''
+
+A sample tree is shown below: 
+
+{{../img/CanAbstraction.png}}
+
+ Note: ''Can_filter_bank'' and it's imp is incorrectly named ''Can_bank'' in the above diagram
+
+The tree of every target is different, it may also be configured at runtime. Notable differences and similarities between targets are:
+
+    ''Can_imp'' only has ''Can_buffer'' and ''Can_filter_bank'' instances as children, the number of these instances will vary
+    ''Can_filter_bank'' only has ''Can_filmask'' children
+    Given the premise of the above, ''Can_filmask'' must always be contained within a ''Can_filter_bank_imp''
+    ''Can_buffer_imp'' is always a leaf node
+    ''Can_filmask_imp'' is always a leaf node 
+
+''Can_imp'' is considered the root of the tree. One is statically declared for each channel on hardware. It also abstracts functionality affecting an entire channel such as baud rate settings. Every object in the tree is a field inside this class. It has the methods to:
+
+    Access to buffer objects
+    Access to filter bank objects
+    Configure channel wide settings such as baud rate and channel-based interrupts 
+
+''Can'' is the interfacer to the ''Can_imp'' class. User declares an instance of the ''Can'' class and binds it with a statically instantiated ''Can_imp'' instance to access it's methods.
+
+''Can_buffer'' class gives methods to:
+
+    Send messages (if configured as transmit mailbox)
+    Read incoming messages (if configured as FIFO buffer)
+    Convert FIFO buffers to transmit mailboxes and vice versa
+    Configure buffer-based interrupts 
+
+''Can_filter_bank'' class gives methods to:
+
+    Configure how many filters and masks are in the bank
+    Configure which buffer banks are connected to (this is what the pointer to buffer field of the Can_bank_imp class abstracts)
+    Access filter and mask objects 
+
+''Can_filmask'' class abstracts both filter and mask elements. The element they represent depends what mode they are set to. Their modes can only be set by their parent bank instance if the target supports this. It gives methods to:
+
+    Change filter/mask value
+    Read the filter/mask value 
+
+Targets usually do not have any difference in the functionality of masks and filters. 
