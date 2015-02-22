@@ -100,54 +100,14 @@ const uint8_t NODE_ID = 120;
 bool communication_started;
 bool communication_recent;
 bool ready_to_send_page;
-bool message_confirmation_success; 
 bool write_details_stored;
 
 // Flag indicating an error has occurred.  Currently, once an error occurs, there is no way to clear it other than a reset.
-bool error;
+volatile bool error;
+
+// NOTE - Invalid commands received via CAN don't count as errors, handling them is 'normal' behaviour.  An error is like CAN transmission fails.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
-
-/**
- *	Initializes the CAN peripheral for the selected CAN communication.
- *
- *	TAKES:		Nothing.
- *
- *	RETURNS:	Nothing.
- */
-void init_can(void);
-
-/**
- *	Sends a message on the CAN network.
- *
- *	NOTE - Message details are defined in the tranmit_message object.
- *
- *	TAKES:		transmission_message		object containing the message identifier, DLC and data to send.
- *
- *	RETURNS:	Nothing.
- */
-void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message);
-
-/**
- *	Resets the CAN peripheral to default settings.
- *
- *	TAKES:		Nothing.
- *
- *	RETURNS:	Nothing.
- */
-void reset_can(void);
-
-/**
- *	Sends a confirmation message to the uploader.
- * 
- *	NOTE - The message contains one byte informing the uploader whether the message received 
- *			was valid(1) or invalid(0).
- *
- *	TAKES:		confirmation_successful		the validity of the previously received message
- *
- *	RETURNS:	Nothing.
- */
-void confirm_reception(bool confirmation_successful);
 
 // IMPLEMENT PUBLIC FUNCTIONS.
 
@@ -158,145 +118,10 @@ bootloader_module_can::~bootloader_module_can()
 }
 
 void bootloader_module_can::init(void)
-{
+{	
+	// Initialise the module.
+
 	// Initialize the CAN controller.
-	init_can();
-
-	// All done.
-	return;
-}
-
-void bootloader_module_can::exit(void)
-{
-	// Reset the CAN controller so that the application code finds it untouched.
-	reset_can();
-
-	// All done.
-	return;
-}
-
-void bootloader_module_can::event_idle()
-{
-	// Send the buffer once the flash page has been copied to it.
-	if (!buffer.ready_to_read && ready_to_send_page)
-	{
-		ready_to_send_page = false;
-		send_flash_page(buffer);
-	}
-
-	// Check if we've received a new message.
-	if (reception_message.message_received)
-	{
-		// Handle the incoming message.
-		filter_message(buffer);
-	}
-
-	// All done.
-	return;
-}
-
-void bootloader_module_can::event_periodic()
-{
-	// Number of ticks since an alert uploader message was last issued.
-	static uint16_t alert_ticks = 0;
-
-	// Check if we've started communications yet.
-	if (!communication_started)
-	{
-		// We haven't started communication yet, so we post a message every so often to alert the uploader that we're ready.
-
-		// Increment the number of ticks since we last posted an alert.
-		alert_ticks++;
-
-		// Check if we're due to post another message.
-		if (alert_ticks >= ALERT_UPLOADER_TIMEOUT)
-		{
-			// Send the ALERT_UPLOADER message.
-			alert_uploader();
-
-			// Reset the number of alert ticks since the last message.
-			alert_ticks = 0;
-		}
-	}
-	else
-	{
-		// Reset the alert ticks.
-		alert_ticks = 0;
-	}
-
-	// Number of ticks since a message was last received.
-	static uint16_t comms_ticks = 0;
-
-	if (communication_started && !communication_recent)
-	{
-		// Increment the number of ticks since we've last heard from the uploader.
-		comms_ticks++;
-
-		// Check if it seems like the comms have died.
-		if (comms_ticks >= COMMS_TIMEOUT)
-		{
-			// Reset the comms timeout.
-			comms_ticks = 0;
-		}
-	}
-	else
-	{
-		// Clear the comms timeout.
-		comms_ticks = 0;
-
-		// We're back to square one again.
-		communication_started = false;
-
-		// Change the status of the bootloader.
-		if (!error)
-		{
-			set_bootloader_state(BOOT_IDLE);
-		}
-	}
-
-	// Communications have no longer been received 'recently'.
-	communication_recent = false;
-
-	// All done.
-	return;
-}
-
-void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information)
-{
-	bootloader_module_information->node_id = NODE_ID;
-	bootloader_module_information->baud_rate = CAN_BAUD_RATE;
-
-	// All done.
-	return;
-}
-
-// IMPLEMENT PRIVATE STATIC FUNCTIONS.
-
-void confirm_reception(bool confirmation_successful)
-{
-	module.transmission_message.dlc = 1;
-
-	// Reply to the uploader whether the received message was successful or not.
-	if (confirmation_successful)
-	{
-		module.transmission_message.message[0] = 1;
-	}
-	else
-	{
-		module.transmission_message.message[0] = 0;
-	}
-
-	// Confirmation message will have the same ID as the message it is confirming.
-	module.transmission_message.message_type = module.reception_message.message_type;
-
-	transmit_CAN_message(module.transmission_message);
-
-	// All done.
-	return;
-}
-
-void init_can(void)
-{
 	// Tx->PB9, Rx->PB8
 	RCC->APB1ENR		|= RCC_APB1ENR_CAN1EN;  // Enable the clock for CAN1.
 	RCC->AHB1ENR		|= RCC_AHB1ENR_GPIOBEN; // Enable the clock for PORTB.
@@ -354,7 +179,145 @@ void init_can(void)
 	return;
 }
 
-void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
+void bootloader_module_can::exit(void)
+{
+	// Reset the CAN controller to it's state after a hardware reset.
+	RCC->APB1RSTR |= (RCC_APB1RSTR_CAN1RST | RCC_APB1RSTR_CAN2RST);
+
+	// All done.
+	return;
+}
+
+void bootloader_module_can::event_idle()
+{
+	// Check if we've recieved a new message.
+	if (message_received)
+	{		
+		// Handle the incoming message.
+		filter_message();
+	}	
+
+	// Check if we've just finished reading a flash page that we want to send.
+	if (!buffer.ready_to_read && ready_to_send_page)
+	{
+		// We're no longer ready to send the page, we're actually queuing it up for transmission.
+		ready_to_send_page = false;
+		transmission_queued = true;
+	}
+
+	// Check if we've already sent a message, and we're waiting for the uploader to confirm it.
+	if (transmission_unconfirmed)
+	{
+		// We don't do anything, we just wait for confirmation to arrive.
+	}
+	else
+	{
+		// Otherwise, if we're still in the middle of sending a page, we send another chunk.
+		if (transmission_queued)
+		{
+			// Send another chunk of bytes.
+			send_read_data();	
+
+			// Increment the current_byte for next message.
+			buffer.current_byte += transmission_message.dlc;
+
+			// Now, we need to wait for confirmation before we do this again.
+			transmission_unconfirmed = true;
+
+			// If that was the last chunk, then we haven't anything more to do.
+			if (buffer.current_byte >= buffer.code_length)
+			{
+				transmission_queued = false;
+			}			
+		}
+	}
+
+	// All done.
+	return;
+}
+
+void bootloader_module_can::event_periodic()
+{
+	// Number of ticks since an alert uploader message was last issued.
+	static uint16_t alert_ticks = 0;
+
+	// Check if we've started communications yet.
+	if (!communication_started)
+	{
+		// We haven't started communication yet, so we post a message every so often to alert the uploader that we're ready.
+
+		// Increment the number of ticks since we last posted an alert.
+		alert_ticks++;
+
+		// Check if we're due to post another message.
+		if (alert_ticks >= ALERT_UPLOADER_TIMEOUT)
+		{
+			// Send the ALERT_UPLOADER message.
+			send_alert_host();
+
+			// Reset the number of alert ticks since the last message.
+			alert_ticks = 0;
+		}
+	}
+	else
+	{
+		// Reset the alert ticks.
+		alert_ticks = 0;
+	}
+
+	// Number of ticks since a message was last received.
+	static uint16_t comms_ticks = 0;
+
+	if (communication_started && !communication_recent)
+	{
+		// Increment the number of ticks since we've last heard from the uploader.
+		comms_ticks++;
+
+		// Check if it seems like the comms have died.
+		if (comms_ticks >= COMMS_TIMEOUT)
+		{
+			// Reset the comms timeout.
+			comms_ticks = 0;
+		}
+	}
+	else
+	{
+		// Clear the comms timeout.
+		comms_ticks = 0;
+
+		// We're back to square one again.
+		communication_started = false;
+		transmission_queued = false;
+		transmission_unconfirmed = false;
+
+		// Change the status of the bootloader.
+		if (!error)
+		{
+			set_bootloader_state(BOOT_IDLE);
+		}
+	}
+
+	// Communications have no longer been received 'recently'.
+	communication_recent = false;
+
+	// All done.
+	return;
+}
+
+void get_bootloader_module_information(Shared_bootloader_module_constants* bootloader_module_information)
+{
+	bootloader_module_information->node_id = NODE_ID;
+	bootloader_module_information->baud_rate = CAN_BAUD_RATE;
+
+	// All done.
+	return;
+}
+
+// IMPLEMENT PRIVATE STATIC FUNCTIONS.
+
+// IMPLEMENT PRIVATE CLASS FUNCTIONS.
+
+void bootloader_module_can::transmit_CAN_message()
 {
 	while ((CAN1->TSR & CAN_TSR_TME0) != CAN_TSR_TME0)
 	{
@@ -364,20 +327,20 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
 
 	// Set the Message ID.
 	// Use a Standard (11-bit) Message ID.
-	CAN1->sTxMailBox[0].TIR |= (transmit_message.message_type << 21);
+	CAN1->sTxMailBox[0].TIR |= (transmission_message.message_type << 21);
 	// Set the message type as Data (as opposed to Remote).
 	CAN1->sTxMailBox[0].TIR &= ~(0x02);
 	// Set the DLC.
-	CAN1->sTxMailBox[0].TDTR |= transmit_message.dlc;
+	CAN1->sTxMailBox[0].TDTR |= transmission_message.dlc;
 	// Set the data values.
-	CAN1->sTxMailBox[0].TDLR = (((uint32_t)transmit_message.message[3] << 24) | 
-									((uint32_t)transmit_message.message[2] << 16) |
-									((uint32_t)transmit_message.message[1] << 8) | 
-									((uint32_t)transmit_message.message[0]));
-    CAN1->sTxMailBox[0].TDHR = (((uint32_t)transmit_message.message[7] << 24) | 
-									((uint32_t)transmit_message.message[6] << 16) |
-									((uint32_t)transmit_message.message[5] << 8) |
-									((uint32_t)transmit_message.message[4]));
+	CAN1->sTxMailBox[0].TDLR = (((uint32_t)transmission_message.message[3] << 24) | 
+									((uint32_t)transmission_message.message[2] << 16) |
+									((uint32_t)transmission_message.message[1] << 8) | 
+									((uint32_t)transmission_message.message[0]));
+    CAN1->sTxMailBox[0].TDHR = (((uint32_t)transmission_message.message[7] << 24) | 
+									((uint32_t)transmission_message.message[6] << 16) |
+									((uint32_t)transmission_message.message[5] << 8) |
+									((uint32_t)transmission_message.message[4]));
 
     // Transmit data.
     CAN1->sTxMailBox[0].TIR |= CAN_TI0R_TXRQ;
@@ -402,22 +365,17 @@ void transmit_CAN_message(bootloader_module_can::Message_info& transmit_message)
     return;
 }
 
-void reset_can(void)
+void bootloader_module_can::handle_request_reset()
 {
-	// Reset the CAN controller to it's state after a hardware reset.
-	RCC->APB1RSTR |= (RCC_APB1RSTR_CAN1RST | RCC_APB1RSTR_CAN2RST);
+	// If we were in the middle of transmitting page data, we abandon that idea.
+	transmission_unconfirmed = false;
+	transmission_queued = false;
 
-	// All done.
-	return;
-}
-
-// IMPLEMENT PRIVATE CLASS FUNCTIONS.
-
-void bootloader_module_can::request_reset_procedure()
-{
-	confirm_reception(message_confirmation_success);  // Always successful.
-
-	if (reception_message.message[0] == 0)
+	// Confirm the reset command, since the reset command is always successful.
+	send_confirm_rxup(CANID_REQUEST_RESET, true);
+	
+	// Reboot to either the application or the bootloader, depending on what was requested.
+	if (!reception_message.message[1])
 	{
 		reboot_to_bootloader();
 
@@ -434,185 +392,184 @@ void bootloader_module_can::request_reset_procedure()
 	return;
 }
 
-void bootloader_module_can::get_info_procedure(void)
-{
-	transmission_message.dlc = 6;
-	transmission_message.message_type = CANID_GET_INFO;
+void bootloader_module_can::handle_get_info(void)
+{	
+	// TODO - At the moment, the bootloader doesn't bother sending a confirmation, since it just sends the info directly.
 
-	// Insert Device Signature.
-	uint8_t device_signature[4];
-	get_device_signature(device_signature);
+	// If we were in the middle of transmitting page data, we abandon that idea.
+	transmission_unconfirmed = false;
+	transmission_queued = false;
 
-	transmission_message.message[0] = device_signature[0];
-	transmission_message.message[1] = device_signature[1];
-	transmission_message.message[2] = device_signature[2];
-	transmission_message.message[3] = device_signature[3];
-
-	// Insert bootloader version.
-	uint16_t bootloader_version = get_bootloader_version();
-
-	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
-	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
-
-	transmit_CAN_message(transmission_message);
+	// Send the device information.
+	send_device_info();
 
 	// All done.
 	return;
 }
 
-void bootloader_module_can::write_memory_procedure(Firmware_page& current_firmware_page)
+void bootloader_module_can::handle_write_memory(void)
 {
-	// Store the 32-bit page number.
-	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-									((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-									((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-									(static_cast<uint32_t>(reception_message.message[3])));
+	// If we were in the middle of transmitting page data, we abandon that idea.
+	transmission_unconfirmed = false;
+	transmission_queued = false;
 
-	// Store the 16-bit code length.
-	current_firmware_page.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-										(static_cast<uint16_t>(reception_message.message[5])));
+	// Initially, we'll assume the command to be sane.
+	bool command_ok = true;
 
-	// Check for errors in the message details.
-	if ((current_firmware_page.code_length > SPM_PAGESIZE))
+	// Check the DLC was what we expected.
+	if (reception_message.dlc != 7)
 	{
-		// Message failure.
-		message_confirmation_success = false;
-		write_details_stored = false;
+		command_ok = false;
 	}
 	else
 	{
-		// Message success.
-		write_details_stored = true;
-		current_firmware_page.current_byte = 0;
-	}
+		// Store the 32 bit page number.
+		buffer.page = (((static_cast<uint32_t>(reception_message.message[1])) << 24) |
+									 ((static_cast<uint32_t>(reception_message.message[2])) << 16) |
+									 ((static_cast<uint32_t>(reception_message.message[3])) << 8) |
+									 (static_cast<uint32_t>(reception_message.message[4])));
 
-	confirm_reception(message_confirmation_success);
+		// Store the 16 bit code_length.
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+											(static_cast<uint16_t>(reception_message.message[6])));
 
-	// All done.
-	return;
-}
-
-void bootloader_module_can::write_data_procedure(Firmware_page& current_firmware_page)
-{
-	if (write_details_stored)
-	{
-		// Check for possible array overflow.
-		if ((current_firmware_page.current_byte + reception_message.dlc) > current_firmware_page.code_length)
+		// Check for errors in message details.
+		if (buffer.code_length > SPM_PAGESIZE)
 		{
-			reception_message.dlc = current_firmware_page.code_length - current_firmware_page.current_byte;
-		}
+			// Something was wrong with the command.  Probably the specified address was invalid.
+			command_ok = false;
 
-		// Store data from received message (message data of 7 bytes) into the buffer (byte by byte).
-		for (uint8_t i = 0; i < reception_message.dlc; i++)
-		{
-			current_firmware_page.data[current_firmware_page.current_byte + i] = reception_message.message[i];
-		}
-
-		// Increment the current byte in the buffer.
-		current_firmware_page.current_byte += reception_message.dlc;
-
-		// Check if the buffer is ready to be written to the flash.
-		if (current_firmware_page.current_byte >= (current_firmware_page.code_length))
-		{
-			current_firmware_page.ready_to_write = true;
-			current_firmware_page.current_byte = 0;
+			// Invalidate the write details, so the uploader can't write to a bad location.
 			write_details_stored = false;
 		}
 		else
 		{
-			// Message failure.
-			message_confirmation_success = false;
+			// The command seems ok.
+
+			// Enable the write details, which means now the uploader should be able to provide the actual data to write.
+			write_details_stored = true;
+
+			// We start writing at the first byte of the specified page.
+			buffer.current_byte = 0;
 		}
-
-		confirm_reception(message_confirmation_success);
-
-		// All done.
-		return;
 	}
+
+	// Confirm the command, now we've worked out whether it was sane or not.
+	send_confirm_rxup(CANID_WRITE_MEMORY, command_ok);
+
+	// All done.
+	return;
 }
 
-void bootloader_module_can::read_memory_procedure(Firmware_page& current_firmware_page)
+void bootloader_module_can::handle_write_data(void)
 {
-	// Store the 32-bit page number.
-	current_firmware_page.page = (((static_cast<uint32_t>(reception_message.message[0])) << 24) |
-								 ((static_cast<uint32_t>(reception_message.message[1])) << 16) |
-								 ((static_cast<uint32_t>(reception_message.message[2])) << 8) |
-								 (static_cast<uint32_t>(reception_message.message[3])));
+	// If we were in the middle of transmitting page data, we abandon that idea.
+	transmission_unconfirmed = false;
+	transmission_queued = false;
 
-	// Store the 16 bit code_length.
-	current_firmware_page.code_length = (((static_cast<uint16_t>(reception_message.message[4])) << 8) | 
-										(static_cast<uint16_t>(reception_message.message[5])));
+	// Initially, we'll assume the command to be sane.
+	bool command_ok = true;
 
-	// Check for errors in message details.
-	if ((current_firmware_page.code_length > SPM_PAGESIZE))
+	// Only write to buffer if a valid memory address and code length have already been provided.
+	if (write_details_stored)
 	{
-		// Message failure.
-		message_confirmation_success = false;
+		// Check for possible array overflow.
+		if ((buffer.current_byte + (reception_message.dlc - 1)) > buffer.code_length)
+		{
+			// Limit the DLC if we're up to the last byte.
+			reception_message.dlc = (buffer.code_length - buffer.current_byte) + 1;
+
+			// NOTE - The message DLC has to be one longer than the number of bytes, because of the node ID in the first byte.
+		}
+
+		// Store data from received message (max seven bytes because of node ID) into the buffer.
+		for (uint8_t i = 1; i < reception_message.dlc; i++)
+		{
+			buffer.data[buffer.current_byte + i - 1] = reception_message.message[i];
+		}
+
+		// Increment the current byte in buffer.
+		buffer.current_byte += (reception_message.dlc - 1);
+
+		// Check if the buffer is ready to be written to flash.
+		if (buffer.current_byte >= (buffer.code_length))
+		{
+			// Queue up writing the buffer into flash.
+			buffer.ready_to_write = true;
+
+			// We need new address details before we can write more data.
+			write_details_stored = false;
+		}
 	}
 	else
 	{
-		// Message success.
-		current_firmware_page.ready_to_read = true;
-		ready_to_send_page = true; // Allow sending the flash page once it is read.
+		// Something was wrong with the command.  Probably trying to write data before setting the destination details.
+		command_ok = false;
+	}
+
+	// Confirm the command, now we've worked out whether it was sane or not.
+	send_confirm_rxup(CANID_WRITE_DATA, command_ok);
+
+	// All done.
+	return;
+}
+
+void bootloader_module_can::handle_read_memory(void)
+{	
+	// If we were in the middle of transmitting page data, we abandon that idea.
+	transmission_unconfirmed = false;
+	transmission_queued = false;
+
+	// Initially, we'll assume the command to be sane.
+	bool command_ok = true;
+
+	// Check the DLC was what we expected.
+	if (reception_message.dlc != 7)
+	{
+		command_ok = false;
+	}
+	else
+	{
+		// Store the 32 bit page number.
+		buffer.page = (((static_cast<uint32_t>(reception_message.message[1])) << 24) |
+									 ((static_cast<uint32_t>(reception_message.message[2])) << 16) |
+									 ((static_cast<uint32_t>(reception_message.message[3])) << 8) |
+									 (static_cast<uint32_t>(reception_message.message[4])));
+
+		// Store the 16 bit code_length.
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+											(static_cast<uint16_t>(reception_message.message[6])));
+
+		// Start from the first byte.
+		buffer.current_byte = 0;
+
+		// Check for errors in message details.
+		if (buffer.code_length > SPM_PAGESIZE)
+		{
+			// Something was wrong with the command.  Probably the specified address was invalid.
+			command_ok = false;
+		}
+		else
+		{
+			// The command seems ok.
+
+			// Queue up reading a page from flash into a buffer, and then sending the buffer.
+			buffer.ready_to_read = true;
+			ready_to_send_page = true;
+		}
 	}
 	
-	confirm_reception(message_confirmation_success);
+	// Confirm the command, now we've worked out whether it was sane or not.
+	send_confirm_rxup(CANID_READ_MEMORY, command_ok);
 
 	// All done.
 	return;
 }
 
-void bootloader_module_can::send_flash_page(Firmware_page& current_firmware_page)
+void bootloader_module_can::filter_message(void)
 {
-	transmission_message.message_type = CANID_READ_DATA;
-	current_firmware_page.current_byte = 0;
-	reception_message.confirmed_send = false;
-
-	// Send the flash page in 8-byte messages. Confirmation message must be received from the uploader after each message.
-	while (current_firmware_page.current_byte < current_firmware_page.code_length)
-	{
-		// Determine the length of the message, just in case we are closer than 8 bytes and need to send a smaller message.
-		transmission_message.dlc = (current_firmware_page.code_length - current_firmware_page.current_byte);
-		if (transmission_message.dlc > 8)
-		{
-			transmission_message.dlc = 8;
-		}
-
-		// Create message.
-		for (uint8_t i = 0; i < transmission_message.dlc; i++)
-		{
-			transmission_message.message[i] = current_firmware_page.data[current_firmware_page.current_byte + i];
-		}
-
-		// Increment current_byte for the next iteration.
-		current_firmware_page.current_byte += transmission_message.dlc;
-
-		transmit_CAN_message(transmission_message);
-
-		// Wait for confirmation or command message to return from the uploader.
-		while (!reception_message.confirmed_send && !reception_message.message_received)
-		{
-			// Do nothing.
-		}
-
-		// Exit the sending of the flash page if an uploader command message is received.
-		// Allows the uploader to stop the rading if it sees a message is lost.
-		if (reception_message.message_received)
-		{
-			// Abort sending the flash page.
-			break;
-		}
-
-		reception_message.confirmed_send = false;
-	}
-
-	// All done.
-	return;
-}
-
-void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
-{
-	// NOTE - Testing the NODE_ID shouldn't actually be required, because the ISR should have filtered other messages out.
+	// Whatever the case, we won't need to worry about this same message again.
+	message_received = false;
 
 	// NOTE - We test the NODE_ID first, then the actual message type, solely because it makes the code a little tidier.
 
@@ -620,7 +577,6 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 	if (reception_message.dlc < 1)
 	{
 		// This can't possibly be a message for us, because it doesn't have any data, and all our messages should.
-		reception_message.message_received = false;
 		return;
 	}
 	else
@@ -629,7 +585,6 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 		if (reception_message.message[0] != NODE_ID)
 		{
 			// This isn't a message for us, because the ID doesn't match.
-			reception_message.message_received = false;
 			return;
 		}
 	}
@@ -641,33 +596,36 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 	switch (reception_message.message_type)
 	{
 		case CANID_REQUEST_RESET:
-			request_reset_procedure();
+			handle_request_reset();
 			break;
 
 		case CANID_GET_INFO:
-			get_info_procedure();
+			handle_get_info();
 			break;
 			
 		case CANID_WRITE_MEMORY:
-			write_memory_procedure(current_firmware_page);
+			handle_write_memory();
 			break;
 
 		case CANID_WRITE_DATA:
-			write_data_procedure(current_firmware_page);
+			handle_write_data();
 			break;
 
 		case CANID_READ_MEMORY:
-			read_memory_procedure(current_firmware_page);
+			handle_read_memory();
+			break;
+
+		case CANID_READ_DATA:
+			// This is a confirmation message from the uploader, indicating that it received the page we sent ok.
+
+			// If we were previously transmitting a message, we aren't any longer.
+			module.transmission_unconfirmed = false;
 			break;
 
 		default:
 			// This message isn't for us, because it's not an ID which we recognise.
-			reception_message.message_received = false;
 			return;
 	}
-	
-	// Now that we've handled the message, don't need to worry about it again.
-	reception_message.message_received = false;
 
 	// We've now started communications.
 	communication_started = true;
@@ -687,7 +645,7 @@ void bootloader_module_can::filter_message(Firmware_page& current_firmware_page)
 	return;
 }
 
-void bootloader_module_can::alert_uploader(void)
+void bootloader_module_can::send_alert_host(void)
 {
 	// Assemble the message to send.
 	transmission_message.message_type = CANID_HOST_ALERT;
@@ -695,7 +653,73 @@ void bootloader_module_can::alert_uploader(void)
 	transmission_message.message[0] = NODE_ID;
 
 	// Actually send the message.
-	transmit_CAN_message(transmission_message);
+	transmit_CAN_message();
+
+	// All done.
+	return;
+}	
+
+void bootloader_module_can::send_confirm_rxup(uint16_t id, bool success)
+{
+	// Assemble the message to send.
+	transmission_message.message_type = id;
+	transmission_message.dlc = 1;
+	transmission_message.message[0] = (true) ? 1 : 0;
+	
+	// Actually send the message.	
+	transmit_CAN_message();
+
+	// All done.
+	return;
+}
+
+void bootloader_module_can::send_device_info(void)
+{
+	// Fetch the device signaure.
+	uint8_t device_signature[4];
+	get_device_signature(device_signature);
+
+	// Fetch the bootloader version.
+	uint16_t bootloader_version = get_bootloader_version();
+	
+	// Assemble the message to send.
+	transmission_message.message_type = CANID_GET_INFO;
+	transmission_message.dlc = 6;
+	transmission_message.message[0] = device_signature[0];
+	transmission_message.message[1] = device_signature[1];
+	transmission_message.message[2] = device_signature[2];
+	transmission_message.message[3] = device_signature[3];
+	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
+	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
+	
+	// Actually send the message.
+	transmit_CAN_message();
+
+	// All done.
+	return;
+}
+
+void bootloader_module_can::send_read_data()
+{
+	// Assemble the message to send.
+	
+	transmission_message.message_type = CANID_READ_DATA;
+
+	// Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message.
+	transmission_message.dlc = (buffer.code_length - buffer.current_byte);
+	if (transmission_message.dlc > 8)
+	{
+		transmission_message.dlc = 8;
+	}
+
+	// Create message.
+	for (uint8_t i = 0; i < transmission_message.dlc; i++)
+	{
+		transmission_message.message[i] = buffer.data[buffer.current_byte + i];
+	}
+
+	// Actually send the message.
+	transmit_CAN_message();
 
 	// All done.
 	return;
@@ -713,37 +737,39 @@ extern "C" void CAN1_RX0_IRQHandler(void)
 	// Store the message ID.
 	module.reception_message.message_type = (uint16_t)((uint32_t)0x000007FF & (CAN1->sFIFOMailBox[0].RIR >> 21));
 
-	// A confirmation message received.
-	if (module.reception_message.message_type == CANID_READ_DATA)
+	// If the previously recieved message hasn't been handled yet, then panic.
+	if (module.message_received)
 	{
-		module.reception_message.confirmed_send = true;
+		// We don't have much option but to discard the previous message.  But try alert the user about this.
+
+		// Change the bootloader status to indicate an error.
+		set_bootloader_state(BOOT_ERROR);
+
+		// Set our own error flag.
+		error = true;
 	}
-	// An uploader command message received.
-	else
+
+	// Store the DLC of the incoming message.
+	module.reception_message.dlc = (uint16_t)((uint8_t)0x0F & CAN1->sFIFOMailBox[0].RDTR);
+
+	// Make sure the DLC is within range.
+	if (module.reception_message.dlc > 8)  // We use 7 here since we count from zero, not from one.
 	{
-		// Store the DLC.
-		module.reception_message.dlc = (uint16_t)((uint8_t)0x0F & CAN1->sFIFOMailBox[0].RDTR);
-		if (module.reception_message.dlc > 7)  // We use 7 here since we count from zero, not from one.
-		{
-			module.reception_message.dlc = 7;  // This check is required as CAN controller may give a value greater than 8.
-		}
-
-		// Store the message.
-		module.reception_message.message[0] = (uint8_t)0xFF & CAN1->sFIFOMailBox[0].RDLR;
-		module.reception_message.message[1] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 8);
-		module.reception_message.message[2] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 16);
-		module.reception_message.message[3] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 24);
-		module.reception_message.message[4] = (uint8_t)0xFF & CAN1->sFIFOMailBox[0].RDHR;
-		module.reception_message.message[5] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 8);
-		module.reception_message.message[6] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 16);
-		module.reception_message.message[7] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 24);
-
-		// Tell the bootloader that the message was received.
-		module.reception_message.message_received = true;
-
-		// Default the message confirmation to successful
-		message_confirmation_success = true;
+		module.reception_message.dlc = 8;  // This check is required as CAN controller may give a value greater than 8.
 	}
+
+	// Store the message.
+	module.reception_message.message[0] = (uint8_t)0xFF & CAN1->sFIFOMailBox[0].RDLR;
+	module.reception_message.message[1] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 8);
+	module.reception_message.message[2] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 16);
+	module.reception_message.message[3] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDLR >> 24);
+	module.reception_message.message[4] = (uint8_t)0xFF & CAN1->sFIFOMailBox[0].RDHR;
+	module.reception_message.message[5] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 8);
+	module.reception_message.message[6] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 16);
+	module.reception_message.message[7] = (uint8_t)0xFF & (CAN1->sFIFOMailBox[0].RDHR >> 24);
+
+	// Tell the synchronous part of the module that a message was received.
+	module.message_received = true;
 
 	// Release the FIFO so the next message can be seen.
 	CAN1->RF0R |= CAN_RF0R_RFOM0;
