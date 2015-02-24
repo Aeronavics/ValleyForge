@@ -7,8 +7,10 @@ Creation-Date: 2015-02-17T18:05:01+13:00
 ====== Statement conventions ======
 
 ===== Including Files =====
+
 	**1.4.1 Include statements should be sorted and grouped:**
-{{{code: lang="cpp" linenumbers="true"
+
+'''
 // INCLUDE REQUIRED DEPENDENCIES.
 
 // Include system dependencies.
@@ -18,138 +20,155 @@ Creation-Date: 2015-02-17T18:05:01+13:00
 // Include the 'some' package.
 #include "some/file.hpp"
 #include "some/other_file.hpp"
-}}}
-
+'''
 
 Include statements should be sorted such that the lowest level dependencies are included first. Include statements for related dependencies should be grouped together, separated by a single blank line.
 
-
-	**1.4.2 Include statemzents should always use relative path-names. Absolute path-names are not allowed.**
-
+	**1.4.2 Include statements should always use relative path-names. Absolute path-names are not allowed.**
 
 	**1.4.3 Include statements must always appear at the top of the file.**
 
-
 ===== Flow Control Statements =====
+
 	**1.4.4 Flow control statements (**//if//**, **//for//**, **//while//**, **//switch//** and **//do//**) should be followed by a block, even if the block is empty:**
-{{{code: lang="cpp" linenumbers="true"
+
+'''
 while (something)
 {
 	// Do nothing.
 }
-}}}
-
+'''
 
 An empty block should be explained by a comment, to indicate that this expected.
 
-
 	**1.4.5 Only loop control statements must be included in the **//for()//** construction.**
-{{{code: lang="cpp" linenumbers="true"
-sum = 0;						// NOT: for (i = 0, sum = 0; i < 100; i++)
-for (i = 0; i < 100; i++)		//		{
-{								//			sum += value[i];
-	sum += value[i];			//		}
+
+''// Compliant: ''
+'''
+sum = 0;			
+for (i = 0; i < 100; i++)
+{				
+	sum += value[i];
 }
-}}}
 
-
+'''
+''// Non-compliant: ''
+	   ''for (i = 0, sum = 0; i < 100; i++)''
+'''
+{
+'''
+		   ''sum += value[i];''
+		}
 This increases maintainability and readability. It is also helpful to make a clear distinction of what controls and what is contained in the loop.
 
-
 	**1.4.6 Loop variables should be initialized immediately before the loop.**
-{{{code: lang="cpp" linenumbers="true"
-is_done = false;			// NOT: bool is_done = false;
-while (!is_done)			// ...
-{							// while (!is_done)
-...							// {
-}							//		...
-							// }
-}}}
 
+'''
+// Compliant:
+bool is_done = false;		
+while (!is_done)		// ...
+{				// while (!is_done)
+...				// {
+}
 
-
+// Non-compliant:
+'''
+	   ''bool is_done = false;''
+	   ''...''
+	   ''while (!is_done)''
+	   ''{''
+	   ''...''
+	   ''}''
+	   		
 	**1.4.7 The form **//while (true)//** should be used for infinite loops.**
-{{{code: lang="cpp" linenumbers="true"
-while (true)
-{
-	...
-}
 
-for (;;)		// NO!
-{
-	...
-}
+	   ''// Compliant:''
+''while (true)''
+''{''
+''	...''
+''}''
 
-while (1)		// NO!
-{
-	...
-}
-}}}
+''// Non-compliant:''
+''for (;;)''
+''{''
+''	...''
+''}''
 
+''// Non-compliant:''
+''while (1)''
+''{''
+''	...''
+''}''
 
 Testing against 1 is neither necessary nor meaningful. The form ''for (;;)'' is not very readable and is not apparent that this actually is an infinite loop.
 	
 
 ===== Constants =====
+
 	**1.4.8 Numeric values in code will not be used; symbolic values will be used instead.** 
-{{{code: lang="cpp" linenumbers="true"
+
+'''
 class A
 {
 	A()
 	{
-		coefficient[0] = 1.23; 	// Good
-		coefficient[1] = 2.34; 	// Good
-		coefficient[2] = 3.45; 	// Good
+		coefficient[0] = 1.23; 	// Compliant
+		coefficient[1] = 2.34; 	// Compliant
+		coefficient[2] = 3.45; 	// Compliant
 	}
 	private:
-		float64 coefficient[3]; // Cannot be initialized via the member initialization list.
+		float64 coefficient[3]; // Non-compliant: Cannot be initialized via the member initialization list.
 };
-
-}}}
-
+'''
 
 This is to improve readability and maintenance. Note that an exception is when a class/structure constructor initializes an array member with numeric values.
 **Note:** In many cases ‘0’ and ‘1’ are not magic numbers but are part of the fundamental logic of the code (e.g. ‘0’ often represents a NULL pointer). In such cases, ‘0’ and ‘1’ may be used. 
 
-
 	**1.4.9 Floating point constants should always be written with decimal point and at least one decimal.**
-{{{code: lang="cpp" linenumbers="true"
-double total = 0.0;		// NOT: double total = 0;
-double speed = 3.0e8;	// NOT: double speed = 3e8;
-}}}
 
+'''
+double total = 0.0;	// Compliant.
+double total = 0;	// Non-compliant.
+
+double speed = 3.0e8;	// Compliant.
+double speed = 3e8;	// Non-compliant.
+'''
 
 This emphasizes the different nature of integer and floating point numbers. Mathematically the two model completely different and non-compatible concepts.
 
-
 	**1.4.10 Floating point constants should always be written with a digit before the decimal point.**
-{{{code: lang="cpp" linenumbers="true"
-double total = 0.5;		// NOT: double total = .5;
-}}}
 
+'''
+double total = 0.5;	// Compliant.
+double total = .5;	// Non-compliant.
+'''
 
 The number and expression system in C++ is borrowed from mathematics and one should adhere to mathematical conventions for syntax wherever possible. Also, 0.5 is a lot more readable than .5; There is no way it can be mixed with the integer 5.
 
-
 	**1.4.11 When comparing with constants, the constant should be the second operand.**
-{{{code: lang="cpp" linenumbers="true"
-if (i == 5)		// NOT: if (5 == i)
-}}}
 
+'''
+if (i == 5)	// Compliant.
+if (5 == i)	// Non-compliant.
+'''
 
 
 ===== Variables =====
-	**1.4.12 Multiple variable declarations shall not be allowed on the same line.**
-{{{code: lang="cpp" linenumbers="true"
-int32* p,q;									// Error since q doesn't get declared as a pointer.
-int32 first_button_on_top, i;				// Bad: easy to overlook 'i'.
-}}}
 
+	**1.4.12 Multiple variable declarations shall not be allowed on the same line.**
+
+'''
+int32* p,q;			// Non-compliant: Error since q doesn't get declared as a pointer.
+int32 first_button_on_top, i;	// Non-compliant: easy to overlook 'i'.
+'''
 
 
 ===== Conditionals =====
+
 	**1.4.13 Complex conditional expressions must be avoided. Introduce temporary Boolean variables instead.**
-{{{code: lang="cpp" linenumbers="true"
+
+'''
+// Compliant:
 bool is_finsished = (element_no < 0) || (element_no > max_element);
 bool is_repeated_entry = element_no == last_element;
 if (is_finished || is_repeated_entry)
@@ -157,39 +176,54 @@ if (is_finished || is_repeated_entry)
 	...
 }
 
-// NOT:
+// Non-compliant:
 if (element_no < 0) || (element_no > max_element) ||
 	element_no == last_element)
 {
 	...
 }
-}}}
-
+'''
 
 By assigning Boolean variables to expressions, the program gets automatic documentation. The construction will be easier to read, debug and maintain.
 
-
 	**1.4.14 When assigning to bool variables, the logical expression should be parenthesized.**
-{{{code: lang="cpp" linenumbers="true"
+
+'''
 bool b = (i > j);
-}}}
-
-
+'''
 
 	**1.4.15 Do not compare bool variables and expressions to true or false; use the value of bool or its negated value:**
-{{{code: lang="cpp" linenumbers="true"
+
+'''
 bool b = true;
-if (b)		// NOT: if (b == true)
+// Compliant:
+if (b)
 {
 	...
 }
 
-if (!b)		// NOT: if (b == false)
+'''
+	  ''// Non-compliant: ''
+	  ''if (b == true)''
+'''
 {
 	...
 }
-}}}
 
+// Compliant:
+if (!b)
+{
+	...
+}
+'''
+
+	  ''// Non-compliant: ''
+	  ''if (b == true)''
+'''
+{
+	...
+}
+'''
 
 																	[[Naming conventions|<<<	PrevTitle]]		       |		|          		[[Embedded C++ Coding Style and Standards Guide:Coding Standard conventions|NextTitle	>>>]] 
 
