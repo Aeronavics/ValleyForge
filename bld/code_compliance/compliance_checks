@@ -232,7 +232,7 @@ compliance_fail_file()
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of errors.
-		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_ERRORS++))
 		fi
 
@@ -248,7 +248,7 @@ compliance_fail_file()
 		fi
 
 		# Since these scripts deal with an entire file rather than line by line analysis, increment the counter for number of warnings.
-		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout*|compliance_check_file_header*|exception_limits ]]; then
+		if [[ $1 =~ compliance_check_file_file*|compliance_check_file_layout|compliance_check_file_header*|exception_limits ]]; then
 			((COMPLIANCE_NUM_WARNINGS++))
 		fi
 

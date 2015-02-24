@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_headercheck
+### Name:           	checkfuncs_headerfile
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		compliance_check_file_headercheck
+### Name:		compliance_check_file_headerfile
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 ###########################################################################################
 
-compliance_check_file_headercheck()
+compliance_check_file_headerfile()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -69,7 +69,7 @@ compliance_check_file_headercheck()
 		if [[ ! $(find $file_directory -type f -name $headerfile) ]]; then
 
 			# Report that the file has failed.
-			compliance_fail_file "compliance_check_file_headercheck" $FILE "This file doesn't have a matching header"
+			compliance_fail_file "compliance_check_file_headerfile" $FILE "This file doesn't have a matching header"
 		fi
 	fi
 
