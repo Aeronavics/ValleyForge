@@ -1,5 +1,5 @@
 // Copyright (C) 2011  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -45,7 +45,7 @@
 
 enum port_offset {P_READ, P_MODE, P_WRITE};
 enum port_t {PORT_A, PORT_B, PORT_C, PORT_D, PORT_E, PORT_F, PORT_G, PORT_H, PORT_J, PORT_K, PORT_L};
-enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14}; 
+enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14};
 enum input_state {LO,HI};
 
 #define BLINK_PORT_NUM		<<<TC_INSERTS_BLINK_PORT_HERE>>>
@@ -73,16 +73,16 @@ enum input_state {LO,HI};
 // Blink times for different states. Times are in ms.
 
 // Idle.
-#define IDLE_ON	            100
-#define IDLE_OFF            100
+#define IDLE_ON	            500
+#define IDLE_OFF            500
 
 // Communicating.
-#define COMMUNICATING_ON    6000
-#define COMMUNICATING_OFF   0
+#define COMMUNICATING_ON    55
+#define COMMUNICATING_OFF   55
 
 // Error.
-#define ERROR_ON            200
-#define ERROR_OFF           1000
+#define ERROR_ON            0       // NOTE: these are actually inverted. So the LED stays ON permanently on ERROR
+#define ERROR_OFF           6000
 
 #define SHUTDOWNSTATE_MEM	<<<TC_INSERTS_SHUTDOWN_STATE_MEM_HERE>>>
 
@@ -148,14 +148,14 @@ void reboot(void);
  *	Blocks until EEPROM IO operations are completed.
  *
  *	TAKES:		Nothing.
- *	
+ *
  *	RETURNS:	True if the 'application run' mark is 'clean', false if it is 'dirty' or absent.
  */
 bool is_clean(void);
 
 /**
  *	Runs the application code, exiting the bootloader.
- *	
+ *
  *	TAKES: 		Nothing.
  *
  *	RETURNS: 	This function will NEVER return.
@@ -183,7 +183,7 @@ void write_flash_page(Firmware_page& buffer);
  *	NOTE - There is no testing that the arguments provided are valid; invalid arguments may result in undefined behaviour.
  *
  *	TAKES:		buffer		A firmware_page buffer to read into, with the appropriate address details completed.
- *	
+ *
  *	RETURNS:	Nothing.
  */
 void read_flash_page(Firmware_page& buffer);
@@ -195,7 +195,7 @@ int main(void)
 	// Set interrupts into bootloader-land, rather than the application-land.
 	MCUCR = (1 << IVCE);
 	MCUCR = (1 << IVSEL);
-	
+
 	// Disable the watchdog timer before enabling it.  Even the bootloader must satisfy the watchdog.
 	wdt_reset();
 	wdt_disable();
@@ -203,10 +203,10 @@ int main(void)
 
 	// Set Blinky Pin to output.
 	BLINK_MODE |= BLINK_PIN;
-	
-	// Set Force BL Pin to input. 
+
+	// Set Force BL Pin to input.
 	FORCE_BL_MODE &= ~FORCE_BL_PIN;
-	
+
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE|BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
 
@@ -218,33 +218,33 @@ int main(void)
 		// Run the application.
 		run_application();
 	}
-	
-	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.	
+
+	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
 	// Start up whichever peripherals are required by the modules we're using.
 	mod.init();
-	
+
 	// Set up TIM0 into output compare mode as a free running 1ms timer to queue any periodic functionality.
-	
+
 #if defined (__AVR_AT90CAN128__)
 	// CTC, no clock yet.
 	TCCR0A = 0b00001000;
 	OCR0A = (uint8_t) TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
-	TIMSK0 = 0b00000010;	
+	TIMSK0 = 0b00000010;
 #else
 	// CTC on.
 	TCCR0A = 0b00000010;
 	OCR0A = (uint8_t) TM_CHAN_VAL;
 	// Enable Timer Output Compare interrupt.
 	TIMSK0 = 0b00000010;
-#endif	
-	
+#endif
+
 	// Enable interrupts.
 	sei();
 
 	// NOTE - Don't start the timer until after interrupts have been enabled!
-	
+
 #if defined (__AVR_AT90CAN128__)
 	// Prescalar: 1024.  This starts the 1ms timer.
 	TCCR0A = 0b00001101;
@@ -252,7 +252,7 @@ int main(void)
 	// Prescalar: 1024.  This starts the 1ms timer.
 	TCCR0B = 0b00000101;
 #endif
-	
+
 	// Set the bootloader into idle mode.
 	set_bootloader_state(IDLE);
 
@@ -263,7 +263,7 @@ int main(void)
 
 		// Touch the watchdog.
 		wdt_reset();
-		
+
 		// If we wait around for a long time without any sign of some new firmware arriving, then start the application anyway.
 		if (timeout_expired)
 		{
@@ -273,7 +273,7 @@ int main(void)
 			// We should never reach here.
 		}
 
-		// Perform any module specific functionality which needs to be executed as fast as possible.		
+		// Perform any module specific functionality which needs to be executed as fast as possible.
 		mod.event_idle();
 
 		// If the buffer is ready to be written, write it to memory.
@@ -341,7 +341,7 @@ void reboot_to_application(void)
 	boot_mark_clean();
 
 	// NOTE - We don't bother to tidy anything up, the CPU reset will take care of that.
-	
+
 	// Reboot the microcontroller.
 	reboot();
 
@@ -353,7 +353,7 @@ void start_application(void)
 {
 	// Run the application.
 	run_application();
-	
+
 	// We should never reach here.
 	return;
 }
@@ -383,7 +383,7 @@ void get_device_signature(uint8_t* device_signature)
 	device_signature[1] = DEVICE_SIGNATURE_1;
 	device_signature[2] = DEVICE_SIGNATURE_2;
 	device_signature[3] = DEVICE_SIGNATURE_3;
-	
+
 	// All done.
 	return;
 }
@@ -397,12 +397,12 @@ void set_bootloader_state(State new_state)
 			blink_on = IDLE_ON;
 			blink_off = IDLE_OFF;
 			break;
-			
+
 		case COMMUNICATING:
 			blink_on = COMMUNICATING_ON;
 			blink_off = COMMUNICATING_OFF;
 			break;
-		
+
 		case ERROR:
 			blink_on = ERROR_ON;
 			blink_off = ERROR_OFF;
@@ -413,7 +413,7 @@ void set_bootloader_state(State new_state)
 void get_bootloader_information(Shared_bootloader_constants* bootloader_information)
 {
 	bootloader_information->bootloader_version = BOOTLOADER_VERSION;
-	
+
 	// All done.
 	return;
 }
@@ -440,7 +440,7 @@ bool is_clean(void)
 {
 	// Read the clean flag from EEPROM.
 	uint16_t data;
-	
+
 	eeprom_busy_wait();
 	eeprom_read_block(&data, (void*)(SHUTDOWNSTATE_MEM), 2);
 	eeprom_busy_wait();
@@ -477,19 +477,19 @@ void run_application(void)
 	// Put interrupts back into application-land.
 	MCUCR = (1 << IVCE);
 	MCUCR = 0;
-	
+
 	// Stop the timer and return them to original state.
 #if defined (__AVR_AT90CAN128__)
 	TCCR0A = 0b00000000;
 #else
 	TCCR0B = 0b00000000;
-#endif	
+#endif
 	OCR0A = 0;
-	
+
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
 	wdt_reset();
 	wdt_disable();
-	
+
 	// Jump into the application.
 	asm("jmp 0x0000");
 
@@ -615,7 +615,7 @@ ISR(TIMER0_COMPA_vect)
 	{
 		// Advance the tick count.
 		timeout_tick++;
-	
+
 		// Check if the timeout period has now expired.
 		timeout_expired = (timeout_tick > BOOT_TIMEOUT);
 	}
@@ -662,7 +662,7 @@ ISR(TIMER0_COMPA_vect)
 			blink_tick = 0;
 		}
 	}
-	
+
 	// All done.
 	return;
 }

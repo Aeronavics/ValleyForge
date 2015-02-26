@@ -1,5 +1,5 @@
 // Copyright (C) 2013  Unison Networks Ltd
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -149,7 +149,7 @@ bootloader_module_can::~bootloader_module_can()
 }
 
 void bootloader_module_can::init(void)
-{	
+{
 	// Initialise the module.
 
 	// Initialize the CAN controller.
@@ -158,7 +158,7 @@ void bootloader_module_can::init(void)
 
 	// Reset the CAN controller.
 	CANGCON = (1 << SWRES);
-	
+
 	// Reset all of the MObs as they have no default value upon reset.
 	for (mob_number = 0; mob_number < NUMBER_OF_MOB_PAGES; mob_number++)
 	{
@@ -167,7 +167,7 @@ void bootloader_module_can::init(void)
 		CANSTMOB = 0x00; // Clear all flags.
 		CANCDMOB = 0x00; // Disables MObs.
 	}
-	
+
 	// Set up bit timing.
 	CANBT1 = CAN_BAUD_RATE_CONFIG_1;
 	CANBT2 = CAN_BAUD_RATE_CONFIG_2;
@@ -181,24 +181,24 @@ void bootloader_module_can::init(void)
 	// MOB NUMBER 0 - Reception MOb.
 	mob_number = 0;
 	CANPAGE = (mob_number << 4);
-	
+
 	CANIDT1 = id >> 3;; // Set MOb ID.
 	CANIDT2 = id << 5;
 	CANIDT3 = 0x00;
 	CANIDT4 = 0x00;
-	
+
 	CANIDM1 = 0xFE; // Set MOb masking ID.
 	CANIDM2 = 0x00; // At the moment are filtering first two hex numbers e.g id=0x123, filter = 0x12z - where z can be any number.
 	CANIDM3 = 0x00;
 	CANIDM4 = 0x00;
-	
-	CANCDMOB = ((1 << CONMOB1) | 8); // Enable the MOb for reception of 8 data bytes, 
+
+	CANCDMOB = ((1 << CONMOB1) | 8); // Enable the MOb for reception of 8 data bytes,
 	                                 //in standard format(11 bit identifier) with no automatic reply.
 
 	// MOB NUMBER 1 - Transmission MOb.
 	mob_number = 1;
 	CANPAGE = (mob_number << 4);
-	
+
 	CANIDT1 = 0x00; // Set MOb ID.
 	CANIDT2 = 0x00; // Will be set by bootloader before transmission.
 	CANIDT3 = 0x00;
@@ -208,7 +208,7 @@ void bootloader_module_can::init(void)
 	CANIDM2 = 0x00;
 	CANIDM3 = 0x00;
 	CANIDM4 = 0x00;
-	
+
 	// Enable the interupts for the MObs enabled.
 	CANIE1 = 0x00;
 	CANIE2 = (1 << IEMOB0); // Enable interupts on MOb0 (interupt occurs on reception of message).
@@ -238,14 +238,16 @@ void bootloader_module_can::event_idle()
 {
 	// Check if we've recieved a new message.
 	if (message_received)
-	{		
+	{
 		// Handle the incoming message.
 		filter_message();
-	}	
+	}
 
 	// Check if we've just finished reading a flash page that we want to send.
 	if (!buffer.ready_to_read && ready_to_send_page)
 	{
+    // Reset the current byte.
+    buffer.current_byte = 0;
 		// We're no longer ready to send the page, we're actually queuing it up for transmission.
 		ready_to_send_page = false;
 		transmission_queued = true;
@@ -262,19 +264,20 @@ void bootloader_module_can::event_idle()
 		if (transmission_queued)
 		{
 			// Send another chunk of bytes.
-			send_read_data();	
+			send_read_data();
 
 			// Increment the current_byte for next message.
 			buffer.current_byte += transmission_message.dlc;
 
 			// Now, we need to wait for confirmation before we do this again.
-			transmission_unconfirmed = true;
+
 
 			// If that was the last chunk, then we haven't anything more to do.
 			if (buffer.current_byte >= buffer.code_length)
 			{
+        transmission_unconfirmed = true;
 				transmission_queued = false;
-			}			
+			}
 		}
 	}
 
@@ -345,7 +348,7 @@ void bootloader_module_can::event_periodic()
 
 	// Communications have no longer been received 'recently'.
 	communication_recent = false;
-	 
+
 	// All done.
 	return;
 }
@@ -354,7 +357,7 @@ void get_bootloader_module_information(Shared_bootloader_module_constants* bootl
 {
 	bootloader_module_information->node_id = NODE_ID;
 	bootloader_module_information->baud_rate = CAN_BAUD_RATE;
-	
+
 	// All done.
 	return;
 }
@@ -373,31 +376,31 @@ void bootloader_module_can::transmit_CAN_message()
 	// Select tranmitting MOB.
 	uint8_t mob_number = 1;
 	CANPAGE = (mob_number << 4); // MOb1.
-	
+
 	// Wait until MOb1 is ready to use.
 	while (CANEN2 & (1 << ENMOB1))
 	{
 		// Do nothing.
 	}
-	
+
 	// Clear interupt flags.
 	CANSTMOB = 0x00;
-	
+
 	// Set message id.
 	CANIDT4 = 0x00;
 	CANIDT3 = 0x00;
 	CANIDT2 = (transmission_message.message_type << 5);
 	CANIDT1 = (transmission_message.message_type >> 3);
-	
+
 	// Set message.
 	for (uint8_t i = 0; i < transmission_message.dlc; i++)
 	{
 		CANMSG = transmission_message.message[i];
 	}
-	
+
 	// Enable tranmission with desired message length.
 	CANCDMOB = ((1 << CONMOB0) | (transmission_message.dlc));
-	
+
 	// Wait until the message has sent or an error occured.
 	// When the termination is not present on the bus the bootloader seems to get stuck in this loop and reset due to watchdog timeouts or similar.
 	// This does not seem to set any of the error flags in the MOB even though it should.
@@ -406,7 +409,7 @@ void bootloader_module_can::transmit_CAN_message()
 	{
 		// Do nothing.
 	}
-	
+
 	//If the loop exited but did not do so due to a TXOK condition we set the error state.
 	if (!(CANSTMOB & (1 << TXOK)))
 	{
@@ -419,7 +422,7 @@ void bootloader_module_can::transmit_CAN_message()
 
 	// Disable transmit.
 	CANCDMOB = 0x00;
-	
+
 	// Clear interrupt flags.
 	CANSTMOB = 0x00;
 
@@ -435,7 +438,7 @@ void bootloader_module_can::handle_request_reset()
 
 	// Confirm the reset command, since the reset command is always successful.
 	send_confirm_rxup(CANID_REQUEST_RESET, true);
-	
+
 	// Reboot to either the application or the bootloader, depending on what was requested.
 	if (!reception_message.message[1])
 	{
@@ -455,7 +458,7 @@ void bootloader_module_can::handle_request_reset()
 }
 
 void bootloader_module_can::handle_get_info(void)
-{	
+{
 	// TODO - At the moment, the bootloader doesn't bother sending a confirmation, since it just sends the info directly.
 
 	// If we were in the middle of transmitting page data, we abandon that idea.
@@ -492,7 +495,7 @@ void bootloader_module_can::handle_write_memory(void)
 									 (static_cast<uint32_t>(reception_message.message[4])));
 
 		// Store the 16 bit code_length.
-		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) |
 											(static_cast<uint16_t>(reception_message.message[6])));
 
 		// Check for errors in message details.
@@ -577,7 +580,7 @@ void bootloader_module_can::handle_write_data(void)
 }
 
 void bootloader_module_can::handle_read_memory(void)
-{	
+{
 	// If we were in the middle of transmitting page data, we abandon that idea.
 	transmission_unconfirmed = false;
 	transmission_queued = false;
@@ -599,7 +602,7 @@ void bootloader_module_can::handle_read_memory(void)
 									 (static_cast<uint32_t>(reception_message.message[4])));
 
 		// Store the 16 bit code_length.
-		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) | 
+		buffer.code_length = (((static_cast<uint16_t>(reception_message.message[5])) << 8) |
 											(static_cast<uint16_t>(reception_message.message[6])));
 
 		// Start from the first byte.
@@ -620,7 +623,7 @@ void bootloader_module_can::handle_read_memory(void)
 			ready_to_send_page = true;
 		}
 	}
-	
+
 	// Confirm the command, now we've worked out whether it was sane or not.
 	send_confirm_rxup(CANID_READ_MEMORY, command_ok);
 
@@ -664,7 +667,7 @@ void bootloader_module_can::filter_message(void)
 		case CANID_GET_INFO:
 			handle_get_info();
 			break;
-			
+
 		case CANID_WRITE_MEMORY:
 			handle_write_memory();
 			break;
@@ -678,11 +681,15 @@ void bootloader_module_can::filter_message(void)
 			break;
 
 		case CANID_READ_DATA:
+    {
 			// This is a confirmation message from the uploader, indicating that it received the page we sent ok.
 
 			// If we were previously transmitting a message, we aren't any longer.
-			module.transmission_unconfirmed = false;
+			//module.transmission_unconfirmed = false;
+      transmission_queued = true;
+      transmission_unconfirmed = false;
 			break;
+    }
 
 		default:
 			// This message isn't for us, because it's not an ID which we recognise.
@@ -702,7 +709,7 @@ void bootloader_module_can::filter_message(void)
 	// Restart the bootloader timeout, so we don't reboot halfway through a transfer.
 	set_bootloader_timeout(false);
 	set_bootloader_timeout(true);
-	
+
 	// All done.
 	return;
 }
@@ -719,7 +726,7 @@ void bootloader_module_can::send_alert_host(void)
 
 	// All done.
 	return;
-}	
+}
 
 void bootloader_module_can::send_confirm_rxup(uint16_t id, bool success)
 {
@@ -727,8 +734,8 @@ void bootloader_module_can::send_confirm_rxup(uint16_t id, bool success)
 	transmission_message.message_type = id;
 	transmission_message.dlc = 1;
 	transmission_message.message[0] = (true) ? 1 : 0;
-	
-	// Actually send the message.	
+
+	// Actually send the message.
 	transmit_CAN_message();
 
 	// All done.
@@ -743,7 +750,7 @@ void bootloader_module_can::send_device_info(void)
 
 	// Fetch the bootloader version.
 	uint16_t bootloader_version = get_bootloader_version();
-	
+
 	// Assemble the message to send.
 	transmission_message.message_type = CANID_GET_INFO;
 	transmission_message.dlc = 6;
@@ -753,7 +760,7 @@ void bootloader_module_can::send_device_info(void)
 	transmission_message.message[3] = device_signature[3];
 	transmission_message.message[4] = static_cast<uint8_t>(bootloader_version >> 8);
 	transmission_message.message[5] = static_cast<uint8_t>(bootloader_version);
-	
+
 	// Actually send the message.
 	transmit_CAN_message();
 
@@ -764,7 +771,7 @@ void bootloader_module_can::send_device_info(void)
 void bootloader_module_can::send_read_data()
 {
 	// Assemble the message to send.
-	
+
 	transmission_message.message_type = CANID_READ_DATA;
 
 	// Determine the length of message, just in case we are closer than 8 bytes and need to send a smaller message.
@@ -800,19 +807,19 @@ ISR(CANIT_vect)
 ISR(CAN_INT_vect)
 #endif
 {
-	// Save curent MOb page for current operations. 
+	// Save curent MOb page for current operations.
 	uint8_t saved_MOb = CANPAGE;
 
 	// Select the reception MOb0.
 	uint8_t mob_number = 0;
 	CANPAGE = (mob_number << 4);
-	
+
 	// Check that the interrupt was from message reception.
 	if (CANSTMOB & (1 << RXOK))
 	{
 		// Store message id.
 		module.reception_message.message_type = ((CANIDT1 << 3) | (CANIDT2 >> 5));
-			
+
 		// If the previously recieved message hasn't been handled yet, then panic.
 		if (module.message_received)
 		{
@@ -839,11 +846,11 @@ ISR(CAN_INT_vect)
 		// Store the message payload.
 		for (uint8_t i = 0; i < module.reception_message.dlc; i++)
 		{
-			module.reception_message.message[i] = CANMSG; 
+			module.reception_message.message[i] = CANMSG;
 		}
 
 		// NOTE - The CANPAGE index auto increments, reading CANMSG will increment to the next byte for the next iteration.
-			
+
 		// Tell the synchronous part of the module that a message was received.
 		module.message_received = true;
 	}
@@ -860,5 +867,5 @@ ISR(CAN_INT_vect)
 	// All done.
 	return;
 }
-	
+
 // ALL DONE.
