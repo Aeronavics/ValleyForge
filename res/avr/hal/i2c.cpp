@@ -77,8 +77,6 @@ class I2C_imp
 
  		// Methods.
 
-    // I2C_imp();
-
 		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
 		void disable(void);
@@ -97,10 +95,6 @@ class I2C_imp
 	private:
 
     		// Functions
-
-    		// I2C_imp(void) = delete;
-
-    		// I2C_imp(I2C_imp*) = delete;
 
     		I2C_imp operator = (I2C_imp const&) = delete;
 
@@ -638,7 +632,7 @@ ISR(TWI_vect)
 
             TWCR = TWCR_DATA_ACK;
         }
-        else                                   // Last byte
+        else
         {
             TWDR = TWI_data.TWI_ST_buf[TWI_buf_ptr];
 

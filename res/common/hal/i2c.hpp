@@ -185,9 +185,11 @@ class I2C
      * Enables the I2C/TWI interface by setting the enable bit in the control register. The
      * CPU frequency must be at least 16x higher than the I2C frequency
      *
-     * @param    CPU_CLK_speed    The CPU clock speed.
-     *           I2C_SCL_speed    I2C frequency.
-     *           slave_adr        The device slave address.
+     * @param    CPU_CLK_speed        The CPU clock speed.
+     * @param    I2C_SCL_speed        I2C frequency.
+     * @param    slave_adr            The device slave address.
+     *
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
@@ -203,34 +205,46 @@ class I2C
     void wait_I2C();
 
     /**
+     * The controller becomes the master controller and transmits a message to a desired
+     * slave controller, chosen using the slave_adr variable.
      *
+     * @param    slave_adr            The CPU clock speed.
+     * @param    data                 Pointer to the data address that contains byte of message.
+     * @param    msg_size             Number of bytes to send.
      *
-     * @param
-     *
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
+     * The controller becomes the master controller and requests data bytes from a slave controller.
      *
+     * @param    slave_adr            The CPU clock speed.
+     * @param    data                 Pointer to the data address that contains byte of message.
+     * @param    msg_size             Number of bytes to send.
      *
-     * @param
-     *
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
+     * As a slave controller the function stores data into a buffer where the data will be
+     * transmitted on a request from a master controller.
      *
+     * @param    data                 the data to be stored in the I2C buffer.
+     * @param    msg_size             Number of bytes to save.
      *
-     * @param
-     *
+     * @return   I2C_return_status    Success or Failure response.
      */
     I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
 
     /**
+     * As a slave controller, the I2C receive buffer is checked to see if any data has been
+     * received. If there is data, then it is stored in a given variable.
      *
+     * @param    data                 Location where the data should be stored.
      *
-     * @param
-     *
+     * @return   I2C_return_status    Success or Failure response.
      */
     I2C_return_status slave_receive(uint8_t* data);
 
@@ -239,13 +253,7 @@ class I2C
 
 		// Methods.
 
-		// I2C(void) = delete;	// Poisoned.
-
-		// I2C(I2C*) = delete;	// Poisoned.
-
 		I2C(I2C_imp*);
-
-		//I2C operator = (I2C const&) = delete;	// Poisoned.
 
 		// Fields.
 
