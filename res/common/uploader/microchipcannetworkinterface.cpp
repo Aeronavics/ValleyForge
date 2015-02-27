@@ -330,21 +330,21 @@ bool Microchip_CAN_network_interface::send_message(const CAN_message& msg, uint3
 
 bool Microchip_CAN_network_interface::receive_message( CAN_message& msg, uint32_t timeout)
 {
-	if (__sync_fetch_and_add(&overflow, 0))
-	{
-		drain_messages();
-		RESET_ATOMIC(overflow);
-		return false;
-	}
+	// if (__sync_fetch_and_add(&overflow, 0))
+	// {
+	// 	drain_messages();
+	// 	RESET_ATOMIC(overflow);
+	// 	return false;
+	// }
 		
 	timeval start, now;
 	gettimeofday(&start, NULL);
 	while (recv_queue.empty())
 	{
 		gettimeofday(&now, NULL);
-		uint32_t msec = (now.tv_usec - start.tv_usec)/1000;
-		msec += (now.tv_sec - start.tv_sec)*1000;
-		if (msec > timeout )
+		uint32_t msec = (now.tv_usec - start.tv_usec)/100000;
+		//msec += (now.tv_sec - start.tv_sec)*1000;
+		if (msec > (timeout * 1000) )
 		{
 			return false;
 		}

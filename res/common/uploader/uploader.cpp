@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
 		int page_number = page_address/opts.get_page_size();
 		do
 		{
-			std::cout << "Writing page: " <<  page_number + 1 << " of : " << max_page + 1;
+			std::cout << "Writing page: " <<  page_number + 1 << " of : " << max_page + 1 << std::endl;
 			std::cout.flush();
 			if (!comm_module->write_page(memory, opts.get_page_size(), page_address))
 			{
@@ -144,7 +144,8 @@ int main(int argc, char* argv[])
 		retries = 0;
 		do
 		{
-			std::cout << "Verifying page: " <<  page_number + 1 << " of : " << max_page + 1;
+			std::cout.flush();
+			std::cout << "Verifying page: " <<  page_number + 1 << " of : " << max_page + 1 << std::endl;
 			std::cout.flush();
 			if (!comm_module->verify_page(memory, opts.get_page_size(), page_address))
 			{
