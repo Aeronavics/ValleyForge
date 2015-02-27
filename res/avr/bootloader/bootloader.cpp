@@ -132,7 +132,9 @@ Bootloader_module& mod = module;
 Firmware_page buffer;
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
-
+#ifndef __AVR_AT90CAN128__
+void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3")));
+#endif
 /**
  *	Forces a CPU reset by striking the watchdog.
  *
@@ -192,7 +194,16 @@ void read_flash_page(Firmware_page& buffer);
 
 int main(void)
 {
-	// Set interrupts into bootloader-land, rather than the application-land.
+	// Check the state of the 'application run' marker, and the state of the force-bootloader input pin.
+	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC ? LO : HI)))
+	{
+		// The marker seemed clean, and the force-bootloader input is not asserted, so start the application immediately.
+
+		// Run the application.
+		run_application();
+	}
+
+		// Set interrupts into bootloader-land, rather than the application-land.
 	MCUCR = (1 << IVCE);
 	MCUCR = (1 << IVSEL);
 
@@ -209,15 +220,6 @@ int main(void)
 
 	// Turn on the blinkenlight solidly.
 	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE|BLINK_PIN) : (BLINK_WRITE & ~BLINK_PIN);
-
-	// Check the state of the 'application run' marker, and the state of the force-bootloader input pin.
-	if ((is_clean()) && (((FORCE_BL_READ & FORCE_BL_PIN) >> FORCE_BL_PIN_NUM) == (INPUT_LOGIC ? LO : HI)))
-	{
-		// The marker seemed clean, and the force-bootloader input is not asserted, so start the application immediately.
-
-		// Run the application.
-		run_application();
-	}
 
 	// Else if we get here, that means that the application didn't end cleanly, and so we might need to load new firmware.
 
@@ -418,6 +420,15 @@ void get_bootloader_information(Shared_bootloader_constants* bootloader_informat
 	return;
 }
 
+#ifndef __AVR_AT90CAN128__
+void wdt_init(void)
+{
+    MCUSR = 0;
+    wdt_disable();
+
+    return;
+}
+#endif
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
 void reboot(void)
@@ -465,26 +476,29 @@ void run_application(void)
 
 	// TODO - Make sure we're all good to go.
 
+	// Stop the ms timer.
+	TIMSK0 = 0b00000000;
+
 	// Shut down whatever module we were using.  This should return any affected peripherals to their initial states.
 	mod.exit();
 
-	// Stop the ms timer.
-	TIMSK0 = 0b00000000;
+	// Put interrupts back into application-land.
+	MCUCR = (1 << IVCE);
+	MCUCR = (0 << IVSEL);
 
 	// Make sure the blinkenlight is disabled.
 	BLINK_WRITE = (LED_LOGIC) ? (BLINK_WRITE & ~BLINK_PIN) : (BLINK_WRITE | BLINK_PIN);
 
-	// Put interrupts back into application-land.
-	MCUCR = (1 << IVCE);
-	MCUCR = 0;
-
 	// Stop the timer and return them to original state.
 #if defined (__AVR_AT90CAN128__)
 	TCCR0A = 0b00000000;
-#else
-	TCCR0B = 0b00000000;
-#endif
 	OCR0A = 0;
+#else
+	TCCR0A = 0b00000000;
+	TCCR0B = 0b00000000;
+	OCR0A = 0;
+	OCR0B = 0;
+#endif
 
 	// Stop the watchdog. If the user wants it in their application they can set it up themselves.
 	wdt_reset();

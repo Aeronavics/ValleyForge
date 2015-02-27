@@ -198,13 +198,17 @@ bool Socket_CAN_network_interface::send_message(const CAN_message& msg, uint32_t
 	{
 		frame.data[i] = msg.get_data()[i];
 	}
+
 	int sent = write(CAN_socket, &frame, sizeof(frame));
+	
 	if (sent != sizeof(frame))
 	{
 		perror("Could not send");
 		return false;
 	}
-	//std::cout << "Sent Message: ID: " << msg.get_id() << std::endl;
+	// std::cout << std::hex;
+	// std::cout << "Sent     ID: " << msg.get_id() << " DLC: " << msg.get_length() << std::endl;
+	// std::cout << std::dec;
 	return true;
 }
 
@@ -218,10 +222,12 @@ bool Socket_CAN_network_interface::receive_message( CAN_message& msg, uint32_t t
 	while (recv_queue.empty())
 	{
 		gettimeofday(&now, NULL);
-		uint32_t msec = (now.tv_usec - start.tv_usec)/1000;
-		msec += (now.tv_sec - start.tv_sec)*1000;
-		if (msec > timeout )
+		uint32_t msec = (now.tv_usec - start.tv_usec)/100000;
+		// msec += (now.tv_sec - start.tv_sec)*1000;
+		//msec += (now.tv_usec - start.tv_usec);
+		if (msec > (timeout * 1000)) 	// timeout is given in ms
 		{
+
 			//std::cout << "Timeout" << std::endl;
 			return false;
 		}
@@ -284,6 +290,7 @@ void Socket_CAN_network_interface::process_socket_events()
 	}
 	else
 	{
+
 		int bytes_read = read( CAN_socket, &frame, sizeof(frame) );
 		if (bytes_read == sizeof(frame))
 		{
@@ -294,7 +301,10 @@ void Socket_CAN_network_interface::process_socket_events()
 				recv_queue.push_back(msg);
 				pthread_mutex_unlock( &recv_queue_lock );
 			}
-			//std::cout << "Received message: ID: " << msg.get_id() << std::endl;
+			// std::cout << std::hex;
+			// std::cout << "Received ID: " << msg.get_id() << " DLC: " << msg.get_length() << std::endl;
+			// std::cout << std::dec;
+	
 		}
 		else
 		{

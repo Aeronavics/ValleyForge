@@ -67,6 +67,9 @@ class bootloader_module_can : public Bootloader_module
 		// Flag indicating that we're waiting for a transmitted message to be confirmed by the uploader.
 		bool transmission_unconfirmed;
 
+		// Flag to indicate that all READ_DATA transmissions have been completed.
+		bool data_complete;
+
 		// Methods.
 	
 		/**

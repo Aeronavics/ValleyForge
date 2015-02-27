@@ -226,7 +226,7 @@ void bootloader_module_can::init(void)
 void bootloader_module_can::exit(void)
 {
 	// Just disable the CAN controller.  The rest doesn't matter.
-	CANGCON = (1 << SWRES);
+	CANGCON = (1 << SWRES) | (0 << 1);
 
 	// TODO - This isn't true!?  What if the application code assumes some CAN registers we touched are all zeroes?
 
@@ -246,10 +246,11 @@ void bootloader_module_can::event_idle()
 	// Check if we've just finished reading a flash page that we want to send.
 	if (!buffer.ready_to_read && ready_to_send_page)
 	{
-    // Reset the current byte.
-    buffer.current_byte = 0;
+    	// Reset the current byte.
+    	buffer.current_byte = 0;
 		// We're no longer ready to send the page, we're actually queuing it up for transmission.
 		ready_to_send_page = false;
+		data_complete = false;
 		transmission_queued = true;
 	}
 
@@ -261,7 +262,7 @@ void bootloader_module_can::event_idle()
 	else
 	{
 		// Otherwise, if we're still in the middle of sending a page, we send another chunk.
-		if (transmission_queued)
+		if (transmission_queued && !data_complete)
 		{
 			// Send another chunk of bytes.
 			send_read_data();
@@ -270,13 +271,16 @@ void bootloader_module_can::event_idle()
 			buffer.current_byte += transmission_message.dlc;
 
 			// Now, we need to wait for confirmation before we do this again.
-
-
+			if(buffer.code_length==0)
+			{
+				set_bootloader_state(ERROR);
+			}
+			transmission_queued = false;
 			// If that was the last chunk, then we haven't anything more to do.
 			if (buffer.current_byte >= buffer.code_length)
 			{
-        transmission_unconfirmed = true;
-				transmission_queued = false;
+        		transmission_unconfirmed = true;
+				data_complete = true;
 			}
 		}
 	}
@@ -439,9 +443,11 @@ void bootloader_module_can::handle_request_reset()
 	// Confirm the reset command, since the reset command is always successful.
 	send_confirm_rxup(CANID_REQUEST_RESET, true);
 
+
 	// Reboot to either the application or the bootloader, depending on what was requested.
 	if (!reception_message.message[1])
 	{
+
 		reboot_to_bootloader();
 
 		// We will never reach here.
@@ -681,15 +687,15 @@ void bootloader_module_can::filter_message(void)
 			break;
 
 		case CANID_READ_DATA:
-    {
+    	{
 			// This is a confirmation message from the uploader, indicating that it received the page we sent ok.
 
 			// If we were previously transmitting a message, we aren't any longer.
 			//module.transmission_unconfirmed = false;
-      transmission_queued = true;
-      transmission_unconfirmed = false;
+      		transmission_queued = true;
+      		transmission_unconfirmed = false;
 			break;
-    }
+    	}
 
 		default:
 			// This message isn't for us, because it's not an ID which we recognise.

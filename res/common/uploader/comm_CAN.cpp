@@ -225,6 +225,7 @@ bool CAN_module::get_device_info( Device_info& info)
 	CAN_message get_info = make_command(CANID_GET_INFO, target, 1);
 	if (!iface->clear_filter())
 	{
+		std::cerr << "Failed to set filter" << std::endl;
 		return false;
 	}
 	
@@ -235,18 +236,22 @@ bool CAN_module::get_device_info( Device_info& info)
 	}
 	if (!iface->drain_messages())
 	{
+		std::cerr << "Failed to drain message" << std::endl;
 		return false;
 	}
 	if (!iface->send_message(get_info, TIMEOUT))
 	{
+		std::cerr << "Failed to send message" << std::endl;
 		return false;
 	}
 	if (!iface->receive_message(get_info, TIMEOUT))
 	{
+		std::cerr << "Failed to receive message" << std::endl;
 		return false;
 	}
 	if (get_info.get_id() != CANID_GET_INFO || get_info.get_length() < 6)
 	{
+		std::cerr << "Failed to get id" << std::endl;
 		return false;
 	}
 	info.set_name("CAN Bootloader");
@@ -452,6 +457,7 @@ bool CAN_module::read_page(Memory_map& destination, size_t size, size_t address)
 	{
 		return false;
 	}
+	std::cout << " " << data[5] << std::endl;
 	if (!iface->send_message(read_memory, TIMEOUT))
 	{
 		std::cerr << "Failed to send read memory command" << std::endl;
@@ -517,6 +523,7 @@ bool CAN_module::reset_device(bool run_application)
 		std::cerr << "Failed to set filter" << std::endl;
 		return false;
 	}
+	// std::cout << "DATA [1] : " << (run_application ? 1 : 0) << std::endl;
 	if (!iface->send_message(reset_message, TIMEOUT))
 	{
 		return false;
