@@ -580,7 +580,9 @@ if [ "$ACTIVE_MODULE" == "bootloader_module_canspi" ]; then
 fi
 
 # We don't provide any UI for the bootloader start address, but write it to the configuration file for clarity.
-echo -e "BOOTSTART=${BOOTSTART}" >> ${CONFIG_FILE}
+push_key ${CONFIG_FILE} "BOOTSTART" "${BOOTSTART}"
+
+# NOTE - It's probably unlikely you'd ever change the bootloader start address, unless you for some reason need more space for application code.
 
 # All done.
 
