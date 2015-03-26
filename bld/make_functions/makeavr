@@ -265,3 +265,73 @@ makeavr_bootloader()
 	echo -e "${BOLD_WHITE}Build successful.  Output binary written to ${OUTPUT_DIR}/${COMPONENT}/${COMPONENT}_bootloader.hex.\n${NO_COLOUR}"
 	return 0
 }
+
+######################################## FUNCTION #########################################
+###
+### Name:		makeavra
+###
+### Inputs/Outputs:	None
+###
+### Purpose: Makes a component using AVRA.  This is provided for legacy reasons.
+###
+###########################################################################################
+
+makeavra()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check that AVRA is actually available.
+	if [ -z "$(which avra)" ]; then
+		echo -e "${RED}Unable to find AVRA (AVR Assembler).\n${NO_COLOUR}"
+		return 1
+	fi 
+
+	# Don't need to check for a linker script, since AVRA isn't going to use one.
+
+	# Update the assembler flags in case they still contain some unevaluated variables.
+	AFLAGS=$(eval echo $AFLAGS)
+
+	# AVR targets only support a single application executable, so it is named the same as the component.
+	EXECUTABLE=${COMPONENT_NAME}
+    
+	# Actually make the component.
+	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
+	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT > /dev/null
+	avra ${AFLAGS} ${EXECUTABLE}.s
+
+	# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+	# Check the return value from make, to determine if an error occurred during compilation.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
+		popd > /dev/null
+		return 1
+	fi
+	popd > /dev/null
+	
+	# The compilation worked, so now just copy across the output binaries.
+	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
+	$OBJCOPY -O ihex $TCPATH/$TMP_SRC_DIR/$COMPONENT/${EXECUTABLE}.s.hex $TCPATH/$OUTPUT_DIR/${COMPONENT}/${EXECUTABLE}.hex
+
+	# Check the return value from the object copy.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}Object copy error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"			
+		return 1
+	fi
+	echo -e ""
+
+	# Print out details of the size of the generated hex file.
+	echo -e "${WHITE}Output file size details:\n${NO_COLOUR}"
+	$SIZE --format=SysV $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.hex
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
