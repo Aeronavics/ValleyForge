@@ -3,7 +3,6 @@ Wiki-Format: zim 0.4
 Creation-Date: 2015-01-06T12:12:58+13:00
 
 ====== Callbacks ======
-Created Tuesday 06 January 2015
 
 Callbacks are a way for the HAL to call a user function when some asynchronous action happens, such as when an Interrupt is triggered or some asynchronous communication has finished.
 
@@ -18,7 +17,6 @@ Currently there are two Callback types:
 		''void callback(void)'' ie, a function that has no parameters and returns nothing.
 		If you need to pass state to any callbacks using this type, you must use global variables.
 		DEV-NOTE: We should probably move away from this and use ''Callback'' instead.
-		
 
 === Example ===
 For an example HAL module that provides the following attach_interrupt function

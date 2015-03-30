@@ -3,11 +3,12 @@ Wiki-Format: zim 0.4
 Creation-Date: 2014-12-04T16:05:48+13:00
 
 ====== ValleyForge ======
-Created Thursday 04 December 2014
 
 ===== Documentation =====
 
-[[Download|Downloading a Copy of the Toolchain]]
+[[Getting Started]]
+
+[[Getting Started:Download|Downloading a Copy of the Toolchain]]
 [[HAL|Hardware Abstraction Library]]
 [[Architectures]]
 [[Targets|Supported Targets]]

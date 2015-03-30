@@ -4,7 +4,6 @@ Creation-Date: 2015-02-17T17:30:24+13:00
 
 ====== Embedded C++ Coding Style and Standards Guide ======
 
-
 [[+Introduction|Introduction]]
 
 [[+Terminology|Terminology]]

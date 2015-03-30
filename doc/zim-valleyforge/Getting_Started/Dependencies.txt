@@ -1,0 +1,28 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-03-30T14:15:15+13:00
+
+====== Dependencies ======
+
+The toolchain depends on a number of external tools.  In some cases, the toolchain may automatically download a tool when required, however in some cases this is not practicable, so you may need to install the tool onto the host system manually.
+
+Unfortunately, at the present time, the error messages generated to indicate the latter requirement are not always very obvious.
+
+==== AVR ====
+
+To build for [[Architectures:AVR|AVR]] targets (including using GCC assembler), the toolchain requires the AVR GCC compiler be installed on the host system.
+
+On Ubuntu systems: ''sudo apt-get install gcc-avr avrdude avr-libc binutils-avr''
+
+==== AVRA Assembler ====
+
+To build for [[Architectures:AVR|AVR]] targets using AVRA Assembler (note this isn't the same as GCC assembler), the toolchain requires both the AVR GCC compiler (specifically, for its bin utils) and the AVRA assembler to be installed on the host system.
+
+On Ubuntu systems:		''sudo apt-get install gcc-avr avrdude avr-libc binutils-avr''
+					     ''sudo apt-get install avra''
+
+
+
+
+
+

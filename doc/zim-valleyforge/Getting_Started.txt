@@ -1,0 +1,11 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-03-30T14:12:55+13:00
+
+====== Getting Started ======
+
+1. [[+Dependencies|Install any required dependencies.]]
+
+2. [[+Download|Download a copy of the toolchain.]]
+
+
