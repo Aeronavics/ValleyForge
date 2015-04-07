@@ -50,7 +50,7 @@ gen_mavlink()
 	# DEFINE CONSTANTS.
 
 	GEN_CACHE=${TCPATH}/tmp/gen_cache
-	DEFINITIONS=${TCPATH}/var
+	DEFINITIONS=${TCPATH}/var/mavlink
 
 	# PRIVATE INTERNAL FUNCTIONS.
 
