@@ -228,7 +228,9 @@ find_source_dependencies_recursive()
 			"h")
 				if [ -e ${WORD%.*}.c ]; then
 					SRC_FILE="${WORD%.*}.c"
-					add_dependency_recursive ${SRC_FILE}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi
 
 				if [ -e ${WORD%.*}.cpp ]; then
@@ -237,19 +239,25 @@ find_source_dependencies_recursive()
 						VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=1
 					fi
 					SRC_FILE="${WORD%.*}.cpp"
-					add_dependency_recursive ${SRC_FILE}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi				
 				;;
 			"hpp")
 				if [ -e ${WORD%.*}.cpp ]; then
 					SRC_FILE="${WORD%.*}.cpp"
-					add_dependency_recursive ${SRC_FILE}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi
 				;;
 			"hs")
 				if [ -e ${WORD%.*}.s ]; then
 					SRC_FILE="${WORD%.*}.s"
-					add_dependency_recursive ${SRC_FILE}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi
 				;;
 		esac
