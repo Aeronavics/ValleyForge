@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:        	checkfuncs_funcname
+### Name:        	checkfuncs_functionname
 ###
 ### Author:      	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION ##########################################
 ###
-### Name:		compliance_check_file_funcname
+### Name:		compliance_check_file_functionname
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 ############################################################################################
 
-compliance_check_file_funcname()
+compliance_check_file_functionname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -222,7 +222,7 @@ compliance_check_file_funcname()
 				if ! check_line "$LINE" $LINE_NUM; then
 
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_funcname" $FILE $LINE_NUM "Non-compliant function name: $ERROR"
+					compliance_fail_line "compliance_check_file_functionname" $FILE $LINE_NUM "Non-compliant function name: $ERROR"
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -253,7 +253,7 @@ compliance_check_file_funcname()
 	if [ ! ${CHECKS_OK} ]; then
 
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_funcname" $FILE "This file contains non-compliant function name(s)."
+		compliance_fail_file "compliance_check_file_functionname" $FILE "This file contains non-compliant function name(s)."
 	fi
 
 	# All done.
