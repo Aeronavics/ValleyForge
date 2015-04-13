@@ -865,11 +865,17 @@ if [ ! $BATCHMODE ] && [ $NEW ]; then
 				done
 
 				# Create the template files.
-				for EXEC_NAME in $EXECUTABLES
+				if [ -n "${EXECUTABLES}" ]; then
+					TEMPLATE_NAMES=${EXECUTABLES}
+				else
+					TEMPLATE_NAMES=${COMPONENT_NAME}
+				fi
+				for EXEC_NAME in $TEMPLATE_NAMES
 				do
-					echo -e "${GREEN}Creating executable: ${EXEC_NAME}${NO_COLOUR}"
+					echo -e "${GREEN}Creating template files for: ${EXEC_NAME}${NO_COLOUR}"
 					bash $TCPATH/bld/create/create_files -n $EXEC_NAME -c $COMPONENT -t "$TYPE" -b
 				done
+				TEMPLATE_NAMES=
 				break
 				;;
 			"N" | "n" )
