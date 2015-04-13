@@ -70,11 +70,14 @@
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 #ifdef __AVR_ATmega2560__
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_MEM8(0xB9)
 #elif defined (__AVR_AT90CAN128__)
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_MEM8(0xB9)
 #elif defined (__AVR_ATmega8__)
-#define TWI_BUFFER_SIZE 20
+# define TWI_BUFFER_SIZE 20
+# define I2C_SR   _SFR_IO8(0x01)
 #endif
 
 class I2C_imp;
@@ -156,25 +159,6 @@ enum I2C_status_code
 
 };
 
-struct TWI_bus
-{
-  volatile uint8_t TWI_MT_buf[TWI_BUFFER_SIZE];        // TWI master transmitter data buffer.
-  volatile uint8_t TWI_MR_sla_adr;                     // TWI master receiver requires a variable to hold target address.
-  volatile uint8_t* TWI_MR_data_ptr;                   // TWI master receiver saves the data straight to the user data array.
-  volatile uint8_t TWI_ST_buf[TWI_BUFFER_SIZE];        // TWI slave transmitter buffer.
-  volatile uint8_t TWI_SR_buf[TWI_BUFFER_SIZE];        // TWI slave receiver buffer.
-
-  volatile bool TWI_gen_call;
-  volatile bool TWI_data_in_ST_buf;
-  volatile bool TWI_data_in_SR_buf;
-
-  uint8_t own_adr;
-  I2C_mode TWI_current_mode;
-  volatile uint8_t TWI_msg_size;
-  volatile uint8_t TWI_status_reg;
-};
-
-
 /**
  * @class
  *
@@ -201,69 +185,66 @@ class I2C
      * Enables the I2C/TWI interface by setting the enable bit in the control register. The
      * CPU frequency must be at least 16x higher than the I2C frequency
      *
-     * @param    CPU_CLK_speed      The CPU clock speed.
-     * @param    I2C_SCL_speed      I2C frequency.
-     * @param    slave_adr          The device slave address.
+     * @param    CPU_CLK_speed        The CPU clock speed.
+     * @param    I2C_SCL_speed        I2C frequency.
+     * @param    slave_adr            The device slave address.
      *
-     * @return   I2C_return_status  returns a success or fail
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
 
     /**
      * Disables the I2C/TWI register by un setting the enable bit in the control register.
-     *
-     * @param
-     *
-     * @return
      */
 		void disable(void);
 
     /**
      * Wait for I2C to complete transmission.
      *
-     * @param
-     *
-     * @return
      */
     void wait_I2C();
 
     /**
-     * Controller takes up the I2C master role and transmits a message to a desired slave controller.
+     * The controller becomes the master controller and transmits a message to a desired
+     * slave controller, chosen using the slave_adr variable.
      *
-     * @param   uint8_t slave_adr   User assigned slave address.
-     * @param   uint8_t data        The data byte.
-     * @param   uint8_t msg_size    The number of data bytes.
+     * @param    slave_adr            The CPU clock speed.
+     * @param    data                 Pointer to the data address that contains byte of message.
+     * @param    msg_size             Number of bytes to send.
      *
-     * @return  I2C_return_status   Success or failure.
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
-     * Controller takes up the I2C master role and requests for data from a slave controller.
+     * The controller becomes the master controller and requests data bytes from a slave controller.
      *
-     * @param   uint8_t slave_adr   User assigned slave address.
-     * @param   uint8_t data        The data byte.
-     * @param   uint8_t msg_size    The number of data bytes.
+     * @param    slave_adr            The CPU clock speed.
+     * @param    data                 Pointer to the data address that contains byte of message.
+     * @param    msg_size             Number of bytes to send.
      *
-     * @return  I2C_return_status   Success or failure.
+     * @return   I2C_return_status    Success or Failure response.
      */
 		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
 
     /**
-     * Controller behaves as the slave and transmits any data stored in the buffer.
+     * As a slave controller the function stores data into a buffer where the data will be
+     * transmitted on a request from a master controller.
      *
-     * @param   uint8_t data        The data byte.
-     * @param   uint8_t msg_size    The number of data bytes.
+     * @param    data                 the data to be stored in the I2C buffer.
+     * @param    msg_size             Number of bytes to save.
      *
-     * @return  I2C_return_status   Success or failure.
+     * @return   I2C_return_status    Success or Failure response.
      */
     I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
 
     /**
-     * Controller behaves as the slave and receives data from a master controller.
+     * As a slave controller, the I2C receive buffer is checked to see if any data has been
+     * received. If there is data, then it is stored in a given variable.
      *
-     * @param   uint8_t data        The data byte.
+     * @param    data                 Location where the data should be stored.
      *
+     * @return   I2C_return_status    Success or Failure response.
      */
     I2C_return_status slave_receive(uint8_t* data);
 

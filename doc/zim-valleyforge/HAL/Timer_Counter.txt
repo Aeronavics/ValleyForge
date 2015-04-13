@@ -45,6 +45,4 @@ AVR micro controllers share very similar functional structures but do have sever
 
 ==== Implementation Status ====
 
-Testing.
 8-bit Timer/Counter PWM generation does not work.
-Input Capture Unit - Most likely, incomplete. Do Testing

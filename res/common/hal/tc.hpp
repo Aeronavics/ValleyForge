@@ -23,7 +23,7 @@
  *  @brief
  *  A class for the Timer/Counter Module of the HAL. Implements common timer functionality.
  *
- *  @author   Kevin Gong
+ *  @authro   Kevin Gong
  *  @author 	Zac Frank
  *  @author		Paul Bowler
  *
@@ -52,9 +52,7 @@
  * Implements various functions relating to timers, input capture and output
  * compare functionality (and hence PWM).
  * Not all timer functionality is accessible through this module, as specifications
- * between different architectures and models varies significantly. 8-bit PWM functionality
- * does not work for unknown reasons.
- *
+ * between different architectures and models varies significantly.
  */
 
 // Only include this header file once.
@@ -108,6 +106,7 @@ struct Tc_value
 		register_value.type = TC_8BIT;
 		register_value.value.as_8bit = v;
 
+		// All done.
 		return register_value;
 	}
 
@@ -118,6 +117,7 @@ struct Tc_value
 		register_value.type = TC_16BIT;
 		register_value.value.as_16bit = v;
 
+		// All done.
 		return register_value;
 	}
 };
@@ -147,7 +147,6 @@ class Tc
 
 		/**
 		 * Create Tc instance abstracting the specified timer/counter hardware peripheral.
-     *
 		 */
 		Tc(Tc_number timer);
 
@@ -159,23 +158,23 @@ class Tc
 		/**
 		 * Initializes peripheral for first use.
 		 *
-		 * @param    Nothing.
-		 * @return   TC_CMD_ACK if the peripheral was successfully initialised, or TC_CMD_NAK if the operation failed.
+		 * @param     Nothing.
+		 * @return    TC_CMD_ACK if the peripheral was successfully initialised, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status initialise(void);
 
 		/**
 		 * Master interrupt enable; enable interrupts for all sources in this timer/counter peripheral.
 		 *
-	   * @param	 Nothing.
+	   * @param	    Nothing.
 		 * @return    Nothing.
 		 */
-		void enable_interrupts(void);
+		void re_enable_interrupts(void);
 
 		/**
 		 * Master interrupt disable; disable interrupts for all sources in this timer/counter peripheral.
 		 *
-		 * @param	 Nothing.
+		 * @param	    Nothing.
 		 * @return    Nothing.
 		 */
 		void disable_interrupts(void);
@@ -183,56 +182,56 @@ class Tc
 		/**
 		 * Sets the timer rate by selecting the clk src and prescaler.
 		 *
-		 * @param  Tc_rate	Settings for clock source and prescaler.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param    Tc_rate	            Settings for clock source and prescaler.
+		 * @return   Tc_command_status    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status set_rate(Tc_rate rate);
 
 		/**
 		 * Loads the timer with a value.
 		 *
-		 * @param value		The value the timer register will have.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     value		            The value the timer register will have.
+		 * @return    Tc_command_status   TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status load_timer_value(Tc_value value);
 
 		/**
 		 * Gets the value of the timer register.
 		 *
-		 * @param Nothing.
-		 * @return The timer value in either 16-bit or 8-bit.
+		 * @param     Nothing.
+		 * @return    The timer value.
 		 */
 		Tc_value get_timer_value(void);
 
 		/**
 		 * Starts the timer.
 		 *
-		 * @param Nothing
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     Nothing
+		 * @return    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status start(void);
 
 		/**
 		 * Stops the timer.
 		 *
-		 * @param Nothing
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     Nothing
+		 * @return    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status stop(void);
 
 		/**
 		 * Enables the overflow interrupt on this timer
 		 *
-		 * @param  callback		The handler for this interrupt event.s
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     callback		The handler for this interrupt event.s
+		 * @return                TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_tov_interrupt(IsrHandler callback);
 
 		/**
 		 * Disables the overflow interrupt on this timer
 		 *
-		 * @param  Nothing.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     Nothing.
+		 * @return    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status disable_tov_interrupt(void);
 
@@ -242,34 +241,34 @@ class Tc
 		 * NOTE - There are variety of significantly different methods in which an output compare peripheral may operate; these different permutations are captured by
 		 *		  HAL abstration through different output compare 'modes'.  These modes may change significantly across targets.
 		 *
-		 * @param mode			Which mode the OC channel should be set to.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     mode			Which mode the OC channel should be set to.
+		 * @return    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_oc(Tc_oc_mode mode);
 
 		/**
 		 * Enables output channel attached to each timer/counter for the specified OC channel.  If mode to set to 'OC_NONE', then disables OC mode operation for this channel.
 		 *
-		 * @param channel		Which of the channels to activate
-		 * @param mode			Which mode the OC channel should be set to.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which of the channels to activate
+		 * @param     mode			Which mode the OC channel should be set to.
+		 * @return    TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode);
 
 		/**
 		 * Enables the output compare interrupt for the specified OC channel.  Note that this doesn't actually enable OC mode itself.
 		 *
-		 * @param  channel		Which channel register to interrupt on.
-		 * @param  callback		The handler for this interrupt event.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which channel register to interrupt on.
+		 * @param     callback	The handler for this interrupt event.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_oc_interrupt(Tc_oc_channel channel, IsrHandler callback);
 
 		/**
 		 * Disables the output compare interrupt on this timer.  Note that this doesn't actually disable the OC mode operation itself.
 		 *
-		 * @param channel		Which channel register to disable the interrupt on.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which channel register to disable the interrupt on.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status disable_oc_interrupt(Tc_oc_channel channel);
 
@@ -281,17 +280,17 @@ class Tc
 		 *        match event occurs; but in another mode, output match may occur when the timer overflows, and the OCR value may instead determine some other
 		 *		  characteristic such as output waveform generation shape.
 		 *
-		 * @param channel	Which channel to set the OC value for.
-		 * @param value		Usually, the value which, when the timer reaches, causes an output compare match event.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel	  Which channel to set the OC value for.
+		 * @param     value		  Usually, the value which, when the timer reaches, causes an output compare match event.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status set_ocR(Tc_oc_channel channel, Tc_value value);
 
 		/**
 		 * Reads the current output compare register value for the specified channel.
 		 *
-		 * @param channel	Which channel to read the OCR value from.
-		 * @return The OC register value.
+     * @param     channel	  Which channel to read the OCR value from.
+		 * @return              The OC register value.
 		 */
 		Tc_value get_ocR(Tc_oc_channel channel);
 
@@ -299,26 +298,26 @@ class Tc
 		 * Enables input capture mode for the specified IC channel.  If mode to set to 'IC_NONE', then disable IC mode
 		 * operation for the specified channel.
 		 *
-		 * @param channel		Which IC channel should be enabled.
-		 * @param mode			Which mode the IC channel should be set to.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which IC channel should be enabled.
+		 * @param     mode			Which mode the IC channel should be set to.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_ic(Tc_ic_channel channel, Tc_ic_mode mode);
 
 		/**
 		 * Enables the input compare interrupt on this timer
 		 *
-		 * @param  channel		Which channel register to interrupt on.
-		 * @param  callback		A pointer to the ISR that is called when this interrupt is generated. Of form &myISR
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which channel register to interrupt on.
+		 * @param     callback	A pointer to the ISR that is called when this interrupt is generated. Of form &myISR
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status enable_ic_interrupt(Tc_ic_channel channel, IsrHandler callback);
 
 		/**
 		 * Disables the input compare interrupt on this timer
 		 *
-		 * @param channel		Which channel register to disable the interrupt on.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel		Which channel register to disable the interrupt on.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status disable_ic_interrupt(Tc_ic_channel channel);
 
@@ -329,21 +328,22 @@ class Tc
 		 *	      capture mode, ICR (the input capture register of the channel) usually contains the timer value at which a input capture event occurred, and is read by
 		 *        application code;  but whilst in some particular output compare mode, the value of ICR may be set to determine the TOP value for the timer.
 		 *
-		 * @param channel	Which channel to set the IC value for.
-		 * @param value		Usually, the value which is recorded when an input capture event occurs.
-		 * @return TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
+		 * @param     channel	  Which channel to set the IC value for.
+		 * @param     value		  Usually, the value which is recorded when an input capture event occurs.
+		 * @return              TC_CMD_ACK if the operation was successful, or TC_CMD_NAK if the operation failed.
 		 */
 		Tc_command_status set_icR(Tc_ic_channel channel, Tc_value value);
 
 		/**
 		 * Reads the current input capture register value for the specified channel.
 		 *
-		 * @param channel	Which channel to read the ICR value from.
-		 * @return The IC register value.
+		 * @param     channel	  Which channel to read the ICR value from.
+		 * @return              The IC register value.
 		 */
 		Tc_value get_icR(Tc_ic_channel channel);
 
 	private:
+
 		// Functions.
 		Tc(void) = delete;	// Poisoned.
 		Tc(Tc*) = delete;  // Poisoned.
