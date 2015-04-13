@@ -156,7 +156,7 @@ compliance_check_file_comment()
 		IFS=$(echo -en "\n\b")
 
 		# Condition to check if the file has multiple C++ comments.
-		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '([ \t]*\/\/(.*?)(\n[ \t]*((\/\/)(.*))+)+)' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '^([ \t]*\/\/(.*?)(\n[ \t]*((\/\/)(.*))+)+)' $FILE`
 		do
 			# Obtain the line number of the comment block.
 			line_number_comment=${string%%:*}
@@ -185,7 +185,7 @@ compliance_check_file_comment()
 		IFS=$(echo -en "\n\b")
 
 		#Condition to check if the file has single line C style comments.
-		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '(\/\*)+(.*)(\*\/)+' $FILE`
+		for string in `$TCPATH/res/vendor/pcre-8.35/pcregrep -M -n '^(\/\*)+(.*)(\*\/)+' $FILE`
 		do
 			# Obtain the line number of the comment block.
 			line_number_comment=${string%%:*}
