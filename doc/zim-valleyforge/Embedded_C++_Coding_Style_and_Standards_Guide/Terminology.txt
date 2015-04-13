@@ -37,7 +37,6 @@ int32 fahr();
 int32 foo();
 '''
 
-
 	14. A **default constructor** is a constructor which needs no arguments.
 
 	15. A **definition** of a function tells the compiler how the function works. It shows what instructions are executed for the function.
@@ -45,14 +44,10 @@ int32 foo();
 '''
 int32 foo()
 {
-'''
-	'''
 	//Statements
-	}
-	'''
-	
+}
 
-
+'''
 	16. An **enumeration type** is an explicitly declared set of symbolic integer constants. In C++ it is declared as an enum.
 
 	17. An **exception** is a run-time program anomaly that is detected in a function or member function. Exception handling provides for the uniform management of exceptions.
