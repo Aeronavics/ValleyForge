@@ -7,13 +7,18 @@ Creation-Date: 2015-02-17T17:34:16+13:00
 ====== Layout conventions ======
 
 ===== Indentation =====
+
 	**1.2.1** **Indentation of statements should be performed using 'TAB' characters.** 
 
-Note that INDENTATION is not the same as ALIGNMENT. By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
+By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
+
+**NOTE** -  INDENTATION is not the same as ALIGNMENT.
 
 	**1.2.2** **Alignment of statements should be performed using 'space' characters.**
 
 By using space characters for alignment, correct alignment remains, regardless of the size of the tab stop used in a particular contributor's IDE (assuming the IDE is using a mono-spaced font, as any sane programmer requires).
+
+**NOTE** -  INDENTATION is not the same as ALIGNMENT.
 
 In the example below, TAB characters are indicated by "----->", whilst SPACE characters are represented by "."
 
@@ -35,67 +40,68 @@ void some_function()
 '''
 void some_function()
 {
-		do_something();
+	do_something();
 
-		// Correct indentation of a IF-ELSE statement.
-		if (expression)
-		{
-				something;
-		}
-		else if (expression)
-		{
-				something;
-		}
-		else
-		{
-				something;
-		}
+	// Correct indentation of a IF-ELSE statement.
+	if (expression)
+	{
+		something;
+	}
+	else if (expression)
+	{
+		something;
+	}
+	else
+	{
+		something;
+	}
 
-		// Correct indentation of a FOR statement.
-		for (something; expression; something)
-		{
-				something;
-		}
+	// Correct indentation of a FOR statement.
+	for (something; expression; something)
+	{
+		something;
+	}
 
-		// Correct indentation of a WHILE statement.
-		while (expression)
-		{
-				something;
-		}
+	// Correct indentation of a WHILE statement.
+	while (expression)
+	{
+		something;
+	}
 
-		// Correct indentation of a DO-WHILE statement.
-		do
-		{
-				something;
-		}
-		while (expression);
+	// Correct indentation of a DO-WHILE statement.
+	do
+	{
+		something;
+	}
+	while (expression);
 
-		// Correct indentation of a SWITCH statement.
-		switch (expression)
-		{
-				case one:
-						something;
-						break;
+	// Correct indentation of a SWITCH statement.
+	switch (expression)
+	{
+		case one:
+			something;
+			break;
 
-				case two:
-						something;
-						break;
+		case two:
+			something;
+			break;
 
-				default:
-						something;
-						break;
-		}
+		default:
+			something;
+			break;
+	}
 }
 '''
 
 
 ===== Line breaks =====
+
 	**1.2.4** **Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:**
 
 '''
 if (something)
 {
-		do_something();
+	do_something();
 }
 '''
 
@@ -126,7 +132,6 @@ for (int i = 0; i < n;
 }
 '''
 
-
 Split lines occurs when a statement exceed the 80 column limit given above. It is difficult to give rigid rules for how lines should be split, but the examples above should give a general hint. In general:
 	* Break after a comma.
 	* Break after an operator.
@@ -136,13 +141,14 @@ Split lines occurs when a statement exceed the 80 column limit given above. It i
 
 
 ===== White space =====
+
 	**1.2.9** **Spaces should not be used around '.' or '->', nor between unary operators and operands.**
 	
 '''
-if (!something)
+if (!something->something_else)
 {
-		a = &b;
-		c = !d;
+	a.b = &c;
+	d = !e;
 }
 '''
 
@@ -164,15 +170,15 @@ a = b ? c : d;
 '''
 class Some_Class
 {
-		void some_function()
+	void some_function()
+	{
+		while (expression)
 		{
-				while (expression)
-				{
-						...
-				}
-
-				return (a + b);
+			...
 		}
+
+		return (a + b);
+	}
 }
 '''
 
@@ -187,10 +193,10 @@ some_function(a, b, c, d);
 '''
 for (uint i = 0; i < j; i++)
 {
-		for (; j < k; )
-		{
-				...
-		}
+	for (; j < k; )
+	{
+		...
+	}
 }
 '''
 
@@ -205,18 +211,24 @@ c = (a + b + 1);
 	**1.2.16 There should be no space in between the function name, the opening brace and the first argument declaration.**
 	
 '''
-int do_something()			// Non-compliant: int do_something ()
-{					//		  {
+// Compliant:
+int do_something()	
+{
+
+// Non-compliant: 
+int do_something ()
+{
 '''
 
 	**1.2.17 When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.**
 
 '''
-int* a;
-char* b;
+int* a;		// Compliant.
+int* a,b;	// Non-compliant, because 'b' doesn't get declared as a pointer.
+int *a,*b;	// Non-compliant.
 
-int& c;
-char& d; 
+int& c;		// Compliant.
+char& d; 	// Compliant.
 '''
 
 Because this style appears confusing if two different variables of different types are declared on a single line (such as a pointer followed by a regular variable of the same base type), variables of different types are not to be declared on a single line. Similarly, for this reason, multiple pointer or reference types are not to be declared on a single line.
@@ -232,11 +244,11 @@ a = ((1 + b) * ((c / d) / e));
 '''
 template<class T> do_something(T a)
 {
-		T a = do_something_else();
+	T a = do_something_else();
 
-		Uint8 b = 16
+	Uint8 b = 16
 
-		do_some_other_thing<Uint8>(b, T a);
+	do_some_other_thing<Uint8>(b, T a);
 }
 '''
 

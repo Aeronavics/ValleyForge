@@ -5,9 +5,11 @@ Creation-Date: 2015-02-17T17:34:13+13:00
 
 
 ====== Commenting conventions ======
+
 	**1.1.1** **All comments should be included relative to their position in the code.**
 '''
 
+// Compliant:
 while (true)
 {
 	// Do something.
@@ -22,10 +24,10 @@ while (true)
 }
 '''
 
-
 This is to avoid the comments breaking the logical structure of the program.
 
 ===== Header Comments =====
+
 	**1.1.2** **All files with source code should start with a header comment with the following format.**
 
 '''
@@ -48,6 +50,7 @@ This is to avoid the comments breaking the logical structure of the program.
 
 
 ===== Block Comments =====
+
 	**1.1.3** **C style comments should be used for block comments.**
 
 '''
@@ -58,8 +61,8 @@ This is to avoid the comments breaking the logical structure of the program.
   */
 '''
 
-
 ===== Line Comments =====
+
 	**1.1.4** **C++ style comments should be used for line comments.**
 
 '''
@@ -71,21 +74,23 @@ Line comments are the conventional comments which explain the structure and oper
 ===== Development Comments =====
 
 ==== TODO Comments ====
+
 	**1.1.5** **The opening of the TODO comment should be constructed exactly as in the example shown below, since this allows both syntax high-lighting of TODO comments, and also parsing and searching of TODO items by more sophisticated development tools:**
 	
 '''
 void get_something(void)
 {
-		// TODO - Implement this function properly.
+	// TODO - Implement this function properly.
 
-		// TODO - The return type will need to be changed to non-void later.
-		return;
+	// TODO - The return type will need to be changed to non-void later.
+	return;
 }
 '''
 
-Note that two comments are used: the first comment refers to the fact that the main functionality of the function has not yet been implemented; the second comment refers to the fact that (in order to allow the containing module to be compiled even before all the functionality is completed) the return type of the function has been altered temporarily and will need to be modified once the actual functionality of the function is completed.
+**NOTE** -  Two comments are used: the first comment refers to the fact that the main functionality of the function has not yet been implemented; the second comment refers to the fact that (in order to allow the containing module to be compiled even before all the functionality is completed) the return type of the function has been altered temporarily and will need to be modified once the actual functionality of the function is completed.
 
 ==== NOTE Comments ====
+
 	**1.1.6** **The opening of the NOTE comment should be constructed exactly as in the example shown below, since this allows both syntax high-lighting of NOTE comments, and also parsing and searching of NOTE items by more sophisticated development tools:**
 '''
 
@@ -95,7 +100,7 @@ Note that two comments are used: the first comment refers to the fact that the m
 some_mapped_register = 1;
 '''
 
-Note that the line is question is still commented normally; the ''NOTE'' comment simply provides additional information which might be important if a developer wishes to understand how the code works.
+**NOTE** - The line is question is still commented normally; the ''NOTE'' comment simply provides additional information which might be important if a developer wishes to understand how the code works.
 
 																	[[Coding Style conventions|<<<	PrevTitle]]		       |		|          		[[Layout conventions|NextTitle	>>>]]
 

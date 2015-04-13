@@ -32,9 +32,9 @@ The rules present in this guide are specified in the following format:
 
 n. **Rule short description**
 
-{{{code: lang="cpp" linenumbers="true"
+'''
 Example if applicable
-}}}
+'''
 
 Motivation, background and additional information if applicable.
 
