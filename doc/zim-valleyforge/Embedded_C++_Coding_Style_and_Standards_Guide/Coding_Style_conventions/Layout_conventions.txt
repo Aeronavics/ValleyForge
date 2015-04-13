@@ -2,25 +2,22 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:34:16+13:00
 
+
+
 ====== Layout conventions ======
 
 ===== Indentation =====
+	**1.2.1** **Indentation of statements should be performed using 'TAB' characters.** 
 
-6. **Indentation of statements should be performed using TAB characters.** 
+Note that INDENTATION is not the same as ALIGNMENT. By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
 
- By using TAB characters for indentation, correct indentation remains, regardless of the size of the tab stop used in a particular contributor's IDE. 
 
-**NOTE** -  INDENTATION is not the same as ALIGNMENT.
-
-7. **Alignment of statements should be performed using space characters.**
+	**1.2.2** **Alignment of statements should be performed using 'space' characters.**
 
 By using space characters for alignment, correct alignment remains, regardless of the size of the tab stop used in a particular contributor's IDE (assuming the IDE is using a mono-spaced font, as any sane programmer requires).
 
-**NOTE** -  INDENTATION is not the same as ALIGNMENT.
-
 In the example below, TAB characters are indicated by "----->", whilst SPACE characters are represented by "."
-
-'''
+{{{code: lang="cpp" linenumbers="true"
 void some_function()
 {
 ----->do_something();
@@ -30,313 +27,231 @@ void some_function()
 ----->{
 ----->----->something;
 ----->}
-}
-'''
+}	
+}}}
 
 
-8. **The indentation style to be used is the 'Allman Style' (see** [[http://en.wikipedia.org/wiki/Indent_style#Allman_style|Wikipedia]]**):**
 
-'''
+	**1.2.3** **The indentation style to be used is the 'Allman Style' (see** [[http://en.wikipedia.org/wiki/Indent_style#Allman_style|Wikipedia]]**):**
+{{{code: lang="cpp" linenumbers="true"
 void some_function()
 {
-'''
-	'''
 	do_something();
-		
-	'''
-	'''
+	
 	// Correct indentation of a IF-ELSE statement.
 	if (expression)
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
 	else if (expression)
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
 	else
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
-		
-	'''
-	'''
+	
 	// Correct indentation of a FOR statement.
 	for (something; expression; something)
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
-		
-	'''
-	'''
+	
 	// Correct indentation of a WHILE statement.
 	while (expression)
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
-		
-	'''
-	'''
+	
 	// Correct indentation of a DO-WHILE statement.
 	do
 	{
-	'''
-		'''
 		something;
-		'''
-	'''
 	}
 	while (expression);
-		
-	'''
-	'''
+	
 	// Correct indentation of a SWITCH statement.
 	switch (expression)
 	{
-	'''
-		'''
 		case one:
-		'''
-			'''
 			something;
 			break;
-					
-			'''
-		'''
+		
 		case two:
-		'''
-			'''
 			something;
 			break;
-						
-			'''
-		'''
+			
 		default:
-		'''
-			'''
 			something;
 			break;
-			'''
-	'''
 	}
-	}
-	'''
+}	
+}}}
 
 
-===== Line Breaks =====
 
-9. **Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:**
-
-'''
+===== Line breaks =====
+	**1.2.4** **Conditionals for control flow statements should appear on a separate line, even if there is only a single statement following the conditional:**
+{{{code: lang="cpp" linenumbers="true"
 if (something)
 {
-'''
-	'''
 	do_something();
-	}
-	'''
+}
+}}}
 
 
 This means that during debugging, it is easy to tell whether a line number refers to the conditional itself, or the following statement.
 	
-10. **The statements forming the body of an if, else if, else, while, do ... while or for statements should always be enclosed in braces, even if the braces form an empty block.** 
+
+	**1.2.5** **The statements forming the body of an **//if//**, **//else// //if//**, **//else//**, **//while//**, **//do ...// //while//** or for statements should always be enclosed in braces, even if the braces form an empty block.** 
 
 It improves readability and it can be difficult to see ";" when it appears by itself. Note that braces are not required if there is any print statement for debugging purposes.
 	
-11. **Braces ("{}") which enclose a block will have nothing else on the line except comments (if necessary).**
+
+	**1.2.6** **Braces ("{}") which enclose a block will have nothing else on the line except comments (if necessary).**
 	
-12. **The incompleteness of split lines must be made obvious.** 
 
-'''
+	**1.2.7** **The incompleteness of split lines must be made obvious.** 
+{{{code: lang="cpp" linenumbers="true"
 total_sum = a + b + c +
-'''
-			'''
-			  d + e;
-						
-			function(param1, param2,
-			'''
-		'''
-		  param3);
-				 
-		set_text("Long line split"
-		'''
-		'''
-		  "into two parts.");
-				 
-		for (int i = 0; i < n; 
-		'''
-	'''
-	  i += step)
-	{
-	'''
-	'''
+			d + e;
+			
+function(param1, param2,
+		 param3);
+		 
+set_text("Long line split"
+		 "into two parts.");
+		 
+for (int i = 0; i < n; 
+	 i += step)
+{
 	...
-	}
-	'''
- 
+}   
+}}}
 
-**NOTE** - Zim's insane behaviour which automatically indents verbatim text screws up this example a little.
 
-Split lines occurs when a statement is too long to be convenient to write on a single line. It is difficult to give rigid rules for how lines should be split, but the examples above should give a general hint. In general:
-
+Split lines occurs when a statement exceed the 80 column limit given above. It is difficult to give rigid rules for how lines should be split, but the examples above should give a general hint. In general:
 	* Break after a comma.
 	* Break after an operator.
 	* Align the new line with the beginning of the expression on the previous line.
 
-13. **Use blank lines to organize statements into paragraphs and to separate logically related statements.**
+
+	**1.2.8** **Use blank lines to organize statements into paragraphs and to separate logically related statements.**
+
 
 ===== White space =====
-
-14. **Spaces should not be used around '.' or '->', nor between unary operators and operands.**
-
-'''
-if (!something->something_else)
+	**1.2.9** **Spaces should not be used around '.' or '->', nor between unary operators and operands.**
+{{{code: lang="cpp" linenumbers="true"
+if (!something)
 {
-'''
-	'''
-	a.b = &c;
-	d = !e;
-	}
-	'''
+	a = &b;
+	c= !d;
+}
+}}}
 
 
-15. **Binary operators should be surrounded by single space characters.**
 
-'''
+	**1.2.10** **Binary operators should be surrounded by single space characters.**
+{{{code: lang="cpp" linenumbers="true"
 a + b * (c - d);
 e = f << g;
-'''
+}}}
 
 
-16. **Ternary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments.**
 
-'''
+	**1.2.11** **Ternary operators should be surrounded by single space characters. This includes the characters separating the two latter arguments.**
+{{{code: lang="cpp" linenumbers="true"
 a = b ? c : d;
-'''
+}}}
 
 
-17. **C++ reserved words should be followed by a single space character.**
 
-'''
+	**1.2.12** **C++ reserved words should be followed by a single space character.**
+{{{code: lang="cpp" linenumbers="true"
 class Some_class
 {
-'''
-	'''
 	void some_function()
 	{
-	'''
-		'''
 		while (expression)
 		{
-		'''
-			'''
 			...
-			'''
-		'''
 		}
 		return (a+b);
-		'''
-	'''
 	}
-	}
-	'''
+}		
+}}}
 
 
-18. **Commas should be followed by a space character.**
 
-'''
+	**1.2.13** **Commas should be followed by a space character.**
+{{{code: lang="cpp" linenumbers="true"
 some_function(a, b, c, d);
-'''
+}}}
 
 
-19. **Semi-colons in 'for' statements should be followed by a single space character.**
 
-'''
+	**1.2.14** **Semi-colons in a **//for//** statement should be followed by a single space character.**
+{{{code: lang="cpp" linenumbers="true"
 for (uint i = 0; i < j; i++)
 {
-'''
-	'''
 	for (;j < k; )
 	{
-	'''
-		'''
 		...
-		'''
-	'''
 	}
-	}
-	'''
+}
+}}}
 
 
-20. **Assignment operators should be surrounded by single space characters.**
 
-'''
+	**1.2.15 Assignment operators should be surrounded by single space characters.**
+{{{code: lang="cpp" linenumbers="true"
 a = 1;
 b = a;
 c = (a + b + 1);
-'''
+}}}
 
 
-21. **There should be no space in between the function name, the opening parenthsis and the first argument declaration.**
 
-'''
-int do_something()		// Non-compliant: int do_something ()
-{				//		  {
-'''
+	**1.2.16 There should be no space in between the function name, the opening brace and the first argument declaration.**
+{{{code: lang="cpp" linenumbers="true"
+int do_something()		// NOT: int do_something ()
+{						//		{
+}}}
 
 
-22. **When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.**
 
-'''
-int* a;			// Compliant.
-int* a,b;		// None-compliant, because since 'b' doesn't get declared as a pointer, this can cause confusing.
-int *a,*b;		// Non-compliant.
+	**1.2.17 When used in the declaration of a variable of type 'pointer' or 'reference', the relevant operators are to be placed against the type declaration, not the name of the variable.**
+{{{code: lang="cpp" linenumbers="true"
+int* a;			// Correct.
+int* a,b;		// Bad since 'b' doesn't get declared as a pointer.
+int *a,*b;		// Wrong.
 
-int& c;			// Compliant.
-char& d;		// Compliant.
-'''
+int&c;
+char& d;
+}}}
 
 
 Because this style appears confusing if two different variables of different types are declared on a single line (such as a pointer followed by a regular variable of the same base type), variables of different types are not to be declared on a single line. Similarly, for this reason, multiple pointer or reference types are not to be declared on a single line.
 
-23. **Parentheses ("brackets") do not require surrounding white-space:**
 
-'''
+	**1.2.18 Parentheses ("brackets") do not require surrounding white-space:**
+{{{code: lang="cpp" linenumbers="true"
 a = ((1 + b) * ((c / d) / e));
-'''
+}}}
 
 
-24. **Angle braces used for template declarations do not require surrounding white-space:**
 
-'''
+	**1.2.19 Angle braces used for template declarations do not require surrounding white-space:**
+{{{code: lang="cpp" linenumbers="true"
 template<class T>do something(T a)
 {
-'''
-	'''
 	T a = do+something_else();
 	Uint8 b = 16;
 	do_some_other_thing<Uint8>(b, T a);
-	}
-	'''
+}
+}}}
 
+
+																	[[Commenting conventions|<<<	PrevTitle]]		       |		|          		[[Naming conventions|NextTitle	>>>]]
 

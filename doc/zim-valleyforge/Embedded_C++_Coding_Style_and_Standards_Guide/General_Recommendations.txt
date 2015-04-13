@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:32:13+13:00
 
+
+
 ====== General Recommendations ======
 
 * **Any violation to the guide is allowed if it enhances readability.**
@@ -14,3 +16,6 @@ The attempt is to make a guideline, not to force a particular coding style onto 
 On the other hand, new and inexperienced programmers normally use a style guide as a convenience to getting into the programming jargon more easily.
 
 * **If this style guide leaves anything unclear, see how it has been done in the existing code base and do it accordingly.**
+														
+																[[General Design|<<<	PrevTitle]]		       |		|          		[[Terminology|NextTitle	>>>]]
+

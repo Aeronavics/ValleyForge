@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:32:03+13:00
 
+
+
 ====== Terminology ======
 
 	1. An **abstract base class** is a class from which no objects may be created; it is only used as a base class for the derivation of other classes. A class is abstract if it includes at least one member function that is declared as pure virtual.
@@ -78,3 +80,6 @@ int32 foo()
 	28. A **structure** is a user-defined type for which all members are public by default.
 
 	29. A **typedef** is another name for a data type, specified in C++ using a typedef declaration.
+
+																	[[General Recommendations|<<<	PrevTitle]]		       |		|          		[[Coding Style conventions|NextTitle	>>>]]
+

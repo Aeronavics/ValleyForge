@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:32:23+13:00
 
+
+
 ====== General Design ======
 
 In general, the code produced should exhibit the following important qualities: 
@@ -24,3 +26,6 @@ In general, the code produced should exhibit the following important qualities:
 * **Readability:** Source code should be written in a manner that is easy to read, understand and comprehend.
 
 Adherence to these guidelines, will help programmers produce clean designs that minimize common sources of mistakes and errors.
+
+																[[Introduction|<<<	PrevTitle]]		       |		|          		[[General Recommendations|NextTitle	>>>]]
+

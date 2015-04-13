@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:30:24+13:00
 
+
+
 ====== Embedded C++ Coding Style and Standards Guide ======
 
 [[+Introduction|Introduction]]
@@ -12,14 +14,18 @@ Creation-Date: 2015-02-17T17:30:24+13:00
 
 [[+General Design|General Design]]
 
-[[+Coding Style conventions|Coding Style Conventions]]
-	* [[+Coding Style conventions:Commenting conventions|Commenting conventions]]
-	* [[+Coding Style conventions:Layout conventions|Layout conventions]]
-	* [[+Coding Style conventions:Naming conventions|Naming conventions]]
+1. [[+Coding Style conventions|Coding Style Conventions]]
+	1.1 [[+Coding Style conventions:Commenting conventions|Commenting conventions]]
+	1.2  [[+Coding Style conventions:Layout conventions|Layout conventions]]
+	1.3 [[+Coding Style conventions:Naming conventions|Naming conventions]]
+	1.4 [[+Coding Style conventions:Statement conventions|Statement conventions]]
 
-[[Embedded C++ Coding Style and Standards Guide:Coding Standard conventions|Coding Standard Conventions]]
-	* [[+Coding Standard conventions:Comments|Comments]]
-	* [[+Coding Standard conventions:Flow control|Flow control]]
-	* [[+Coding Standard conventions:Miscellaneous|Miscellaneous]]
+2. [[Embedded C++ Coding Style and Standards Guide:Coding Standard conventions|Coding Standard Conventions]]
+	2.1 [[+Coding Standard conventions:Comments|Comments]]
+	2.2 [[+Coding Standard conventions:Flow control|Flow control]]
+	2.3 [[+Coding Standard conventions:Miscellaneous|Miscellaneous]]
 
 [[Embedded C++ Coding Style and Standards Guide:References|References]]
+
+																	[[+Introduction|NextTitle		>>>]]
+

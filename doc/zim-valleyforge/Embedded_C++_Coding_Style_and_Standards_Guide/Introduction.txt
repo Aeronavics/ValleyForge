@@ -2,7 +2,10 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T17:31:53+13:00
 
+
+
 ====== Introduction ======
+								
 
 As every C++ programmer knows, the language has many powerful features, but this power brings with it complexity, which in turn can make code more bug-prone and harder to read and maintain. While a given development environment (IDE) can improve the readability of code by access visibility, color coding, automatic formatting and so on, the programmer should never rely on such features. Source code should always be considered larger than the IDE it is developed within and should be written in a way that maximize its readability independent of any IDE.
 
@@ -37,3 +40,6 @@ Example if applicable
 Motivation, background and additional information if applicable.
 
 'n' refers to the Rule number.
+
+																	[[Embedded C++ Coding Style and Standards Guide|<<<	PrevTitle]]		       |		|          		[[General Design|NextTitle	>>>]]
+

@@ -2,6 +2,8 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-02-17T18:01:47+13:00
 
+
+
 ====== Coding Standard conventions ======
 
 The standards documented here are targeted at reducing errors while developing code. This includes both compile and run time errors. For the standards to be effective, strict enforcement is required. The following standards should not be violated. Every time a rule is broken, it must be clearly documented in the code. 
@@ -12,6 +14,9 @@ This documentation serves two purposes.
 2. It forces the original programmer to think about/fully justify why the standards do not apply.
 
 ===== Categories =====
-* [[+Comments|Comments]]
-* [[+Flow control|Flow control]]
-* [[+Miscellaneous|Miscellaneous]]
+	**2.1** [[+Comments|Comments]]
+	**2.2** [[+Flow control|Flow control]]
+	**2.3** [[+Miscellaneous|Miscellaneous]]
+
+																[[Coding Style conventions:Statement conventions|<<<	PrevTitle]]		       |		|          		[[+Comments|NextTitle	>>>]]
+
