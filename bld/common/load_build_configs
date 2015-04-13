@@ -22,11 +22,11 @@ echo -e "${CYAN}Reading build configuration files...\n${NO_COLOUR}"
 
 # We read all the suitable files in the build configuration path.
 BUILD_CONFIG_PATH="bld/build_configs"
-BUILD_CONFIG_FILES="*.cfg"
+BUILD_CONFIG_FILES=$(find ${BUILD_CONFIG_PATH} -name "*.cfg")
 
 # Iterate over each of the files in the path.
 COUNT_FILES=0
-for BUILD_CONFIG_FILE in $TCPATH/$BUILD_CONFIG_PATH/$BUILD_CONFIG_FILES; do
+for BUILD_CONFIG_FILE in $BUILD_CONFIG_FILES; do
 	# Check if that file actually exists, in case we matched nothing.
 	if [ -e ${BUILD_CONFIG_FILE} ]; then
 		# Count one file.
@@ -55,5 +55,12 @@ else
 	echo -e "${CYAN}Read in $COUNT_TARGETS build configurations and $COUNT_LOADERS boot loader configurations from $COUNT_FILES configuration files.\n${NO_COLOUR}"
 fi
 
-
+# Leave the scope as we found it.
+COUNT_FILES=
+COUNT_TARGETS=
+COUNT_LOADERS=
+BUILD_CONFIG_FILE=
+BUILD_CONFIG_PATH=
+BUILD_CONFIG_FILES=
 	
+# ALL DONE.
