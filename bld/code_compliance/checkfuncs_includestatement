@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_includecheck
+### Name:           	checkfuncs_includestatement
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION ###############################################################
 ###
-### Name:		compliance_check_file_includecheck
+### Name:		compliance_check_file_includestatement
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 #################################################################################################################
 
-compliance_check_file_includecheck()
+compliance_check_file_includestatement()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -67,7 +67,7 @@ compliance_check_file_includecheck()
 				if [[ "$line" == \#include* ]]; then
 
 					# Report the line has failed.
-					compliance_fail_line "compliance_check_file_includecheck" $FILE $LINE_NUM "Non-compliant include statements: Not appearing at the top of the file."
+					compliance_fail_line "compliance_check_file_includestatement" $FILE $LINE_NUM "Non-compliant include statements: Not appearing at the top of the file."
 					# At least one thing is wrong in this file.
 					CHECKS_OK=
 				fi
@@ -78,7 +78,7 @@ compliance_check_file_includecheck()
 	if [ ! ${CHECKS_OK} ]; then
 
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_includecheck" $FILE "This file contains non-compliant include statement(s)."
+		compliance_fail_file "compliance_check_file_includestatement" $FILE "This file contains non-compliant include statement(s)."
 	fi
 
 	return 0

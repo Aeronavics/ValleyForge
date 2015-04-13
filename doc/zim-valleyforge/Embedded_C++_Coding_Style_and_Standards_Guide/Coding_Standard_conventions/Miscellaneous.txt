@@ -22,6 +22,16 @@ class Bicycle
 
 
 
+	**2.3.2 Classes should have at least one access modifier.**
+
+Even though C++ automatically takes the default access modifier(//private//) when no access specifiers are specified, it makes it much simpler for other developers to understand the code when the access modifiers are specified.
+
+
+	**2.3.3 Access modifiers should not be present outside class declarations.**
+
+Any access modifiers outside the class declarations might lead to compiler failure.
+
+
 	**2.3.2** **Access functions (accessors) that simply return the value of a member variable are inline.**
 	
 
@@ -31,64 +41,102 @@ The normal reason for declaring a function inline is to improve its performance.
 This problem is especially common with constructors and destructors. A constructor always invokes the constructors of its base classes and member data before executing its own code. Inline constructors and destructors are best avoided!
 
 
+	**2.3.4 Nested classes/structures should not be used as they might lead the compiler to fail.**
+{{{code: lang="cpp" linenumbers="true"
+class A
+{
+	int x;
+	
+	class B
+	{
+	};
+	
+	class C
+	{
+		// The compiler cannot allow the following declaration because A::B is private:
+		// B b;
+		
+		int y;
+		void f(A* p, int i);
+		{
+			// The compiler cannot allow the following statement because A::x is private:
+			// p->x = i;
+		}
+	};
+	
+	void g(C* p)
+	{
+		// The compiler cannot allow the following statement because C::y is private:
+		// int z = p->y;
+	}
+};
+
+int main()
+{
+	...
+}
+	
+}}}
+
+
 ===== Constants =====
-	**2.3.4** **Do not write explicit constants into code, except to establish identifiers to represent them.**
+	**2.3.5** **Do not write explicit constants into code, except to establish identifiers to represent them.**
 
 The exception to the rule is the constant "0". Always use the C++ keywords ''true'' and ''false'' for Boolean values.
 
 
-	**2.3.5** **Constants are defined using **//const//** or **//enum//**; never using **//#define//**.**
+	**2.3.6** **Constants are defined using **//const//** or **//enum//**; never using **//#define//**.**
 	
 The preprocessor performs a textual substitution for macros in the source code that is then compiled. This has a number of negative consequences. For example, if a constant has been defined using #define , the name of the constant is not recognized in many debuggers. If the constant is represented by an expression, this expression may be evaluated differently for different instantiations, depending on the scope of the name. In addition, macros are, at times, incorrectly written.
 
 
 ===== Constructors and Destructors =====
-	**2.3.6** **Every class that has pointers as instance variables must declare a copy constructor (and an assignment operator). The copy constructor may be private, in which case no implementation is provided.**
+	**2.3.7** **Every class that has pointers as instance variables must declare a copy constructor (and an assignment operator). The copy constructor may be private, in which case no implementation is provided.**
 
 
-	**2.3.7** **All classes that can be used as base classes must define a virtual destructor.**
+	**2.3.8** **All classes that can be used as base classes must define a virtual destructor.**
 
 
-	**2.3.8 If a class has at least one virtual function, it must also have a virtual destructor.**
+	**2.3.9 If a class has at least one virtual function, it must also have a virtual destructor.**
 
 
 ===== Expressions =====
-	**2.3.9** **Floating point variables should not be tested for exact equality or inequality.**
+	**2.3.10** **Floating point variables should not be tested for exact equality or inequality.**
 
-This is beacuse floating point numbers are subject to rounding and truncation errors, exact equality may not be achieved, even when expected.
+This is because floating point numbers are subject to rounding and truncation errors, exact equality may not be achieved, even when expected.
 
 
-	**2.3.10** **Use parentheses to clarify the order of evaluation for operators in expressions.**
+	**2.3.11** **Use parentheses to clarify the order of evaluation for operators in expressions.**
 
 There are a number of common pitfalls having to do with the order of evaluation for operators in an expression. Binary operators in C++ have associativity (either leftwards or rightwards) and precedence. If an operator has leftwards associativity and occurs on both sides of a variable in an expression, then the variable belongs to the same part of the expression as the operator on its left side.
 
 
 ===== Functions =====
-	**2.3.11 All exit points of value-returning functions shall be through **//return//** statements.**
+	**2.3.12 All exit points of value-returning functions shall be through **//return//** statements.**
 
 Flowing off the end of a value-returning function results in undefined behavior which is bad for the code.
 
 
-	**2.3.12** **Do not use unspecified function arguments (ellipsis notation).**
+	**2.3.13** **Do not use unspecified function arguments (ellipsis notation).**
 
 
-	**2.3.13 Avoid functions with too many (rule of thumb: more than five) arguments.**
+	**2.3.14 Avoid functions with too many (rule of thumb: more than five) arguments.**
 
 Functions having long argument lists look complicated, are difficult to read, and can indicate poor design. In addition, they are difficult to use and to maintain.
 
 
-	**2.3.14 The names of formal arguments to functions must be specified and must be the same both in the function declaration and in the function definition.**
+	**2.3.15 The names of formal arguments to functions must be specified and must be the same both in the function declaration and in the function definition.**
 
 The names of formal arguments to functions must be specified and must be the same both in the function declaration and in the function definition. The names of formal arguments may be specified in both the function declaration and the function definition in C++, even if the compiler ignores those in the declaration. Providing names for function arguments is a part of the function documentation. The name of an argument clarifies how the argument is used and reduces the need to include comments in a function definition. It is also easier to refer to an argument in the documentation of a class if it has a name.
 
 Exception: the name of a unused function argument can be omitted, both in the declaration and in the definition.
 
 
-	**2.3.15 Do not use the preprocessor directive **//#define//** to obtain more efficient code; instead, use inline functions.**
+	**2.3.16 Do not use the preprocessor directive **//#define//** to obtain more efficient code; instead, use inline functions.**
 
 
 ===== Including Files =====
-	**2.3.16** **All header files should contain a mechanism (**[[https://en.wikipedia.org/wiki/Include_guard|include guard]]**) that prevents multiple inclusions of itself.**
+	**2.3.17** **All header files should contain a mechanism (**[[https://en.wikipedia.org/wiki/Include_guard|include guard]]**) that prevents multiple inclusions of itself.**
 {{{code: lang="cpp" linenumbers="true"
 // Ensure we only include this header file once.
 #ifndef __PATH_TO_HEADER_FILE_NAME_HPP__
@@ -101,23 +149,23 @@ Exception: the name of a unused function argument can be omitted, both in the de
 This is to avoid accidental header file recursion. The name of the guard macro should be based on the relative path of the file, within the component's source tree: this avoids the possibility of naming conflicts. The name of the macro is prefixed and suffixed with a pair of underscore characters.
 
 
-	**2.3.17** **Header files should only include those files necessary to compile the header file. Files which are necessary to compile the corresponding source file should be included in the source file directly.**
+	**2.3.18** **Header files should only include those files necessary to compile the header file. Files which are necessary to compile the corresponding source file should be included in the source file directly.**
 
 The //#include// statements in a header file define the dependencies of the file. Fewer dependencies imple looser couplings and hence a smaller //ripple-effect// when the header file is required to change.
 
 
 ===== Memory and Resources =====
-	**2.3.18** **Do not use **//malloc()//**, **//realloc()//** or **//free()//**.**
+	**2.3.19** **Do not use **//malloc()//**, **//realloc()//** or **//free()//**.**
 
 
-	**2.3.19** **Avoid global data if at all possible.**
+	**2.3.20** **Avoid global data if at all possible.**
 	
 
-	**2.3.20** **Do not allocate memory and expect that someone else will deallocate it later.**
+	**2.3.21** **Do not allocate memory and expect that someone else will deallocate it later.**
 
 
 ===== Operators =====
-	**2.3.21 Operators **''||'' **, **''&&''**  and unary **''&''**  shall not be overloaded.**
+	**2.3.22 Operators **''||'' **, **''&&''**  and unary **''&''**  shall not be overloaded.**
 
 First the behaviour of the || and && operators depend on short-circuit evaluation of the operands. However, short-circuit evaluation is not possible for overloaded versions of the ''||''  and ''&&''  operators. Hence, overloading these operators may produce unexpected results.
 
@@ -125,25 +173,25 @@ Next, if the address of an object of incomplete class type is taken, but the com
 
 
 ===== Pointers and References =====
-	**2.3.22** **Pointers to pointers should whenever possible be avoided.**
+	**2.3.23** **Pointers to pointers should whenever possible be avoided.**
 
 
 ===== Portable Code =====
-	**2.3.23** **The basic types of **//int//**, **//short//**, **//long//**, **//float//**, **//double//** shall not be used, but specific-length equivalents should be typedef'd accordingly for each compiler, and these type names used in the code.**
+	**2.3.24** **The basic types of **//int//**, **//short//**, **//long//**, **//float//**, **//double//** shall not be used, but specific-length equivalents should be typedef'd accordingly for each compiler, and these type names used in the code.**
 
 Since the storage length of types can vary from compiler to compiler and platform to platform, this rule ensures that code can be easily reconfigured for storage size differences by simply changing definitions in one file. It should be noted that basic types are permitted in low-level routines to assist in the management of word alignment issues (e.g. memory allocators).
 
 
-	**2.3.24** **Algorithms shall not make assumptions concering the order of allocation of nonstatic data members separated by an access specifier.**
+	**2.3.25** **Algorithms shall not make assumptions concering the order of allocation of nonstatic data members separated by an access specifier.**
 
 The order of allocation of nonstatic data members, spearated by an access-specifier, is unspecified.
 
 
-	**2.3.25** **Clearly separate platform-specific from portable code.**
+	**2.3.26** **Clearly separate platform-specific from portable code.**
 
 
 ===== Structures =====
-	**2.3.26 Do not write the default **//public//** keyword for structures and do not use **//protected//** or **//private//** sections.**
+	**2.3.27 Do not write the default **//public//** keyword for structures and do not use **//protected//** or **//private//** sections.**
 
 Write a class instead if you need such sections. Similarly, do not use static data members and inheritance.
 

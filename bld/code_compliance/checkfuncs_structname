@@ -17,7 +17,7 @@
 
 ###########################################################################################################################
 ###
-### Name:           	checkfuncs_structnamecheck
+### Name:           	checkfuncs_structname
 ###
 ### Author:         	Ravi Shankar
 ###
@@ -31,7 +31,7 @@
 
 ######################################## FUNCTION #############################################
 ###
-### Name:		compliance_check_file_structnamecheck
+### Name:		compliance_check_file_structname
 ###
 ### Inputs/Outputs:	Path to the file to test.
 ###
@@ -39,7 +39,7 @@
 ###
 ###############################################################################################
 
-compliance_check_file_structnamecheck()
+compliance_check_file_structname()
 {
 	# The file we're checking was the first argument we received.
 	local FILE=$1
@@ -250,7 +250,7 @@ compliance_check_file_structnamecheck()
 	if [ ! ${CHECKS_OK} ]; then
 
 		# Report that the file has failed.
-		compliance_fail_file "compliance_check_file_structnamecheck" $FILE "This file contains non-compliant structure(s)."
+		compliance_fail_file "compliance_check_file_structname" $FILE "This file contains non-compliant structure(s)."
 	fi
 
 	# All done.
