@@ -871,15 +871,27 @@ do
 		echo -e "${CYAN}No resource files to copy.\n${NO_COLOUR}"
 	else
 		# There are some resources files to copy over to the output directory.
-		echo -e "${CYAN}Copying resource files to output.\n${NO_COLOUR}"
+		echo -e "${CYAN}Copying resource files to output:${NO_COLOUR}"
 		
 		# Make sure there is somewhere to put the files.
 		mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
 		
 		# Copy each of the files across.
 		for FILE in ${RESOURCE_FILES}; do
-			cp ${TCPATH}/src/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+			if [ -f "${TCPATH}/src/${COMPONENT}/${FILE}" ]; then
+				cp ${TCPATH}/src/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				echo -e "${CYAN}\t${FILE} from src/${COMPONENT}.${NO_COLOUR}"
+
+			elif [ -f "${TCPATH}/var/${COMPONENT}/${FILE}" ]; then
+				cp ${TCPATH}/var/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				echo -e "${CYAN}\t${FILE} from var/${COMPONENT}.${NO_COLOUR}"
+
+			else
+				# The file seems to be missing.
+				echo -e "${YELLOW}\tUnable to find resouce file: ${FILE}.${NO_COLOUR}"
+			fi
 		done
+		echo ""
 	fi
 done
 
