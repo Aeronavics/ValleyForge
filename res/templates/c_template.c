@@ -20,7 +20,7 @@
 
 // INCLUDE THE MATCHING HEADER FILE.
 
-#include "<<<TC_INSERTS_H_FILE_NAME_HERE>>>"
+#include ">>>TC_INSERTS_H_FILE_NAME_HERE<<<"
 
 // INCLUDE REQUIRED HEADER FILES FOR IMPLEMENTATION.
 
@@ -29,6 +29,8 @@
 // DEFINE PRIVATE TYPES AND STRUCTS.
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
+
+// NOTE - Don't initialise globals to zero, otherwise they go into the data segment rather than BSS.
 
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 

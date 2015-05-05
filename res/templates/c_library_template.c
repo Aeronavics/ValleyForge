@@ -26,6 +26,8 @@
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
+// NOTE - Don't initialise globals to zero, otherwise they go into the data segment rather than BSS.
+
 // DEFINE PRIVATE FUNCTION PROTOTYPES.
 
 /*

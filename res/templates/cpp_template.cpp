@@ -69,6 +69,8 @@ class Private_class_type
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
+// NOTE - Don't initialise globals to zero, otherwise they go into the data segment rather than BSS.
+
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
 
 /*
@@ -89,7 +91,7 @@ int main(void)
 	return 0;
 }
 
-// IMPLEMENT PUBLIC CLASS FUNCTIONS.
+// IMPLEMENT PUBLIC CLASS METHODS.
 
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
@@ -101,7 +103,7 @@ void private_function(void)
 	return;
 }
 
-// IMPLEMENT PRIVATE CLASS FUNCTIONS.
+// IMPLEMENT PRIVATE CLASS METHODS.
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 

@@ -19,8 +19,7 @@
  ********************************************************************************************************************************/
 
 // Only include this header file once.
-#ifndef __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
-#define __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
+#pragma once
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
@@ -77,6 +76,8 @@ class Public_class_type
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
+// NOTE - Don't initialise globals to zero, otherwise they go into the data segment rather than BSS.
+
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
 
 /**
@@ -88,7 +89,5 @@ class Public_class_type
 int main(void);
 
 // IMPLEMENT PUBLIC STATIC INLINE FUNCTIONS.
-
-#endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
 // ALL DONE.

@@ -24,8 +24,7 @@ extern "C" {
 #endif
 
 // Only include this header file once.
-#ifndef __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
-#define __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
+#pragma once
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
@@ -44,6 +43,8 @@ extern "C" {
 
 // DECLARE PUBLIC GLOBAL VARIABLES.
 
+// NOTE - Don't initialise globals to zero, otherwise they go into the data segment rather than BSS.
+
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
 // DEFINE PUBLIC FUNCTION PROTOTYPES.
@@ -55,8 +56,6 @@ extern "C" {
  * @return	Details of return value from the function.
  */
 int main(void);
-
-#endif // __<<<TC_INSERTS_UC_FILE_BASENAME_HERE>>>_H__
 
 // Support linking this C library from C++.
 #ifdef __cplusplus
