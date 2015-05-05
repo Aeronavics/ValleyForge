@@ -482,6 +482,13 @@ generate_component_dependencies()
 	# Remove the Make.deps file if it exists already.
 	rm -f Make.deps
 	
+	# Check the specified file actually exists.
+	if [ ! -f "$2" ]; then
+		# The file doesn't even exist!
+		echo -e "${RED}\tCouldn't find parent source file.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# List the executable linker dependencies.
 	if ! find_object_dependencies . $2; then
 		# Something went wrong.  Don't need to print a message, there will already be one.
