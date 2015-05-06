@@ -1,0 +1,341 @@
+#!/bin/bash
+
+#	Copyright (C) 2015 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###									
+### Name:		gen_platform_snappy	
+###									
+### Author:		Edwin Hayes			
+###									
+### Date Created:	05-05-2015		
+###									
+### Type:		Bash Script			
+###									
+### Purpose:		Provides functions which generate code for the Snappy based Ubuntu Core platform.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Snappy Ubuntu Core code generation functions.\n${NO_COLOUR}"
+
+##################################### MINOR FUNCTIONS ####################################
+
+vf_platform_snappy_fetch_oemfile()
+{
+	# DEFINE CONSTANTS.
+
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	local SNAPPY_OEM_DIRNAME="snappy_oem_pkg"
+
+	VF_PLAT_SNAPPY_OEM_FILE=
+	local OEM_FILE=
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if a Snappy OEM package file to use has been specified.
+	if [ -z "${VF_PLAT_SNAPPY_OEM_PATH}" ]; then
+		# No OEM package file was specified.
+		echo -e "${RED}\tNo OEM package file was specified; cannot generate OEM package directory.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Else, check if the specified file actually exists.
+	if [ -f "$1/${VF_PLAT_SNAPPY_OEM_PATH}" ]; then
+		# A matching file is in the source tree.
+		echo -e "${CYAN}\tFound ${VF_PLAT_SNAPPY_OEM_PATH} in the source tree.\n${NO_COLOUR}"
+		OEM_FILE="$1/${VF_PLAT_SNAPPY_OEM_PATH}"
+	elif [ -f "$TCPATH/${VF_PLAT_SNAPPY_OEM_PATH}" ]; then
+		# A matching file is somewhere else in the sandpit.
+		echo -e "${CYAN}\tFound ${VF_PLAT_SNAPPY_OEM_PATH} in the common definitions folder.\n${NO_COLOUR}"
+		OEM_FILE="$TCPATH/${VF_PLAT_SNAPPY_OEM_PATH}"
+	else
+		# We try to see if the path is a URL we can download.
+		if [ -n "$(wget -S --spider ${VF_PLAT_SNAPPY_OEM_PATH} 2>&1 | grep "HTTP/1.1 200 OK")" ]; then
+			# The file seems to exist, so we try to download it.
+			echo -e "${CYAN}\tDownloading OEM package from ${VF_PLAT_SNAPPY_OEM_PATH}...\n${NO_COLOUR}"
+			WGET_OUT="$(wget -N -P "$GEN_CACHE" ${VF_PLAT_SNAPPY_OEM_PATH} 2<&1)"
+
+			# See if the file was already downloaded.
+			if [ -n "$(echo ${WGET_OUT} | grep "Server file no newer than local file")" ]; then
+				# We already seem to have the correct file, so not problem.
+				OEM_FILE="$( echo ${WGET_OUT} | grep -o "Server file no newer than local file .*" | cut -d " " -f 8 | tr -d "'" )"
+				OEM_FILE="${OEM_FILE##*/}"
+				OEM_FILE="${OEM_FILE%?}"
+				echo -e "${CYAN}\tFile ${OEM_FILE} already available.\n${NO_COLOUR}"
+				OEM_FILE="${GEN_CACHE}/${OEM_FILE}"
+
+			else
+				# Else, we actually downloaded it.
+				OEM_FILE="$(echo ${WGET_OUT} | grep -o " - .* saved" | cut -s -d " " -f 3 )"
+				OEM_FILE="${OEM_FILE##*/}"
+				OEM_FILE="${OEM_FILE%?}"
+				echo -e "${CYAN}\tFile ${OEM_FILE} downloaded successfully.\n${NO_COLOUR}"
+				OEM_FILE="${GEN_CACHE}/${OEM_FILE}"
+			fi
+		fi
+
+		# Check if we actually ended up with a file to use.
+		if [ -z "${OEM_FILE}" ]; then
+			echo -e "${RED}\tCould not locate OEM package ${VF_PLAT_SNAPPY_OEM_PATH}.\n${NO_COLOUR}"
+			return 1
+		fi
+		if [ ! -f "${OEM_FILE}" ]; then
+			echo -e "${RED}\tFailed to fetch OEM package file ${OEM_FILE}.\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# All done.
+	VF_PLAT_SNAPPY_OEM_FILE=${OEM_FILE}
+	return 0
+}
+
+vf_platform_snappy_fetch_devfile()
+{
+	# DEFINE CONSTANTS.
+
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	local SNAPPY_OEM_DIRNAME="snappy_dev_pkg"
+
+	VF_PLAT_SNAPPY_DEV_FILE=
+	local DEV_FILE=
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if a Snappy OEM package file to use has been specified.
+	if [ -z "${VF_PLAT_SNAPPY_DEV_PATH}" ]; then
+		# No OEM package file was specified.
+		echo -e "${RED}\tNo device package file was specified; cannot generate device package directory.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Else, check if the specified file actually exists.
+	if [ -f "$1/${VF_PLAT_SNAPPY_DEV_PATH}" ]; then
+		# A matching file is in the source tree.
+		echo -e "${CYAN}\tFound ${VF_PLAT_SNAPPY_DEV_PATH} in the source tree.\n${NO_COLOUR}"
+		DEV_FILE="$1/${VF_PLAT_SNAPPY_DEV_PATH}"
+	elif [ -f "$TCPATH/${VF_PLAT_SNAPPY_DEV_PATH}" ]; then
+		# A matching file is somewhere else in the sandpit.
+		echo -e "${CYAN}\tFound ${VF_PLAT_SNAPPY_DEV_PATH} in the common definitions folder.\n${NO_COLOUR}"
+		DEV_FILE="$TCPATH/${VF_PLAT_SNAPPY_DEV_PATH}"
+	else
+		# We try to see if the path is a URL we can download.
+		if [ -n "$(wget -S --spider ${VF_PLAT_SNAPPY_DEV_PATH} 2>&1 | grep "HTTP/1.1 200 OK")" ]; then
+			# The file seems to exist, so we try to download it.
+			echo -e "${CYAN}\tDownloading device package from ${VF_PLAT_SNAPPY_DEV_PATH}...\n${NO_COLOUR}"
+			WGET_OUT="$(wget -N -P "$GEN_CACHE" ${VF_PLAT_SNAPPY_DEV_PATH} 2<&1)"
+
+			# See if the file was already downloaded.
+			if [ -n "$(echo ${WGET_OUT} | grep "Server file no newer than local file")" ]; then
+				# We already seem to have the correct file, so not problem.
+				DEV_FILE="$( echo ${WGET_OUT} | grep -o "Server file no newer than local file .*" | cut -d " " -f 8 | tr -d "'" )"
+				DEV_FILE="${DEV_FILE##*/}"
+				DEV_FILE="${DEV_FILE%?}"
+				echo -e "${CYAN}\tFile ${DEV_FILE} already available.\n${NO_COLOUR}"
+				DEV_FILE="${GEN_CACHE}/${DEV_FILE}"
+
+			else
+				# Else, we actually downloaded it.
+				DEV_FILE="$(echo ${WGET_OUT} | grep -o " - .* saved" | cut -s -d " " -f 3 )"
+				DEV_FILE="${DEV_FILE##*/}"
+				DEV_FILE="${DEV_FILE%?}"
+				echo -e "${CYAN}\tFile ${DEV_FILE} downloaded successfully.\n${NO_COLOUR}"
+				DEV_FILE="${GEN_CACHE}/${DEV_FILE}"
+			fi
+		fi
+
+		# Check if we actually ended up with a file to use.
+		if [ -z "${DEV_FILE}" ]; then
+			echo -e "${RED}\tCould not locate device package ${VF_PLAT_SNAPPY_DEV_PATH}.\n${NO_COLOUR}"
+			return 1
+		fi
+		if [ ! -f "${DEV_FILE}" ]; then
+			echo -e "${RED}\tFailed to fetch device package file ${DEV_FILE}.\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# All done.
+	VF_PLAT_SNAPPY_DEV_FILE=${DEV_FILE}
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		gen_platform_snappy_oem
+###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.
+###
+### Purpose: Generates a folder containing the OEM Snappy package files which are to be
+###			 used by the platform.  These files are automatically packed into a Snappy
+###			 package at build time: this allows creation of custom OEM packages.
+###
+###          If the OEM package folder already exists, then does nothing, so as to avoid
+###          overwriting custom behaviour.
+###
+###########################################################################################
+
+gen_platform_snappy_oem()
+{
+	# DEFINE CONSTANTS.
+
+	local SNAPPY_OEM_DIRNAME="snappy_oem_pkg"
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Generating Snappy platform OEM files...\n${NO_COLOUR}"
+
+	# Check if there is already a folder containing snappy OEM package files in the target location.
+	if [ -d "$1/${SNAPPY_OEM_DIRNAME}" ]; then
+		# There is already an expanded OEM package directory: we won't clobber it, in case it contains custom changes.
+		echo -e "${YELLOW}Snappy OEM package directory already exists in target location.  Leaving this directory unchanged.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Check if a Snappy OEM package file to use has been specified.
+	if [ -z "${VF_PLAT_SNAPPY_OEM_PATH}" ]; then
+		# No OEM package file was specified.
+		echo -e "${RED}No OEM package file was specified; cannot generate OEM package directory.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Fetch the OEM file (if required).
+	vf_platform_snappy_fetch_oemfile
+
+	# Check if we actually ended up with a file to use.
+	if [ -z "${VF_PLAT_SNAPPY_OEM_FILE}" ]; then
+		echo -e "${RED}\tCould not locate OEM package ${VF_PLAT_SNAPPY_OEM_PATH}.\n${NO_COLOUR}"
+		return 1
+	fi
+	if [ ! -f "${VF_PLAT_SNAPPY_OEM_FILE}" ]; then
+		echo -e "${RED}\tFailed to fetch OEM package file ${VF_PLAT_SNAPPY_OEM_FILE}.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Then, unpack the OEM package.
+	echo -e "${CYAN}\tUnpacking archive...\n${NO_COLOUR}"
+	dpkg -x "${VF_PLAT_SNAPPY_OEM_FILE}" "$1/${SNAPPY_OEM_DIRNAME}"
+
+	# NOTE - Don't put anything in here; we need the return value from 'dpkg' below.
+
+	# Check the return value from dpkg, to determine if an error occurred during extraction.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}\tExtraction error.  Failed to extract contents of ${VF_PLAT_SNAPPY_OEM_FILE}.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		gen_platform_snappy_dev
+###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.
+###
+### Purpose: Generates a folder containing the device Snappy package files which are to be
+###			 used by the platform.  These files are automatically packed into a Snappy
+###			 package at build time: this allows creation of custom device packages.
+###
+###          If the device package folder already exists, then does nothing, so as to avoid
+###          overwriting custom behaviour.
+###
+###########################################################################################
+
+gen_platform_snappy_dev()
+{
+	# DEFINE CONSTANTS.
+
+	local SNAPPY_DEV_DIRNAME="snappy_dev_pkg"
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Generating Snappy platform device files...\n${NO_COLOUR}"
+
+	# Check if there is already a folder containing snappy OEM package files in the target location.
+	if [ -d "$1/${SNAPPY_DEV_DIRNAME}" ]; then
+		# There is already an expanded device package directory: we won't clobber it, in case it contains custom changes.
+		echo -e "${YELLOW}Snappy device package directory already exists in target location.  Leaving this directory unchanged.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Check if a Snappy device package file to use has been specified.
+	if [ -z "${VF_PLAT_SNAPPY_DEV_PATH}" ]; then
+		# No OEM package file was specified.
+		echo -e "${RED}No device package file was specified; cannot generate device package directory.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Fetch the device package file (if required).
+	vf_platform_snappy_fetch_devfile
+
+	# Check if we actually ended up with a file to use.
+	if [ -z "${VF_PLAT_SNAPPY_DEV_FILE}" ]; then
+		echo -e "${RED}\tCould not locate device package ${VF_PLAT_SNAPPY_DEV_PATH}.\n${NO_COLOUR}"
+		return 1
+	fi
+	if [ ! -f "${VF_PLAT_SNAPPY_DEV_FILE}" ]; then
+		echo -e "${RED}\tFailed to fetch device package file ${VF_PLAT_SNAPPY_DEV_FILE}.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# NOTE - A device package (essentially a BSP) is always a TARBALL, not a Debian binary archive.
+
+	# Then, unpack the device package.
+	echo -e "${CYAN}\tUnpacking archive...\n${NO_COLOUR}"
+	mkdir -p "$1/${SNAPPY_DEV_DIRNAME}"
+	tar -C "$1/${SNAPPY_DEV_DIRNAME}" -x -f "${VF_PLAT_SNAPPY_DEV_FILE}"
+
+	# NOTE - Don't put anything in here; we need the return value from 'tar' below.
+
+	# Check the return value from tar, to determine if an error occurred during extraction.
+	if [ $? != 0 ]; then
+		# Something went wrong.
+		echo -e "\n${RED}\tExtraction error.  Failed to extract contents of ${VF_PLAT_SNAPPY_DEV_FILE}.\n${NO_COLOUR}"
+		rmdir "$1/${SNAPPY_DEV_DIRNAME}" > /dev/null
+		return 1
+	fi
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.

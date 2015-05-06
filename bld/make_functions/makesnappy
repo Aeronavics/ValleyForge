@@ -1,0 +1,186 @@
+#!/bin/bash
+
+#	Copyright (C) 2015 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:		make_snappy
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	06-05-2015
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes Snappy Ubuntu Linux platform components.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Snappy platform make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		make_snappy_filesystem
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Builds a root filesystem for the Snappy Ubuntu Core distribution.
+###
+###########################################################################################
+
+make_snappy_filesystem()
+{
+	# DEFINE CONSTANTS.
+
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache
+
+	local SNAPPY_OEM_DIRNAME="snappy_oem_pkg"
+	local SNAPPY_DEV_DIRNAME="snappy_dev_pkg"
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# CONSTRUCT THE DEVICE PACKAGE.
+
+	echo -e "${CYAN}Constructing local device package for Snappy...\n${NO_COLOUR}"
+
+	# Check if there is a Snappy OEM package directory in the target directory.
+	if [ -d $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SNAPPY_DEV_DIRNAME} ]; then
+		# There is a folder containing files to form the device package, so we package that up and use that.
+		echo -e "${CYAN}\tFound ${SNAPPY_DEV_DIRNAME} directory to build device package.\n${NO_COLOUR}"
+
+		# NOTE - A device package (essentially a BSP) is always a TARBALL, not a Debian binary archive.
+
+		# Build a package from the directory.
+		echo -e "${CYAN}\tBuilding Snappy device tarball...\n${NO_COLOUR}"
+		tar -cvJ -f "$TCPATH/$TMP_SRC_DIR/$COMPONENT/device.tar.xz" "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${SNAPPY_DEV_DIRNAME}" > /dev/null 2>&1
+		
+		# NOTE - Don't put anything in here; we need the return value from 'tar' below.
+
+		# Check the return value from tar, to determine if an error occurred during packaging.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}\Failed to package device support files.\n${NO_COLOUR}"
+			return 1
+		fi
+		# Else we're ok.
+		VF_PLAT_SNAPPY_DEV_FILE="$TCPATH/$TMP_SRC_DIR/$COMPONENT/device.tar.xz"
+
+	else
+		# There wasn't a folder to, so see if the configuration calls for a device package, which we might just use as it.
+		vf_platform_snappy_fetch_devfile
+	fi
+
+	# So now, if VF_PLAT_SNAPPY_DEV_FILE has been set, we use that, otherwise there just isn't a device package.
+
+	# CONSTRUCT THE OEM PACKAGE.
+
+	echo -e "${CYAN}Constructing OEM package for Snappy...\n${NO_COLOUR}"
+
+	# Check if there is a Snappy OEM package directory in the target directory.
+	if [ -d $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SNAPPY_OEM_DIRNAME} ]; then
+		# There is a folder containing files to form the OEM package, so we package that up and use that.
+		echo -e "${CYAN}\tFound ${SNAPPY_OEM_DIRNAME} directory to build OEM package.\n${NO_COLOUR}"
+
+		# Build a package from the directory.
+		echo -e "${CYAN}\tBuilding Snappy OEM package...\n${NO_COLOUR}"
+		local SNAPPY_OUT=$(snappy build $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SNAPPY_OEM_DIRNAME} -o $TCPATH/$TMP_SRC_DIR/$COMPONENT)
+		echo -e "${NO_COLOUR}${SNAPPY_OUT}\n"
+		
+		# Check if we actually generated something.
+		VF_PLAT_SNAPPY_OEM_FILE="$(echo ${SNAPPY_OUT} | grep -o "Generated .* snap" | cut -d " " -f 2 | tr -d "'" )"
+		if [ -z "${VF_PLAT_SNAPPY_OEM_FILE}" ]; then
+			echo -e "${RED}\tFailed to build OEM package.\n${NO_COLOUR}"
+			return 1
+		fi
+
+	else
+		# There wasn't a folder to, so see if the configuration calls for an OEM package, which we might just use as it.
+		vf_platform_snappy_fetch_oemfile
+	fi
+
+	# So now, if VF_PLAT_SNAPPY_OEM_FILE has been set, we use that, otherwise there just isn't an OEM package.
+
+	# BUILD THE ACTUAL SNAPPY FS IMAGE.
+
+	echo -e "${CYAN}Building Snappy FS image...\n${NO_COLOUR}"
+	local OPT_STRING="core --developer-mode"
+
+	# Make sure we know which release and channel we want.
+	if [ -z "${VF_PLAT_SNAPPY_RELEASE}" ]; then
+		echo -e "${RED}\tNo Snappy release specified.\n${NO_COLOUR}"
+		return 1
+	fi
+	if [ -z "${VF_PLAT_SNAPPY_CHANNEL}" ]; then
+		echo -e "${RED}\tNo Snappy channel specified.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}\tTracking ${VF_PLAT_SNAPPY_RELEASE}\\${VF_PLAT_SNAPPY_CHANNEL}.\n${NO_COLOUR}"
+	OPT_STRING+=" ${VF_PLAT_SNAPPY_RELEASE} --channel=${VF_PLAT_SNAPPY_CHANNEL}"
+
+	# NOTE - The release must come directly after 'core'.
+
+	if [ -n "${VF_PLAT_SNAPPY_FSSIZE}" ]; then
+		echo -e "${CYAN}\tImage size to create: ${VF_PLAT_SNAPPY_FSSIZE}GB"
+		OPT_STRING+=" --size=${VF_PLAT_SNAPPY_FSSIZE}"
+	fi
+
+	if [ -n "${VF_PLAT_SNAPPY_DEV_FILE}" ]; then
+		echo -e "${CYAN}\tBuilding with device package: ${VF_PLAT_SNAPPY_DEV_FILE##*/}\n${NO_COLOUR}"
+		OPT_STRING+=" --device-part=${VF_PLAT_SNAPPY_DEV_FILE}"
+	else
+		echo -e "${YELLOW}\tBuilding without device package.\n${NO_COLOUR}"
+	fi
+
+	if [ -n "${VF_PLAT_SNAPPY_DEV_FILE}" ]; then
+		echo -e "${CYAN}\tBuilding with OEM package: ${VF_PLAT_SNAPPY_OEM_FILE##*/}\n${NO_COLOUR}"
+		OPT_STRING+=" --oem=${VF_PLAT_SNAPPY_OEM_FILE}"
+	else
+		echo -e "${YELLOW}\tBuilding without OEM package.\n${NO_COLOUR}"		
+	fi
+
+	# Specify the output file to create.
+	OPT_STRING+=" -o $TCPATH/$TMP_SRC_DIR/$COMPONENT/${COMPONENT_NAME}_filesystem.img"
+
+	# We will need root privileges.  Warn the user in advance.
+	echo -e "${YELLOW}Creating ubuntu core images requires elevated privileges (perhaps because it uses the system package cache).  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	# Do something trivial, so that we ask for their password in a tidy fashion.
+	sudo ls > /dev/null
+	echo ""
+
+	# Go!
+	sudo ubuntu-device-flash ${OPT_STRING}
+
+	# Check the return value from ubuntu-device-flash, to determine if an error occurred during packaging.
+	if [ ! -f "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${COMPONENT_NAME}_filesystem.img" ]; then
+		# Something went wrong.
+		echo -e "\n${RED}\tFailed to build filesystem image.\n${NO_COLOUR}"
+		return 1
+	fi
+	# Else, we created an image.
+	echo -e "${CYAN}\nFile system image created: ${COMPONENT_NAME}_filesystem.img\n${NO_COLOUR}"
+
+	# Copy the relevant files across to the output directory.
+	echo -e "${CYAN}Copying filesystem image for $COMPONENT...\n${NO_COLOUR}"
+	mkdir -p "$TCPATH/${OUTPUT_DIR}/${COMPONENT}"
+	cp "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${COMPONENT_NAME}_filesystem.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.img"
+
+	# All done.
+	return 0
+}
+

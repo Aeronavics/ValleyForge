@@ -1,0 +1,15 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-05-05T18:32:01+12:00
+
+====== Platform Specific Configuration ======
+
+''VF_PLAT_SNAPPY_OEM_PATH'' - String which determines the path to the Snappy Package File (''*.snap'') which will be used to provide OEM configuration (see the Snappy packaging documentation for further information).  If blank, then no OEM package is used in filesystem construction.  The path is initially assumed to a be a local file path, relative to ''$TCPATH/src/$COMPONENT/''.  If no such file can be found, then the path is assumed to be a local file, relative to ''${TCPATH}'' (this allows for default OEM packages to be placed into the ''res'' folder).     Finally, if no such file can be found, then the path is instead treated as a URL to be fetched.
+
+''VF_PLAT_SNAPPY_DEV_PATH'' - String which determines the path to the Snappy Package File (''*.snap'') which will be used to provide device (target) configuration (usually including the kernel; see the Snappy packaging documentation for further information).  If blank, then no device package is used in filesystem construction.  The path is initially assumed to a be a local file path, relative to ''$TCPATH/src/$COMPONENT/''.  If no such file can be found, then the path is assumed to be a local file, relative to ''${TCPATH}'' (this allows for default device packages to be placed into the ''res'' folder).     Finally, if no such file can be found, then the path is instead treated as a URL to be fetched.
+
+''VF_PLAT_SNAPPY_RELEASE'' - String which determines which general release of Ubuntu Core to track (see https://developer.ubuntu.com/en/snappy/guides/channels for more information).  If this key is not a valid value (or missing), filesystem builds will fail.
+
+''VF_PLAT_SNAPPY_CHANNEL'' - String which determines which quality channel of the specified release to track (see https://developer.ubuntu.com/en/snappy/guides/channels for more information).  If this key is not a valid value (or missing), filesystem builds will fail.
+
+''VF_PLAT_SNAPPY_FSSIZE'' - Integer which determines the size (in GB) of the file system image to be created for the platform.  If the key is missing, then the default image size will be used.  Sizes less than 4GB are invalid, and may cause the filesystem build to fail.

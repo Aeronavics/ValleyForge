@@ -1,0 +1,31 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-05-05T18:28:41+12:00
+
+====== (Snappy) Ubuntu Core ======
+
+Ubunutu Core is a lightweight version of the popular Ubuntu Linux distribution, primarily intended for 'Internet of Things' and 'Cloud' applications.  Unlike regular Ubuntu flavours, which depend on the Debian derived 'deb/apt-get' package management framework, Ubuntu Core instead uses the 'Snappy' package framework which is more prescriptive.
+
+===== Host (Toolchain) Dependencies =====
+
+Development for Snappy platforms requires the Snappy development tools.  At the time of writing, these are only readily available on Ubuntu hosts, which means that an Ubuntu host is required for developing on Snappy Ubuntu platforms (i.e there is no cross-platform development possible).
+
+''dpkg'' is required (since, perhaps ironically, some Snappy packages are provided as Debian binary package archives, rather than simply tar'ed), as is ''wget'',  but these should already be installed on any sane Ubuntu host.
+
+==== Snappy Development Tools ====
+
+The required development toolc for Snappy are currently not available in the main repositories: they are provided in a PPA instead.
+
+The tools can be installed as follows:
+
+'''
+sudo add-apt-repository ppa:snappy-dev/beta
+sudo apt-get update
+sudo apt-get install snappy-tools
+'''
+
+
+===== Configuration =====
+
+[[+Platform Specific Configuration|Platform Specific Configuration]]
+
