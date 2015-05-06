@@ -13,6 +13,8 @@ Creation-Date: 2014-12-04T16:05:48+13:00
 [[Architectures]]
 [[Targets|Supported Targets]]
 
+[[Platforms]]
+
 ===== About the ValleyForge Project =====
 ValleyForge is a 'tool-chain' for developing embedded software: specifically, for developing avionics software for Unmanned Aerial Systems (UAS'), but it might also be useful in the development of other embedded software projects, particularly any mission critical software which requires close integration between a number of discrete sub-systems.
 

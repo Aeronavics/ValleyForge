@@ -744,7 +744,7 @@ do
 	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
 	# Now, we compile the application code.
-	echo -e "${CYAN}Making application code...\n${NO_COLOUR}"
+	echo -e "${BOLD_CYAN}Making application code for ${COMPONENT}...\n${NO_COLOUR}"
 
 	# Actually run the appropriate make function for this build configuration.
 	$MAKEFUNCTION
@@ -768,16 +768,13 @@ do
 		# We need to make the corresponding filesystem as well.
 
 		# Now, we build the filesystem for the component.
-		echo -e "${CYAN}Building filesystem for component ${COMPONENT}...\n${NO_COLOUR}"
+		echo -e "${BOLD_CYAN}Building filesystem for ${COMPONENT}...\n${NO_COLOUR}"
 	
 		# Check that the make function specified by the bootloader configuration actually exists.
 		if [ `declare -f | grep "$FSFUNCTION" | wc -l` == 0 ]; then
 			# The specified make function doesn't exist, so skip this and move on.
 			echo -e "${RED}Build configuration specifies an invalid filesystem make function.  Skipping creating filesystem for component $COMPONENT.\n${NO_COLOUR}"
-		else
-			# Now, we compile the bootloader.
-			echo -e "${CYAN}Making filesystem...\n${NO_COLOUR}"
-		
+		else		
 			# Actually run the appropriate make function for this build configuration.
 			$FSFUNCTION
 			REPLY=$?
@@ -803,7 +800,7 @@ do
 		# We need to make the corresponding bootloader as well.
 
 		# Now, we build the bootloader code for the component.
-		echo -e "${CYAN}Building bootloader for component ${COMPONENT}...\n${NO_COLOUR}"
+		echo -e "${BOLD_CYAN}Building bootloader for ${COMPONENT}...\n${NO_COLOUR}"
 		
 		# First, we need to read the configuration information for this component.
 		echo -e "${CYAN}Loading bootloader configuration...\n${NO_COLOUR}"
