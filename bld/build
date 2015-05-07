@@ -61,12 +61,12 @@ source $TCPATH/bld/other/setup_vendorsources
 source $TCPATH/bld/code_compliance/compliance_checks
 
 # Define the functions used to actually build components.
-for f in $TCPATH/bld/make_functions/make*; do
+for f in $(find $TCPATH/bld/make_functions -type f -name "make*"); do
 	source "$f"
 done
 
 # Define the functions used to for code generation.
-for f in $TCPATH/bld/code_generation/gen_*; do
+for f in $(find $TCPATH/bld/code_generation -type f -name "gen_*"); do
 	source "$f"
 done
 
