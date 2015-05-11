@@ -1,0 +1,254 @@
+#!/bin/bash
+
+#	Copyright (C) 2012 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:		make_raspi
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	19-03-2012
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes Raspberry Pi targeted components.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported Raspberry Pi make-functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		makeraspi2b
+###
+### Inputs/Outputs:	None
+###
+### Purpose:	Compiles component applications to run on a Raspberry Pi 2 Model B.
+###
+###             Because this is cross-compiling for a Linux platform, the target file
+###             system must be built first, so that linking to system libraries can be
+###             performed.
+###
+###########################################################################################
+
+makeraspi2b()
+{
+	# Perform the standard precompile routine.
+	if ! generic_precompile; then
+		# There isn't anything to do.
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Set up the ARM compiler.
+	unpack_armc
+
+	# Check if there is also a linker script to go with the makefile.
+	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
+		# Copy the relevant linker script in with the source.
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
+
+		# A linker script is specified, so set the linker flags to refer to it.
+		LFLAGS="-T linker_script.ld $LFLAGS"
+	fi
+
+	# Update the flags in case they still contain some unevaluated variables.
+	CFLAGS=$(eval echo $CFLAGS)
+	PFLAGS=$(eval echo $PFLAGS)
+	AFLAGS=$(eval echo $AFLAGS)
+	LFLAGS=$(eval echo $LFLAGS)
+
+	# ARM targets might require multiple application executables, which which case we need to iterate over each of them.
+
+	# Check if the component configuration lists executables to build.
+	if [ -z "$EXECUTABLES" ]; then
+		# There is no list of executables, so just look for the default one named after the component.
+		EXECUTABLES=${COMPONENT_NAME}
+	fi
+
+	# Iterate over the list of executables.
+	for EXECUTABLE in $EXECUTABLES; do
+		# Copy the relevant makefile in with the source.
+		echo -e "${CYAN}Constructing makefile for executable $EXECUTABLE...\n${NO_COLOUR}"
+		cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+		# Update the working makefile with the appropriate values for this executable.	
+		sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(COMPONENT *= *)BUILD_INSERTS_COMPONENT_HERE(\\s.*)?^\1${COMPONENT_NAME}\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(EXECUTABLE *= *)BUILD_INSERTS_EXECUTABLE_HERE(\\s.*)?^\1$EXECUTABLE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(CFLAGS *= *.* *)BUILD_INSERTS_CFLAGS_HERE(\\s.*)?^\1$CFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(PFLAGS *= *.* *)BUILD_INSERTS_PFLAGS_HERE(\\s.*)?^\1$PFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(AFLAGS *= *.* *)BUILD_INSERTS_AFLAGS_HERE(\\s.*)?^\1$AFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(LFLAGS *= *.* *)BUILD_INSERTS_LFLAGS_HERE(\\s.*)?^\1$LFLAGS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		sed -ri "s^(LOOSE_OBJECTS *= *.* *)BUILD_INSERTS_LOOSE_OBJECTS_HERE(\\s.*)?^\1$LOOSE_OBJECTS\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+
+		# Generate the Make.deps dependency file.    
+		pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
+		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | sed "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
+		generate_component_dependencies . ${PARENT_SOURCE_FILE}
+		popd >/dev/null
+
+		# Actually make the executable.
+		echo -e "${CYAN}Making executable $EXECUTABLE ...\n${NO_COLOUR}"
+		make -C $TCPATH/$TMP_SRC_DIR/$COMPONENT all
+
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+		# Check the return value from make, to determine if an error occurred during compilation.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Compilation error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"
+			return 1
+		fi
+		echo -e ""
+	
+		# The compilation worked, so now just copy across the output binaries into the appropriate format.
+		if [[ ${EXECUTABLE} = *\/* ]]; then
+			mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
+		fi
+		$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$EXECUTABLE $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
+
+		# Check the return value from the object copy.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}Object copy error.  Failed to build executable $EXECUTABLE in component $COMPONENT.\n${NO_COLOUR}"			
+			return 1
+		fi
+		echo -e ""
+
+		# TODO - Print out the size of the generated file.	
+	done
+
+	# All done.
+	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:		make_rpi_filesystem
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Builds a Raspberry Pi 2B root system image from the specified prebuilt
+###                 image.
+###
+###########################################################################################
+
+make_rpi_filesystem()
+{
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache/plat_rpi
+
+	local FS_ROOT_DIR="fs_root"
+
+	local RPI_FS_ARCHIVE=
+
+	# Check to make sure we were given a URL to download the image from.
+	if [ -z "${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}" ]; then
+		# Seems to be no URL specified.
+		echo -e "${RED}\tNo image URL configured.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Else, check if the specified file actually exists.
+	if [ -f "$1/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}" ]; then
+		# A matching file is in the source tree.
+		echo -e "${CYAN}\tFound ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH} in the source tree.\n${NO_COLOUR}"
+		RPI_FS_ARCHIVE="$1/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}"
+	elif [ -f "$TCPATH/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}" ]; then
+		# A matching file is somewhere else in the sandpit.
+		echo -e "${CYAN}\tFound ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH} in the sandpit.\n${NO_COLOUR}"
+		RPI_FS_ARCHIVE="$TCPATH/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}"
+	else
+		# We try to see if the path is a URL we can download.
+		if [ -n "$(wget -S --spider ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH} 2>&1 | grep "HTTP/1.1 200 OK")" ]; then
+			# The file seems to exist, so we try to download it.
+			echo -e "${CYAN}\tDownloading image from ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}...\n${NO_COLOUR}"
+			WGET_OUT="$(wget -N -P "$GEN_CACHE" ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH} 2<&1)"
+
+			# See if the file was already downloaded.
+			if [ -n "$(echo ${WGET_OUT} | grep "Server file no newer than local file")" ]; then
+				# We already seem to have the correct file, so not problem.
+				RPI_FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o "Server file no newer than local file .*" | cut -d " " -f 8 | tr -d "'" )"
+				RPI_FS_ARCHIVE="${RPI_FS_ARCHIVE##*/}"
+				RPI_FS_ARCHIVE="${RPI_FS_ARCHIVE%?}"
+				echo -e "${CYAN}\tFile ${RPI_FS_ARCHIVE} already available.\n${NO_COLOUR}"
+				RPI_FS_ARCHIVE="${GEN_CACHE}/${RPI_FS_ARCHIVE}"
+
+			else
+				# Else, we actually downloaded it.
+				RPI_FS_ARCHIVE="$(echo ${WGET_OUT} | grep -o " - .* saved" | cut -s -d " " -f 3 )"
+				RPI_FS_ARCHIVE="${RPI_FS_ARCHIVE##*/}"
+				RPI_FS_ARCHIVE="${RPI_FS_ARCHIVE%?}"
+				echo -e "${CYAN}\tFile ${RPI_FS_ARCHIVE} downloaded successfully.\n${NO_COLOUR}"
+				RPI_FS_ARCHIVE="${GEN_CACHE}/${RPI_FS_ARCHIVE}"
+			fi
+		fi
+
+		# Check if we actually ended up with a file to use.
+		if [ -z "${RPI_FS_ARCHIVE}" ]; then
+			echo -e "${RED}\tCould not locate image ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH}.\n${NO_COLOUR}"
+			return 1
+		fi
+		if [ ! -f "${RPI_FS_ARCHIVE}" ]; then
+			echo -e "${RED}\tFailed to fetch image ${RPI_FS_ARCHIVE}.\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Unzip the file to the output folder.
+	local RPI_FS_FILE=
+	RPI_FS_FILE="${RPI_FS_ARCHIVE%%.*}.img"
+	RPI_FS_FILE="${RPI_FS_FILE##*/}"
+	if [ -f "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img" ] && [ $(stat -c %Y "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img") -ge  $(stat -c %Y "${RPI_FS_ARCHIVE}") ]; then
+		# There is not need to update the existing image.
+		echo -e "${CYAN}\tFilesystem image already up to date.\n${NO_COLOUR}"
+	else
+		# Unzip the image.
+		echo -e "${CYAN}\tUnpacking filesystem image into output directory...\n${NO_COLOUR}"
+		unzip -u -o ${RPI_FS_ARCHIVE} -d $TCPATH/${OUTPUT_DIR}/${COMPONENT}
+
+		# Then rename the unzipped image to the actual name we want.
+		mv "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${RPI_FS_FILE}" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		touch "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		echo -e "${CYAN}\n\tFilesystem image written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
+	fi
+
+	# Check if there is a folder which might contain a partial root filesystem to use.
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" ]; then
+		# There is.  We can't add it to the image directly, so we copy it to the output folder, so that it can be added to the SD card when it's flashed.
+		echo -e "${CYAN}\tPacking ${FS_ROOT_DIR} to output directory...\n${NO_COLOUR}"
+		pushd "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" > /dev/null
+		tar cf "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar" *
+		popd > /dev/null
+	else
+		# There isn't one (so we delete the one in the output folder if its there, in case it shouldn't be).
+		rm -rf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_ROOT_DIR}
+	fi
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.

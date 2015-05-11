@@ -6,7 +6,7 @@ Creation-Date: 2015-01-07T08:18:36+13:00
 
 This is a brief guide. More in depth information can be found inside nuttx/configs/README.txt.
 
-Before the [[:NuttX]] source can be built, first a configuration must be loaded. The nuttx/configs directory lists all of the different boards that are available. Inside each of these directories are a number of subdirectories.
+Before the :NuttX source can be built, first a configuration must be loaded. The nuttx/configs directory lists all of the different boards that are available. Inside each of these directories are a number of subdirectories.
 
   ''<board-name>''
 ''  |-- README.txt''
@@ -35,7 +35,7 @@ This copies the Make.defs, defconfig and setenv.sh files to the nuttx/ directory
 
 At this point, NuttX is now in a position to be compiled by calling ''make'' in the nuttx/ directory. Alternatively, further configuration can be done by either manually editing the nuttx/.config file or by running  ''make menuconfig ''in the nuttx/ directory and navigating the various menus.
 
-By default, [[:NuttX]] is not configured to build C++ code, as it requires uClibc++. The reasons for this are related to licensing issues. uClib++ can be installed by following the instructions in misc/uClibc++/README.txt.
+By default, :NuttX is not configured to build C++ code, as it requires uClibc++. The reasons for this are related to licensing issues. uClib++ can be installed by following the instructions in misc/uClibc++/README.txt.
 
 ===== Modifying the Loaded Configuration =====
 Once a particular configuration has been loaded, particular details can be modified by running the following command in the nuttx/ directory:

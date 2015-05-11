@@ -101,6 +101,9 @@ VF_PLAT_SNAPPY_RELEASE=
 VF_PLAT_SNAPPY_CHANNEL=
 VF_PLAT_SNAPPY_FSSIZE=
 
+	# Platform specific keys (Raspberry Pi Prebuild Image).
+VF_PLAT_RASPI_PREBUILT_IMAGE_PATH=
+
 	# Uploading keys (common).
 UPLOAD_FUNCTIONS=
 

@@ -2,7 +2,7 @@ Content-Type: text/x-zim-wiki
 Wiki-Format: zim 0.4
 Creation-Date: 2015-05-05T18:28:41+12:00
 
-====== (Snappy) Ubuntu Core ======
+====== (Snappy) Ubuntu Core - OEM Build ======
 
 Ubunutu Core is a lightweight version of the popular Ubuntu Linux distribution, primarily intended for 'Internet of Things' and 'Cloud' applications.  Unlike regular Ubuntu flavours, which depend on the Debian derived 'deb/apt-get' package management framework, Ubuntu Core instead uses the 'Snappy' package framework which is more prescriptive.
 

@@ -33,14 +33,14 @@
 echo -e "${CYAN}Imported SD card upload-functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
-###											###
-### Name:		upload_sdcard							###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Flashes an embedded linux filesystem (plus bootloader) to an	###
-###			SD card, making it bootable.					###
-###											###
+###
+### Name:		upload_sdcard
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Flashes an embedded linux filesystem (plus bootloader) to an SD card,
+###                 making it bootable.
+###
 ###########################################################################################
 
 upload_sdcard() 
@@ -49,43 +49,62 @@ upload_sdcard()
 
 	# FUNCTION PROPER STARTS HERE.
 
-#	# Check if we are supposed to be loading the application code.
-#	if [ $UPLOAD_APPLICATION ]; then
-#		# Check that the expected binaries are available in the toolchain output folder.
-#		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}.tar.bz2" ]; then
-#			# The expected binary file was not present.		
-#			echo -e "${RED}Could not find application files for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
-#			return 1
-#		fi
-#	fi
+	local SD_IMAGE=
+	local SD_FILESYSTEM=
+	local SD_BOOTLOADER=
 
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
 		# Check if an image file is available in the toolchain output folder.
-		if [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz" ]; then
+		if [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img" ]; then
 			# An image file is available, so we will load that.
-			echo -e "${CYAN}Found image file; will write an image rather than individual component files.\n${NO_COLOUR}"
-			UPLOAD_IMAGE=1
-			UPLOAD_FILESYSTEM=
-			UPLOAD_BOOTLOADER=
-		# Check that a suitable filesystem archive is available in the toolchain output folder.
+			SD_IMAGE="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img"
+			echo -e "${CYAN}Found image file to write: ${SD_IMAGE##*/}.\n${NO_COLOUR}"
+
+		elif [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz" ]; then
+			# A G-zipped image file is available, so we will load that.
+			SD_IMAGE="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz"
+			echo -e "${CYAN}Found image file to write: ${SD_IMAGE##*/}.\n${NO_COLOUR}"
+		fi
+
+		# Check if a suitable filesystem archive is available in the toolchain output folder.
+		if [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar" ]; then
+			# A plain tarball is available, so we will use that.
+			SD_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar"
+			echo -e "${CYAN}Found filesystem archive: ${SD_FILESYSTEM##*/}\n${NO_COLOUR}"
 		elif [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2" ]; then
 			# A B-zipped archive is available, so we will use that.
-			echo -e "${CYAN}Found BZ2 filesystem archive.\n${NO_COLOUR}"
-			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2"
+			SD_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.bz2"
+			echo -e "${CYAN}Found BZ2 filesystem archive: ${SD_FILESYSTEM##*/}\n${NO_COLOUR}"
 		elif [ -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz" ]; then
 			# A G-zipped archive is available, so we will use that.
-			echo -e "${CYAN}Found GZ filesystem archive.\n${NO_COLOUR}"
-			SD_PACKED_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz"
-		else
-			# No suitable binary file was present.		
-			echo -e "${RED}Could not find root file-system archive for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
+			SD_FILESYSTEM="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar.gz"
+			echo -e "${CYAN}Found GZ filesystem archive: ${SD_FILESYSTEM##*/}\n${NO_COLOUR}"
+		fi
+
+		# Check if we actually found something to write, since if not, that would be a problem.
+		if [ -z "${SD_IMAGE}" ] && [ -z "${SD_FILESYSTEM}" ]; then
+			# No suitable files to write were present.		
+			echo -e "${RED}Could not find root file-system for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
 		fi
+	else
+		# At the moment, you can't write to the SD card without writing the entire filesystem.
+		echo -e "${RED}Cannot write to SD card without writing to filesystem.\n${NO_COLOUR}"
+		return 1
 	fi
 
 	# Check if we are supposed to be loading the bootloader code.
 	if [ $UPLOAD_BOOTLOADER ]; then
+		# Check we're not trying to write an image, in which case, we can't also be loading the bootloader.
+		if [ -n "${SD_IMAGE}" ]; then
+			# You can't do this: if you're writing an image, you expect it to contain the bootloader itself.
+			echo -e "${RED}Cannot upload bootloader when uploading an image: the image should contain its own bootloader files."
+			return 1
+		fi
+
+		# TODO - This is obviously out of date, and needs to be sorted out.
+
 		# Check that the expected files are available in the toolchain output folder.
 		if [ ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_MLO" -o ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_u-boot.img" -o ! -f "$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_uImage" ]; then
 			# The expected binary file was not present.
@@ -94,10 +113,22 @@ upload_sdcard()
 		fi
 	fi
 
-	# TODO - Later these options will be removed, in favor of figuring stuff out based on the component configuration and output files.
-
 	#  We only need to reformat the SD card if we aren't using an image which creates its own filesystem.
-	if [ ! $UPLOAD_IMAGE ]; then
+	local SD_REFORMAT=
+	if [ -n "${SD_IMAGE}" ] && [ -n "${SD_FILESYSTEM}" ]; then
+		# Ask if the user wants to reformat the card.
+		echo -e "${YELLOW}Found both a filesystem image and partial root fs archive.\n${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to flash the image file (generally slow), as well as the filesystem archive? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+		
+		# If they didn't respond YES, then note that down.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			# Forget about the image file.
+			SD_IMAGE=
+			echo -e "${CYAN}Skipping upload of image file.\n${NO_COLOUR}"
+		fi
+	elif [ -z "${SD_IMAGE}" ]; then
 		# Ask if the user wants to reformat the card.
 		echo -e -n "${GREEN}Do you wish to reformat the SD card prior to writing to it? (Y/N) ${NO_COLOUR}"
 		read -n 1
@@ -114,6 +145,7 @@ upload_sdcard()
 	# Figure out what the SD card device is.  We ALWAYs ask the user this, since a wrong answer may damage the host PC.
 
 	# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+	local SD_DEVICE_FILE=
 	while :
 	do
 		# We will need to prompt the user for the value to use.
@@ -145,7 +177,7 @@ upload_sdcard()
 	done
 
 	# If we are writing a root file-system image or reformatting the card, then we will require root privileges.
-	if [ "${UPLOAD_IMAGE}" -o "${UPLOAD_FILESYSTEM}" -o "${SD_REFORMAT}" ]; then
+	if [ -n "${SD_IMAGE}" ] || [ "${SD_REFORMAT}" ]; then
 		# We will need root privileges.  Warn the user in advance.
 		echo -e "${YELLOW}The selected SD card operations require elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
 	fi
@@ -172,19 +204,31 @@ upload_sdcard()
 		done
 
 		# First, if we are going to write an image, we do that.
-		if [ $UPLOAD_IMAGE ]; then
+		if [ -n "${SD_IMAGE}" ]; then
 			# Upload the image directly using DD.
 			echo -e "${WHITE}Dumping image to SD card...\n${NO_COLOUR}"
-			gunzip -c ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img.gz > ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img
-			sudo dd bs=4M if=${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img of=/dev/${SD_DEVICE_FILE}
+
+			# Unzip the image if it's compressed.  This leaves the uncompressed version for next time.
+			if [ "${SD_IMAGE%%*.}" == "img.gz" ]; then
+				gunzip -c ${SD_IMAGE} > "${SD_IMAGE##.*}.img"
+				rm ${SD_IMAGE}
+				${SD_IMAGE}="${SD_IMAGE##.*}.img"
+				echo "${SD_IMAGE}"
+			fi
+
+			sudo dd bs=4M if=${SD_IMAGE} of=/dev/${SD_DEVICE_FILE}
 			sudo sync
-			rm ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_image.img
 			echo -e ""
 		fi
 
 		# See if we need to reformat the card.
 		if [ ${SD_REFORMAT} ]; then
+			echo -e "${RED}THIS IS CURRENTLY DISABLED, THE SCRIPT REQUIRES SOME WORK.\n${NO_COLOUR}"
+			return 1
+
 			# Reformat the SD card.
+
+			# TODO - This is probably outdated, and needs to be tidied up.
 
 			# Figure out how big the card is.
 			SD_BLOCKSIZE=512 # In bytes.
@@ -258,15 +302,24 @@ upload_sdcard()
 		fi
 
 		# See if we need to copy on the bootloader files.
+		local SD_MOUNT=
 		if [ $UPLOAD_BOOTLOADER ]; then
+			echo -e "${RED}THIS IS CURRENTLY DISABLED, THE SCRIPT REQUIRES SOME WORK.\n${NO_COLOUR}"
+			return 1
+
+			# TODO - This is probably outdated, and needs to be tidied up.
+
 			# Mount the first partition.
 			echo -e "${WHITE}Mounting the boot partition...\n${NO_COLOUR}"
 			if [ -b /dev/${SD_DEVICE_FILE}1 ]; then
 				udisks --mount /dev/${SD_DEVICE_FILE}1 &>/dev/null
 				if [ $? -ne "0" ]; then
-					# Something went wrong mounting the partition.
-					echo -e "${RED}Could not mount the boot partition.  Aborting...\n${NO_COLOUR}"
-					return 1
+					udisks --mount /dev/${SD_DEVICE_FILE}p1 &>/dev/null
+					if [ $? -ne "0" ]; then
+						# Something went wrong mounting the partition.
+						echo -e "${RED}Could not mount the boot partition.  Aborting...\n${NO_COLOUR}"
+						return 1
+					fi
 				fi
 			else			
 				# Something isn't right.
@@ -277,9 +330,12 @@ upload_sdcard()
 			# Work out where the partition is now mounted.
 			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}1 | cut -d " " -s -f 3)
 			if [ -z ${SD_MOUNT} ]; then
-				# A match mount entry wasn't there, so something went wrong.
-				echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
-				return 1
+				SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}p1 | cut -d " " -s -f 3)
+				if [ -z ${SD_MOUNT} ]; then
+					# A match mount entry wasn't there, so something went wrong.
+					echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
 			fi 
 
 			# TODO - Check there is enough available space.			
@@ -296,20 +352,30 @@ upload_sdcard()
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the boot partition...\n${NO_COLOUR}"
-			udisks --unmount /dev/${SD_DEVICE_FILE}1
+			udisks --unmount /dev/${SD_DEVICE_FILE}1 > /dev/null
 			if [ $? -ne "0" ]; then
-				# Something went wrong unmounting the partition.
-				echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
-				return 1
+				udisks --unmount /dev/${SD_DEVICE_FILE}p1 > /dev/null
+				if [ $? -ne "0" ]; then
+					# Something went wrong unmounting the partition.
+					echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
 			fi
 		fi
 
 		# See if we need to copy on the root filesystem.
-		if [ $UPLOAD_FILESYSTEM ]; then
+		if [ -n "${SD_FILESYSTEM}" ]; then
 			# Mount the second partition.
 			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
 			if [ -b /dev/${SD_DEVICE_FILE}2 ]; then
 				udisks --mount /dev/${SD_DEVICE_FILE}2 &>/dev/null
+				if [ $? -ne "0" ]; then
+					# Something went wrong mounting the partition.
+					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
+			elif [ -b /dev/${SD_DEVICE_FILE}p2 ]; then
+				udisks --mount /dev/${SD_DEVICE_FILE}p2 &>/dev/null
 				if [ $? -ne "0" ]; then
 					# Something went wrong mounting the partition.
 					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
@@ -324,71 +390,36 @@ upload_sdcard()
 			# Work out where the partition is now mounted.
 			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}2 | cut -d " " -s -f 3)
 			if [ -z ${SD_MOUNT} ]; then
-				# A match mount entry wasn't there, so something went wrong.
-				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
-				return 1
+				SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}p2 | cut -d " " -s -f 3)
+				if [ -z ${SD_MOUNT} ]; then			
+					# A match mount entry wasn't there, so something went wrong.
+					echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
 			fi
 
 			# TODO - Check there is enough available space.
 
 			# Copy the files onto the sd_root partition.
 			echo -e "${WHITE}Extracting packed root filesystem onto the root partition...\n${NO_COLOUR}"
-			sudo cp $SD_PACKED_FILESYSTEM ${SD_MOUNT}/filesystem.tar
-			sudo tar xf ${SD_MOUNT}/filesystem.tar -C ${SD_MOUNT}/
-			sudo rm ${SD_MOUNT}/filesystem.tar
+			sudo cp ${SD_FILESYSTEM} ${SD_MOUNT}/${SD_FILESYSTEM##*/}
+			sudo tar xf ${SD_MOUNT}/${SD_FILESYSTEM##*/} -C ${SD_MOUNT}/
+			sudo rm ${SD_MOUNT}/${SD_FILESYSTEM##*/}
 
 			# Sync and unmount the partition.
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
-			udisks --unmount /dev/${SD_DEVICE_FILE}2
+			udisks --unmount /dev/${SD_DEVICE_FILE}2 > /dev/null
 			if [ $? -ne "0" ]; then
-				# Something went wrong unmounting the partition.
-				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
-				return 1
+				udisks --unmount /dev/${SD_DEVICE_FILE}p2 > /dev/null
+				if [ $? -ne "0" ]; then				
+					# Something went wrong unmounting the partition.
+					echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
+					return 1
+				fi
 			fi
 		fi
-
-#		# See if we need to copy on the application files.
-#		if [ $UPLOAD_APPLICATION ]; then
-#			# Mount the second partition.
-#			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
-#			if [ -b /dev/${SD_DEVICE_FILE}2 ]; then
-#				udisks --mount /dev/${SD_DEVICE_FILE}2 &>/dev/null
-#				if [ $? -ne "0" ]; then
-#					# Something went wrong mounting the partition.
-#					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
-#					return 1
-#				fi
-#			else			
-#				# Something isn't right.
-#				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
-#				return 1		
-#			fi
-#
-#			# Work out where the partition is now mounted.
-#			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}2 | cut -d " " -s -f 3)
-#			if [ -z ${SD_MOUNT} ]; then
-#				# A match mount entry wasn't there, so something went wrong.
-#				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
-#				return 1
-#			fi 
-#
-#			# TODO - Check there is enough available space.
-#
-#			# TODO - Copy the files onto the sd_root partition.
-#
-#			# Sync and unmount the partition.
-#			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
-#			sync
-#			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
-#			udisks --unmount /dev/${SD_DEVICE_FILE}2
-#			if [ $? -ne "0" ]; then
-#				# Something went wrong unmounting the partition.
-#				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
-#				return 1
-#			fi
-#		fi
 
 		# If we make it here, uploading was successful.
 		echo -e "${CYAN}SD card operations completed successfully.\n${NO_COLOUR}"
@@ -402,10 +433,6 @@ upload_sdcard()
 		# Remove temporary files.
 		echo -e "${CYAN}Removing temporary files from operation...\n${NO_COLOUR}"
 	fi
-	SD_DEVICE_FILE=
-	SD_REFORMAT=
-	SD_MOUNT=
-	SD_PACKED_FILESYSTEM=
 
 	# All done.
 	if [ ${OPERATION_FAILED} ]; then

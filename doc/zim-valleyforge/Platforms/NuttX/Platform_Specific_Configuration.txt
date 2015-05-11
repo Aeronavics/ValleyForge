@@ -4,7 +4,7 @@ Creation-Date: 2015-01-14T14:19:16+13:00
 
 ====== Platform Specific Configuration ======
 
-For each application, [[:NuttX]] requires two values to be defined: the stack size and the priority.
+For each application, :NuttX requires two values to be defined: the stack size and the priority.
 
 Inside the component .cfg file there are four additional keys:
 * APP_STACKSIZES

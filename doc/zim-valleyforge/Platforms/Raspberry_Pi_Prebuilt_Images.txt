@@ -1,0 +1,15 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-05-07T14:01:46+12:00
+
+====== Raspberry Pi Prebuilt Images ======
+
+A number of prebuilt images are available for Raspberry Pi targets.
+
+===== Configuration =====
+
+[[+Platform Specific Configuration|Platform Specific Configuration]]
+
+===== Building FS Images =====
+
+In addition to creating the filesystem image, if a folder ''fs_root'' is present in the source folder for the component, then it is assumed to represent elements of a partial root filesystem which should be added to the compoent's filesystem.  This entire folder is copied into the output directory.  However, the contents of this directory are //not// added to the filesystem image: this is a practical consideration, as it's easier to just add these files at the time the image is written to the SD card.
