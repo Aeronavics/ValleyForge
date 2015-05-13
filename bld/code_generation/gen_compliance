@@ -32,11 +32,6 @@
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported Compliance checking code generation functions.\n${NO_COLOUR}"
 
-# Install tools used for code compliance if not present already.
-unpack_vendor_astyle
-unpack_vendor_uncrustify
-unpack_vendor_pcregrep
-
 ######################################## FUNCTION #########################################
 ###											###
 ### Name:		gen_compliance							###
@@ -51,6 +46,10 @@ unpack_vendor_pcregrep
 
 gen_compliance()
 {
+	# Install tools used for code compliance if not present already.
+	unpack_vendor_astyle
+	unpack_vendor_uncrustify
+	unpack_vendor_pcregrep
 
 	# Hardcode the path of config files for uncrustify.
 	CONFIG_FILE_DIRECTORY=$TCPATH/bld/code_compliance/config_files
