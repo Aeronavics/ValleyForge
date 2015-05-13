@@ -16,31 +16,31 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		make_native											###
-###															###
-### Author:		Edwin Hayes											###
-###															###
-### Date Created:	19-03-2012											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		Provides functions which makes components natively (NOT cross-compiled).			###
-###															###
+###
+### Name:		make_native
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	19-03-2012
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes components natively (i.e. NOT cross-compiled).
+###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported native make-functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
-###											###
-### Name:		makenative							###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Copies native makefile into tmp directory, edits it, and uses 	###
-### 			it to compile the files that are already there.		     	###
-###											###
+###
+### Name:		makenative
+###
+### Inputs/Outputs:	None
+###
+### Purpose:		Copies native makefile into tmp directory, edits it, and uses
+### 			    it to compile the files that are already there.
+###
 ###########################################################################################
 
 makenative()
@@ -69,6 +69,37 @@ makenative()
 	PFLAGS=$(eval echo $PFLAGS)
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
+
+	# Resolve system header and library references.
+	if [ -n "${VF_LIB_DEPS}" ]; then 
+		# Iterate over each unique library name.
+		echo -e "${CYAN}Detecting include details for required system libraries:\n${NO_COLOUR}"
+		local LIB_NAME
+		for LIB_NAME in $(echo ${VF_LIB_DEPS} | xargs -n1 | sort -u | xargs); do
+			# Try to resolve include (header) flags for this library.
+			local LIB_H_FLAGS=$(pkg-config --cflags ${LIB_NAME} 2>&1)
+			if [ -n "$(echo ${LIB_H_FLAGS} | grep "No package")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Include Flags: ${LIB_H_FLAGS}"
+			CFLAGS+=" ${LIB_H_FLAGS}"
+			PFLAGS+=" ${LIB_H_FLAGS}"
+			AFLAGS+=" ${LIB_H_FLAGS}"
+
+			# Try to resolve library (linker) flags for this library.
+			local LIB_L_FLAGS=$(pkg-config --libs ${LIB_NAME})
+			if [ -n "$(echo ${LIB_L_FLAGS} | grep "No package")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Library Flags: ${LIB_L_FLAGS}"
+			LFLAGS+=" ${LIB_L_FLAGS}"
+		done
+		echo ""
+	fi
 
 	# Native targets might require multiple application executables, which which case we need to iterate over each of them.
 

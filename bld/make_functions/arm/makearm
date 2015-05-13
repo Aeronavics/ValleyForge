@@ -16,57 +16,89 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		make_arm											###
-###															###
-### Author:		Edwin Hayes											###
-###															###
-### Date Created:	19-03-2012											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		Provides functions which makes ARM type components.						###
-###															###
+###
+### Name:		make_arm
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	19-03-2012
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which makes ARM type components.
+###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
 echo -e "${CYAN}Imported ARM make-functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
-###											###
-### Name:		makearm_bare							###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Copies ARM makefile into tmp directory, edits it, and uses it	###
-### 			to compile the files that are already there.  This compiles a  	###
-###			component which will run upon bare metal.			###
-###											###
-###########################################################################################
-
-makearm_bare()
-{
-	# TODO - This.
-
-	# All done.
-	echo -e "\n${RED}Bare ARM compilation not implemented.\n${NO_COLOUR}"
-	return 0
-}
-
-######################################## FUNCTION #########################################
-###											###
-### Name:		makearm_linux							###
-###											###
-### Inputs/Outputs:	None								###
-###											###
-### Purpose:		Copies ARM makefile into tmp directory, edits it, and uses it	###
-### 			to compile the files that are already there.  This compiles a  	###
-###			component which will run a linux type platform.			###
-###											###
+###
+### Name:		makearm_linux
+###
+### Inputs/Outputs:	None
+###
+### Purpose:    Copies ARM makefile into tmp directory, edits it, and uses it
+###             to compile the files that are already there.  This compiles a
+###             component which will run a linux type platform.
+###
 ###########################################################################################
 
 makearm_linux()
 {
+	# See if the user wants to use a different sysroot for the compilation.
+
+	# NOTE - We ask this before the standard precompile stuff, so that once they answer, the reset of the process is non-interactive.
+
+	# Check if the component/build configuration set specified this.
+	if [ ! -z ${VF_CROSS_COMPILE_SYSROOT} ]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies to use '${BOLD_CYAN}${VF_CROSS_COMPILE_SYSROOT}${CYAN}' as the sysroot directory for compilation.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this setting? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+			
+		# If they responded YES, then use the setting.  If NO, then we'll need to ask them what to use.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			unset VF_CROSS_COMPILE_SYSROOT
+		fi
+	fi
+
+	# Check if the sysroot setting has been chosen yet.
+	if [ -z ${VF_CROSS_COMPILE_SYSROOT} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the path to the sysroot to use when cross-compiling (this will be something like '/media/username/sd_root'): ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without building anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# Test if the entered value is actually a real directory.
+			if [ ! -d "$REPLY" ]; then
+				# The specified directory does not exist, so we abort.
+				echo -e "${RED}Directory $REPLY does not exist.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+			
+			# Else we use whatever they entered.
+			VF_CROSS_COMPILE_SYSROOT="$REPLY"
+			break
+		done
+	fi
+
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -74,17 +106,22 @@ makearm_linux()
 		return 1
 	fi
 
-	# Set up the ARM compiler.
-	unpack_armc
+	# Set up the native compiler.
+	unpack_nativec
 
 	# Check if there is also a linker script to go with the makefile.
 	if [ ! -z $LINKSCRIPT ] && [ -r $LINKSCRIPT ]; then
 		# Copy the relevant linker script in with the source.
-		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.ld
+		cp $LINKSCRIPT $TCPATH/$TMP_SRC_DIR/$COMPONENT/linker_script.x
 
 		# A linker script is specified, so set the linker flags to refer to it.
-		LFLAGS="-T linker_script.ld $LFLAGS"
+		LFLAGS="-T linker_script.x $LFLAGS"
 	fi
+
+	# Because we are cross compiling, we need to make sure pkg_config is looking to link to libraries on our target.
+	export PKG_CONFIG_SYSROOT_DIR=${VF_CROSS_COMPILE_SYSROOT}
+	export PKG_CONFIG_DIR=
+	export PKG_CONFIG_LIBDIR=$(eval echo ${VF_PKG_CONFIG_LIBDIRS})
 
 	# Update the flags in case they still contain some unevaluated variables.
 	CFLAGS=$(eval echo $CFLAGS)
@@ -92,7 +129,44 @@ makearm_linux()
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 
-	# ARM targets might require multiple application executables, which which case we need to iterate over each of them.
+	# Resolve system header and library references.
+	if [ -n "${VF_LIB_DEPS}" ]; then 
+		# Iterate over each unique library name.
+		echo -e "${CYAN}Detecting include details for required system libraries:\n${NO_COLOUR}"
+		local LIB_NAME
+		for LIB_NAME in $(echo ${VF_LIB_DEPS} | xargs -n1 | sort -u | xargs); do
+			# Try to resolve include (header) flags for this library.
+			local LIB_H_FLAGS=$(pkg-config --cflags ${LIB_NAME} 2>&1)
+			if [ -n "$(echo ${LIB_H_FLAGS} | grep "No package")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Include Flags: ${LIB_H_FLAGS}"
+			CFLAGS+=" ${LIB_H_FLAGS}"
+			PFLAGS+=" ${LIB_H_FLAGS}"
+			AFLAGS+=" ${LIB_H_FLAGS}"
+
+			# Try to resolve library (linker) flags for this library.
+			local LIB_L_FLAGS=$(pkg-config --libs ${LIB_NAME})
+			if [ -n "$(echo ${LIB_L_FLAGS} | grep "No package")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Library Flags: ${LIB_L_FLAGS}"
+			LFLAGS+=" ${LIB_L_FLAGS}"
+		done
+		echo ""
+	fi
+
+	# Restore pkg_config to normal operation.
+	unset PKG_CONFIG_SYSROOT_DIR
+	unset PKG_CONFIG_DIR
+	unset PKG_CONFIG_LIBDIR
+	unset PKG_CONFIG_DEBUG_SPEW
+
+	# Native targets might require multiple application executables, which which case we need to iterate over each of them.
 
 	# Check if the component configuration lists executables to build.
 	if [ -z "$EXECUTABLES" ]; then
@@ -104,10 +178,9 @@ makearm_linux()
 	for EXECUTABLE in $EXECUTABLES; do
 		# Copy the relevant makefile in with the source.
 		echo -e "${CYAN}Constructing makefile for executable $EXECUTABLE...\n${NO_COLOUR}"
-		cp $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
+		cp -f $MAKEFILE $TCPATH/$TMP_SRC_DIR/$COMPONENT
 
 		# Update the working makefile with the appropriate values for this executable.	
-		sed -ri "s^(MCU *= *)BUILD_INSERTS_MCU_CODE_HERE(\\s.*)?^\1$MCU_CODE\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		sed -ri "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -141,12 +214,13 @@ makearm_linux()
 			return 1
 		fi
 		echo -e ""
-	
+
 		# The compilation worked, so now just copy across the output binaries into the appropriate format.
+		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
 		if [[ ${EXECUTABLE} = *\/* ]]; then
 			mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT/${EXECUTABLE%/*}
 		fi
-		$OBJCOPY -O $OUTPUT_TYPE $TCPATH/$TMP_SRC_DIR/$COMPONENT/$EXECUTABLE $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
+		$OBJCOPY $TCPATH/$TMP_SRC_DIR/$COMPONENT/$EXECUTABLE $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
 
 		# Check the return value from the object copy.
 		if [ $? != 0 ]; then
@@ -156,7 +230,9 @@ makearm_linux()
 		fi
 		echo -e ""
 
-		# TODO - Print out the size of the generated file.	
+		# Print out details of the size of the generated hex file.
+		echo -e "${WHITE}Output file size details:\n${NO_COLOUR}"
+		$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
 	done
 
 	# All done.

@@ -1,0 +1,10 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-05-11T15:05:14+12:00
+
+====== Build Process for Non-Native Linux Platforms ======
+
+When cross-compiling for Linux based platforms, the toolchain requires access to the root filesystem of the target device (or an equivalent), because it usually needs to link against system libraries.  This means that it's necessary to build the filesystem of the target before building any application code for the target.  The target filesystem can then be mounted on the host computer (usually, the target filesystem will be on an SD card).  During the build process, the toolchain will prompt the user to enter to path to the directory containing the mounted root filesystem for the target.
+
+
+

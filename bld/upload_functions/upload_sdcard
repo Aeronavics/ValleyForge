@@ -177,7 +177,7 @@ upload_sdcard()
 	done
 
 	# If we are writing a root file-system image or reformatting the card, then we will require root privileges.
-	if [ -n "${SD_IMAGE}" ] || [ "${SD_REFORMAT}" ]; then
+	if [ -n "${SD_IMAGE}" ] || [ -n "${SD_FILESYSTEM}" ] || [ "${SD_REFORMAT}" ]; then
 		# We will need root privileges.  Warn the user in advance.
 		echo -e "${YELLOW}The selected SD card operations require elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
 	fi

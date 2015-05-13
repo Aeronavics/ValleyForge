@@ -41,5 +41,8 @@ Currently supported targets are listed below, grouped by architecture type.
 	No devices supported yet
 
 
-===== ARM Cortex-A (Linux) =====
-	* [[+PandaBoard|PandaBoard]] - A linux-powered embedded platform based on the OMAP processor
+===== ARM Cortex-A =====
+
+	* [[+PandaBoard|PandaBoard]] - A embedded SBC platform based on the OMAP processor.
+
+	* [[+Raspberry Pi 2 B|Raspberry Pi 2 B]] - A embedded SBC platform based on a Broadcom ARM processor.

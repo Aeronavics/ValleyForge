@@ -19,7 +19,14 @@ On Ubuntu systems: ''sudo apt-get install gcc-avr avrdude avr-libc binutils-avr'
 To build for [[Architectures:AVR|AVR]] targets using AVRA Assembler (note this isn't the same as GCC assembler), the toolchain requires both the AVR GCC compiler (specifically, for its bin utils) and the AVRA assembler to be installed on the host system.
 
 On Ubuntu systems:		''sudo apt-get install gcc-avr avrdude avr-libc binutils-avr''
-					     ''sudo apt-get install avra''
+						 ''sudo apt-get install avra''
+
+
+==== ARM Linux HF ====
+
+To build for ARM targets using a Linux platform, against the GNU armhf EABI (hardware floating point support), the toolchain requires the GNU ARM HF compiler to be installed on the host system.
+
+On Ubuntu systems: ''sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf''
 
 
 
