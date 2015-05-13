@@ -306,9 +306,9 @@ choose_executables() {
 				if [ -z "${EXECUTABLES}" ]; then
 					echo -e -n "${GREEN}What are the names of the executables? (Enter the executable names separated by a space.) ${NO_COLOUR}"
 				else
-					echo -e -n "${GREEN}What are the names of the executables? (Enter the executable names separated by a space.) (Currently: ${NO_COLOUR}${EXECUTABLES}${GREEN}) ${NO_COLOUR}"
+					echo -e -n "${GREEN}What are the names of the executables? (Enter the executable names separated by a space.) ${NO_COLOUR}"
 				fi
-				read -e
+				read -e -i "${EXECUTABLES}" REPLY
 				echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
 				EXECUTABLES="$REPLY"
