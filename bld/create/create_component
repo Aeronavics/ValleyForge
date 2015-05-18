@@ -708,11 +708,11 @@ source $TCPATH/bld/common/clear_bconf_vars
 source $TCPATH/bld/common/clear_component_vars
 
 # Check if the name component already exists in the list of components.  This is legitimate, because the 'create' script is also used to reconfigure an existing component.
-local VF_COMPONENT_NEW
+unset VF_COMPONENT_NEW
 if [ -n "$(echo "${COMPONENTS}" | grep "^${COMPONENT}\$")" ]; then
 	# The component already exists, so we're just reconfiguring it.
 	echo -e "${CYAN}Component ${COMPONENT} already exists; the component will be reconfigured.\n${NO_COLOUR}"
-	VF_COMPONENT_NEW=
+	unset VF_COMPONENT_NEW
 
 	# Load the component's existing configuration file, so the user only has to change the values which require modification.
 	load_component_config
