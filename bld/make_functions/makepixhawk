@@ -51,8 +51,11 @@ makepixhawk_armcortex()
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
-		echo -e "${YELLOW}Nothing to make for component $COMPONENT.\n${NO_COLOUR}"
-		return 1
+		echo -e "${YELLOW}Nothing to make for component $COMPONENT: a standard Pixhawk build will be performed.\n${NO_COLOUR}"
+		local NO_APP=1
+
+		# Perform any required code generation, since this will have been skipped.
+		generate_code $TCPATH/$TMP_SRC_DIR/$COMPONENT
 	fi
 
 	# Check if the USB Device Configuration file exists. If it is missing, it is likely the rest of the build environment is not configured correctly either.
@@ -79,7 +82,7 @@ makepixhawk_armcortex()
 				;;
 			* )
 				# Unexpected response. Terminating script.
-				echo -e "${RED}Unexpect response. Terminating script.\n${NO_COLOUR}"
+				echo -e "${RED}Unexpected response. Aborting...\n${NO_COLOUR}"
 				exit 1
 				;;
 		esac
@@ -96,6 +99,10 @@ makepixhawk_armcortex()
 
 	# Ensure the EXECUTABLES variable is populated with something. If it is empty, assign it the name of the component.
 	EXECUTABLES="${EXECUTABLES:-${COMPONENT_NAME}}"
+	# Unless there isn't any application code at all.
+	if [ ${NO_APP} ]; then
+		unset EXECUTABLES
+	fi
 
 	# Generate applications for the executables in the project.
 	if ! makepixhawk_configure_apps $TCPATH/$TMP_SRC_DIR/$COMPONENT; then
