@@ -16,17 +16,17 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		build												###
-###															###
-### Author:		Zac Frank											###
-###															###
-### Date Created:	17-11-2011											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		This script builds the components being developed with the toolchain.			 	###
-###															###
+###
+### Name:		build
+###
+### Author:		Zac Frank
+###
+### Date Created:	17-11-2011
+###
+### Type:		Bash Script
+###
+### Purpose:		This script builds the components being developed with the toolchain.
+###
 ###########################################################################################################################
 
 # FIGURE OUT WHERE WE ARE.
