@@ -48,6 +48,14 @@ echo -e "${CYAN}Imported Pixhawk make-functions.\n${NO_COLOUR}"
 
 makepixhawk_armcortex()
 {
+	# DEFINE CONSTANTS.
+
+	local FS_ROOT_DIR="fs_root"
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -109,6 +117,13 @@ makepixhawk_armcortex()
 		# Something went wrong.
 		echo -e "${RED}Unable to generate application configurations for Pixhawk.\n${NO_COLOUR}"
 		return 1
+	fi
+
+	# Update component-wide Pixhawk configuration.
+
+		# Copy our own ROMFS contents in with the default.
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc" ]; then
+		cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/ROMFS/px4fmu_common"
 	fi
 
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
