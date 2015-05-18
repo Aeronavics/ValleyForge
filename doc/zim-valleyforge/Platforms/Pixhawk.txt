@@ -1,0 +1,37 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-01-09T08:08:15+13:00
+
+====== Pixhawk ======
+
+The Pixhawk autopilot firmware runs on the [[NuttX]] platform; however the Pixhawk firmware has its own build system, which is sufficiently complex that it is treated as a separate platform of its own.
+
+Like the underlying [[NuttX]] platform, building for the Pixhawk platform uses Pixhawk's own custom build system, rather than the common Makefile scheme provided by the VF toolchain.  However, for component executables (which are referred to as 'modules' in Pixhawk documentation), regular VF [[Programming Languages:Dependency Detection|dependency detection]] occurs as normal.
+
+===== Configuring the Pixhawk Build Environment =====
+
+Instructions for setting up Ubuntu for building the Pixhawk Firmware can be found on the "[[+Build Environment|Build Environment]]" page.
+
+===== Pixhawk Modules =====
+
+The Pixhawk "module" is the equivalent of an "application" in NuttX. The Pixhawk modules are found in src/modules.
+
+Pixhawk have a tutorial available for creating custom modules available [[https://pixhawk.org/dev/px4_simple_app|here]].
+
+===== Pixhawk on the STM32F4 Discovery Development Board =====
+
+The microcontroller in the PX4FMU Autopilot is similar to the one used in the STM32F4 Discovery Development Board, and there is even documentation to help run the PX4FMU code on the Discovery Board. 
+At this time however, the FMU Firmware does not produce software that is compatible with the Discovery Board. If that changes, the following [[https://pixhawk.org/modules/stm32f4discovery|page]] will likely be updated to reflect this.
+The bootloader works without any modifications and can be loaded via ST-Link, as explained [[https://pixhawk.org/dev/px4_bootloader#stm32f4discovery_with_integrated_stlinkv2|here]].
+
+===== Building FS Images =====
+
+NuttX does not require a real root filesystem on the target; however, it can be configured to provide a virtual filesystem into which real filesystems may be mounted.  By default, this virtual filesystem will be empty (and as a virtual filesystem, cannot be written to).  Simple ROMFS images may be compiled (as global const binary arrays included in a header file) into the firmware binary.  The NuttX shell (''nsh'') may be configured to automatically mount a ROMFS image at startup, and run a script contained therein.  Normally, this image will be mounted to ''/etc'', as in a regular POSIX system.  In the minimal case, this image will contain just a single script (normally called ''rcS'') which may then mount other filesystems, start services, and perform additional configuration.  NuttX provides a default ''rcS'' script, which mounts a second FAT image to ''/tmp''.
+
+Because these images are included into the firmware binary, it doesn't make sense to build the filesystem separately from making application code for a NuttX device.  Building a component using the NuttX (and hence Pixhawk) platform will automatically build the relevant images into the firmware image.
+
+In the Pixhawk case, config time code generation (''gen_pixhawk'') will automatically populate the folder ''fs_root'' in the source folder for the compoent; the folder is populated with a single folder ''etc''.  The contents of the ''etc'' folder are automatically included into the ROMFS image which is mounted automatically by the shell on the target.  Note that the ROMFS image only includes the ''etc'' folder: any content of ''fs_root'' //outside// the ''etc'' folder will not be included in the ROMFS image.  If the ''root_fs'' folder is not present at build time, then the default Pixhawk content will be used instead.
+
+**NOTE** - Only the minimal set of files should be included in the ROMFS image, due to limited programme memory available on some target devices.  
+
+**NOTE** - The Pixhawk build system performs some preprocessing of files being written to the image: in files other than those with specifically excluded filename extensions, blank lines and lines beginning with a hash character are removed.  This is specifically designed to reduce the size of shell script files, which generally constitude the bulk of content in the ROMFS.  This can make it problematic to include arbitrary files in the ROMFS image, but in general this should be avoided anyway.

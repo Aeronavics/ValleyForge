@@ -5,6 +5,7 @@ Creation-Date: 2015-01-19T11:39:45+13:00
 ====== Bootloader ======
 
 ===== Building the Bootloader =====
+
 Building the bootloader is a simple process.
 '''
 cd ~/src
@@ -15,4 +16,5 @@ make
 
 
 ===== Updating Bootloader =====
+
 The bootloader can be updated using the JTAG interface and OpenOCD. Instructions can be found [[https://pixhawk.org/dev/px4_bootloader#flashing_bootloader|here]]. Instructions for updating the bootloader using a MicroSD Card or DFUse can be found [[https://pixhawk.org/dev/bootloader_update|here]].
