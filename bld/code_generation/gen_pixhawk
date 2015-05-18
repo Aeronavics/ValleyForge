@@ -78,6 +78,8 @@ gen_pixhawk()
 
 	# First, we copy the original Pixhawk source files across to where they are needed.
 	echo -e "${CYAN}\tCopying Pixhawk source files into place...\n${NO_COLOUR}"
+	# Copy the rcS script into the source directory.
+	cp ${PIXHAWK_COMMON_SOURCE}/ROMFS/px4fmu_common/init.d/rcS $1/rcS
 
 	# Check if we know of a folder containing patches we should apply.
 	if [ -z "${PIXHAWK_PATCHES}" ]; then

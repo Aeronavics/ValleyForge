@@ -79,6 +79,9 @@ gen_pixhawk_build()
 	# Copy the Pixhawk source files across to where they are needed.
 	cp -fr ${PIXHAWK_COMMON_SOURCE}/ $1/Firmware/
 
+	# Copy the rcS script and any other files with #!nsh at the beginning into /ROMFS/px4fmu_common/init.d
+	cp $(find . -type f -print0 | xargs -0 grep -l '#!nsh') $1/Firmware/ROMFS/px4fmu_common/init.d
+
 	# Move the Pixhawk configuration files into the /nuttx/ directory, overwriting any pre-existing files.
 	echo -e "${CYAN}\tReplacing Pixhawk configuration files...\n${NO_COLOUR}"
 
