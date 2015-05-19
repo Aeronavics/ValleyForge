@@ -121,9 +121,9 @@ makepixhawk_armcortex()
 
 	# Update component-wide Pixhawk configuration.
 
-		# Overwrite the ROMFS contents with our own set.
+		# Copy our own ROMFS contents in with the default.
 	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc" ]; then
-		echo -e "ROMFS_ROOT = $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc" >> $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/makefiles/config_${TARGET_PIXHAWK_DEVICE}.mk
+		cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/ROMFS/px4fmu_common"
 	fi
 
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
