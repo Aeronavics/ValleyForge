@@ -89,10 +89,10 @@ gen_pixhawk()
 
 	# Rather than copying the entire ROMFS in, we just create templates for the important files which the user is likely to change.
 	mkdir -p $1/${FS_ROOT_DIR}/etc
-	mkdir -p $1/${FS_ROOT_DIR}/fs/sdcard
-	mkdir -p $1/${FS_ROOT_DIR}/fs/sdcard/etc
-	touch $1/${FS_ROOT_DIR}/fs/sdcard/etc/config.txt
-	touch $1/${FS_ROOT_DIR}/fs/sdcard/etc/extras.txt
+	mkdir -p $1/${FS_ROOT_DIR}/fs/microsd
+	mkdir -p $1/${FS_ROOT_DIR}/fs/microsd/etc
+	touch $1/${FS_ROOT_DIR}/fs/microsd/etc/config.txt
+	touch $1/${FS_ROOT_DIR}/fs/microsd/etc/extras.txt
 
 	# TODO - Can we also do other ROMFS images to be mounted elsewhere?
 

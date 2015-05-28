@@ -380,7 +380,7 @@ makepixhawk_bootloader()
 ### Purpose:		Builds a SD card filesystem image for the Pixhawk.  Note that this
 ###					image doesn't contain the root filesystem, which is part of the flash
 ###					binary image in the case of the Pixhawk platform.  Instead this image
-###					just contains 'extra' files, which are normally mounted at /fs/sdcard.
+###					just contains 'extra' files, which are normally mounted at /fs/microsd.
 ###
 ###########################################################################################
 
@@ -393,15 +393,15 @@ make_pixhawk_filesystem()
 	local PIX_FS_ARCHIVE=
 
 	# Check if there is a folder which might contain a filesystem to go on SD card.
-	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/fs/sdcard" ]; then
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/fs/microsd" ]; then
 		# There is.  We can't add it to the image directly, so we copy it to the output folder, so that it can be added to the SD card when it's flashed.
 		echo -e "${CYAN}\tPacking ${FS_ROOT_DIR}/fs/sdcard to output directory...\n${NO_COLOUR}"
-		pushd "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/fs/sdcard" > /dev/null
+		pushd "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/fs/microsd" > /dev/null
 		tar cf "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar" *
 		popd > /dev/null
 	else
 		# There isn't one (so we delete the one in the output folder if its there, in case it shouldn't be).
-		rm -rf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_ROOT_DIR}/fs/sdcard
+		rm -rf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_ROOT_DIR}/fs/microsd
 	fi
 
 	# All done.
