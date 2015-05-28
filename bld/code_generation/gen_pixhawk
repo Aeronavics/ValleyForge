@@ -83,9 +83,16 @@ gen_pixhawk()
 
 	# NOTE - This makes the assumption that the ROMFS is to be mounted at /etc.  Properly, would need to check CONFIG_NSH_ROMFSMOUNTPT in the NuttX Kconfig.
 
-	# Copy the entire ROMFS folder into the root_fs source folder.
+#	# Copy the entire ROMFS folder into the root_fs source folder.
+#	mkdir -p $1/${FS_ROOT_DIR}/etc
+#	cp -rf ${PIXHAWK_COMMON_SOURCE}/ROMFS/px4fmu_common/* $1/${FS_ROOT_DIR}/etc
+
+	# Rather than copying the entire ROMFS in, we just create templates for the important files which the user is likely to change.
 	mkdir -p $1/${FS_ROOT_DIR}/etc
-	cp -rf ${PIXHAWK_COMMON_SOURCE}/ROMFS/px4fmu_common/* $1/${FS_ROOT_DIR}/etc
+	mkdir -p $1/${FS_ROOT_DIR}/fs/sdcard
+	mkdir -p $1/${FS_ROOT_DIR}/fs/sdcard/etc
+	touch $1/${FS_ROOT_DIR}/fs/sdcard/etc/config.txt
+	touch $1/${FS_ROOT_DIR}/fs/sdcard/etc/extras.txt
 
 	# TODO - Can we also do other ROMFS images to be mounted elsewhere?
 

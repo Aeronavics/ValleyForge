@@ -301,6 +301,50 @@ upload_sdcard()
 			sync
 		fi
 
+		# NOTE - From here on out, one way or another, we assume the card is formatted, so we're interested in partitions rather than the disk itself.
+
+		# Work out what the device files for the actual partitions are.
+		local SD_DEVICE_FILE_ROOTPART
+		local SD_DEVICE_FILE_BOOTPART
+
+		# Check if there is more than one partion on the disk.
+		if [ -b "/dev/${SD_DEVICE_FILE}2" ]; then
+			# There is a second partition, so we assume the root partition is the second one.
+			SD_DEVICE_FILE_ROOTPART="/dev/${SD_DEVICE_FILE}2"
+		elif [ -b "/dev/${SD_DEVICE_FILE}p2" ]; then
+			# There is a second partition, so we assume the root partition is the second one.
+			SD_DEVICE_FILE_ROOTPART="/dev/${SD_DEVICE_FILE}p2"
+		fi
+		
+		# If there wasn't a second partition, then the first partition must be root.  (Since this means the SD card is probably not bootable, it's a misnomer to call it the root partion, it's more likely just user data, but nomatter.)
+		if [ -z "${SD_DEVICE_FILE_ROOTPART}" ]; then
+			if [ -b "/dev/${SD_DEVICE_FILE}1" ]; then
+				# We assume the only partion is for root.
+				SD_DEVICE_FILE_ROOTPART="/dev/${SD_DEVICE_FILE}1"
+			elif [ -b "/dev/${SD_DEVICE_FILE}p1" ]; then
+				# We assume the only partion is for root.
+				SD_DEVICE_FILE_ROOTPART="/dev/${SD_DEVICE_FILE}p1"
+			else
+				# If we can't find any partions, then something bad has happened.
+				echo -e "${RED}Unable to detect partions on SD card.\n${NO_COLOUR}"
+				return 1
+			fi
+
+		# Else, if the second partion is root, then the first must be boot.
+		else
+			if [ -b "/dev/${SD_DEVICE_FILE}1" ]; then
+				# We assume the first partion is for boot.
+				SD_DEVICE_FILE_BOOTPART="/dev/${SD_DEVICE_FILE}1"
+			elif [ -b "/dev/${SD_DEVICE_FILE}p1" ]; then
+				# We assume the first partion is for boot.
+				SD_DEVICE_FILE_BOOTPART="/dev/${SD_DEVICE_FILE}p1"
+			else
+				# If we can't find the first partion when we know there is a second, then something bad has happened.
+				echo -e "${RED}Unable to detect partions on SD card.\n${NO_COLOUR}"
+				return 1
+			fi			
+		fi
+
 		# See if we need to copy on the bootloader files.
 		local SD_MOUNT=
 		if [ $UPLOAD_BOOTLOADER ]; then
@@ -311,31 +355,25 @@ upload_sdcard()
 
 			# Mount the first partition.
 			echo -e "${WHITE}Mounting the boot partition...\n${NO_COLOUR}"
-			if [ -b /dev/${SD_DEVICE_FILE}1 ]; then
-				udisks --mount /dev/${SD_DEVICE_FILE}1 &>/dev/null
+			if [ -n "${SD_DEVICE_FILE_BOOTPART}" ]; then
+				udisks --mount ${SD_DEVICE_FILE_BOOTPART} &>/dev/null
 				if [ $? -ne "0" ]; then
-					udisks --mount /dev/${SD_DEVICE_FILE}p1 &>/dev/null
-					if [ $? -ne "0" ]; then
-						# Something went wrong mounting the partition.
-						echo -e "${RED}Could not mount the boot partition.  Aborting...\n${NO_COLOUR}"
-						return 1
-					fi
+					# Something went wrong mounting the partition.
+					echo -e "${RED}Could not mount the boot partition.\n${NO_COLOUR}"
+					return 1
 				fi
 			else			
 				# Something isn't right.
-				echo -e "${RED}Could not locate block device for boot partition.  Aborting...\n${NO_COLOUR}"
+				echo -e "${RED}Could not locate block device for boot partition.\n${NO_COLOUR}"
 				return 1		
 			fi
 
 			# Work out where the partition is now mounted.
-			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}1 | cut -d " " -s -f 3)
+			SD_MOUNT=$(mount | grep ${SD_DEVICE_FILE_BOOTPART} | cut -d " " -s -f 3)
 			if [ -z ${SD_MOUNT} ]; then
-				SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}p1 | cut -d " " -s -f 3)
-				if [ -z ${SD_MOUNT} ]; then
-					# A match mount entry wasn't there, so something went wrong.
-					echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
-					return 1
-				fi
+				# A match mount entry wasn't there, so something went wrong.
+				echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1
 			fi 
 
 			# TODO - Check there is enough available space.			
@@ -352,30 +390,20 @@ upload_sdcard()
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the boot partition...\n${NO_COLOUR}"
-			udisks --unmount /dev/${SD_DEVICE_FILE}1 > /dev/null
+			udisks --unmount ${SD_DEVICE_FILE_BOOTPART} > /dev/null
 			if [ $? -ne "0" ]; then
-				udisks --unmount /dev/${SD_DEVICE_FILE}p1 > /dev/null
-				if [ $? -ne "0" ]; then
-					# Something went wrong unmounting the partition.
-					echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
-					return 1
-				fi
+				# Something went wrong unmounting the partition.
+				echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
+				return 1
 			fi
 		fi
 
 		# See if we need to copy on the root filesystem.
 		if [ -n "${SD_FILESYSTEM}" ]; then
-			# Mount the second partition.
+			# Mount the root partition.
 			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
-			if [ -b /dev/${SD_DEVICE_FILE}2 ]; then
-				udisks --mount /dev/${SD_DEVICE_FILE}2 &>/dev/null
-				if [ $? -ne "0" ]; then
-					# Something went wrong mounting the partition.
-					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
-					return 1
-				fi
-			elif [ -b /dev/${SD_DEVICE_FILE}p2 ]; then
-				udisks --mount /dev/${SD_DEVICE_FILE}p2 &>/dev/null
+			if [ -n "${SD_DEVICE_FILE_ROOTPART}" ]; then
+				udisks --mount ${SD_DEVICE_FILE_ROOTPART} &>/dev/null
 				if [ $? -ne "0" ]; then
 					# Something went wrong mounting the partition.
 					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
@@ -388,14 +416,11 @@ upload_sdcard()
 			fi
 
 			# Work out where the partition is now mounted.
-			SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}2 | cut -d " " -s -f 3)
+			SD_MOUNT=$(mount | grep ${SD_DEVICE_FILE_ROOTPART} | cut -d " " -s -f 3)
 			if [ -z ${SD_MOUNT} ]; then
-				SD_MOUNT=$(mount | grep /dev/${SD_DEVICE_FILE}p2 | cut -d " " -s -f 3)
-				if [ -z ${SD_MOUNT} ]; then			
-					# A match mount entry wasn't there, so something went wrong.
-					echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
-					return 1
-				fi
+				# A match mount entry wasn't there, so something went wrong.
+				echo -e "${RED}Could not find mount location for root partition.  Aborting...\n${NO_COLOUR}"
+				return 1
 			fi
 
 			# TODO - Check there is enough available space.
@@ -410,14 +435,11 @@ upload_sdcard()
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
-			udisks --unmount /dev/${SD_DEVICE_FILE}2 > /dev/null
-			if [ $? -ne "0" ]; then
-				udisks --unmount /dev/${SD_DEVICE_FILE}p2 > /dev/null
-				if [ $? -ne "0" ]; then				
-					# Something went wrong unmounting the partition.
-					echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
-					return 1
-				fi
+			udisks --unmount ${SD_DEVICE_FILE_ROOTPART} > /dev/null
+			if [ $? -ne "0" ]; then		
+				# Something went wrong unmounting the partition.
+				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
+				return 1s
 			fi
 		fi
 
