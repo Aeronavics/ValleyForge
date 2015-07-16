@@ -473,6 +473,7 @@ Options:
 	-n --name <Component Name>	Specify the name of a component to build.
 	-p --postpack			Pack up the compilers used after the build (takes longer next time).
 	   --nohal			Do not compile using the HAL (mostly for debugging).
+	   --noapp			Do not compile any application code (build filesystem/bootloader separately).
 EOF
 	# All done.
 	return
@@ -531,13 +532,14 @@ ALL=
 BUILD_BOOTLOADER=
 BUILD_FILESYSTEM=
 NOHAL=
+NOAPP=
 POSTPACK=
 VF_EN_COMPLIANCE_CHECKS=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
 SHORTOPTS="harbfpcn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,name:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,name:"
 
 # Use 'getopt' to parse the command line options.
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
@@ -584,6 +586,10 @@ while true; do
 		--nohal)
 			# Select 'not using HAL'.
 			NOHAL=1
+			;;
+		--noapp)
+			# Select 'not building application code'.
+			NOAPP=1
 			;;
 		--)
 			# We're done parsing options.  Anything else must be parameters.
@@ -743,22 +749,28 @@ do
 	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
 	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
-	# Now, we compile the application code.
-	echo -e "${BOLD_CYAN}Making application code for ${COMPONENT}...\n${NO_COLOUR}"
+	# Check that we haven't been asked to skip building the application code.
+	if [ $NOAPP ]; then
+		# Else, we're deliberately not compiling the application code for the component.
+		echo -e "${YELLOW}Skipped application build for component $COMPONENT: application code disabled.\n${NO_COLOUR}"
+	else
+		# Now, we compile the application code.
+		echo -e "${BOLD_CYAN}Making application code for ${COMPONENT}...\n${NO_COLOUR}"
 
-	# Actually run the appropriate make function for this build configuration.
-	$MAKEFUNCTION
-	REPLY=$?
+		# Actually run the appropriate make function for this build configuration.
+		$MAKEFUNCTION
+		REPLY=$?
 
-	# Check if there wasn't actually anything to build.
-	if [ $NOCODE ]; then
-		# There wasn't anything to build, so we just carry on.									
-		echo -e "${YELLOW}Skipped application build for component $COMPONENT.\n${NO_COLOUR}"
-		NOCODE=
+		# Check if there wasn't actually anything to build.
+		if [ $NOCODE ]; then
+			# There wasn't anything to build, so we just carry on.									
+			echo -e "${YELLOW}Skipped application build for component $COMPONENT: nothing to build.\n${NO_COLOUR}"
+			unset NOCODE
 
-	# Check if the make function worked.
-	elif [ $REPLY != 0 ]; then
-		echo -e "${RED}Application code build failed.\n${NO_COLOUR}"
+		# Check if the make function worked.
+		elif [ $REPLY != 0 ]; then
+			echo -e "${RED}Application code build failed.\n${NO_COLOUR}"
+		fi
 	fi
 
 	# Check if we should also make the corresponding filesystem for this component.
