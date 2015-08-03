@@ -33,8 +33,8 @@
 echo -e "${CYAN}Imported Arduino make-functions.\n${NO_COLOUR}"
 
 # Select the source files for the AWK scripts we use.
-ARDUINO_AWK_SPLITTER="${TCPATH}/bld/make_functions/awk_makearduino_splitter"
-ARDUINO_AWK_PROTOTYPER="${TCPATH}/bld/make_functions/awk_makearduino_prototyper"
+ARDUINO_AWK_SPLITTER="${TCPATH}/bld/make_functions/avr/awk_makearduino_splitter"
+ARDUINO_AWK_PROTOTYPER="${TCPATH}/bld/make_functions/avr/awk_makearduino_prototyper"
 
 ######################################## FUNCTION #########################################
 ###											###
