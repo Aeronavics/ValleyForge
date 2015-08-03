@@ -77,5 +77,8 @@ $(EXECUTABLE): $(OBJS)
 # Object from assembly.
 %.o: %.s
 	@echo -e "$(BOLD_WHITE)******** Compiling $@. ********$(NO_COLOUR)"
-	$(AS) $(AFLAGS) $< -o $@
+	$(AS) $(AFLAGS) -c $< -o $@
 
+# TODO - When using gcc as the assembler, you need '-c', but using gcc-as you don't want it.  Possibly needs to be replaced with a configured variable.
+
+# ALL DONE.

@@ -174,15 +174,19 @@ find_source_dependencies_recursive()
 			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
 			;;
 		"s")
-			# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so need this craziness instead.
-
 			# Use assembler to detect the local header dependencies.
-			${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
-			DEPENDENCIES=$(cat ${TARGET_BASENAME}.d)
-			if [ -z "$DEPENDENCIES" ]; then
-				false
-			fi
-			rm "${TARGET_BASENAME}.d"
+			DEPENDENCIES=$(${ASSEMBLER} ${AFLAGS} -MM ${TARGET_FILE})
+
+			# TODO - Probably need to handle both gcc and as options, in case some targets want to call the assembler directly.
+
+			# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so if using as instead of gcc, need this craziness instead.
+
+			#${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
+			#DEPENDENCIES=$(cat ${TARGET_BASENAME}.d)
+			#if [ -z "$DEPENDENCIES" ]; then
+			#	false
+			#fi
+			#rm "${TARGET_BASENAME}.d"
 			;;
 		*)
 			echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
@@ -242,7 +246,7 @@ find_source_dependencies_recursive()
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
-				fi				
+				fi
 				;;
 			"hpp")
 				if [ -e ${WORD%.*}.cpp ]; then
@@ -288,7 +292,7 @@ find_object_dependencies()
 
 	# Reset the OBJ_STRING variable
 	OBJ_STRING=
-	
+
 	# If the target file starts with "./" remove it, because that screws some things up.
 	local TARGET_FILE=$(echo "${2}" | sed "s#^\./##g")
 
@@ -298,7 +302,7 @@ find_object_dependencies()
 		return 1
 	fi
 	ROOT_FILE=${TARGET_FILE}
-	
+
 	# Find the list of source dependencies.
 	if ! find_source_dependencies . $ROOT_FILE; then
 		# Something went wrong.
@@ -319,7 +323,7 @@ find_object_dependencies()
 		echo -e "${YELLOW}\tIncluding loose objects: ${NO_COLOUR}${LOOSE_OBJECTS}${NO_COLOUR}"
 		OBJ_STRING="${OBJ_STRING} ${LOOSE_OBJECTS}"
 	fi
-	
+
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
@@ -348,7 +352,7 @@ find_object_dependencies()
 ###
 ######################################################################################################
 
-list_source_dependencies() 
+list_source_dependencies()
 {
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
@@ -362,12 +366,12 @@ list_source_dependencies()
 		echo -e "${RED}\tUnable to calculate source dependencies for ${2}.\n${NO_COLOUR}"
 		return 1
 	fi
-	
+
 	# Append each file name to the output file.
 	for SRC in $SRC_STRING; do
 		echo "$SRC" >> "$2.sd"
 	done
-	
+
 	# Leave the folder containing the source.
 	pushd >/dev/null
 
@@ -389,7 +393,7 @@ list_source_dependencies()
 ###
 ######################################################################################################
 
-list_object_dependencies() 
+list_object_dependencies()
 {
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
@@ -402,11 +406,11 @@ list_object_dependencies()
 		echo -e "${RED}\tUnable to calculate object dependencies for ${2}.\n${NO_COLOUR}"
 		return 1
 	fi
-	
+
 	echo "OBJS =${OBJ_STRING}" > "${2%.*}.ld"
-	
+
 	# Leave the folder containing the source.
-	pushd >/dev/null	
+	pushd >/dev/null
 
 	# All done.
 	return 0
@@ -427,14 +431,14 @@ list_object_dependencies()
 ###
 ######################################################################################################
 
-list_library_dependencies() 
+list_library_dependencies()
 {
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
 
 	# All we do is list anything that looks like it might be a library archive.
 	find . -name "lib*.a" > ${2%.*}.lld
-	
+
 	# Leave the folder containing the source.
 	popd >/dev/null
 }
@@ -473,15 +477,15 @@ generate_component_dependencies()
 		DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed -r "s^[^/]+/\\.\\./^^g" | sed -r "s^/\\./^/^g")
 
 		echo "${DEPENDENCIES}" >> Make.deps
-		echo " " >> Make.deps		
+		echo " " >> Make.deps
 	}
 
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
-	
+
 	# Remove the Make.deps file if it exists already.
 	rm -f Make.deps
-	
+
 	# Check the specified file actually exists.
 	if [ ! -f "$2" ]; then
 		# The file doesn't even exist!
@@ -497,7 +501,7 @@ generate_component_dependencies()
 
 	# Else, we detected the executable dependencies ok.
 	echo -e "# Executable Linker Dependencies.\n" >> Make.deps
-	
+
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	OBJ_STRING=$(echo "${OBJ_STRING}" | tr " " "\n" | sort -u | tr "\n" " ")
 	echo -e "OBJS =${OBJ_STRING}\n" >> Make.deps
@@ -524,26 +528,30 @@ generate_component_dependencies()
 		case ${SRC##*.} in
 			"c")
 				DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE})
-				
+
 				add_dependencies ${DEPENDENCIES}
 				;;
 			"cpp")
 				DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
-				
+
 				add_dependencies ${DEPENDENCIES}
 				;;
 			"s")
+				# Use assembler to detect the local header dependencies.
+				DEPENDENCIES=$(${ASSEMBLER} ${AFLAGS} -MM ${TARGET_FILE})
+
+				# TODO - As above, some targets might want to use the assembler rather than just calling the compiler.
+
 				# NOTE - For some insane reason, the -MM option doesn't work for the assembler, so need this craziness instead.
 
-				# Use assembler to detect the local header dependencies.
-				${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
-				if [ -z "$(cat ${TARGET_BASENAME}.d)" ]; then
-					false
-				fi
-				DEPENDENCIES=$(cat "${TARGET_BASENAME}.d")
-				rm "${TARGET_BASENAME}.d"
+				#${ASSEMBLER} ${AFLAGS} -MD ${TARGET_BASENAME}.d ${TARGET_FILE} -o ${TARGET_BASENAME}.o > /dev/null
+				#if [ -z "$(cat ${TARGET_BASENAME}.d)" ]; then
+				#	false
+				#fi
+				#DEPENDENCIES=$(cat "${TARGET_BASENAME}.d")
+				#rm "${TARGET_BASENAME}.d"
 
-				add_dependencies ${DEPENDENCIES}				
+				add_dependencies ${DEPENDENCIES}
 				;;
 			*)
 				echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
