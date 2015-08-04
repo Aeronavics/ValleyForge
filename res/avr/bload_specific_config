@@ -19,7 +19,7 @@
 echo -e "${CYAN}Modular AVR Bootloader specific configuration...\n${NO_COLOUR}"
 
 # If this is new component, create a separate section in the component configuration file for bootloader specific stuff.
-if [ ${NEW} ]; then
+if [ ${VF_COMPONENT_NEW} ]; then
 	echo -e "\n### BOOTLOADER (MODULAR AVR) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 

@@ -100,7 +100,7 @@ choose_target()
 	TARGETS="`echo $TARGETS | tr " " "\n" | sort -u -r | tr "\n" " "`"
 
 	# Prompt the user; the message depends on whether this is a new component or not.
-	if [ ${NEW} ]; then
+	if [ ${VF_COMPONENT_NEW} ]; then
 		# It's a new component, so there is no precedent to draw from.
 		echo -e "${GREEN}Which target would you like to code for? \n${NO_COLOUR}"
 	else
@@ -166,7 +166,7 @@ choose_platform()
 	PLATFORMS="`echo $PLATFORMS | tr " " "\n" | sort -u -r | tr "\n" " "`"
 
 	# Prompt the user; the message depends on whether this is a new component or not.
-	if [ ${NEW} ]; then
+	if [ ${VF_COMPONENT_NEW} ]; then
 		# It's a new component, so there is no precedent to draw from.
 		echo -e "${GREEN}Which platform would you like to code for? \n${NO_COLOUR}"
 	else
@@ -232,7 +232,7 @@ choose_bootloader()
 	fi
 
 	# Prompt the user; the message depends on whether this is a new component or not.
-	if [ ${NEW} ]; then
+	if [ ${VF_COMPONENT_NEW} ]; then
 		# It's a new component, so there is no precedent to draw from.
 		echo -e "${GREEN}Which bootloader would you like to use for this component? \n${NO_COLOUR}"
 	else
@@ -286,7 +286,7 @@ choose_executables() {
 	while :
 	do
 		# Ask if the user wants multiple executable files; the message depends on whether this is a new component or not.
-		if [ ${NEW} ]; then
+		if [ ${VF_COMPONENT_NEW} ]; then
 			# It's a new component, so there is no precedent to draw from.
 			echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Y/N) ${NO_COLOUR}"
 		else
@@ -480,7 +480,7 @@ load_component_config()
 	# $1 - Specific configuration file to load.  If blank, then use the default.
 
 	# Check if this is a new component.
-	if [ ${NEW} ]; then
+	if [ ${VF_COMPONENT_NEW} ]; then
 		# This is a new component, so there will be no file to load.
 		return 0
 	fi
