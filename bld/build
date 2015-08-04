@@ -147,7 +147,7 @@ get_suitable_libs()
 get_hal()
 {
 	# Check if using the HAL is disabled.
-	if [ $NOHAL ]; then
+	if [ -n "${NOHAL}${VF_NO_HAL}" ]; then
 		# The HAL is disabled, so don't do anything here.
 		echo -e "${YELLOW}'No HAL' option selected; not importing HAL.\n${NO_COLOUR}"
 		return 0
