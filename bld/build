@@ -250,71 +250,29 @@ get_hal()
 	return
 }
 
-# Fetch source code into the temporary work location.
-fetch_source()
+# Check what source code we seem to have available to build.
+check_source()
 {
-	# Fetch the source files for the component being built.
-	echo -e "${CYAN}Fetching source files...\n${NO_COLOUR}"
-
 	# Count the number of C files in the source folder for this component.
-	C_COUNT=`find $TCPATH/src/$COMPONENT -name "*.c" | wc -l`
+	C_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.c" | wc -l`
 	echo -e "${WHITE}Found $C_COUNT C source files.\n${NO_COLOUR}"
 
 	# Count the number of CPP files in the source folder for this component.
-	P_COUNT=`find $TCPATH/src/$COMPONENT -name "*.cpp" | wc -l`
+	P_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.cpp" | wc -l`
 	echo -e "${WHITE}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
 
 	# Count the number of S files in the source folder for this component.
-	S_COUNT=`find $TCPATH/src/$COMPONENT -name "*.s" | wc -l`
+	S_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.s" | wc -l`
 	echo -e "${WHITE}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
 	# Count the number of PDE/INO files in the source folder for this component.
-	I_COUNT=`find $TCPATH/src/$COMPONENT -name "*.ino" -o -name "*.pde" | wc -l`
+	I_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.ino" -o -name "*.pde" | wc -l`
 	echo -e "${WHITE}Found $I_COUNT PDE/INO source files.\n${NO_COLOUR}"
-
-	# Make sure there aren't any old files in the spot we are about to put new files.
-	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
-	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# Copy the entire source folder into the tmp directory, where the actual making will occur.
-	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# Check if there are any other source files we need to import.
-	if [ ! -z "${SRC_IMPORT_FILES}" ]; then
-		# There are some other files which need to be imported (probably from in res).
-		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
-
-		# Iterate over the list of source files to import.
-		local SRC_IMPORT_FILE=
-		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
-			# Split the line into source and target.
-			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
-			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
-
-			# Check if the target exists.
-			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
-				# The file was missing, so we skip this file.
-				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  File not found.\n${NO_COLOUR}"
-				continue
-			fi
-
-			# Check if the destination was blank.
-			if [ -z "${SRC_IMPORT_DESTINATION}" ]; then
-				# The destination was blank, so we skip this file.
-				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  No destination specified.\n${NO_COLOUR}"
-				continue
-			fi
-
-			# Copy the target to the destination.
-			cp ${TCPATH}/${SRC_IMPORT_TARGET} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SRC_IMPORT_DESTINATION}
-			echo -e "${CYAN}\tImported source file '${SRC_IMPORT_DESTINATION}'.\n${NO_COLOUR}"
-		done
-	fi
 
 	# If there are no C/C++ source files and no assembler source files, then there is nothing to do.
 	if [ $C_COUNT == "0" ] && [ $P_COUNT == "0" ] && [ $S_COUNT == "0" ] && [ $I_COUNT == "0" ]; then
 		# There are no source files, so skip this component and move on.
-		echo -e "${YELLOW}No source files present in source folder.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No source files present to build.\n${NO_COLOUR}"
 		return 1
 	fi
 
@@ -325,9 +283,9 @@ fetch_source()
 # Do generic pre-compile tasks; fetching source and preprocessing.
 generic_precompile()
 {
-	# Fetch all the source code.
-	if ! fetch_source; then
-		# Fetching the source failed, so there is nothing to do.
+	# Check there is some source code to compile.
+	if ! check_source; then
+		# Seems there is nothing to do.
 		NOCODE=1
 		return 1
 	fi
@@ -749,6 +707,46 @@ do
 	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
 	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
+	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	echo -e "${CYAN}Copying component source to temporary location...\n${NO_COLOUR}"
+	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Check if there are any other source files we need to import.
+	if [ ! -z "${SRC_IMPORT_FILES}" ]; then
+		# There are some other files which need to be imported (probably from in res).
+		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
+
+		# Iterate over the list of source files to import.
+		local SRC_IMPORT_FILE=
+		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
+			# Split the line into source and target.
+			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
+			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+
+			# Check if the target exists.
+			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
+				# The file was missing, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  File not found.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Check if the destination was blank.
+			if [ -z "${SRC_IMPORT_DESTINATION}" ]; then
+				# The destination was blank, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  No destination specified.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Copy the target to the destination.
+			cp ${TCPATH}/${SRC_IMPORT_TARGET} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SRC_IMPORT_DESTINATION}
+			echo -e "${CYAN}\tImported source file '${SRC_IMPORT_DESTINATION}'.\n${NO_COLOUR}"
+		done
+	fi
+
 	# Check that we haven't been asked to skip building the application code.
 	if [ $NOAPP ]; then
 		# Else, we're deliberately not compiling the application code for the component.
@@ -899,4 +897,3 @@ tidy_up
 # All done.
 echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
 exit 0
-
