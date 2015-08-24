@@ -84,42 +84,32 @@ get_suitable_libs()
 	# Check if a output location was given.
 	if [ -z $1 ]; then
 		# No specific output location was given, so use the default one for the current component.
-		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT/lib
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT
 	else
 		# Use the specified output location instead.
 		OUTPATH=$TCPATH/$TMP_SRC_DIR/$1
 	fi
 
+	# Work out what libraries there are.
+	local VF_LIBRARIES=`find $TCPATH/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
+	local VF_LIBRARY_COUNT=`echo ${VF_LIBRARIES} | wc -w`
+
+	# Check if there are actually any libraries.
+	if [ -z "${VF_LIBRARIES}" ]; then
+		echo -e "${YELLOW}No libraries found.\n${NO_COLOUR}"
+		return 0
+	else
+		echo -e "${CYAN}Found ${VF_LIBRARY_COUNT} candidate libaries: ${NO_COLOUR}${VF_LIBRARIES//$'\n'/' '}\n${NO_COLOUR}"
+	fi
+
 	# Iterate through all the libraries.
-	COUNT=0
-	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
+	local COUNT=0
+	local VF_COMPATIBLE_LIBRARIES=
+	for LIBRARY in ${VF_LIBRARIES}; do
 		# TODO - This is going to totally bail if there are any files in $LIB_SOURCE_PATH.
 
 		# Since the library might be nested, figure out what the actual name of the library will be.
 		LIBRARY_NAME=${LIBRARY##*/}
-
-		# Check if we can find the config file for this library.
-		if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg ]; then
-			# The configuration file isn't there.  Ask the user if they want to create the file, or skip this library.
-			echo -e "${RED}No configuration file found for library $LIBRARY.\n${NO_COLOUR}"
-			echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
-			read -n 1
-			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
-			# If they responded YES, then rebuild the configuration file.  If NO, then we bail.
-			if [[ $REPLY =~ ^[Yy]$ ]]; then
-				# Rebuild the configuration file.
-			
-				# Call the 'create_library' script: it will handle rebuilding the configuration file.
-				bash $TCPATH/bld/create/create_library --library $LIBRARY
-
-				# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
-			else
-				# Just skip this component and move on.
-				echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.\n${NO_COLOUR}"
-				continue
-			fi	
-		fi
 
 		# Extract relevant configuration information from the configuration file.
 		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg | grep "^BUILDS" | cut -d '=' -f2)
@@ -130,16 +120,17 @@ get_suitable_libs()
 			echo -e "${CYAN}Importing library $LIBRARY.\n${NO_COLOUR}"
 			
 			# Copy all the files across from the library directory.
-			mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
-			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
+			mkdir -p $OUTPATH/${LIBRARY%/*}
+			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH/${LIBRARY%/*}
 
 			# Increment the number of libraries imported.
 			COUNT=`expr $COUNT + 1`
+			VF_COMPATIBLE_LIBRARIES="${VF_COMPATIBLE_LIBRARIES} ${LIBRARY}"
 		fi
 	done
 
 	# All done.
-	echo -e "${CYAN}Imported $COUNT compatible libraries.\n${NO_COLOUR}"
+	echo -e "${CYAN}Imported $COUNT compatible libraries: ${NO_COLOUR}${VF_COMPATIBLE_LIBRARIES//$'\n'/' '}\n${NO_COLOUR}"
 	return
 }
 
@@ -272,7 +263,7 @@ check_source()
 	# If there are no C/C++ source files and no assembler source files, then there is nothing to do.
 	if [ $C_COUNT == "0" ] && [ $P_COUNT == "0" ] && [ $S_COUNT == "0" ] && [ $I_COUNT == "0" ]; then
 		# There are no source files, so skip this component and move on.
-		echo -e "${YELLOW}No source files present to build.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No application source files present.\n${NO_COLOUR}"
 		return 1
 	fi
 
@@ -287,7 +278,7 @@ generic_precompile()
 	if ! check_source; then
 		# Seems there is nothing to do.
 		NOCODE=1
-		return 1
+		#return 1
 	fi
 
 	# Fetch any user library files which might be required.
@@ -360,8 +351,10 @@ preprocess_code()
 							-o -name "*.cpp" -print \
 							-o -name "*.s" -print); do
 		# Preprocess this header file.
+		echo -e "${CYAN}\tPreprocessing file ${FILE##*/}...${NO_COLOUR}"
 		preprocess_general $FILE
 	done
+	echo ""
 
 	# All done.
 	return 0
