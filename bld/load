@@ -329,6 +329,9 @@ do
 		# The build configuration was loaded successfully.
 		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
 	fi
+
+	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 	
 	# Check if the component configuration specifies a particular upload function to use.
 	if [ ! -z "$UPLOAD_FUNCTION" ]; then
