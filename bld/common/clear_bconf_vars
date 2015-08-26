@@ -21,7 +21,6 @@
 unset BCONF_NAME
 unset MAKEFUNCTION
 unset MAKEFILE
-unset MCU_CODE
 unset IOHEADER
 unset STDINTHEADER
 unset SRC_IMPORT_FILES
@@ -54,6 +53,7 @@ unset OUTPUT_TYPE
 unset OUTPUT_NAME
 unset LINKSCRIPT
 unset MCU_CODE
+unset FPU_CODE
 unset VF_PKG_CONFIG_LIBDIRS
 
 	# Target specific keys (AVR).
@@ -64,6 +64,9 @@ unset ARDUINO_BOARD_TAG
 
 # Target specific keys (Pixhawk).
 unset TARGET_PIXHAWK_DEVICE
+
+# Target specific keys (Raspberry Pi).
+unset FLOATABI_CODE
 
 	# Platform specific keys (common).
 unset PLATFORM_SPECIFIC_CONFIG
