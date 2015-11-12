@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -42,8 +42,8 @@ for BUILD_CONFIG_FILE in $BUILD_CONFIG_FILES; do
 done
 
 # Establish how many configurations were read.
-COUNT_TARGETS=`declare -F | grep -o -e "bconf_.*" | wc -l`
-COUNT_LOADERS=`declare -F | grep -o -e "bload_.*" | wc -l`
+COUNT_TARGETS=`declare -F | grep -o -e "bconf_.*" | wc -l | xargs`
+COUNT_LOADERS=`declare -F | grep -o -e "bload_.*" | wc -l | xargs`
 
 # If no valid configurations were read, then there is no point in going any further.
 if [ $COUNT_TARGETS == 0 ]; then
@@ -52,7 +52,7 @@ if [ $COUNT_TARGETS == 0 ]; then
 	exit 1
 else
 	# Indicate how many build configurations were found.	
-	echo -e "${CYAN}Read in $COUNT_TARGETS build configurations and $COUNT_LOADERS boot loader configurations from $COUNT_FILES configuration files.\n${NO_COLOUR}"
+	echo -e "${CYAN}Read in ${COUNT_TARGETS} build configurations and ${COUNT_LOADERS} boot loader configurations from $COUNT_FILES configuration files.\n${NO_COLOUR}"
 fi
 
 # Leave the scope as we found it.

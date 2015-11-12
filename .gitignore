@@ -20,6 +20,9 @@ doc/zim-valleyforge/.zim/*
 
 valleyforge.sublime-workspace
 
+*/*.DS_STORE
+*.DS_STORE
+
 */*~
 *~
 

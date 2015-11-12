@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2012 Unison Networks Ltd
 #
@@ -61,7 +61,7 @@ find_source_dependencies()
 	local VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=
 
 	# If the target file starts with "./" remove it, because that screws some things up.
-	local TARGET_FILE=$(echo "${2}" | sed "s#^\./##g")
+	local TARGET_FILE=$(echo "${2}" | ${VF_OSCFG_SED} "s#^\./##g")
 
 	# Find the source files required to build the application.
 	echo -e "${CYAN}\tDetecting source dependencies for ${TARGET_FILE}...\n${NO_COLOUR}"
@@ -72,7 +72,7 @@ find_source_dependencies()
 	fi
 
 	# Remove anything where a relative path goes up a level, then down the same way again, because that might screw things up.
-	SRC_STRING=$(echo "$SRC_STRING" | sed -r "s^[^/]+/\\.\\./^^g" | sed -r "s^/\\./^/^g")
+	SRC_STRING=$(echo "$SRC_STRING" | ${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} "s^[^/]+/\\.\\./^^g" | ${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} "s^/\\./^/^g")
 
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
@@ -89,10 +89,10 @@ find_source_dependencies()
 	done
 
 	# Remove any leading spaces
-	ASRC="$(echo "$ASRCS" | sed 's/^ *//')"
-	CSRCS="$(echo "$CSRCS" | sed 's/^ *//')"
-	PSRCS="$(echo "$PSRCS" | sed 's/^ *//')"
-	SRC_STRING="$(echo "$SRC_STRING" | sed 's/^ *//')"
+	ASRC="$(echo "$ASRCS" | ${VF_OSCFG_SED} 's/^ *//')"
+	CSRCS="$(echo "$CSRCS" | ${VF_OSCFG_SED} 's/^ *//')"
+	PSRCS="$(echo "$PSRCS" | ${VF_OSCFG_SED} 's/^ *//')"
+	SRC_STRING="$(echo "$SRC_STRING" | ${VF_OSCFG_SED} 's/^ *//')"
 
 	# Print out the dependencies that we found.
 	if [ -n "${CSRCS}" ]; then
@@ -157,7 +157,7 @@ find_source_dependencies_recursive()
 	local TARGET_FILE=${1}
 
 	# If the target file starts with "./" remove it, because that screws some things up.
-	TARGET_FILE=$(echo "${TARGET_FILE}" | sed "s#^\./##g")
+	TARGET_FILE=$(echo "${TARGET_FILE}" | ${VF_OSCFG_SED} "s#^\./##g")
 
 	# Find the basename of examined file by removing any directory or filetype components.
 	TARGET_BASENAME=${TARGET_FILE%.*}
@@ -201,10 +201,10 @@ find_source_dependencies_recursive()
 	fi
 
 	# Insert a line break after the target, so that each actual dependency is on its own line.
-	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g" | sed "s^ ^ \\\\\n^g" | sed "/^[\\ ]*$/d")
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g" | ${VF_OSCFG_SED} "s^ ^ \\\\\n^g" | ${VF_OSCFG_SED} "/^[\\ ]*$/d")
 
 	# Remove dependencies which share the target's basename, so that it doesn't depend on itself.
-	DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed "\^${TARGET_FILE%.*}\.\S*^d")
+	DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} "\^${TARGET_FILE%.*}\.\S*^d")
 
 	# Add each dependency to the list and search of any dependencies of its own.
 
@@ -294,7 +294,7 @@ find_object_dependencies()
 	OBJ_STRING=
 
 	# If the target file starts with "./" remove it, because that screws some things up.
-	local TARGET_FILE=$(echo "${2}" | sed "s#^\./##g")
+	local TARGET_FILE=$(echo "${2}" | ${VF_OSCFG_SED} "s#^\./##g")
 
 	# Ensure we were passed a source file, and not an object file.
 	if [ "${TARGET_FILE##*.}" != "c" -a "${TARGET_FILE##*.}" != "cpp" -a "${TARGET_FILE##*.}" != "s" ]; then
@@ -328,7 +328,7 @@ find_object_dependencies()
 	OBJ_STRING=$(echo "$OBJ_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
 	# Remove any leading spaces.
-	OBJ_STRING="$(echo "$OBJ_STRING" | sed 's/^ *//')"
+	OBJ_STRING="$(echo "$OBJ_STRING" | ${VF_OSCFG_SED} 's/^ *//')"
 	echo -e "${CYAN}\tObject file dependencies detected:\n\t${NO_COLOUR}${OBJ_STRING}\n${NO_COLOUR}"
 
 	# Leave the folder containing the source.
@@ -471,10 +471,10 @@ generate_component_dependencies()
 		local DEPENDENCIES=$1
 
 		# For some reason the target gets its base path chopped off, so we need to fix that back again incase of files with similar names.
-		DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed -r "s^.*:^${TARGET_FILE%.*}\.o:^g")
+		DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} "s^.*:^${TARGET_FILE%.*}\.o:^g")
 
 		# Remove anything where a relative path goes up a level, then down the same way again, because that might screw things up.
-		DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed -r "s^[^/]+/\\.\\./^^g" | sed -r "s^/\\./^/^g")
+		DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} "s^[^/]+/\\.\\./^^g" | ${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} "s^/\\./^/^g")
 
 		echo "${DEPENDENCIES}" >> Make.deps
 		echo " " >> Make.deps

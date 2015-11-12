@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011  Unison Networks Ltd
 #
@@ -40,9 +40,9 @@ do
 	if [ -z "$REPLY" ]; then
 		# The user is apparently a moron.
 		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
-	elif ! [[ "$REPLY" =~ ^[0-9]+?$ ]] ; then
+	elif ! [[ "$REPLY" =~ ^[0-9]+$ ]] ; then
 		# The user is apparently a moron.
-		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+		echo -e -n "${RED}Invalid choice ($REPLY).  Try again.${NO_COLOUR}"
 	else
 		# A legitimate value was entered, so we can go now.
 		CLK_SPEED_IN_MHZ=$REPLY

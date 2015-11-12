@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -16,27 +16,65 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		create_component										###
-###															###
-### Author:		Zac Frank											###
-###															###
-### Date Created:	15-11-2011											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		This script gets called by VFstart script, when the user chooses to create a new component. 	###
+###	
+### Name:		create_component
+###
+### Author:		Zac Frank
+###
+### Date Created:	15-11-2011
+###
+### Type:		Bash Script
+###
+### Purpose:	This script gets called by VFstart script, when the user chooses to create a new component. 	###
 ###			It creates a new folder in src given the name of the component specified by the user, and 	###
-###			sets the component configuration depending on the user's input. 				###
-###															###
+###			sets the component configuration depending on the user's input.
+###
 ###########################################################################################################################
 
-# FIGURE OUT WHERE WE ARE.
+# MAKE SURE WE'RE IN A SANE ENVIRONMENT.
+
+# Determine which operating system we are using.
+VF_OS="$(uname)"
+unset VF_OS_DARWIN
+unset VF_OS_LINUX
+if [ "${VF_OS}" == "Darwin" ]; then
+	VF_OS_DARWIN=1
+	VF_OSCFG_READLINK='greadlink'
+	VF_OSCFG_SED='gsed'
+	VF_OSCFG_SED_EXTPARAM='-E'
+	VF_OSCFG_SED_INLPARAM='-i'
+else
+	VF_OS_LINUX=1
+	VF_OSCFG_READLINK='readlink'
+	VF_OSCFG_SED='sed'
+	VF_OSCFG_SED_EXTPARAM='-r'
+	VF_OSCFG_SED_INLPARAM='-i'
+fi
+
+# Check if we've got a sufficiently advanced version of BASH to actually run the toolchain.
+if [[ ${BASH_VERSINFO[0]} < 4 ]]; then
+	# BASH version before v4 are missing things we required, such as "read -i".
+	echo -e "\033[0;31mBASH versions prior to 4.x are not supported.  Upgrade to a never version of BASH."
+	exit 1
+fi
+
+# Check if all the tools we're expecting are installed.
+VF_REQUIRED="${VF_OSCFG_READLINK} ${VF_OSCFG_SED}"
+for VF_REQUIRED_ITEM in ${VF_REQUIRED}; do
+	if [ -z "$(which ${VF_REQUIRED})" ]; then
+		echo -e "\033[0;31mUnabled to find: ${VF_REQUIRED}.  Install this utility then try again."
+		exit 1
+	fi
+done
+unset VF_REQUIRED_ITEM
+unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-SCRIPT=`readlink -f $0`
-SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
+VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
+unset VF_SCRIPTPATH
+unset VF_SCRIPT
 
 # DEFINE CONSTANTS.
 
@@ -553,7 +591,11 @@ SHORTOPTS="hbc:s:t:p:l:"
 LONGOPTS="help,batch,component:,subsystem:,target:,platform:,loader:"
 
 # Use 'getopt' to parse the command line options.
-ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+if [ VF_OS_DARWIN ]; then
+	ARGS=$(getopt $SHORTOPTS "$*")
+else
+	ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+fi
 eval set -- "$ARGS"
 
 # Handle the parsed parameters.
@@ -616,7 +658,7 @@ source $TCPATH/bld/common/load_build_configs
 # FIGURE OUT THE NAME OF THE COMPONENT WE'RE SUPPOSED TO BE DEALING WITH.
 
 # We'll need a list of existing components.
-COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | sed "s/.*\/src\///g" | sed "s/\/[^/]*\.cfg//g"`
+COMPONENTS=`find ${TCPATH}/src -name '*.cfg' | ${VF_OSCFG_SED} "s/.*\/src\///g" | ${VF_OSCFG_SED} "s/\/[^/]*\.cfg//g"`
 
 # Check if we have been supplied the name of the component to create and that we're not in batch mode.
 if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
@@ -661,7 +703,7 @@ if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 			echo -e "${RED}The component '$REPLY' already exists.  Please choose another name.\n${NO_COLOUR}"
 
 		# Check if the component name would be nested INSIDE another component.
-		elif [ -n "$(for C in $COMPONENTS; do echo $(echo $REPLY | grep $C); done)" ]; then
+		elif [ -n "$(for C in $COMPONENTS; do echo $(echo $REPLY | grep $C/); done)" ]; then
 			# The nesting passes through another component, which isn't legit.
 			echo -e "${RED}The component cannot be nested INSIDE another component.  Please choose another name.\n${NO_COLOUR}"
 
@@ -831,7 +873,7 @@ if [ ! $BATCHMODE ] && [ ${VF_COMPONENT_NEW} ]; then
 		case "$REPLY" in
 			"Y" | "y" )
 				# We want to set this as the current component.
-				sed -i "s^\(tc_curr *= *\).*^\1$COMPONENT^" $TCPATH/$USER_CONFIG_FILE
+				push_key $TCPATH/${USER_CONFIG_FILE} "tc_curr" "$COMPONENT"
 				break
 				;;
 			"N" | "n" )
