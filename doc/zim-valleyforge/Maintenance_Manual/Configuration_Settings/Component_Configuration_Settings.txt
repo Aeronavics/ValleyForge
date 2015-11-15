@@ -1,0 +1,16 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-08-04T13:04:06+12:00
+
+====== Component Configuration Settings ======
+
+== VF_NO_HAL ==
+
+If this flag is non-empty, tells the toolchain not to import the Hardware Abstraction Library when building the component, even if the build configuration indicates some HAL elements are available.  
+
+Behaviour is exactly as if the build comment was run with the "''--nohal''" option.
+
+Note that, even if the HAL //is// imported, the build process only compiles and links it when it's actually included in the component's source.  Accordingly, this option is solely for convenience, skipping unnecessary preprocessing to speed up the build when the users knows the HAL will not be required.
+
+Obviously, using this flag when the component application code does depend on the HAL will result in the build failing.
+

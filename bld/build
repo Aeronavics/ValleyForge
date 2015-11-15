@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -29,14 +29,50 @@
 ###
 ###########################################################################################################################
 
-# FIGURE OUT WHERE WE ARE.
+# MAKE SURE WE'RE IN A SANE ENVIRONMENT.
+
+# Determine which operating system we are using.
+VF_OS="$(uname)"
+unset VF_OS_DARWIN
+unset VF_OS_LINUX
+if [ "${VF_OS}" == "Darwin" ]; then
+	VF_OS_DARWIN=1
+	VF_OSCFG_READLINK='greadlink'
+	VF_OSCFG_SED='gsed'
+	VF_OSCFG_SED_EXTPARAM='-E'
+	VF_OSCFG_SED_INLPARAM='-i'
+else
+	VF_OS_LINUX=1
+	VF_OSCFG_READLINK='readlink'
+	VF_OSCFG_SED='sed'
+	VF_OSCFG_SED_EXTPARAM='-r'
+	VF_OSCFG_SED_INLPARAM='-i'
+fi
+
+# Check if we've got a sufficiently advanced version of BASH to actually run the toolchain.
+if [[ ${BASH_VERSINFO[0]} < 4 ]]; then
+	# BASH version before v4 are missing things we required, such as "read -i".
+	echo -e "\033[0;31mBASH versions prior to 4.x are not supported.  Upgrade to a never version of BASH."
+	exit 1
+fi
+
+# Check if all the tools we're expecting are installed.
+VF_REQUIRED="${VF_OSCFG_READLINK} ${VF_OSCFG_SED}"
+for VF_REQUIRED_ITEM in ${VF_REQUIRED}; do
+	if [ -z "$(which ${VF_REQUIRED})" ]; then
+		echo -e "\033[0;31mUnabled to find: ${VF_REQUIRED}.  Install this utility then try again."
+		exit 1
+	fi
+done
+unset VF_REQUIRED_ITEM
+unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-SCRIPT=`readlink -f $0`
-SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
-
-# DEFINE CONSTANTS.
+VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
+VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
+unset VF_SCRIPTPATH
+unset VF_SCRIPT
 
 # Define file names.
 
@@ -84,42 +120,32 @@ get_suitable_libs()
 	# Check if a output location was given.
 	if [ -z $1 ]; then
 		# No specific output location was given, so use the default one for the current component.
-		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT/lib
+		OUTPATH=$TCPATH/$TMP_SRC_DIR/$COMPONENT
 	else
 		# Use the specified output location instead.
 		OUTPATH=$TCPATH/$TMP_SRC_DIR/$1
 	fi
 
+	# Work out what libraries there are.
+	local VF_LIBRARIES=`find $TCPATH/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
+	local VF_LIBRARY_COUNT=`echo ${VF_LIBRARIES} | wc -w | xargs`
+
+	# Check if there are actually any libraries.
+	if [ -z "${VF_LIBRARIES}" ]; then
+		echo -e "${YELLOW}No libraries found.\n${NO_COLOUR}"
+		return 0
+	else
+		echo -e "${CYAN}Found ${VF_LIBRARY_COUNT} candidate libaries: ${NO_COLOUR}${VF_LIBRARIES//$'\n'/' '}\n${NO_COLOUR}"
+	fi
+
 	# Iterate through all the libraries.
-	COUNT=0
-	for LIBRARY in $(ls -C $TCPATH/$LIB_SOURCE_PATH); do
+	local COUNT=0
+	local VF_COMPATIBLE_LIBRARIES=
+	for LIBRARY in ${VF_LIBRARIES}; do
 		# TODO - This is going to totally bail if there are any files in $LIB_SOURCE_PATH.
 
 		# Since the library might be nested, figure out what the actual name of the library will be.
 		LIBRARY_NAME=${LIBRARY##*/}
-
-		# Check if we can find the config file for this library.
-		if ! [ -r $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg ]; then
-			# The configuration file isn't there.  Ask the user if they want to create the file, or skip this library.
-			echo -e "${RED}No configuration file found for library $LIBRARY.\n${NO_COLOUR}"
-			echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
-			read -n 1
-			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
-			# If they responded YES, then rebuild the configuration file.  If NO, then we bail.
-			if [[ $REPLY =~ ^[Yy]$ ]]; then
-				# Rebuild the configuration file.
-			
-				# Call the 'create_library' script: it will handle rebuilding the configuration file.
-				bash $TCPATH/bld/create/create_library --library $LIBRARY
-
-				# TODO - Need to check that this actually worked.  If it didn't, then we need to bail.
-			else
-				# Just skip this component and move on.
-				echo -e "${YELLOW}No configuration file.  Skipping library $LIBRARY.\n${NO_COLOUR}"
-				continue
-			fi	
-		fi
 
 		# Extract relevant configuration information from the configuration file.
 		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg | grep "^BUILDS" | cut -d '=' -f2)
@@ -130,16 +156,17 @@ get_suitable_libs()
 			echo -e "${CYAN}Importing library $LIBRARY.\n${NO_COLOUR}"
 			
 			# Copy all the files across from the library directory.
-			mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT/lib/
-			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
+			mkdir -p $OUTPATH/${LIBRARY%/*}
+			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH/${LIBRARY%/*}
 
 			# Increment the number of libraries imported.
 			COUNT=`expr $COUNT + 1`
+			VF_COMPATIBLE_LIBRARIES="${VF_COMPATIBLE_LIBRARIES} ${LIBRARY}"
 		fi
 	done
 
 	# All done.
-	echo -e "${CYAN}Imported $COUNT compatible libraries.\n${NO_COLOUR}"
+	echo -e "${CYAN}Imported $COUNT compatible libraries: ${NO_COLOUR}${VF_COMPATIBLE_LIBRARIES//$'\n'/' '}\n${NO_COLOUR}"
 	return
 }
 
@@ -147,7 +174,7 @@ get_suitable_libs()
 get_hal()
 {
 	# Check if using the HAL is disabled.
-	if [ $NOHAL ]; then
+	if [ -n "${NOHAL}${VF_NO_HAL}" ]; then
 		# The HAL is disabled, so don't do anything here.
 		echo -e "${YELLOW}'No HAL' option selected; not importing HAL.\n${NO_COLOUR}"
 		return 0
@@ -250,71 +277,29 @@ get_hal()
 	return
 }
 
-# Fetch source code into the temporary work location.
-fetch_source()
+# Check what source code we seem to have available to build.
+check_source()
 {
-	# Fetch the source files for the component being built.
-	echo -e "${CYAN}Fetching source files...\n${NO_COLOUR}"
-
 	# Count the number of C files in the source folder for this component.
-	C_COUNT=`find $TCPATH/src/$COMPONENT -name "*.c" | wc -l`
+	C_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.c" | wc -l | xargs`
 	echo -e "${WHITE}Found $C_COUNT C source files.\n${NO_COLOUR}"
 
 	# Count the number of CPP files in the source folder for this component.
-	P_COUNT=`find $TCPATH/src/$COMPONENT -name "*.cpp" | wc -l`
+	P_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.cpp" | wc -l | xargs`
 	echo -e "${WHITE}Found $P_COUNT CPP source files.\n${NO_COLOUR}"
 
 	# Count the number of S files in the source folder for this component.
-	S_COUNT=`find $TCPATH/src/$COMPONENT -name "*.s" | wc -l`
+	S_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.s" | wc -l | xargs`
 	echo -e "${WHITE}Found $S_COUNT assembler source files.\n${NO_COLOUR}"
 
 	# Count the number of PDE/INO files in the source folder for this component.
-	I_COUNT=`find $TCPATH/src/$COMPONENT -name "*.ino" -o -name "*.pde" | wc -l`
+	I_COUNT=`find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name "*.ino" -o -name "*.pde" | wc -l | xargs`
 	echo -e "${WHITE}Found $I_COUNT PDE/INO source files.\n${NO_COLOUR}"
-
-	# Make sure there aren't any old files in the spot we are about to put new files.
-	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
-	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# Copy the entire source folder into the tmp directory, where the actual making will occur.
-	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
-
-	# Check if there are any other source files we need to import.
-	if [ ! -z "${SRC_IMPORT_FILES}" ]; then
-		# There are some other files which need to be imported (probably from in res).
-		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
-
-		# Iterate over the list of source files to import.
-		local SRC_IMPORT_FILE=
-		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
-			# Split the line into source and target.
-			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
-			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
-
-			# Check if the target exists.
-			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
-				# The file was missing, so we skip this file.
-				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  File not found.\n${NO_COLOUR}"
-				continue
-			fi
-
-			# Check if the destination was blank.
-			if [ -z "${SRC_IMPORT_DESTINATION}" ]; then
-				# The destination was blank, so we skip this file.
-				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  No destination specified.\n${NO_COLOUR}"
-				continue
-			fi
-
-			# Copy the target to the destination.
-			cp ${TCPATH}/${SRC_IMPORT_TARGET} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SRC_IMPORT_DESTINATION}
-			echo -e "${CYAN}\tImported source file '${SRC_IMPORT_DESTINATION}'.\n${NO_COLOUR}"
-		done
-	fi
 
 	# If there are no C/C++ source files and no assembler source files, then there is nothing to do.
 	if [ $C_COUNT == "0" ] && [ $P_COUNT == "0" ] && [ $S_COUNT == "0" ] && [ $I_COUNT == "0" ]; then
 		# There are no source files, so skip this component and move on.
-		echo -e "${YELLOW}No source files present in source folder.\n${NO_COLOUR}"
+		echo -e "${YELLOW}No application source files present.\n${NO_COLOUR}"
 		return 1
 	fi
 
@@ -325,11 +310,11 @@ fetch_source()
 # Do generic pre-compile tasks; fetching source and preprocessing.
 generic_precompile()
 {
-	# Fetch all the source code.
-	if ! fetch_source; then
-		# Fetching the source failed, so there is nothing to do.
+	# Check there is some source code to compile.
+	if ! check_source; then
+		# Seems there is nothing to do.
 		NOCODE=1
-		return 1
+		#return 1
 	fi
 
 	# Fetch any user library files which might be required.
@@ -402,8 +387,10 @@ preprocess_code()
 							-o -name "*.cpp" -print \
 							-o -name "*.s" -print); do
 		# Preprocess this header file.
+		echo -e "${CYAN}\tPreprocessing file ${FILE##*/}...${NO_COLOUR}"
 		preprocess_general $FILE
 	done
+	echo ""
 
 	# All done.
 	return 0
@@ -542,7 +529,11 @@ SHORTOPTS="harbfpcn:"
 LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,name:"
 
 # Use 'getopt' to parse the command line options.
-ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+if [ VF_OS_DARWIN ]; then
+	ARGS=$(getopt $SHORTOPTS "$*")
+else
+	ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+fi
 eval set -- "$ARGS"
 
 # Handle the parsed parameters.
@@ -749,6 +740,46 @@ do
 	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
 	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 
+	# Make sure there aren't any old files in the spot we are about to put new files.
+	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
+	mkdir -p $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Copy the entire source folder into the tmp directory, where the actual making will occur.
+	echo -e "${CYAN}Copying component source to temporary location...\n${NO_COLOUR}"
+	cp -rf $TCPATH/src/$COMPONENT/* $TCPATH/$TMP_SRC_DIR/$COMPONENT
+
+	# Check if there are any other source files we need to import.
+	if [ ! -z "${SRC_IMPORT_FILES}" ]; then
+		# There are some other files which need to be imported (probably from in res).
+		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
+
+		# Iterate over the list of source files to import.
+		local SRC_IMPORT_FILE=
+		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
+			# Split the line into source and target.
+			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
+			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+
+			# Check if the target exists.
+			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
+				# The file was missing, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  File not found.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Check if the destination was blank.
+			if [ -z "${SRC_IMPORT_DESTINATION}" ]; then
+				# The destination was blank, so we skip this file.
+				echo -e "${RED}Could not import source file '${SRC_IMPORT_TARGET}'.  No destination specified.\n${NO_COLOUR}"
+				continue
+			fi
+
+			# Copy the target to the destination.
+			cp ${TCPATH}/${SRC_IMPORT_TARGET} $TCPATH/$TMP_SRC_DIR/$COMPONENT/${SRC_IMPORT_DESTINATION}
+			echo -e "${CYAN}\tImported source file '${SRC_IMPORT_DESTINATION}'.\n${NO_COLOUR}"
+		done
+	fi
+
 	# Check that we haven't been asked to skip building the application code.
 	if [ $NOAPP ]; then
 		# Else, we're deliberately not compiling the application code for the component.
@@ -899,4 +930,3 @@ tidy_up
 # All done.
 echo -e "${BOLD_CYAN}All done...\n${NO_COLOUR}"
 exit 0
-

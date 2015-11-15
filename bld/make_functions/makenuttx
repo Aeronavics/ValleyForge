@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2012 Unison Networks Ltd
 #
@@ -148,7 +148,7 @@ makenuttx_configure_apps()
 	mkdir $1/apps/external
 
 	# Add the Kconfig entry for the new application directory so that 'make menuconfig' can find it.
-	sed -i '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
+	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} '6i\menu \"ValleyForge\"\nsource \"$APPSDIR/external/Kconfig\"\nendmenu\n' ${1}/apps/Kconfig
 
 	# Restrict the scope of some variables used in the loop
 	local APP_EXECUTABLES_ARRAY
@@ -238,18 +238,18 @@ makenuttx_configure_apps()
 		cp -f ${NUTTX_TEMPLATE_SOURCE}/Makefile $1/apps/external/${EXECUTABLE}/Makefile
 
 		# Update the fields in the Kconfig file
-		sed -i s^"<APP_NAME>"^"${EXECUTABLE}"^g $1/apps/external/${EXECUTABLE}/Kconfig
-		sed -i s^"<APP_NAME_UPPER>"^"${EXECUTABLE^^}"^g $1/apps/external/${EXECUTABLE}/Kconfig
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_NAME>"^"${EXECUTABLE}"^g $1/apps/external/${EXECUTABLE}/Kconfig
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_NAME_UPPER>"^"${EXECUTABLE^^}"^g $1/apps/external/${EXECUTABLE}/Kconfig
 
 		# Update the fields in the Makefile
-		sed -i s^"<APP_NAME>"^"${EXECUTABLE}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<APP_NAME_UPPER>"^"${EXECUTABLE^^}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile		
-		sed -i s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<APP_MAIN>"^"${MAIN_FILE}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<ASSEMBLY_SOURCE_FILES>"^"${ASRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<C_SOURCE_FILES>"^"${CSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
-		sed -i s^"<CPP_SOURCE_FILES>"^"${PSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_NAME>"^"${EXECUTABLE}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_NAME_UPPER>"^"${EXECUTABLE^^}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_PRIORITY>"^"${APP_PRIORITIES_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile		
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_STACK>"^"${APP_STACKSIZE_ARRAY[$APP_INDEX]}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<APP_MAIN>"^"${MAIN_FILE}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<ASSEMBLY_SOURCE_FILES>"^"${ASRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<C_SOURCE_FILES>"^"${CSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} s^"<CPP_SOURCE_FILES>"^"${PSRCS}"^g $1/apps/external/${EXECUTABLE}/Makefile
 
 		# Enable the ValleyForge applications by default.
 		echo -e "CONFIG_VALLEYFORGE_${EXECUTABLE^^}=y" >> $1/nuttx/.config

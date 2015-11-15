@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -16,26 +16,64 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###															###
-### Name:		create_files											###
-###															###
-### Author:		Edwin Hayes											###
-###															###
-### Date Created:	15-11-2011											###
-###															###
-### Type:		Bash Script											###
-###															###
-### Purpose:		This script is used to create a new set of blank source files in an existing component, from	###
-###			the available template files. 									###
-###															###
+###
+### Name:		create_files
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	15-11-2011
+###
+### Type:		Bash Script
+###
+### Purpose:    This script is used to create a new set of blank source files in an existing component, from	###
+###			the available template files.
+###
 ###########################################################################################################################
 
-# FIGURE OUT WHERE WE ARE.
+# MAKE SURE WE'RE IN A SANE ENVIRONMENT.
+
+# Determine which operating system we are using.
+VF_OS="$(uname)"
+unset VF_OS_DARWIN
+unset VF_OS_LINUX
+if [ "${VF_OS}" == "Darwin" ]; then
+	VF_OS_DARWIN=1
+	VF_OSCFG_READLINK='greadlink'
+	VF_OSCFG_SED='gsed'
+	VF_OSCFG_SED_EXTPARAM='-E'
+	VF_OSCFG_SED_INLPARAM='-i'
+else
+	VF_OS_LINUX=1
+	VF_OSCFG_READLINK='readlink'
+	VF_OSCFG_SED='sed'
+	VF_OSCFG_SED_EXTPARAM='-r'
+	VF_OSCFG_SED_INLPARAM='-i'
+fi
+
+# Check if we've got a sufficiently advanced version of BASH to actually run the toolchain.
+if [[ ${BASH_VERSINFO[0]} < 4 ]]; then
+	# BASH version before v4 are missing things we required, such as "read -i".
+	echo -e "\033[0;31mBASH versions prior to 4.x are not supported.  Upgrade to a never version of BASH."
+	exit 1
+fi
+
+# Check if all the tools we're expecting are installed.
+VF_REQUIRED="${VF_OSCFG_READLINK} ${VF_OSCFG_SED}"
+for VF_REQUIRED_ITEM in ${VF_REQUIRED}; do
+	if [ -z "$(which ${VF_REQUIRED})" ]; then
+		echo -e "\033[0;31mUnabled to find: ${VF_REQUIRED}.  Install this utility then try again."
+		exit 1
+	fi
+done
+unset VF_REQUIRED_ITEM
+unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-SCRIPT=`readlink -f $0`
-SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
+VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
+unset VF_SCRIPTPATH
+unset VF_SCRIPT
 
 # DEFINE CONSTANTS.
 
@@ -102,7 +140,11 @@ SHORTOPTS="hbn:c:t:"
 LONGOPTS="help,batch,name:,component:,type:"
 
 # Use 'getopt' to parse the command line options.
-ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+if [ VF_OS_DARWIN ]; then
+	ARGS=$(getopt $SHORTOPTS "$*")
+else
+	ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+fi
 eval set -- "$ARGS"
 
 # Handle the parsed parameters.
@@ -154,7 +196,7 @@ done
 # PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
 
 # Check if we have been supplied the name of some files to create and that we're not in batch mode.
-if [ -z $FILENAMES ] && [ ! $BATCHMODE ]; then
+if [ -z "${FILENAMES}" ] && [ ! ${BATCHMODE} ]; then
 	# We haven't been given a file name, so we need the user to enter one.
 
 	# We will need to prompt the user for the name of the component to create.
@@ -166,7 +208,7 @@ if [ -z $FILENAMES ] && [ ! $BATCHMODE ]; then
 	FILENAMES=$REPLY
 
 # Check if we have been supplied the name of some files to create and that we're in batch mode.
-elif [ -z $FILENAMES ] && [ $BATCHMODE ]; then
+elif [ -z "$FILENAMES" ] && [ $BATCHMODE ]; then
 	# We haven't been given a filename, and we're in batch mode, so can't ask.  So we just have to bail.
 	echo -e "${RED}No filenames supplied in batch mode.\n${NO_COLOUR}"
 	exit 1
@@ -202,7 +244,7 @@ if [ ! -d "$TCPATH/src/$COMPONENT" ]; then
 fi
 
 # Check if we have been told which type of files to create and that we're not in batch mode.
-if [ -z $TYPE ] && [ ! $BATCHMODE ]; then
+if [ -z "$TYPE" ] && [ ! $BATCHMODE ]; then
 	# We haven't been given a type, so we need the user to enter one.
 
 	# Prompt the user to select a file type.
@@ -223,13 +265,13 @@ if [ -z $TYPE ] && [ ! $BATCHMODE ]; then
 		done
 
 # Check if we have been told which type of files to create and that we're in batch mode.
-elif [ -z $TYPE ] && [ $BATCHMODE ]; then
+elif [ -z "$TYPE" ] && [ $BATCHMODE ]; then
 	# We haven't been given a type, and we're in batch mode, so can't ask.  So we just have to bail.
 	echo -e "${RED}No file type specified in batch mode.\n${NO_COLOUR}"
 	exit 1
 
 # Check if we're been told to create an invalid type of file.
-elif [ ! $TYPE == "C" ] && [ ! $TYPE == "CPP" ]; then
+elif [ ! "$TYPE" == "C" ] && [ ! "$TYPE" == "CPP" ]; then
 	# An invalid file type was specified.
 	echo -e "${RED}Invalid file type ($TYPE). Use either 'C' or 'CPP'.\n${NO_COLOUR}"
 	exit 1
@@ -252,7 +294,7 @@ if ! [ -r "$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg" ]; then
 	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 		
 	# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
+	if [[ "$REPLY" =~ ^[Yy]$ ]]; then
 		# Rebuild the configuration file.
 			
 		# Call the 'component_create' script: it will handle rebuilding the configuration file.
@@ -321,7 +363,7 @@ for FILENAME in $FILENAMES; do
 		fi
 
 		# Check which kind of file we are creating.
-		if [ ${TYPE} == "C" ]; then
+		if [ "${TYPE}" == "C" ]; then
 			# Create the actual files by copying the templates into the source directory.
 			cp $TEMPLATE_C_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}${TEMPLATE_SUFFIX}.c
 			cp $TEMPLATE_H_SOURCE $TCPATH/src/$COMPONENT/${FILENAME}${TEMPLATE_SUFFIX}.h
@@ -352,7 +394,7 @@ done
 # TODO - Does this still need to be here?  This is probably the old FreeRTOS stuff, which should be removed.
 
 # Create FreeRTOSConfig.h if it doesn't exist already.
-if [ ${PLATFORM,,} = "freertos" ]; then
+if [ "${PLATFORM,,}" == "freertos" ]; then
 	if ! [ -r "$TCPATH/src/$COMPONENT/FreeRTOSConfig.h" ]; then
 		echo -e "${CYAN}No FreeRTOSConfig.h file found in component directory. Copying FreeRTOSConfig.h template...${NO_COLOUR}\n"
 		cp $FREERTOS_CONFIG_FILE $TCPATH/src/$COMPONENT/FreeRTOSConfig.h
@@ -363,5 +405,3 @@ fi
 # All done.
 echo -e "${CYAN}All done.\n${NO_COLOUR}"	
 exit 0
-
-

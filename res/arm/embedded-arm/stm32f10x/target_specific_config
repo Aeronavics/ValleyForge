@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011  Unison Networks Ltd
 #
@@ -19,14 +19,14 @@
 echo -e "${BOLD_CYAN}STM32F103RBT6 specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for target specific stuff.
-if [ ${NEW} ]; then
+if [ ${VF_COMPONENT_NEW} ]; then
 	echo -e "\n### TARGET (STM32F10x) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
 # 1. Ask if the user wants to include the standard startup code file.
 
 # If we're reconfiguring an existing component, then we indicate what the existing configuration says.
-if [ ${NEW} ]; then
+if [ ${VF_COMPONENT_NEW} ]; then
 	echo -e -n "${GREEN}Do you wish to use standard startup code (else you must create your own)? (Y/N)${NO_COLOUR}"
 else
 	DEFAULT=$([ "`echo \"${SRC_IMPORT_FILES}\" | grep 'res/arm/embedded-arm/stm32f10x/startup.c:startup.c'`" = "" ] && echo "N" || echo "Y")

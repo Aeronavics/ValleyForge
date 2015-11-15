@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2013 Unison Networks Ltd
 #
@@ -64,10 +64,10 @@ gen_compliance()
 		#
 
 		# Replace todo comment with the correct syntax
-		sed -i 's/todo[ -: ]*/TODO - /I' $1
+		sed  's/todo[ -: ]*/TODO - /I' $1
 
 		# Replace note comment with the correct syntax
-		sed -i 's/note[ -: ]*/NOTE - /I' $1
+		sed  's/note[ -: ]*/NOTE - /I' $1
 
 		# Run Uncrustify to modify multiple single line C++ style comments into a single C style comment spanning multiple lines
 		$TCPATH/res/vendor/uncrustify-*/src/uncrustify -c $CONFIG_FILE_DIRECTORY/layout_commenting.cfg -f $1 -o $1
@@ -80,7 +80,7 @@ gen_compliance()
 			if [[ ! $string =~ "\\" ]]; then
 
 				# Replace C style comments with C++ style comments.
-				sed -i ''"$str_line"'s:\(.*\)\/[*][ ]*\(.*\)[*]\/:\1// \2:' $1
+				sed  ''"$str_line"'s:\(.*\)\/[*][ ]*\(.*\)[*]\/:\1// \2:' $1
 			fi
 		done
 

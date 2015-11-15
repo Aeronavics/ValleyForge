@@ -1,0 +1,41 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-08-04T12:39:56+12:00
+
+====== Overview of Using the Toolchain ======
+
+===== Components =====
+
+The toolchain divides up an overall embedded systems project into //components//: a component is defined as being a single programmable device.  A component is characterised primarily by its //build configuration//, which is primarily defined by selection of //target//, the particular type of hardware device (typically identified by the model number of the microprocessor); and by //platform//, the operating system or software stack runnning between the users code and the target hardware itself.
+
+For instance, a component may use the //ATmega8// microcontroller, running //bare metal// (without any operating system).
+
+Some build configurations (particularly those running bare metal) only support a single //executable// running on the target; others may have support for multi-threading, allowing multiple executables to run at the same time on the target (either all in a common address space, or each in their own).
+
+When a new component is added to a project, the toolchain creates a correspondingly named folder in the ''src'' directory: this directory should be used to contain all the source code for the component.  The toolchain will also populate the directory with a configuration file, which tells toolchain which build configuration to associate with the component.
+
+==== Component Configuration ====
+
+The component configuration file is used to tell the toolchain which build configuration to use when building that particular component.  Like other configuration files used by the toolchain, this file has the syntax of an executable BASH script; lines beginning with a '''#''' are treated as comments.  
+
+The top of the file will always contain information to specify the build configuration to use for the component; then the rest of the file may contain additional configuration settings which are specific to the particular component: either mandatory settings which are required by the build configuration, or additional settings added by the user.
+
+The default configuration file of a component called ''pix'', is the file ''src/pix/pix.cfg'':
+
+'''
+# Configuration file for component pix.
+
+SUBSYSTEM="Testing"
+TARGET=PX4FMU-V2
+PLATFORM=Pixhawk
+BOOTLOADER=
+DEFAULT_APP_STACKSIZE=2048
+APP_STACKSIZES=
+EXECUTABLES=""
+'''
+
+
+Values in the component configuration file will override (or append to) those defined in the original build configuration: this may be required for building components which have some non-standard configuration.
+
+A list of supported configuration settings is available [[Maintenance Manual:Configuration Settings|here.]]
+
