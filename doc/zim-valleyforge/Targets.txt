@@ -3,7 +3,6 @@ Wiki-Format: zim 0.4
 Creation-Date: 2014-12-03T17:33:11+13:00
 
 ====== Targets ======
-Created Wednesday 03 December 2014
 
 [[ValleyForge]] supports a number of different microprocessor hardwares or 'targets'. Support for further targets can be added as demand dictates.
 Currently supported targets are listed below, grouped by architecture type.
@@ -13,6 +12,7 @@ Currently supported targets are listed below, grouped by architecture type.
 	* [[+ATmega2560|ATmega2560]]
 	* [[+ATmega64C1|ATmega64M1 / ATmega64C1]]
 	* [[+AT90CAN128|AT90CAN128]]
+	* [[+ATmega328p|ATmega328p]]
 
 ===== Arduino =====
 	Arduino is a popular framework used widely amongst hobbyists, and uses a C++-like language which must be compiled in a non-standard way. See the [[Targets:Arduino|Arduino]] page for more information.
@@ -21,7 +21,6 @@ Currently supported targets are listed below, grouped by architecture type.
 ===== AVR32 =====
 	AVR32 is a 32-bit architecture developed by Ateml.
 	* [[+AT32UC3C0512C|AT32UC3C0512C]]
-
 
 ===== ARM Cortex-M =====
 
@@ -36,10 +35,6 @@ Currently supported targets are listed below, grouped by architecture type.
 === STM32 ===
 	The [[http://www.st.com/web/en/catalog/mmc/FM141/SC1169?sc=stm32|STM32]] is a Cortex-M ARM microcontroller developed by ST-Microelectronics
 	* [[+STM32F103|STM32F103]]
-
-=== LPC ===
-	No devices supported yet
-
 
 ===== ARM Cortex-A =====
 
