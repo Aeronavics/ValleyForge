@@ -67,7 +67,10 @@
 
 #elif defined (__AVR_AT90CAN128__)
 	#include "target_config_at90can.hpp"
-
+	
+#elif defined (__AVR_ATmega328__)
+	#include "target_config_atmega328.hpp"
+	
 #else
 	#error "No peripheral definition for this configuration."	
 #endif

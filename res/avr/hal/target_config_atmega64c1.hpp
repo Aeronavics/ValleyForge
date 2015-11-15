@@ -82,6 +82,13 @@ enum int_bank_t {PCINT_0, PCINT_1, PCINT_2, PCINT_NONE, EINT_0, EINT_1, EINT_2, 
 enum port_t {PORT_B=1, PORT_C, PORT_D};
 enum pin_t {PIN_0, PIN_1, PIN_2, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7};
 
+// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1/C1 has 3 interrupt ports with 8 pins each. Note that the EINT pins are also PCINT pins, but the EINT vector has priority over the PCINT.
+static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
+						   {{PCINT_0, PCINT_0, EINT_1, PCINT_0, PCINT_0, EINT_2, PCINT_0, PCINT_0},		// B
+							{EINT_3, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  	// C
+							{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, EINT_0, PCINT_2}};   // D
+							// Port E exists but only has three pins and is for special features only.
+
 /* Timer/Counter */
 #	define INT_BIT			7
 
@@ -131,13 +138,6 @@ enum Can_id_bank {CAN_BNK_0, CAN_BNK_1, CAN_BNK_2, CAN_BNK_3, CAN_BNK_4, CAN_BNK
 enum Can_bank_mode {CAN_BNK_MODE_FM};
 enum Can_buffer_interrupt_type {CAN_RX_COMPLETE, CAN_TX_COMPLETE, CAN_GEN_ERROR};
 enum Can_channel_interrupt_type {CAN_BUS_OFF, CAN_TIME_OVERRUN};
-
-// This shows which pins have External Interrupts, and which have pin change interrupts assignable. The Atmega64M1/C1 has 3 interrupt ports with 8 pins each. Note that the EINT pins are also PCINT pins, but the EINT vector has priority over the PCINT.
-static const int_bank_t PC_INT[NUM_PORTS][NUM_PINS] =
-						   {{PCINT_0, PCINT_0, EINT_1, PCINT_0, PCINT_0, EINT_2, PCINT_0, PCINT_0},		// B
-							{EINT_3, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1, PCINT_1},  	// C
-							{PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, PCINT_2, EINT_0, PCINT_2}};   // D
-							// Port E exists but only has three pins and is for special features only.
 
 /* USART */
 
