@@ -24,7 +24,7 @@ Create a new local Git repository (or clone another user repository):
 ''git init''
 
 Add the ValleyForge git repository as a remote (here, we'll call the remote vendor):
-''git remote add vendor https://unison.visualstudio.com/DefaultCollection/Overhead Asset Condition Monitoring/_git/ValleyForge''
+''git remote add vendor https://github.com/aeronavics/ValleyForge.git''
 ''git fetch vendor''
 
 Checkout all the files from the remote into the local working copy where development is to take place:

@@ -86,7 +86,7 @@ class Ppm_input_helper
 		
 		~Ppm_input_helper(void);
 	
-		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, uint8_t number_channels, uint16_t frame_seperation_blank_time, bool invert);
+		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, size_t number_channels, uint16_t frame_seperation_blank_time, bool invert);
 		
 		Servo_command_status start(void);
 		
@@ -94,7 +94,7 @@ class Ppm_input_helper
 		
 		Servo_command_status register_callback(IsrHandler callback);
 		
-		uint16_t get_position(uint8_t channel);
+		uint16_t get_position(size_t channel);
 		
 		void get_positions(uint16_t* positions);
 	
@@ -121,13 +121,13 @@ class Ppm_output_helper
 		
 		~Ppm_output_helper(void);
 		
-		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, uint8_t number_channels, uint16_t frame_length, bool invert);
+		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, size_t number_channels, uint16_t frame_length, bool invert);
 		
 		Servo_command_status start();
 		
 		Servo_command_status stop();
 		
-		void set_position(uint8_t channel, uint16_t position);
+		void set_position(size_t channel, uint16_t position);
 		
 		void set_positions(uint16_t* positions);
 		

@@ -85,7 +85,7 @@ class Ppm_input_helper_imp : public Servo_classes_template
 
 		~Ppm_input_helper_imp(void);
 
-		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, uint8_t number_channels, uint16_t frame_seperation_blank_time, bool invert);
+		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, size_t number_channels, uint16_t frame_seperation_blank_time, bool invert);
 		
 		Servo_command_status start();
 		
@@ -93,7 +93,7 @@ class Ppm_input_helper_imp : public Servo_classes_template
 		
 		Servo_command_status register_callback(IsrHandler callback);
 		
-		uint16_t get_position(uint8_t channel);
+		uint16_t get_position(size_t channel);
 		
 		void get_positions(uint16_t* positions);	
 
@@ -123,13 +123,13 @@ class Ppm_output_helper_imp : public Servo_classes_template
 
 		~Ppm_output_helper_imp(void);
 
-		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, uint8_t number_channels, uint16_t frame_length, bool invert);
+		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, size_t number_channels, uint16_t frame_length, bool invert);
 		
 		Servo_command_status start();
 		
 		Servo_command_status stop();
 		
-		void set_position(uint8_t channel, uint16_t position);
+		void set_position(size_t channel, uint16_t position);
 		
 		void set_positions(uint16_t* positions);
 
@@ -251,7 +251,7 @@ Ppm_input_helper::~Ppm_input_helper(void)
 	return;
 }
 
-Servo_command_status Ppm_input_helper::initialise(Tc_ic_channel tc_ic_channel, uint8_t number_channels, uint16_t frame_seperation_blank_time, bool invert)
+Servo_command_status Ppm_input_helper::initialise(Tc_ic_channel tc_ic_channel, size_t number_channels, uint16_t frame_seperation_blank_time, bool invert)
 {
 	return imp->initialise(tc_ic_channel, number_channels, frame_seperation_blank_time, invert);
 }
@@ -271,7 +271,7 @@ Servo_command_status Ppm_input_helper::register_callback(IsrHandler callback)
 	return imp->register_callback(callback);
 }
 
-uint16_t Ppm_input_helper::get_position(uint8_t channel)
+uint16_t Ppm_input_helper::get_position(size_t channel)
 {
 	return imp->get_position(channel);
 }
@@ -303,7 +303,7 @@ Ppm_output_helper::~Ppm_output_helper()
 	return;
 }
 
-Servo_command_status Ppm_output_helper::initialise(Tc_oc_channel tc_oc_channel, uint8_t number_channels, uint16_t frame_length, bool invert)
+Servo_command_status Ppm_output_helper::initialise(Tc_oc_channel tc_oc_channel, size_t number_channels, uint16_t frame_length, bool invert)
 {
 	return imp->initialise(tc_oc_channel, number_channels, frame_length, invert);
 }
@@ -318,7 +318,7 @@ Servo_command_status Ppm_output_helper::stop(void)
 	return imp->stop();
 }
 
-void Ppm_output_helper::set_position(uint8_t channel, uint16_t position)
+void Ppm_output_helper::set_position(size_t channel, uint16_t position)
 {
 	imp->set_position(channel, position);
 }
@@ -423,7 +423,7 @@ Ppm_input_helper_imp::~Ppm_input_helper_imp(void)
 	// TODO - class cleanup
 }
 
-Servo_command_status Ppm_input_helper_imp::initialise(Tc_ic_channel tc_ic_channel, uint8_t number_channels, uint16_t frame_seperation_blank_time, bool invert)
+Servo_command_status Ppm_input_helper_imp::initialise(Tc_ic_channel tc_ic_channel, size_t number_channels, uint16_t frame_seperation_blank_time, bool invert)
 {
 	// TODO - initialise the implementation for PPM input
 	
@@ -451,7 +451,7 @@ Servo_command_status Ppm_input_helper_imp::register_callback(IsrHandler callback
 	return SERVO_CMD_NAK;
 }
 
-uint16_t Ppm_input_helper_imp::get_position(uint8_t channel)
+uint16_t Ppm_input_helper_imp::get_position(size_t channel)
 {
 	// TODO - return the position value the given channel
 	
@@ -477,7 +477,7 @@ Ppm_output_helper_imp::~Ppm_output_helper_imp()
 	// TODO - class cleanup
 }
 
-Servo_command_status Ppm_output_helper_imp::initialise(Tc_oc_channel tc_oc_channel, uint8_t number_channels, uint16_t frame_length, bool invert)
+Servo_command_status Ppm_output_helper_imp::initialise(Tc_oc_channel tc_oc_channel, size_t number_channels, uint16_t frame_length, bool invert)
 {
 	// TODO - initialise the implementation for PPM input 
 	
@@ -498,7 +498,7 @@ Servo_command_status Ppm_output_helper_imp::stop(void)
 	return SERVO_CMD_NAK;
 }
 
-void Ppm_output_helper_imp::set_position(uint8_t channel, uint16_t position)
+void Ppm_output_helper_imp::set_position(size_t channel, uint16_t position)
 {
 	// TODO - set the position value of the given channel
 }
