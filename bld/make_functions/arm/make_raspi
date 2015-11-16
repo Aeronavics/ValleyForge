@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2012 Unison Networks Ltd
 #
@@ -91,6 +91,10 @@ make_rpi_filesystem()
 				echo -e "${CYAN}\tFile ${RPI_FS_ARCHIVE} downloaded successfully.\n${NO_COLOUR}"
 				RPI_FS_ARCHIVE="${GEN_CACHE}/${RPI_FS_ARCHIVE}"
 			fi
+		elif [ -f "${GEN_CACHE}/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH##*/}" ]; then
+			# We've already downloaded a file which seems to match.
+			echo -e "${CYAN}\tExisting file ${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH##*/} seems to be a match.\n${NO_COLOUR}"
+			RPI_FS_ARCHIVE="${GEN_CACHE}/${VF_PLAT_RASPI_PREBUILT_IMAGE_PATH##*/}"
 		fi
 
 		# Check if we actually ended up with a file to use.

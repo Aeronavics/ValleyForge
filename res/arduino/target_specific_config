@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+
+#	Copyright (C) 2011  Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Prompt the user to select the appropriate configuration for the target.
+echo -e "${CYAN}Arduino specific configuration...\n${NO_COLOUR}"
+
+# If this is a new component, create a separate section in the component configuration file for target specific stuff.
+if [ ${VF_COMPONENT_NEW} ]; then
+	echo -e "\n### TARGET (ARDUINO) SPECIFIC ###\n" >> ${CONFIG_FILE}
+fi
+
+# 1. Prompt the user to enter the path to the Arduino project sketch file.
+
+# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+if [ -z "`pull_key ${CONFIG_FILE} \"ARDUINO_SKETCH\"`" ]; then
+	echo -e -n "${GREEN}Please enter the relative path (in the component directory) to the sketch (PDE) file for this component:${NO_COLOUR}"
+else
+	echo -e -n "${GREEN}Please enter the relative path (in the component directory) to the sketch (PDE) file for this component: (Currently: ${NO_COLOUR}${ARDUINO_SKETCH}${GREEN})${NO_COLOUR}"
+fi
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a line of input from the user.
+	read -r -e -i "${ARDUINO_SKETCH}" -p " "
+	# Check if the user input a valid response.
+	if [ -z "$REPLY" ]; then
+		# The user is apparently a moron.
+		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+	else
+		# A legitimate value was entered, so we can go now.
+		ARDUINO_SKETCH=$REPLY
+		echo -e "${CYAN}Selected sketch path: ${ARDUINO_SKETCH}\n${NO_COLOUR}"
+		break
+	fi
+done
+# Write setting to the configuration file.
+push_key ${CONFIG_FILE} "ARDUINO_SKETCH" "${ARDUINO_SKETCH}"
+
+# 2. Prompt the user to enter the path to the Arduino project's user library directory.
+
+# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+if [ -z "`pull_key ${CONFIG_FILE} \"ARDUINO_LIB_DIR\"`" ]; then
+	echo -e -n "${GREEN}Please enter the relative path to the Arduino user library directory for this component:${NO_COLOUR}"
+else
+	echo -e -n "${GREEN}Please enter the relative path to the Arduino user library directory for this component: (Currently: ${NO_COLOUR}${ARDUINO_LIB_DIR}${GREEN})${NO_COLOUR}"
+fi
+# We loop continuously until the user enters a valid choice.
+while :
+do
+	# Read a line of input from the user.
+	read -r -e -i "${ARDUINO_LIB_DIR}" -p " "
+	# Check if the user input a valid response.
+	if [ -z "$REPLY" ]; then
+		# The user is apparently a moron.
+		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+	else
+		# A legitimate value was entered, so we can go now.
+		ARDUINO_LIB_DIR=$REPLY
+		echo -e "${CYAN}Selected user library directory: ${ARDUINO_LIB_DIR}\n${NO_COLOUR}"
+		break
+	fi
+done
+# Write setting to the configuration file.
+push_key ${CONFIG_FILE} "ARDUINO_LIB_DIR" "${ARDUINO_LIB_DIR}"
+
+# 3. If the user also wants to use a custom Arduino core (like the APM does), then they will need to enter some additional values.
+
+echo -e -n "${GREEN}Do you wish to use the default Arduino core? (Y/N) ${NO_COLOUR}"
+read -n 1
+echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+# If they responded YES, then don't need to do anything else, but if they said no, then we need to ask some more questions.
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+
+	# 4. Prompt the user to enter the path to the Arduino project's core directory.
+
+	# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+	if [ -z "`pull_key ${CONFIG_FILE} \"ARDUINO_CORE_DIR\"`" ]; then
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino core directory for this component:${NO_COLOUR}"
+	else
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino core directory for this component: (Currently: ${NO_COLOUR}${ARDUINO_CORE_DIR}${GREEN})${NO_COLOUR}"
+	fi
+	# We loop continuously until the user enters a valid choice.
+	while :
+	do
+		# Read a line of input from the user.
+		read -r -e -i "${ARDUINO_CORE_DIR}" -p " "
+		# Check if the user input a valid response.
+		if [ -z "$REPLY" ]; then
+			# The user is apparently a moron.
+			echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+		else
+			# A legitimate value was entered, so we can go now.
+			ARDUINO_CORE_DIR=$REPLY
+			echo -e "${CYAN}Selected core directory: ${ARDUINO_CORE_DIR}\n${NO_COLOUR}"
+			break
+		fi
+	done
+	# Write setting to the configuration file.
+	push_key ${CONFIG_FILE} "ARDUINO_CORE_DIR" "${ARDUINO_CORE_DIR}"
+
+	# 5. Prompt the user to enter the path to the Arduino project's variants directory.
+
+	# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+	if [ -z "`pull_key ${CONFIG_FILE} \"ARDUINO_VARI_DIR\"`" ]; then
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino variants directory for this component:${NO_COLOUR}"
+	else
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino variants directory for this component: (Currently: ${NO_COLOUR}${ARDUINO_VARI_DIR}${GREEN})${NO_COLOUR}"
+	fi
+	# We loop continuously until the user enters a valid choice.
+	while :
+	do
+		# Read a line of input from the user.
+		read -r -e -i "${ARDUINO_VARI_DIR}" -p " "
+		# Check if the user input a valid response.
+		if [ -z "$REPLY" ]; then
+			# The user is apparently a moron.
+			echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+		else
+			# A legitimate value was entered, so we can go now.
+			ARDUINO_VARI_DIR=$REPLY
+			echo -e "${CYAN}Selected variants directory: ${ARDUINO_VARI_DIR}\n${NO_COLOUR}"
+			break
+		fi
+	done
+	# Write setting to the configuration file.
+	push_key ${CONFIG_FILE} "ARDUINO_VARI_DIR" "${ARDUINO_VARI_DIR}"
+
+	# 6. Prompt the user to enter the path to the Arduino project's core library directory.
+
+	# If we're reconfiguring an existing component, then we indicate what the existing configuration says.
+	if [ -z "`pull_key ${CONFIG_FILE} \"ARDUINO_CORELIB_DIR\"`" ]; then
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino core library directory for this component:${NO_COLOUR}"
+	else
+		echo -e -n "${GREEN}Please enter the relative path to the Arduino core library directory for this component: (Currently: ${NO_COLOUR}${ARDUINO_CORELIB_DIR}${GREEN})${NO_COLOUR}"
+	fi
+	# We loop continuously until the user enters a valid choice.
+	while :
+	do
+		# Read a line of input from the user.
+		read -r -e -i "${ARDUINO_CORELIB_DIR}" -p " "
+		# Check if the user input a valid response.
+		if [ -z "$REPLY" ]; then
+			# The user is apparently a moron.
+			echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+		else
+			# A legitimate value was entered, so we can go now.
+			ARDUINO_CORELIB_DIR=$REPLY
+			echo -e "${CYAN}Selected variants directory: ${ARDUINO_CORELIB_DIR}\n${NO_COLOUR}"
+			break
+		fi
+	done
+	# Write setting to the configuration file.
+	push_key ${CONFIG_FILE} "ARDUINO_CORELIB_DIR" "${ARDUINO_CORELIB_DIR}"
+
+else
+	# Else we just delete the relevant keys.
+	push_key ${CONFIG_FILE} "ARDUINO_CORE_DIR" "" --delete
+	push_key ${CONFIG_FILE} "ARDUINO_VARI_DIR" "" --delete
+	push_key ${CONFIG_FILE} "ARDUINO_CORELIB_DIR" "" --delete
+fi
+
+# All done.
+

@@ -24,7 +24,7 @@
 # VARIABLES.
 
 # Make Configuration Details.
-SHELL=/bin/bash # Need to use bash, since we use some non-posix features.
+SHELL=/usr/bin/env bash # Need to use bash, since we use some non-posix features.
 	# Disable implicit rules, since they will screw dependency detection up.
 .SUFFIXES:
 

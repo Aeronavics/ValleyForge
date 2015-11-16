@@ -1,0 +1,14 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-08-04T13:00:56+12:00
+
+====== Configuration Settings ======
+
+Configuration settings are divided into two categories: build configuration settings, which are defined in the relevant build configuration file for the particular target/platform; and component configuration settings, which are defined in the component configuration file, and may be modified by the user.
+
+However, build configuration settings may also be overridden in the component configuration file when non-standard build settings are required (for example, to pass additional compiler flags).
+
+[[+Build Configuration Settings|Build Configuration Settings]]
+
+[[+Component Configuration Settings|Component Configuration Settings]]
+

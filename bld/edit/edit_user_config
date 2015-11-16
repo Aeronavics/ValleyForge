@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -110,7 +110,7 @@ vf_config_wizard()
 	vf_config_setname
 
 	# Record that we've now completed the setup process.
-	push_key $TCPATH/$USER_CONFIG_FILE "tc_startup" "done"
+	push_key "$TCPATH/$USER_CONFIG_FILE" "tc_startup" "done"
 
 	# All done.
 	return 0
@@ -126,7 +126,7 @@ vf_config_setname()
 	echo -e ""
 
 	# Update the user name in the configuration file.
-	push_key $TCPATH/$USER_CONFIG_FILE "tc_authname" "${REPLY}"
+	push_key "$TCPATH/$USER_CONFIG_FILE" "tc_authname" "${REPLY}"
 	echo -e "${CYAN}Changed username to $REPLY.\n${NO_COLOUR}"
 
 	# All done.

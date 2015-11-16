@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -32,6 +32,8 @@ unset LOOSE_OBJECTS
 unset VF_CROSS_COMPILE_SYSROOT
 
 unset VF_LIB_DEPS
+
+unset VF_NO_HAL
 
 # RESET ANY TARGET SPECIFIC COMPONENT CONFIGURATION VARIABLES WHICH MAY HAVE BEEN SET PREVIOUSLY.
 

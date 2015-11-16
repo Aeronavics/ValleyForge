@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2012 Unison Networks Ltd
 #
@@ -159,7 +159,7 @@ upload_openocd()
 		cp "${TCPATH}/${OPENOCD_COMMAND_FILE}" "${TCPATH}/tmp/openocd_commands.cfg"
 
 		# Fill in any required fields in the command file.
-		sed -i "s^<<<TC_INSERTS_BIN_FILE_HERE>>>^${OPENOCD_BINARY}^g" "${TCPATH}/tmp/openocd_commands.cfg"
+		sed  "s^<<<TC_INSERTS_BIN_FILE_HERE>>>^${OPENOCD_BINARY}^g" "${TCPATH}/tmp/openocd_commands.cfg"
 	
 		# Upload the application code to flash.
 		sudo ${TMP_COMPILER_DIR}/openocd/openocd_install/bin/openocd -f "${TCPATH}/${OPENOCD_INTERFACE_FILE}" -f "${TCPATH}/${OPENOCD_TARGET_FILE}" \

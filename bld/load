@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011 Unison Networks Ltd
 #
@@ -29,12 +29,50 @@
 ###															###
 ###########################################################################################################################
 
-# FIGURE OUT WHERE WE ARE.
+# MAKE SURE WE'RE IN A SANE ENVIRONMENT.
+
+# Determine which operating system we are using.
+VF_OS="$(uname)"
+unset VF_OS_DARWIN
+unset VF_OS_LINUX
+if [ "${VF_OS}" == "Darwin" ]; then
+	VF_OS_DARWIN=1
+	VF_OSCFG_READLINK='greadlink'
+	VF_OSCFG_SED='gsed'
+	VF_OSCFG_SED_EXTPARAM='-E'
+	VF_OSCFG_SED_INLPARAM='-i'
+else
+	VF_OS_LINUX=1
+	VF_OSCFG_READLINK='readlink'
+	VF_OSCFG_SED='sed'
+	VF_OSCFG_SED_EXTPARAM='-r'
+	VF_OSCFG_SED_INLPARAM='-i'
+fi
+
+# Check if we've got a sufficiently advanced version of BASH to actually run the toolchain.
+if [[ ${BASH_VERSINFO[0]} < 4 ]]; then
+	# BASH version before v4 are missing things we required, such as "read -i".
+	echo -e "\033[0;31mBASH versions prior to 4.x are not supported.  Upgrade to a never version of BASH."
+	exit 1
+fi
+
+# Check if all the tools we're expecting are installed.
+VF_REQUIRED="${VF_OSCFG_READLINK} ${VF_OSCFG_SED}"
+for VF_REQUIRED_ITEM in ${VF_REQUIRED}; do
+	if [ -z "$(which ${VF_REQUIRED})" ]; then
+		echo -e "\033[0;31mUnabled to find: ${VF_REQUIRED}.  Install this utility then try again."
+		exit 1
+	fi
+done
+unset VF_REQUIRED_ITEM
+unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-SCRIPT=`readlink -f $0`
-SCRIPTPATH=`dirname $SCRIPT`
-TCPATH=$(echo $SCRIPTPATH | sed 's/\/bld.*//')
+VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
+VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
+unset VF_SCRIPTPATH
+unset VF_SCRIPT
 
 # DEFINE CONSTANTS.
 
@@ -118,7 +156,11 @@ SHORTOPTS="harlpcbufn:"
 LONGOPTS="help,all,retain,bootloader,fuses,filesystem,loaderonly,postpack,clean,noload,name:"
 
 # Use 'getopt' to parse the command line options.
-ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+if [ VF_OS_DARWIN ]; then
+	ARGS=$(getopt $SHORTOPTS "$*")
+else
+	ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
+fi
 eval set -- "$ARGS"
 
 # Handle the parsed parameters.
@@ -329,6 +371,9 @@ do
 		# The build configuration was loaded successfully.
 		echo -e "${CYAN}Loaded build configuration '$BCONF_NAME'.\n${NO_COLOUR}"
 	fi
+
+	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
 	
 	# Check if the component configuration specifies a particular upload function to use.
 	if [ ! -z "$UPLOAD_FUNCTION" ]; then

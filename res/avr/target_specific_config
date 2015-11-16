@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #	Copyright (C) 2011  Unison Networks Ltd
 #
@@ -19,7 +19,7 @@
 echo -e "${CYAN}AVR specific configuration...\n${NO_COLOUR}"
 
 # If this is a new component, create a separate section in the component configuration file for target specific stuff.
-if [ ${NEW} ]; then
+if [ ${VF_COMPONENT_NEW} ]; then
 	echo -e "\n### TARGET (AVR) SPECIFIC ###\n" >> ${CONFIG_FILE}
 fi
 
@@ -40,9 +40,9 @@ do
 	if [ -z "$REPLY" ]; then
 		# The user is apparently a moron.
 		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
-	elif ! [[ "$REPLY" =~ ^[0-9]+?$ ]] ; then
+	elif ! [[ "$REPLY" =~ ^[0-9]+$ ]] ; then
 		# The user is apparently a moron.
-		echo -e -n "${RED}Invalid choice.  Try again.${NO_COLOUR}"
+		echo -e -n "${RED}Invalid choice ($REPLY).  Try again.${NO_COLOUR}"
 	else
 		# A legitimate value was entered, so we can go now.
 		CLK_SPEED_IN_MHZ=$REPLY
