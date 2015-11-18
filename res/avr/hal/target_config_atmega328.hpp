@@ -133,9 +133,18 @@ enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF
 
 /* Servo */
 
-#define Servo_tc_pre TC_PRE_8
-#define Servo_set TC_OC_CHANNEL_MODE_3
-#define Servo_clear TC_OC_CHANNEL_MODE_2
-#define Servo_tc_mode TC_OC_NONE
- 							
+#define SERVO_TC_CLK TC_SRC_INT
+#define SERVO_TC_PRE TC_PRE_8
+#define SERVO_PRE_DEVISOR 8
+#define SERVO_OC_MODE TC_OC_NONE
+#define SERVO_SET TC_OC_CHANNEL_MODE_3
+#define SERVO_CLEAR TC_OC_CHANNEL_MODE_2
+
+#define SERVO_TIMER_MAX_INTERRUPTS 4
+#define SERVO_TIMER_MAX_CHANNELS 3
+
+enum Servo_state {SERVO_LOW, SERVO_HIGH};
+enum Servo_int_type {SERVO_OC_A, SERVO_OC_B, SERVO_IC_A, SERVO_OVF};
+static const uint8_t Timer_size[] = {8, 16, 8};
+
 // ALL DONE.

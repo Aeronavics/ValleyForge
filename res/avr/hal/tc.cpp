@@ -372,8 +372,8 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 	{
 		case TC_OC_NONE : // clears any waveform generation mode WGM2:0 = 0, TOP = 0xFF
 		{
-      /* Disable the output compare interrupt */
-			*table.TIMSK_ADDRESS = 0x00;   // disable all interrupts
+			/* Disable the output compare interrupt */
+			//*table.TIMSK_ADDRESS = 0x00;   // Removed as this changes more of the timer state than just the operating mode
 
 			#ifndef __AVR_AT90CAN128__
 			if (tc_number == TC_0)
@@ -551,8 +551,8 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table)
 	{
 		case TC_OC_NONE : // Normal Operation, clears any waveform generation mode WGM2:0 = 0, TOP = 0xFFFF/ 0xFF
 		{
-      /* Disable the output compare interrupts */
-      *table.TIMSK_ADDRESS = 0x00;
+			/* Disable the output compare interrupts */
+			//*table.TIMSK_ADDRESS = 0x00; // Removed as this changes more of the timer state than just the operating mode
 
 			/* Reset the timer counter mode back to NORMAL */
 			*table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));

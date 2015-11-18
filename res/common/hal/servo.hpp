@@ -187,7 +187,7 @@ class Pwm_output_helper
 		/**
 		 * Create Pwm_output_helper instance that provides pwm output functionality
 		 */
-		Pwm_output_helper(Tc_number tc_number);
+		Pwm_output_helper(Tc_number tc_number, Tc_oc_channel tc_oc_channel);
 		
 		/**
 		 * Initialise the timer system used.
@@ -197,12 +197,32 @@ class Pwm_output_helper
 		 * @param bool Whether the waveform is inverted. _-___ normal, -_--- inverted
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
 		 */
-		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, uint16_t frame_length, bool invert);
+		Servo_command_status initialise(uint16_t frame_length, bool invert);
 		
+		/**
+		 * Start the pwm output.
+		 *
+		 * Global interrupts must be enabled for the pwm to output.
+		 *
+		 * @param Nothing
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
+		 */
 		Servo_command_status start();
 		
+		/**
+		 * Stop the pwm output.
+		 *
+		 * @param Nothing
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
+		 */
 		Servo_command_status stop();
 		
+		/**
+		 * Set the position of the output.
+		 *
+		 * @param The position to output in microseconds
+		 * @return Nothing
+		 */
 		void set_position(uint16_t position);
 		
 		// Fields
@@ -217,7 +237,7 @@ class Pwm_output_helper
 
 		// Fields
 		
-		// Pointer to the target specific implementation of the Ppm_output
+		// the target specific implementation of the Ppm_output
 		Pwm_output_helper_imp* imp;
 };
 
