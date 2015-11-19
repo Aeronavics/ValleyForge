@@ -92,7 +92,7 @@ class Ppm_input_helper
 		
 		Servo_command_status stop(void);
 		
-		Servo_command_status register_callback(IsrHandler callback);
+		Servo_command_status register_callback(Callback callback);
 		
 		uint16_t get_position(size_t channel);
 		
@@ -151,16 +151,54 @@ class Pwm_input_helper
 {
 	public:
 		// Functions
-		Pwm_input_helper(Tc_number tc_number);
 		
-		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, bool invert);
+		/**
+		 * Create Pwm_input_helper instance that provides pwm input functionality on a timer input capture pin.
+		 *
+		 * @param Tc_number The timer which to use to capture the pwm signal.
+		 * @param Tc_ic_channel The input capture channel to use for the pwm signal.
+		 */
+		Pwm_input_helper(Tc_number tc_number, Tc_ic_channel tc_ic_channel);
 		
+		/**
+		 * Initialise the timer system for pwm input.
+		 * 
+		 * @param bool Recieve an inverted pwm signal, _-___ normal, -_--- inverted.
+		 */
+		Servo_command_status initialise(bool invert);
+		
+		/**
+		 * Start the pwm input.
+		 *
+		 * Global interrupts must be enabled for the pwm to output.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status start(void);
 		
+		/**
+		 * Stop the pwm input.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status stop(void);
 		
-		Servo_command_status register_callback(IsrHandler callback);
+		/**
+		 * Register a callback that is called when ever a new pwm pulse width is received.
+		 *
+		 * @param Callback The callback will be called with a void pointer to a uint16_t value containing the new pulse widths in microseconds.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
+		Servo_command_status register_callback(Callback callback);
 		
+		/**
+		 *	Get the current pulse width of the pwm input signal in microseconds.
+		 *
+		 * @param Nothing.
+		 * @return uint16_t the width of the input pwm pulse in microseconds. 
+		 */
 		uint16_t get_position(void);
 		
 		// Fields
@@ -175,7 +213,7 @@ class Pwm_input_helper
 		
 		// Fields
 		
-		// Pointer to the target specific implementation of the Ppm_output
+		// Pointer to the target specific implementation of the Pwm_input
 		Pwm_input_helper_imp* imp;
 };
 
@@ -185,17 +223,19 @@ class Pwm_output_helper
 		// Functions
 		
 		/**
-		 * Create Pwm_output_helper instance that provides pwm output functionality
+		 * Create Pwm_output_helper instance that provides pwm output functionality.
+		 *
+		 * @param Tc_number The timer which to use to output the pwm signal.
+		 * @param Tc_oc_channel The Tc channel on which to output the pwm signal.
 		 */
 		Pwm_output_helper(Tc_number tc_number, Tc_oc_channel tc_oc_channel);
 		
 		/**
-		 * Initialise the timer system used.
+		 * Initialise the timer system for pwm output.
 		 *
-		 * @param Tc_oc_channel The Tc channel being uesed for the pwm output
-		 * @param uint16_t The framelength in microseconds
-		 * @param bool Whether the waveform is inverted. _-___ normal, -_--- inverted
-		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
+		 * @param uint16_t The framelength in microseconds.
+		 * @param bool Whether the waveform is inverted. _-___ normal, -_--- inverted.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
 		 */
 		Servo_command_status initialise(uint16_t frame_length, bool invert);
 		
@@ -204,24 +244,24 @@ class Pwm_output_helper
 		 *
 		 * Global interrupts must be enabled for the pwm to output.
 		 *
-		 * @param Nothing
-		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
 		 */
 		Servo_command_status start();
 		
 		/**
 		 * Stop the pwm output.
 		 *
-		 * @param Nothing
-		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
 		 */
 		Servo_command_status stop();
 		
 		/**
 		 * Set the position of the output.
 		 *
-		 * @param The position to output in microseconds
-		 * @return Nothing
+		 * @param The position to output in microseconds.
+		 * @return Nothing.
 		 */
 		void set_position(uint16_t position);
 		
@@ -237,7 +277,7 @@ class Pwm_output_helper
 
 		// Fields
 		
-		// the target specific implementation of the Ppm_output
+		// The target specific implementation of the Pwm_output
 		Pwm_output_helper_imp* imp;
 };
 

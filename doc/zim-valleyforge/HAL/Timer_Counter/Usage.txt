@@ -20,6 +20,10 @@ The HAL library currently support three AVR devices, ATmega2560, ATmega64M1/C1 a
 '''
 	TC_0, TC_1, TC_2 and TC_3
 '''
+**ATmega328p**
+'''
+	TC_0, TC_1 and TC_2
+'''
 
 All **TC_2 **units are asynchronous 8-bit TC, where as the **TC_0 **is a synchronous 8-bit TC and the rest are 16-bit synchronous TCs.
 
@@ -163,6 +167,17 @@ TC_OC_CHANNEL_MODE_2		1		0		Clear OCnA/OCnB/OCnC on compare match when up-counti
 								set OCnA/OCnB/OCnC on compare match when down-counting
 TC_OC_CHANNEL_MODE_3		1		1		Set OCnA/OCnB/OCnC on compare match when up-counting,
 								clear OCnA/OCnB/OCnC on compare match when down-counting
+'''
+
+For Compare Intput Mode, **Normal**
+'''
+  mode 		       	 COMnA1/B1/C1	COMnA0/B0/C0				Description
+
+TC_IC_NONE			1		1		Disable the input capture unit
+TC_IC_MODE_1			0		0		Trigger on falling edge noise canceler disabled
+TC_IC_MODE_2			0		1		Trigger on rising edge noise canceler disabled
+TC_IC_MODE_3			1		0		Trigger on falling edge noise canceler enabled
+TC_IC_MODE_4			1		1		Trigger on rising edge noise canceler enabled
 '''
 
 

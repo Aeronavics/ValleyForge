@@ -87,7 +87,7 @@ class Ppm_input_helper_imp : public Servo_classes_template
 		
 		Servo_command_status stop();
 		
-		Servo_command_status register_callback(IsrHandler callback);
+		Servo_command_status register_callback(Callback callback_vect);
 		
 		uint16_t get_position(size_t channel);
 		
@@ -155,17 +155,17 @@ class Pwm_input_helper_imp : public Servo_classes_template
 {
 	public:
 
-		Pwm_input_helper_imp(Tc_number tc_number);
+		Pwm_input_helper_imp(Tc_number tc_number, Tc_ic_channel tc_ic_channel);
 
 		~Pwm_input_helper_imp(void);
 
-		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, bool invert);
+		Servo_command_status initialise(bool inv);
 		
 		Servo_command_status start(void);
 		
 		Servo_command_status stop(void);
 		
-		Servo_command_status register_callback(IsrHandler callback);
+		Servo_command_status register_callback(Callback callback_vect);
 		
 		uint16_t get_position(void);
 		
@@ -184,6 +184,15 @@ class Pwm_input_helper_imp : public Servo_classes_template
 		// Fields.
 		
 		Tc timer;
+		Tc_number timer_number;
+		Tc_ic_channel channel;
+		Servo_int_type compare_int;
+		
+		uint16_t overflows;
+		Servo_state servo_state;
+		uint16_t position;
+		bool invert;
+		Callback callback_vector;
 };
 
 /**
@@ -245,6 +254,7 @@ void Servo_T2_OC_A_handler(void);
 void Servo_T2_OC_B_handler(void);
 
 uint32_t Servo_us_to_counts(uint16_t us);
+uint32_t Servo_counts_to_us(uint16_t counts);
 
 uint16_t Servo_num_overflows_required(uint32_t current_timer_counts, uint32_t counts_to_event, Tc_number tc_number);
 
@@ -298,7 +308,7 @@ Servo_command_status Ppm_input_helper::stop(void)
 	return imp->stop();
 }
 
-Servo_command_status Ppm_input_helper::register_callback(IsrHandler callback)
+Servo_command_status Ppm_input_helper::register_callback(Callback callback)
 {
 	return imp->register_callback(callback);
 }
@@ -369,35 +379,81 @@ Pwm_input_helper::Pwm_input_helper(Pwm_input_helper_imp* implementation)
 	imp = implementation;
 }
 
-Pwm_input_helper::Pwm_input_helper(Tc_number tc_number)
+Pwm_input_helper::Pwm_input_helper(Tc_number tc_number, Tc_ic_channel tc_ic_channel)
 {
-	static Pwm_input_helper_imp pwm_input(tc_number);
-	imp = &pwm_input;
+	imp = NULL;
+	
+	// Will only attach a valid timer and channel choice
+	#if defined (__AVR_ATmega328__)
+	static Pwm_input_helper_imp pwm_input_TC_1_IC_A(TC_1, TC_IC_A);
+	
+	switch (tc_number)
+	{
+		case TC_0:
+			switch (tc_ic_channel)
+			{
+				case TC_IC_A:
+					break;
+			}
+			break;
+		case TC_1:
+			switch (tc_ic_channel)
+			{
+				case TC_IC_A:
+					imp = &pwm_input_TC_1_IC_A;
+					break;
+			}
+			break;
+		case TC_2:
+			switch (tc_ic_channel)
+			{
+				case TC_IC_A:
+					break;
+			}
+			break;
+	}
+	#endif
 }
 
-Servo_command_status Pwm_input_helper::initialise(Tc_ic_channel tc_ic_channel, bool invert)
+Servo_command_status Pwm_input_helper::initialise(bool invert)
 {
-	return imp->initialise(tc_ic_channel, invert);
+	if (imp)
+		return imp->initialise(invert);
+	else
+		return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_input_helper::start(void)
 {
-	return imp->start();
+	if (imp)
+		return imp->start();
+	else
+		return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_input_helper::stop(void)
 {
-	return imp->stop();
+	if (imp)
+		return imp->stop();
+	else
+		return SERVO_CMD_NAK;
 }
 
-Servo_command_status Pwm_input_helper::register_callback(IsrHandler callback)
+Servo_command_status Pwm_input_helper::register_callback(Callback callback)
 {
-	return imp->register_callback(callback);
+	if (imp)
+		return imp->register_callback(callback);
+	else
+		return SERVO_CMD_NAK;
 }
 
 uint16_t Pwm_input_helper::get_position(void)
 {
-	return imp->get_position();
+	// Return the center value as teh default if an implementation was not able to be attached
+	if (imp)
+		return imp->get_position();
+	else
+		return 1500;
 }
 
 // Pwm_output_helper
@@ -411,6 +467,7 @@ Pwm_output_helper::Pwm_output_helper(Pwm_output_helper_imp* implementation)
 
 Pwm_output_helper::Pwm_output_helper(Tc_number tc_number, Tc_oc_channel tc_oc_channel)
 {
+	// Will only attach a valid timer and channel choice
 	// All implementation combinations possible, set definitions for supported harware combinations
 	#if defined (__AVR_ATmega328__)
 	static Pwm_output_helper_imp pwm_output_TC_0_OC_A(TC_0, TC_OC_A);
@@ -461,22 +518,32 @@ Pwm_output_helper::Pwm_output_helper(Tc_number tc_number, Tc_oc_channel tc_oc_ch
 
 Servo_command_status Pwm_output_helper::initialise(uint16_t frame_length, bool invert)
 {
-	return imp->initialise(frame_length, invert);
+	if (imp)
+		return imp->initialise(frame_length, invert);
+	else
+		return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_output_helper::start(void)
 {
-	return imp->start();
+	if (imp)
+		return imp->start();
+	else
+		return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_output_helper::stop(void)
 {
-	return imp->stop();
+	if (imp)
+		return imp->stop();
+	else
+		return SERVO_CMD_NAK;
 }
 
 void Pwm_output_helper::set_position(uint16_t pos)
 {
-	imp->set_position(pos);
+	if (imp)
+		imp->set_position(pos);
 }
 
 /**************************************************************************************************/
@@ -490,13 +557,27 @@ void Pwm_output_helper::set_position(uint16_t pos)
  */
 uint32_t Servo_us_to_counts(uint16_t us)
 {
-	// using integer operations for speed. Need to do in several stages to prevent overflow
+	// Using integer operations for speed. Need to do in several stages to prevent overflow.
 	uint32_t counts;
 	counts = F_CPU / 1000 / SERVO_PRE_DEVISOR;
 	counts *= us;
 	counts /= 1000;
 	
 	return counts;
+}
+
+/**
+ * Convert a timer counts to microseconds
+ * 
+ * @param The timer counts to convert to microseconds
+ * @return The number of microseconds
+ */
+uint32_t Servo_counts_to_us(uint16_t counts)
+{
+	uint32_t MHz = F_CPU / 1000000;
+	uint32_t us = counts * SERVO_PRE_DEVISOR / MHz;
+	
+	return us;
 }
 
 /**
@@ -509,8 +590,8 @@ uint32_t Servo_us_to_counts(uint16_t us)
  */
 uint16_t Servo_num_overflows_required(uint32_t current_timer_counts, uint32_t counts_to_event, Tc_number tc_number)
 {
+	// The number of overflows required is the bits beyond the max timer count.
 	uint8_t shift_to_overflows = Timer_size[tc_number];
-	
 	uint16_t overflows = ((uint32_t)current_timer_counts + (uint32_t)counts_to_event) >> shift_to_overflows;
 	
 	return overflows;
@@ -553,7 +634,7 @@ Servo_command_status Ppm_input_helper_imp::stop(void)
 	return SERVO_CMD_NAK;
 }
 
-Servo_command_status Ppm_input_helper_imp::register_callback(IsrHandler callback)
+Servo_command_status Ppm_input_helper_imp::register_callback(Callback callback)
 {
 	// TODO - register a callback for when an input frame is recieved
 	
@@ -630,10 +711,12 @@ void Ppm_output_helper_imp::callback(Servo_int_type servo_int_type)
 // Pwm_input_helper_imp
 /**************************************************************************************************/
 
-Pwm_input_helper_imp::Pwm_input_helper_imp(Tc_number tc_number) :
+Pwm_input_helper_imp::Pwm_input_helper_imp(Tc_number tc_number, Tc_ic_channel tc_ic_channel) :
 	timer(tc_number)
 {
-	// TODO - class inititalisation
+	// Store timer information
+	timer_number = tc_number;
+	channel = tc_ic_channel;
 }
 
 Pwm_input_helper_imp::~Pwm_input_helper_imp(void)
@@ -641,44 +724,152 @@ Pwm_input_helper_imp::~Pwm_input_helper_imp(void)
 	// TODO - class cleanup
 }
 
-Servo_command_status Pwm_input_helper_imp::initialise(Tc_ic_channel tc_ic_channel, bool invert)
+Servo_command_status Pwm_input_helper_imp::initialise(bool inv)
 {
-	// TODO - initialise the implementation for PWM input
+	// store settings
+	invert = inv;
+
+	// set default values
+	overflows = 0;
+	callback_vector = NULL;
+	
+	// associate the channel with the callback interrupt designator
+	switch (channel)
+	{
+		case TC_IC_A:
+			compare_int = SERVO_IC_A;
+			break;
+		default:
+			return SERVO_CMD_NAK;
+			break;
+	}
+	
+	servo_state = SERVO_LOW; // initital state
+	
+	// Initialise the timer for PWM input
+	if (timer.initialise() == TC_CMD_ACK &&
+	    timer.set_rate({SERVO_TC_CLK, SERVO_TC_PRE}) == TC_CMD_ACK &&
+	    timer.enable_oc(SERVO_OC_MODE) == TC_CMD_ACK &&
+	    timer.enable_ic(channel	, SERVO_IC_RISING) == TC_CMD_ACK &&
+	    timer.enable_ic_interrupt(channel, servo_interrupts[timer_number][compare_int]) == TC_CMD_ACK &&
+	    timer.enable_tov_interrupt(servo_interrupts[timer_number][SERVO_OVF]) == TC_CMD_ACK)
+	{
+		// Attach the current class to the callbacks so that the callback function can be called
+		servo_compare_callback_classes[timer_number][compare_int] = this;
+		servo_ovf_callback_classes[timer_number][compare_int] = this;
+		
+		return SERVO_CMD_ACK;
+	}
 	
 	return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_input_helper_imp::start(void)
 {
-	// TODO - start the pwm input
-	
-	return SERVO_CMD_NAK;
+	if (timer.start() == TC_CMD_ACK)
+		return SERVO_CMD_ACK;
+	else
+		return SERVO_CMD_NAK;
 }
 
 Servo_command_status Pwm_input_helper_imp::stop(void)
 {
-	// TODO - stop the pwm input
+	// Remove references to the current class so that the callback is not called on interrupts
+	servo_compare_callback_classes[timer_number][compare_int] = NULL;
+	servo_ovf_callback_classes[timer_number][compare_int] = NULL;
 	
-	return SERVO_CMD_NAK;
+	// Check if any other classes are using the timer. If so return and leave the timer running.
+	for (int i = 0; i < NUM_TIMERS; i++)
+	{
+		for (int j = 0; j < SERVO_TIMER_MAX_CHANNELS; j++)
+		{
+			if (servo_ovf_callback_classes[i][j])
+			{
+				return SERVO_CMD_ACK;
+			}
+		}
+	}
+	
+	// Only get here if there are no more servo implementations using the timer
+	if (timer.stop() == TC_CMD_ACK)
+		return SERVO_CMD_ACK;
+	else
+		return SERVO_CMD_NAK;
 }
 
-Servo_command_status Pwm_input_helper_imp::register_callback(IsrHandler callback)
+Servo_command_status Pwm_input_helper_imp::register_callback(Callback callback_vect)
 {
-	// TODO - register callback
+	callback_vector = callback_vect;
 	
-	return SERVO_CMD_NAK;
+	return SERVO_CMD_ACK;
 }
 
 uint16_t Pwm_input_helper_imp::get_position(void)
 {
-	// TODO - return the current position
-	
-	return 0;
+	return  Servo_counts_to_us(position);
 }
 
 void Pwm_input_helper_imp::callback(Servo_int_type servo_int_type)
 {
-	// TODO - handle a timer interrupt callback
+	// State variables required
+	static uint16_t start_counts;
+	static uint32_t end_counts;
+	static uint16_t previous_position = 0;
+	static uint16_t position_us;
+	
+	// Check the type of interrupt which called the callback
+	if (servo_int_type == compare_int)
+	{
+		switch (servo_state)
+			{
+				// Enters here at the start of a pulse
+				case SERVO_LOW:
+				start_counts = timer.get_timer_value().value.as_16bit;
+				
+				// Set the edge of the end of pulse transition
+				if (invert)
+					timer.enable_ic(channel, SERVO_IC_RISING);
+				else
+					timer.enable_ic(channel, SERVO_IC_FALLING);
+				
+				servo_state = SERVO_HIGH;
+				break;
+				
+				// Enteres here at the end of a pulse
+				case SERVO_HIGH:
+				end_counts = (uint32_t)timer.get_timer_value().value.as_16bit | ((uint32_t)overflows << Timer_size[timer_number]);
+				
+				position = end_counts - start_counts;
+				
+				// If the position has changed call the callback with the new position
+				if (position != previous_position)
+					if (callback_vector)
+					{
+						position_us = Servo_counts_to_us(position);
+						callback_vector((void*)(&position_us));	
+					}
+				
+				previous_position = position;
+				overflows = 0; // reset overflow count
+				
+				// Set the edge of the start of pulse transition
+				if (invert)
+					timer.enable_ic(channel, SERVO_IC_FALLING);
+				else
+					timer.enable_ic(channel, SERVO_IC_RISING);
+				
+				servo_state = SERVO_LOW;
+				break;
+				
+				default:
+					break;
+			}
+	}
+	else if (servo_int_type == SERVO_OVF)
+	{
+		// Counter gets incremented evertime the timer overflows.
+		overflows++;
+	}
 }
 
 // Pwm_output_helper_imp
@@ -687,7 +878,7 @@ void Pwm_input_helper_imp::callback(Servo_int_type servo_int_type)
 Pwm_output_helper_imp::Pwm_output_helper_imp(Tc_number tc_number, Tc_oc_channel tc_oc_channel) :
 	timer(tc_number)
 {
-	// TODO - class inititalisation
+	// Store timer information
 	timer_number = tc_number;
 	channel = tc_oc_channel;
 }
@@ -699,9 +890,8 @@ Pwm_output_helper_imp::~Pwm_output_helper_imp(void)
 
 Servo_command_status Pwm_output_helper_imp::initialise(uint16_t frame, bool inv)
 {
-	// TODO - initialise the implementation for PWM output
-	// store settings
-	frame_length = frame;
+	// Store settings
+	frame_length = Servo_us_to_counts(frame);
 	invert = inv;
 	
 	position = MIDPOINT; // set position to a safe value
@@ -721,7 +911,7 @@ Servo_command_status Pwm_output_helper_imp::initialise(uint16_t frame, bool inv)
 			break;
 	}
 	
-	servo_state = SERVO_LOW;
+	servo_state = SERVO_LOW; // set initial state
 	
 	// set the timer value as the correct type for the timer
 	Tc_value tc_value;
@@ -737,6 +927,7 @@ Servo_command_status Pwm_output_helper_imp::initialise(uint16_t frame, bool inv)
 	}
 	#endif
 	
+	// Initialise the timer for pwm output
 	if (timer.initialise() == TC_CMD_ACK &&
 	    timer.set_rate({SERVO_TC_CLK, SERVO_TC_PRE}) == TC_CMD_ACK &&
 	    timer.enable_oc(SERVO_OC_MODE) == TC_CMD_ACK &&
@@ -745,6 +936,7 @@ Servo_command_status Pwm_output_helper_imp::initialise(uint16_t frame, bool inv)
 	    timer.enable_oc_interrupt(channel, servo_interrupts[timer_number][compare_int]) == TC_CMD_ACK &&
 	    timer.enable_tov_interrupt(servo_interrupts[timer_number][SERVO_OVF]) == TC_CMD_ACK)
 	{
+		// Attach the current class to the callbacks so that the callback function can be called
 		servo_compare_callback_classes[timer_number][compare_int] = this;
 		servo_ovf_callback_classes[timer_number][compare_int] = this;
 		
@@ -764,12 +956,11 @@ Servo_command_status Pwm_output_helper_imp::start(void)
 
 Servo_command_status Pwm_output_helper_imp::stop(void)
 {
-	// TODO - testing -- requires the disabling of interrupts to allow other servos to run
-	timer.disable_oc_interrupt(channel);
-	
+	// Remove references to the current class so that the callback is not called on interrupts
 	servo_compare_callback_classes[timer_number][compare_int] = NULL;
 	servo_ovf_callback_classes[timer_number][compare_int] = NULL;
 	
+	// Check if any other classes are using the timer. If so return and leave the timer running
 	for (int i = 0; i < NUM_TIMERS; i++)
 	{
 		for (int j = 0; j < SERVO_TIMER_MAX_CHANNELS; j++)
@@ -781,6 +972,7 @@ Servo_command_status Pwm_output_helper_imp::stop(void)
 		}
 	}
 	
+	// Only get here if there are no more servo implementations using the timer
 	if (timer.stop() == TC_CMD_ACK)
 		return SERVO_CMD_ACK;
 	else
@@ -789,24 +981,25 @@ Servo_command_status Pwm_output_helper_imp::stop(void)
 
 void  Pwm_output_helper_imp::set_position(uint16_t pos)
 {
-	// TODO - testing
-	position = pos;
+	position = Servo_us_to_counts(pos);
 }
 
 void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 {
-	// TODO - handle a timer interrupt callback
-	
+	// Only handle the OC interrupt if the number of overflows required to get to the next event have passed
 	if (servo_int_type == compare_int && overflows_required == 0)
 	{
+		// Working variables for use inside the switch statement
 		uint16_t timer_value = 0;
 		uint16_t counts_to_event = 0;
 		Tc_value tc_value;
 		
 		switch (servo_state)
 			{
+				// Enters here at the start of a pulse
 				case SERVO_LOW:
 				
+					// Read the timer value as the correct type for the timer
 					#if defined(__AVR_ATmega328__)
 					if (timer_number == TC_0 || timer_number == TC_2)
 					{
@@ -818,9 +1011,11 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 					}
 					#endif
 					
-					counts_to_event = Servo_us_to_counts(position);
+					// Calculate the number of counts to advance and the number of overflows required to get there
+					counts_to_event = position;
 					overflows_required = Servo_num_overflows_required(timer_value, counts_to_event, timer_number);
 					
+					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
 					#if defined(__AVR_ATmega328__)
 					if (timer_number == TC_0 || timer_number == TC_2)
 					{
@@ -830,9 +1025,10 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 					{
 						tc_value = Tc_value::from_uint16(timer_value + counts_to_event);
 					}
-					#endif
-					
+					#endif					
 					timer.set_ocR(channel, tc_value);
+					
+					// Set the transition for end of the pulse
 					if (invert)
 						timer.enable_oc_channel(channel, SERVO_SET);
 					else
@@ -840,9 +1036,11 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 					
 					servo_state = SERVO_HIGH;
 					break;
-					
+				
+				// Enters here at the end of a pulse
 				case SERVO_HIGH:
 				
+					// Read the timer value as the correct type for the timer
 					#if defined(__AVR_ATmega328__)
 					if (timer_number == TC_0 || timer_number == TC_2)
 					{
@@ -854,9 +1052,11 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 					}
 					#endif
 					
-					counts_to_event = Servo_us_to_counts(frame_length - position);
+					// Calculate the number of counts to advance and the number of overflows required to get there
+					counts_to_event = frame_length - position;
 					overflows_required = Servo_num_overflows_required(timer_value, counts_to_event, timer_number);
 					
+					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
 					#if defined(__AVR_ATmega328__)
 					if (timer_number == TC_0 || timer_number == TC_2)
 					{
@@ -867,8 +1067,9 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 						tc_value = Tc_value::from_uint16(timer_value + counts_to_event);
 					}
 					#endif
-					
 					timer.set_ocR(channel, tc_value);
+					
+					// Set the transition for start of the pulse
 					if (invert)
 						timer.enable_oc_channel(channel, SERVO_CLEAR);
 					else
@@ -883,6 +1084,7 @@ void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 	}
 	else if (servo_int_type == SERVO_OVF)
 	{
+		// Decrement the number of overflows requried if greater than zero
 		if (overflows_required > 0)
 		{
 			overflows_required--;

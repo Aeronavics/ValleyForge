@@ -2466,7 +2466,7 @@ Tc_command_status Tc_imp::enable_ic(Tc_ic_channel channel, Tc_ic_mode mode)
 					// disabling the Input Capture Unit.
 
 					// disable the interrupts, zero ICNC and ICES, and zero the ICRn register
-					// *imp_register_table.TCCR_B_ADDRESS &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));
+					*imp_register_table.TCCR_B_ADDRESS &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));
 				}
 				case TC_IC_MODE_1 :		// No Noise Canceler, falling edge used as trigger
 				{
