@@ -76,10 +76,12 @@ void __cxa_pure_virtual(void)
 	return;
 }
 
-void atexit(void)
+int atexit(void (*callback)(void))
 {
-	// All done.
-	return;
+	// NOTE - This function does not actually do anything.
+
+	// Return non-zero to indicate the function failed.
+	return 1;
 }
 
 // IMPLEMENT PRIVATE FUNCTIONS.
