@@ -156,8 +156,8 @@ get_suitable_libs()
 			echo -e "${CYAN}Importing library $LIBRARY.\n${NO_COLOUR}"
 			
 			# Copy all the files across from the library directory.
-			mkdir -p $OUTPATH/${LIBRARY%/*}
-			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH/${LIBRARY%/*}
+			mkdir -p $OUTPATH/${LIBRARY}
+			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
 
 			# Increment the number of libraries imported.
 			COUNT=`expr $COUNT + 1`
