@@ -41,9 +41,9 @@ Users access functionality to a GPIO pin by instantiating a Gpio_pin class and b
 
 == Initialisation ==
 
-Users must instantiate a Gpio_pin class and bind the chosen GPIO pin address to this instance simultaneously as assignment of this class is prohibited. This is done by invoking the grab() method of the Gpio_pin class.
+Users must instantiate a Gpio_pin class by calling the constructor with the chosen GPIO pin address.
 
-The address descriptor must therefore be created first and then passed into the grab() method.
+The address descriptor must therefore be created first and then passed into the constructor.
 
 == Example ==
 
@@ -52,8 +52,8 @@ IO_pin_address my_gpio_addr;    //creating the descriptor
 my_gpio_addr.port = PORT_B;     //setting the descriptor's port to port B
 my_gpio_addr.pin = PIN_5;       //setting the descriptor's pin to 5
 
-//instantiating an interface and binding it to the pin specified by the address descriptor 'my_gpio_addr'
-Gpio_pin my_gpio_pin = Gpio_pin::grab(my_gpio_addr);
+//instantiating an interface and binding it to the pin specified by the address descriptor 'my_gpio_addr'r
+Gpio_pin my_gpio_pin = Gpio_pin(my_gpio_addr);
 '''
     
 
@@ -86,7 +86,8 @@ if (ret_code == GPIO_ERROR)
 }
 '''
 
-Reading the state of the pin
+
+=== Reading the state of the pin ===
 
 This is invoked by the read() method of the Gpio_pin class. This operation is only valid for pins set as one of the target's input mode, an error return code will result if it is performed on an output pin.
 

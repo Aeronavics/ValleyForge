@@ -289,7 +289,7 @@ class Tc
 		/**
 		 * Reads the current output compare register value for the specified channel.
 		 *
-     * @param     channel	  Which channel to read the OCR value from.
+		 * @param     channel	  Which channel to read the OCR value from.
 		 * @return              The OC register value.
 		 */
 		Tc_value get_ocR(Tc_oc_channel channel);

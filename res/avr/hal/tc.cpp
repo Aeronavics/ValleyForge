@@ -234,7 +234,7 @@ Tc_command_status start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_regis
 				return TC_CMD_NAK;
 		}
 	}
-	#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+	#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined(__AVR_ATmega328__)
 	else if (tc_number == TC_2)
 	{
 		switch(rate.pre)
@@ -372,8 +372,8 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 	{
 		case TC_OC_NONE : // clears any waveform generation mode WGM2:0 = 0, TOP = 0xFF
 		{
-      /* Disable the output compare interrupt */
-			*table.TIMSK_ADDRESS = 0x00;   // disable all interrupts
+			/* Disable the output compare interrupt */
+			//*table.TIMSK_ADDRESS = 0x00;   // Removed as this changes more of the timer state than just the operating mode
 
 			#ifndef __AVR_AT90CAN128__
 			if (tc_number == TC_0)
@@ -381,7 +381,8 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
 				*table.TCCR_B_ADDRESS &= (~(1 << WGM2_BIT));
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
@@ -404,15 +405,16 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 			if (tc_number == TC_0)
 			{
 				*table.TCCR_A_ADDRESS &= ~(1 << WGM1_BIT);
-        *table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
-        *table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
+				*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
+				*table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS &= ~(1 << WGM1_BIT);
-        *table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
-        *table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
+				*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
+				*table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
 			}
 			#endif
 
@@ -435,7 +437,8 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 				*table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS &= ~(1 << WGM0_BIT);
@@ -463,7 +466,8 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
 				*table.TCCR_B_ADDRESS &= ~(1 << WGM2_BIT);
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
@@ -493,19 +497,19 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS &= ~(1 << WGM1_BIT);
 				*table.TCCR_A_ADDRESS |= (1 << WGM0_BIT);
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
-
-			return TC_CMD_ACK;
 			#endif
 			#ifdef __AVR_AT90CAN128__
 			return TC_CMD_NAK;
 			#endif
+			return TC_CMD_ACK;
 		}
 		case TC_OC_MODE_6 : // Reserved
 		{
@@ -519,18 +523,18 @@ Tc_command_status enable_oc_8bit (Tc_number tc_number, Tc_oc_mode mode, Tc_regis
 				*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
-			#elif defined (__AVR_ATmega2560__)
+			#endif
+			#if defined (__AVR_ATmega2560__) || defined(__AVR_ATmega328__)
 			else if (tc_number == TC_2)
 			{
 				*table.TCCR_A_ADDRESS |= ((1 << WGM1_BIT) | (1 << WGM0_BIT));
 				*table.TCCR_B_ADDRESS |= (1 << WGM2_BIT);
 			}
-
-			return TC_CMD_ACK;
 			#endif
 			#ifdef __AVR_AT90CAN128__
 			return TC_CMD_NAK;
 			#endif
+			return TC_CMD_ACK;
 		}
 		default :
 		{
@@ -547,8 +551,8 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table)
 	{
 		case TC_OC_NONE : // Normal Operation, clears any waveform generation mode WGM2:0 = 0, TOP = 0xFFFF/ 0xFF
 		{
-      /* Disable the output compare interrupts */
-      *table.TIMSK_ADDRESS = 0x00;
+			/* Disable the output compare interrupts */
+			//*table.TIMSK_ADDRESS = 0x00; // Removed as this changes more of the timer state than just the operating mode
 
 			/* Reset the timer counter mode back to NORMAL */
 			*table.TCCR_A_ADDRESS &= (~(1 << WGM1_BIT) & ~(1 << WGM0_BIT));
@@ -738,7 +742,7 @@ Tc::Tc(Tc_number timer)
 
 			break;
 		}
-		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			static Tc_registerTable imp_register_table;
@@ -760,6 +764,8 @@ Tc::Tc(Tc_number timer)
 
 			break;
 		}
+		#endif
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 		case TC_3:
 		{
 			static Tc_registerTable imp_register_table;
@@ -1136,6 +1142,45 @@ Tc_command_status Tc_imp::initialise(void)
 		}
 	}
 
+	#elif defined (__AVR_ATmega328__)
+
+	switch (timer_number)
+	{
+		case TC_0 :
+		{
+			pin_address[TC_OC_CHANNEL_A].address.port = TC0_OC_A_PORT;
+			pin_address[TC_OC_CHANNEL_A].address.pin = TC0_OC_A_PIN;
+			pin_address[TC_OC_CHANNEL_B].address.port = TC0_OC_B_PORT;
+			pin_address[TC_OC_CHANNEL_B].address.pin = TC0_OC_B_PIN;			
+
+			return TC_CMD_ACK;
+		}
+		case TC_1 :
+		{
+			pin_address[TC_OC_CHANNEL_A].address.port = TC1_OC_A_PORT;
+			pin_address[TC_OC_CHANNEL_A].address.pin = TC1_OC_A_PIN;
+			pin_address[TC_OC_CHANNEL_B].address.port = TC1_OC_B_PORT;
+			pin_address[TC_OC_CHANNEL_B].address.pin = TC1_OC_B_PIN;
+			pin_address[TC_IC_CHANNEL_A].address.port = TC1_IC_A_PORT;
+			pin_address[TC_IC_CHANNEL_A].address.pin = TC1_IC_A_PIN;
+
+			return TC_CMD_ACK;
+		}
+		case TC_2 :
+		{
+			pin_address[TC_OC_CHANNEL_A].address.port = TC2_OC_A_PORT;
+			pin_address[TC_OC_CHANNEL_A].address.pin = TC2_OC_A_PIN;
+			pin_address[TC_OC_CHANNEL_B].address.port = TC2_OC_B_PORT;
+			pin_address[TC_OC_CHANNEL_B].address.pin = TC2_OC_B_PIN;			
+			
+			return TC_CMD_ACK;
+		}
+		default :
+		{
+			return TC_CMD_NAK;
+		}
+	}
+	
 	#endif
 
 	return TC_CMD_NAK;
@@ -1184,13 +1229,15 @@ Tc_command_status Tc_imp::set_rate(Tc_rate rate)
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
-		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			imp_rate.pre = rate.pre;
 			imp_rate.src = TC_SRC_INT;
 			return TC_CMD_ACK;
 		}
+		#endif
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 		case TC_3:
 		{
 			if ( (rate.pre == TC_PRE_32) || (rate.pre == TC_PRE_128) )
@@ -1248,12 +1295,14 @@ Tc_command_status Tc_imp::load_timer_value(Tc_value value)
 			return TC_CMD_ACK;
 		}
 
-		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			*imp_register_table.TCNT_ADDRESS.as_8bit = value.value.as_8bit;
 			return TC_CMD_ACK;
 		}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3:
 		{
 			*imp_register_table.TCNT_ADDRESS.as_16bit = value.value.as_16bit;
@@ -1295,11 +1344,13 @@ Tc_value Tc_imp::get_timer_value(void)
 			return Tc_value::from_uint16(*imp_register_table.TCNT_ADDRESS.as_16bit);
 		}
 
-		#if defined  (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined  (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			return Tc_value::from_uint8(*imp_register_table.TCNT_ADDRESS.as_8bit);
 		}
+		#endif
+		#if defined  (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3:
 		{
 			return Tc_value::from_uint16(*imp_register_table.TCNT_ADDRESS.as_16bit);
@@ -1416,13 +1467,15 @@ Tc_command_status Tc_imp::enable_tov_interrupt(IsrHandler callback)
 			*imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
-		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			timerInterrupts[TIMER2_OVF_int] = callback;
 			*imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
 			return TC_CMD_ACK;
 		}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3:
 		{
 			timerInterrupts[TIMER3_OVF_int] = callback;
@@ -1471,12 +1524,14 @@ Tc_command_status Tc_imp::disable_tov_interrupt(void)
 	  		timerInterrupts[TIMER1_OVF_int] = NULL;
 	   		return TC_CMD_ACK;
 	 	}
-	 	#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+	 	#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
 	 	case TC_2:
 	 	{
 	   		timerInterrupts[TIMER2_OVF_int] = NULL;
 	   		return TC_CMD_ACK;
 	 	}
+		#endif
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 	 	case TC_3:
 	 	{
 	   		timerInterrupts[TIMER3_OVF_int] = NULL;
@@ -1506,8 +1561,6 @@ Tc_command_status Tc_imp::disable_tov_interrupt(void)
 
 Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 {
-	// TODO - Requires testing.
-
   waveform_mode = mode;
 
 	switch (timer_size)
@@ -1515,32 +1568,38 @@ Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 		case TC_16BIT :
 		{
 			if (enable_oc_16bit(mode, imp_register_table) == TC_CMD_NAK)
-      {
-        return TC_CMD_NAK;
-      }
-      if (mode != TC_OC_MODE_13 || mode != TC_OC_MODE_12 || mode != TC_OC_MODE_4 || mode != TC_OC_NONE)
-      {
-        *imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-        return TC_CMD_ACK;
-      }
+			{
+				return TC_CMD_NAK;
+			}
+			if (mode != TC_OC_MODE_13 || mode != TC_OC_MODE_12 || mode != TC_OC_MODE_4 || mode != TC_OC_NONE)
+			{
+				*imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
+				return TC_CMD_ACK;
+			}
+			return TC_CMD_ACK;
 		}
+		break;
 		case TC_8BIT :
 		{
 			if (enable_oc_8bit(timer_number, mode, imp_register_table) == TC_CMD_NAK)
-      {
-        return TC_CMD_NAK;
-      }
-      if (mode % 2 == 1) // PWM modes require Timer Overflow Interrupt mask to be enabled.
-      {
-        *imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
-        return TC_CMD_ACK;
-      }
+			{
+				return TC_CMD_NAK;
+			}
+			if (mode % 2 == 1) // PWM modes require Timer Overflow Interrupt mask to be enabled.
+			{
+				*imp_register_table.TIMSK_ADDRESS |= (1 << TOIE_BIT);
+				return TC_CMD_ACK;
+			}
+			return TC_CMD_ACK;
 		}
+		break;
 		default :
 		{
 			return TC_CMD_NAK;
 		}
+		break;
 	}
+	return TC_CMD_NAK;
 }
 
 Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode)
@@ -1735,7 +1794,7 @@ Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler 
 			}
 			break;
 		}
-		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			switch (channel)
@@ -1751,17 +1810,19 @@ Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler 
 				}
 				case TC_OC_B:
 				{
-					#ifdef __AVR_ATmega2560__
+					#if defined(__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 					timerInterrupts[TIMER2_COMPB_int] = callback;
 					#elif defined (__AVR_AT90CAN128__)
 					return TC_CMD_NAK;
 					#endif
 					break;
 				}
+				#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 				case TC_OC_C:
 				{
 					return TC_CMD_NAK;
 				}
+				#endif
 				default:
 				{
 					return TC_CMD_NAK;
@@ -1769,6 +1830,8 @@ Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler 
 			}
 			break;
 		}
+		#endif
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 		case TC_3:
 		{
 			switch (channel)
@@ -1882,8 +1945,6 @@ Tc_command_status Tc_imp::enable_oc_interrupt(Tc_oc_channel channel, IsrHandler 
 
 Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
 {
-  *imp_register_table.TIMSK_ADDRESS &= ~(1 << TOIE_BIT);
-
   	switch (channel)
   	{
     	case TC_OC_A:
@@ -1974,7 +2035,7 @@ Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
     		}
     		break;
     	}
-    	#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+    	#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
     	case TC_2 :
     	{
     		switch (channel)
@@ -1983,7 +2044,7 @@ Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
     			{
     				#ifdef __AVR_AT90CAN128__
     				timerInterrupts[TIMER2_COMP_int] = NULL;
-    				#elif defined (__AVR_ATmega2560__)
+    				#elif defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
     				timerInterrupts[TIMER2_COMPA_int] = NULL;
     				break;
     				#endif
@@ -1992,15 +2053,17 @@ Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
     			{
     				#ifdef __AVR_AT90CAN128__
     				return TC_CMD_NAK;
-    				#elif defined (__AVR_ATmega2560__)
+    				#elif defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
     				timerInterrupts[TIMER2_COMPB_int] = NULL;
     				break;
     				#endif
     			}
+				#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
     			case TC_OC_C :
     			{
     				return TC_CMD_NAK;
     			}
+				#endif
     			default :
     			{
     				return TC_CMD_NAK;
@@ -2008,6 +2071,8 @@ Tc_command_status Tc_imp::disable_oc_interrupt(Tc_oc_channel channel)
     		}
     		break;
     	}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
     	case TC_3 :
     	{
     		switch (channel)
@@ -2107,8 +2172,6 @@ Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 		return TC_CMD_NAK;
 	}
 
-	// TODO - This.
-
 	switch (timer_number)
 	{
 		case TC_0 :
@@ -2156,7 +2219,7 @@ Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 			}
 			#endif
 		}
-		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2 :
 		{
 			if (channel == TC_OC_A)
@@ -2164,7 +2227,7 @@ Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 				*imp_register_table.OCR_A_ADDRESS.as_8bit = value.value.as_8bit;
 				return TC_CMD_ACK;
 			}
-			#ifdef __AVR_ATmega2560__
+			#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 			else if (channel == TC_OC_B)
 			{
 				*imp_register_table.OCR_B_ADDRESS.as_8bit = value.value.as_8bit;
@@ -2172,6 +2235,8 @@ Tc_command_status Tc_imp::set_ocR(Tc_oc_channel channel, Tc_value value)
 			}
 			#endif
 		}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3 :
 		{
 			if (channel == TC_OC_A)
@@ -2282,20 +2347,22 @@ Tc_value Tc_imp::get_ocR(Tc_oc_channel channel)
 			}
 			#endif
 		}
-		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2 :
 		{
 			if (channel == TC_OC_A)
 			{
 				return Tc_value::from_uint8(*imp_register_table.OCR_A_ADDRESS.as_8bit);
 			}
-			#ifdef __AVR_ATmega2560__
+			#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 			else if (channel == TC_OC_B)
 			{
 				return Tc_value::from_uint8(*imp_register_table.OCR_B_ADDRESS.as_8bit);
 			}
 			#endif
 		}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3 :
 		{
 			if (channel == TC_OC_A)
@@ -2380,6 +2447,12 @@ Tc_command_status Tc_imp::enable_ic(Tc_ic_channel channel, Tc_ic_mode mode)
     {
       	_SFR_MEM8(pin_address[(int8_t)channel + IC_CHANNEL_OFFSET].address.port * PORT_REGISTER_MULTIPLIER + HIGHER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)pin_address[(int8_t)channel + IC_CHANNEL_OFFSET].address.pin));
     }
+	
+	#elif defined (__AVR_ATmega328__)
+	if (pin_address[(int8_t)channel].address.port <= PORT_D)
+    {
+      	_SFR_IO8(pin_address[(int8_t)channel + IC_CHANNEL_OFFSET].address.port * PORT_REGISTER_MULTIPLIER + LOWER_REGISTER_PORT_OFFSET) &= ~(1 << ((int8_t)pin_address[(int8_t)channel + IC_CHANNEL_OFFSET].address.pin));
+    }
     #endif
 
 	switch (channel)
@@ -2393,7 +2466,7 @@ Tc_command_status Tc_imp::enable_ic(Tc_ic_channel channel, Tc_ic_mode mode)
 					// disabling the Input Capture Unit.
 
 					// disable the interrupts, zero ICNC and ICES, and zero the ICRn register
-					// *imp_register_table.TCCR_B_ADDRESS &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));
+					*imp_register_table.TCCR_B_ADDRESS &= (~(1 << ICNC_BIT) & ~(1 << ICES_BIT));
 				}
 				case TC_IC_MODE_1 :		// No Noise Canceler, falling edge used as trigger
 				{
@@ -2486,11 +2559,13 @@ Tc_command_status Tc_imp::enable_ic_interrupt(Tc_ic_channel channel, IsrHandler 
 		  	timerInterrupts[TIMER1_CAPT_int] = callback;
 		  	break;
 		}
-		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
 		case TC_2:
 		{
 			return TC_CMD_NAK;
 		}
+		#endif
+		#if defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega2560__)
 		case TC_3:
 		{
 		  	timerInterrupts[TIMER3_CAPT_int] = callback;
@@ -2577,11 +2652,13 @@ Tc_command_status Tc_imp::disable_ic_interrupt(Tc_ic_channel channel)
 		  	timerInterrupts[TIMER1_CAPT_int] = NULL;
 		  	return TC_CMD_ACK;
 		}
-		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328)
 		case TC_2:
 		{
 			return TC_CMD_NAK;
 		}
+		#endif
+		#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 		case TC_3:
 		{
 		  	timerInterrupts[TIMER3_CAPT_int] = NULL;
@@ -2638,7 +2715,6 @@ Tc_command_status Tc_imp::set_icR(Tc_ic_channel channel, Tc_value value)
 
 Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
 {
-	// TODO - This.
 	switch (channel)
 	{
 		case TC_IC_A:
@@ -2721,27 +2797,29 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
  }
 #endif
 
- #ifdef __AVR_AT90CAN128__
- ISR(TIMER0_COMP_vect)
- {
-   if (timerInterrupts[TIMER0_COMP_int])
-     timerInterrupts[TIMER0_COMP_int]();
- }
+#ifdef __AVR_AT90CAN128__
+ISR(TIMER0_COMP_vect)
+{
+if (timerInterrupts[TIMER0_COMP_int])
+ timerInterrupts[TIMER0_COMP_int]();
+}
 
- ISR(TIMER2_COMP_vect)
- {
-   if (timerInterrupts[TIMER2_COMP_int])
-	 timerInterrupts[TIMER2_COMP_int]();
- }
- #endif
+ISR(TIMER2_COMP_vect)
+{
+if (timerInterrupts[TIMER2_COMP_int])
+ timerInterrupts[TIMER2_COMP_int]();
+}
+#endif
 
-#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
  ISR(TIMER2_OVF_vect)
  {
    if (timerInterrupts[TIMER2_OVF_int])
      timerInterrupts[TIMER2_OVF_int]();
  }
+#endif
 
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
  ISR(TIMER3_CAPT_vect)
  {
    if (timerInterrupts[TIMER3_CAPT_int])
@@ -2773,7 +2851,7 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
  }
 #endif
 
-#ifdef __AVR_ATmega2560__
+#if defined (__AVR_ATmega2560__) || defined (__AVR_ATmega328__)
  ISR(TIMER2_COMPA_vect)
  {
    if (timerInterrupts[TIMER2_COMPA_int])
@@ -2785,7 +2863,8 @@ Tc_value Tc_imp::get_icR(Tc_ic_channel channel)
    if (timerInterrupts[TIMER2_COMPB_int])
      timerInterrupts[TIMER2_COMPB_int]();
  }
-
+#endif
+#if defined (__AVR_ATmega2560__)
  ISR(TIMER4_CAPT_vect)
  {
    if (timerInterrupts[TIMER4_CAPT_int])

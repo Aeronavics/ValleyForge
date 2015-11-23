@@ -1,0 +1,77 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-11-10T14:46:01+13:00
+
+====== ATmega328p ======
+Created Tuesday 10 November 2015
+
+[[[http://www.atmel.com/Images/Atmel-2549-8-bit-AVR-Microcontroller-ATmega640-1280-1281-2560-2561_datasheet.pdf|Datasheet]]] [[[http://www.atmel.com/devices/ATMEGA2560.aspx|Product Page]]]
+The high-performance, low-power Atmel 8-bit AVR RISC-based microcontroller combines 256KB ISP flash memory, 8KB SRAM, 4KB EEPROM, 86 general purpose I/O lines, 32 general purpose working registers, real time counter, six flexible timer/counters with compare modes, PWM, 4 USARTs, byte oriented 2-wire serial interface, 16-channel 10-bit A/D converter, and a JTAG interface for on-chip debugging. The device achieves a throughput of 16 MIPS at 16 MHz and operates between 4.5-5.5 volts. 
+
+**Flash**		256 KiB
+**EEPROM**	4 KiB
+**SRAM**		8 KiB
+**Pin Count**	100
+**Frequency**	16 MHz
+
+**Timers**		6
+**USART**		4
+**SPI**			5
+**I2C**			1
+**CAN**		None
+**ADC**		16x 10-bit, 15 ksps
+
+
+===== GPIO =====
+TODO: Description of ports, pins, and allowable config modes
+eg. do the pins support pull-ups? pin-change? interrupts?
+
+All GPIO pins support the following drive modes:
+Output Push/Pull
+Input Floating
+Input Pull Up Resistor
+
+**Port	Pin		Interrupt**
+B		0		PCINT_0		
+B		1		PCINT_0
+B		2		PCINT_0
+B		3		PCINT_0
+B		4		PCINT_0
+B		5		PCINT_0
+B		6		PCINT_0
+C		0		PCINT_1
+C		1		PCINT_1
+C		2		PCINT_1
+C		3		PCINT_1
+C		4		PCINT_1
+C		5		PCINT_1
+C		6		PCINT_1
+C		7		PCINT_1
+D		0		PCINT_2
+D		1		PCINT_2
+D		2		EINT_0
+D		3		EINT_1
+D		4		PCINT_2
+D		5		PCINT_2
+D		6		PCINT_2
+D		7		PCINT_2
+
+==== Interrupts ====
+When attaching an interrupt to a pin that only supports pin change interrupts the interrupt mode is ignored. For the pins that are also tied to the external interrupt lines they will make use of the external interrupt facillity and not the asociated pin change interrupt. 
+
+When enabling interrupts on the pin change interrupt banks the call back handler will overwrite any existing handler.  
+
+===== USART =====
+TODO: Description of the USART module
+
+===== SPI =====
+TODO: Description of the SPI module and configureations
+
+===== I2C =====
+TODO: Description of the I2C module and allowable config values
+
+===== CAN =====
+This target does not support CAN.
+
+===== Fuses =====
+TODO: all

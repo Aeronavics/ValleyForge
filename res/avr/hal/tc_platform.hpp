@@ -57,25 +57,27 @@
 #	define OCR1C_ADDRESS		_SFR_MEM16(0x8C)
 #	define OCR1B_ADDRESS		_SFR_MEM16(0x8A)
 #	define OCR1A_ADDRESS		_SFR_MEM16(0x88)
-#	define ICR1_ADDRESS		_SFR_MEM16(0x86)
+#	define ICR1_ADDRESS			_SFR_MEM16(0x86)
 #	define TCNT1_ADDRESS		_SFR_MEM16(0x84)
 #	define TCCR1C_ADDRESS		_SFR_MEM8(0x82)
 #	define TCCR1B_ADDRESS		_SFR_MEM8(0x81)
 #	define TCCR1A_ADDRESS		_SFR_MEM8(0x80)
 
-#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__) || defined (__AVR_ATmega328__)
 // Timer/Counter 2.
 #	define OCR2B_ADDRESS		_SFR_MEM8(0xB4)
 #	define OCR2A_ADDRESS		_SFR_MEM8(0xB3)
 #	define TCNT2_ADDRESS		_SFR_MEM8(0xB2)
 #	define TCCR2B_ADDRESS		_SFR_MEM8(0xB1)
 #	define TCCR2A_ADDRESS		_SFR_MEM8(0xB0)
+#endif
 
+#if defined (__AVR_ATmega2560__) || defined (__AVR_AT90CAN128__)
 // Timer/Counter 3.
 #	define OCR3C_ADDRESS		_SFR_MEM16(0x9C)
 #	define OCR3B_ADDRESS		_SFR_MEM16(0x9A)
 #	define OCR3A_ADDRESS		_SFR_MEM16(0x98)
-#	define ICR3_ADDRESS		_SFR_MEM16(0x96)
+#	define ICR3_ADDRESS			_SFR_MEM16(0x96)
 #	define TCNT3_ADDRESS		_SFR_MEM16(0x94)
 #	define TCCR3C_ADDRESS		_SFR_MEM8(0x92)
 #	define TCCR3B_ADDRESS		_SFR_MEM8(0x91)
@@ -87,7 +89,7 @@
 #	define OCR4C_ADDRESS		_SFR_MEM16(0xAC)
 #	define OCR4B_ADDRESS		_SFR_MEM16(0xAA)
 #	define OCR4A_ADDRESS		_SFR_MEM16(0xA8)
-#	define ICR4_ADDRESS		_SFR_MEM16(0xA6)
+#	define ICR4_ADDRESS			_SFR_MEM16(0xA6)
 #	define TCNT4_ADDRESS		_SFR_MEM16(0xA4)
 #	define TCCR4C_ADDRESS		_SFR_MEM8(0xA2)
 #	define TCCR4B_ADDRESS		_SFR_MEM8(0xA1)
@@ -97,7 +99,7 @@
 #	define OCR5C_ADDRESS		_SFR_MEM16(0x12C)
 #	define OCR5B_ADDRESS		_SFR_MEM16(0x12A)
 #	define OCR5A_ADDRESS		_SFR_MEM16(0x128)
-#	define ICR5_ADDRESS		_SFR_MEM16(0x126)
+#	define ICR5_ADDRESS			_SFR_MEM16(0x126)
 #	define TCNT5_ADDRESS		_SFR_MEM16(0x124)
 #	define TCCR5C_ADDRESS		_SFR_MEM8(0x122)
 #	define TCCR5B_ADDRESS		_SFR_MEM8(0x121)
@@ -106,9 +108,9 @@
 
 // TIMSK generic bits.
 #	define ICIE_BIT			5
-#	define OCIEC_BIT			3
-#	define OCIEB_BIT			2
-#	define OCIEA_BIT			1
+#	define OCIEC_BIT		3
+#	define OCIEB_BIT		2
+#	define OCIEA_BIT		1
 #	define TOIE_BIT			0
 
 // TCCRC generic bits
@@ -132,72 +134,72 @@
 #	define COMB0_BIT		4
 #	define COMC1_BIT		3
 #	define COMC0_BIT		2
-#	define WGM1_BIT		1
-#	define WGM0_BIT		0
+#	define WGM1_BIT			1
+#	define WGM0_BIT			0
 
 #ifdef __AVR_AT90CAN128__
 // TCCRA for 8bit timer/counters in AT90CAN128
-#	define WGM0_8BIT_BIT		6
-#	define COMA1_8BIT_BIT		5
-#	define COMA0_8BIT_BIT		4
-#	define WGM1_8BIT_BIT		3
+#	define WGM0_8BIT_BIT	6
+#	define COMA1_8BIT_BIT	5
+#	define COMA0_8BIT_BIT	4
+#	define WGM1_8BIT_BIT	3
 #endif
 
  // GTCCR generic bits
-#	define TSM_BIT		7
+#	define TSM_BIT			7
 #	define ICPSEL1_BIT		6
 #	define PSRASY_BIT		1
 #	define PSRSYNC_BIT		0
  
 #ifdef __AVR_ATmega2560__
 // Timer/Counter Peripheral Pin Addresses and Associated Constants.
-#	define TC0_OC_A_PORT		PORT_B
+#	define TC0_OC_A_PORT	PORT_B
 #	define TC0_OC_A_PIN		PIN_7
-#	define TC0_OC_B_PORT		PORT_G
+#	define TC0_OC_B_PORT	PORT_G
 #	define TC0_OC_B_PIN		PIN_5
 
-#	define TC1_OC_A_PORT		PORT_B
+#	define TC1_OC_A_PORT	PORT_B
 #	define TC1_OC_A_PIN		PIN_5
-#	define TC1_OC_B_PORT		PORT_B
+#	define TC1_OC_B_PORT	PORT_B
 #	define TC1_OC_B_PIN		PIN_6
-#	define TC1_OC_C_PORT		PORT_B
+#	define TC1_OC_C_PORT	PORT_B
 #	define TC1_OC_C_PIN		PIN_7
-#	define TC1_IC_A_PORT		PORT_D
+#	define TC1_IC_A_PORT	PORT_D
 #	define TC1_IC_A_PIN		PIN_4
 
-#	define TC2_OC_A_PORT		PORT_B
+#	define TC2_OC_A_PORT	PORT_B
 #	define TC2_OC_A_PIN		PIN_4
-#	define TC2_OC_B_PORT		PORT_H
+#	define TC2_OC_B_PORT	PORT_H
 #	define TC2_OC_B_PIN		PIN_6
 
-#	define TC3_OC_A_PORT		PORT_E
+#	define TC3_OC_A_PORT	PORT_E
 #	define TC3_OC_A_PIN		PIN_3
-#	define TC3_OC_B_PORT		PORT_E
+#	define TC3_OC_B_PORT	PORT_E
 #	define TC3_OC_B_PIN		PIN_4
-#	define TC3_OC_C_PORT		PORT_E
+#	define TC3_OC_C_PORT	PORT_E
 #	define TC3_OC_C_PIN		PIN_5
-#	define TC3_IC_A_PORT		PORT_E
+#	define TC3_IC_A_PORT	PORT_E
 #	define TC3_IC_A_PIN		PIN_7
 
-#	define TC4_OC_A_PORT		PORT_H
+#	define TC4_OC_A_PORT	PORT_H
 #	define TC4_OC_A_PIN		PIN_3
-#	define TC4_OC_B_PORT		PORT_H
+#	define TC4_OC_B_PORT	PORT_H
 #	define TC4_OC_B_PIN		PIN_4
-#	define TC4_OC_C_PORT		PORT_H
+#	define TC4_OC_C_PORT	PORT_H
 #	define TC4_OC_C_PIN		PIN_5
-#	define TC4_IC_A_PORT		PORT_L
+#	define TC4_IC_A_PORT	PORT_L
 #	define TC4_IC_A_PIN		PIN_0
 
-#	define TC5_OC_A_PORT		PORT_L
+#	define TC5_OC_A_PORT	PORT_L
 #	define TC5_OC_A_PIN		PIN_3
-#	define TC5_OC_B_PORT		PORT_L
+#	define TC5_OC_B_PORT	PORT_L
 #	define TC5_OC_B_PIN		PIN_4
-#	define TC5_OC_C_PORT		PORT_L
+#	define TC5_OC_C_PORT	PORT_L
 #	define TC5_OC_C_PIN		PIN_5
-#	define TC5_IC_A_PORT		PORT_L
+#	define TC5_IC_A_PORT	PORT_L
 #	define TC5_IC_A_PIN		PIN_1
 
-#	define IC_CHANNEL_OFFSET		3
+#	define IC_CHANNEL_OFFSET	3
 #	define TC_OC_CHANNEL_A		0 			// I don't know why these are enumerated
 #	define TC_OC_CHANNEL_B		1
 #	define TC_OC_CHANNEL_C		2
@@ -208,17 +210,17 @@
 
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	3
-#	define TIMER0_OFFSET		0
+#	define TIMER0_OFFSET			0
 #	define NUM_TIMER1_INTERRUPTS	5
-#	define TIMER1_OFFSET		3
+#	define TIMER1_OFFSET			3
 #	define NUM_TIMER2_INTERRUPTS	3
-#	define TIMER2_OFFSET		8
+#	define TIMER2_OFFSET			8
 #	define NUM_TIMER3_INTERRUPTS	5
-#	define TIMER3_OFFSET		11
+#	define TIMER3_OFFSET			11
 #	define NUM_TIMER4_INTERRUPTS	5
-#	define TIMER4_OFFSET		16
+#	define TIMER4_OFFSET			16
 #	define NUM_TIMER5_INTERRUPTS	5
-#	define TIMER5_OFFSET		21
+#	define TIMER5_OFFSET			21
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS + NUM_TIMER4_INTERRUPTS + NUM_TIMER5_INTERRUPTS)
 
 // Definitions required for Port Directionality Control.
@@ -235,21 +237,21 @@
 *	to an oscillator, effectively making it inaccessible.
 **/
 
-#	define TC0_OC_A_PORT		PORT_D
+#	define TC0_OC_A_PORT	PORT_D
 #	define TC0_OC_A_PIN		PIN_3
-// #	define TC0_OC_B_PORT		PORT_E
+// #	define TC0_OC_B_PORT	PORT_E
 // #	define TC0_OC_B_PIN		PIN_1
 
-#	define TC1_OC_A_PORT		PORT_D
+#	define TC1_OC_A_PORT	PORT_D
 #	define TC1_OC_A_PIN		PIN_2
-#	define TC1_OC_B_PORT		PORT_C
+#	define TC1_OC_B_PORT	PORT_C
 #	define TC1_OC_B_PIN		PIN_1
-#	define TC1_IC_A_PORT		PORT_D
+#	define TC1_IC_A_PORT	PORT_D
 #	define TC1_IC_A_PIN 	PIN_4
-#	define TC1_IC_B_PORT		PORT_C
+#	define TC1_IC_B_PORT	PORT_C
 #	define TC1_IC_B_PIN		PIN_3
 
-#	define IC_CHANNEL_OFFSET		3	
+#	define IC_CHANNEL_OFFSET	3	
 #	define TC_OC_CHANNEL_A		0
 #	define TC_OC_CHANNEL_B		1
 #	define TC_OC_CHANNEL_C		2
@@ -261,9 +263,9 @@
 
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	2
-#	define TIMER0_OFFSET		0
+#	define TIMER0_OFFSET			0
 #	define NUM_TIMER1_INTERRUPTS	4
-#	define TIMER1_OFFSET		2
+#	define TIMER1_OFFSET			2
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS )
 
 // Definitions required for Port Directionality Control.
@@ -274,31 +276,31 @@
 #ifdef __AVR_AT90CAN128__
 
 // Timer/Counter Peripheral Pin Addresses and Associated Constants.
-#	define TC0_OC_A_PORT		PORT_B
+#	define TC0_OC_A_PORT	PORT_B
 #	define TC0_OC_A_PIN		PIN_7
 
-#	define TC1_OC_A_PORT		PORT_B
+#	define TC1_OC_A_PORT	PORT_B
 #	define TC1_OC_A_PIN		PIN_5
-#	define TC1_OC_B_PORT		PORT_B
+#	define TC1_OC_B_PORT	PORT_B
 #	define TC1_OC_B_PIN		PIN_6
-#	define TC1_OC_C_PORT		PORT_B
+#	define TC1_OC_C_PORT	PORT_B
 #	define TC1_OC_C_PIN		PIN_7
-#	define TC1_IC_A_PORT		PORT_D
+#	define TC1_IC_A_PORT	PORT_D
 #	define TC1_IC_A_PIN		PIN_4
 
-#	define TC2_OC_A_PORT		PORT_B
+#	define TC2_OC_A_PORT	PORT_B
 #	define TC2_OC_A_PIN		PIN_4
 
-#	define TC3_OC_A_PORT		PORT_E
+#	define TC3_OC_A_PORT	PORT_E
 #	define TC3_OC_A_PIN		PIN_3
-#	define TC3_OC_B_PORT		PORT_E
+#	define TC3_OC_B_PORT	PORT_E
 #	define TC3_OC_B_PIN		PIN_4
-#	define TC3_OC_C_PORT		PORT_E
+#	define TC3_OC_C_PORT	PORT_E
 #	define TC3_OC_C_PIN		PIN_5
-#	define TC3_IC_A_PORT		PORT_E
+#	define TC3_IC_A_PORT	PORT_E
 #	define TC3_IC_A_PIN		PIN_7
 
-#	define IC_CHANNEL_OFFSET		3
+#	define IC_CHANNEL_OFFSET	3
 #	define TC_OC_CHANNEL_A		0
 #	define TC_OC_CHANNEL_B		1
 #	define TC_OC_CHANNEL_C		2
@@ -309,19 +311,60 @@
 
 // Interrupt Pointer Array values and offsets.
 #	define NUM_TIMER0_INTERRUPTS	1
-#	define TIMER0_OFFSET		0
+#	define TIMER0_OFFSET			0
 #	define NUM_TIMER1_INTERRUPTS	4
-#	define TIMER1_OFFSET		1
+#	define TIMER1_OFFSET			1
 #	define NUM_TIMER2_INTERRUPTS	2
-#	define TIMER2_OFFSET		5
+#	define TIMER2_OFFSET			5
 #	define NUM_TIMER3_INTERRUPTS	4
-#	define TIMER3_OFFSET		7
+#	define TIMER3_OFFSET			7
 #	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS + NUM_TIMER3_INTERRUPTS)
 
 // Definitions required for Port Directionality Control.
 #	define PORT_REGISTER_MULTIPLIER		0x03
 #	define LOWER_REGISTER_PORT_OFFSET	0x01
 
+#endif
+
+#ifdef __AVR_ATmega328__
+// Timer/Counter Peripheral Pin Addresses and Associated Constants.
+#	define TC0_OC_A_PORT	PORT_D
+#	define TC0_OC_A_PIN		PIN_6
+#	define TC0_OC_B_PORT	PORT_D
+#	define TC0_OC_B_PIN		PIN_5
+
+#	define TC1_OC_A_PORT	PORT_B
+#	define TC1_OC_A_PIN		PIN_1
+#	define TC1_OC_B_PORT	PORT_B
+#	define TC1_OC_B_PIN		PIN_2
+#	define TC1_IC_A_PORT	PORT_B
+#	define TC1_IC_A_PIN		PIN_0
+
+#	define TC2_OC_A_PORT	PORT_B
+#	define TC2_OC_A_PIN		PIN_3
+#	define TC2_OC_B_PORT	PORT_D
+#	define TC2_OC_B_PIN		PIN_3
+
+#	define IC_CHANNEL_OFFSET	2
+#	define TC_OC_CHANNEL_A		0
+#	define TC_OC_CHANNEL_B		1
+#	define TC_IC_CHANNEL_A		2
+
+#	define COM_BIT_OFFSET		2
+#	define MAX_TIMER_PINS		4
+
+// Interrupt Pointer Array values and offsets.
+#	define NUM_TIMER0_INTERRUPTS	3
+#	define TIMER0_OFFSET			0
+#	define NUM_TIMER1_INTERRUPTS	4
+#	define TIMER1_OFFSET			3
+#	define NUM_TIMER2_INTERRUPTS	3
+#	define TIMER2_OFFSET			7
+#	define NUM_TIMER_INTERRUPTS	(NUM_TIMER0_INTERRUPTS + NUM_TIMER1_INTERRUPTS + NUM_TIMER2_INTERRUPTS)
+
+// Definitions required for Port Directionality Control.
+#	define PORT_REGISTER_MULTIPLIER		0x03
+#	define LOWER_REGISTER_PORT_OFFSET	0x01
 #endif
 
 #endif // __TC_PLATFORM_H__
