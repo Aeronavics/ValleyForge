@@ -59,6 +59,9 @@ unset VF_PKG_CONFIG_LIBDIRS
 	# Target specific keys (AVR).
 unset PORT_COUNT
 
+	# Target specific keys (ARM).
+unset FLOATABI_CODE
+
 	# Target specific keys (Arduino).
 unset ARDUINO_BOARD_TAG
 
@@ -66,7 +69,6 @@ unset ARDUINO_BOARD_TAG
 unset TARGET_PIXHAWK_DEVICE
 
 # Target specific keys (Raspberry Pi).
-unset FLOATABI_CODE
 
 	# Platform specific keys (common).
 unset PLATFORM_SPECIFIC_CONFIG
@@ -77,6 +79,7 @@ unset TEMPLATE_HPP_SOURCE
 unset TEMPLATE_SUFFIX
 unset MULTIPLE_EXECUTABLES
 unset PREPROCESSOR_MASK
+unset VF_PLAT_PREBUILT_IMAGE_PATH
 
 	# Platform specific keys (FreeRTOS).
 unset FREERTOS_COMMON_SOURCE
@@ -106,7 +109,6 @@ unset VF_PLAT_SNAPPY_CHANNEL
 unset VF_PLAT_SNAPPY_FSSIZE
 
 	# Platform specific keys (Raspberry Pi Prebuild Image).
-unset VF_PLAT_RASPI_PREBUILT_IMAGE_PATH
 
 	# Uploading keys (common).
 unset UPLOAD_FUNCTIONS

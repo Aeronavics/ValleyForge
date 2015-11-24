@@ -41,12 +41,14 @@ if [ "${VF_OS}" == "Darwin" ]; then
 	VF_OSCFG_SED='gsed'
 	VF_OSCFG_SED_EXTPARAM='-E'
 	VF_OSCFG_SED_INLPARAM='-i'
+	VF_OSCFG_STAT_FMTPARAM='-f'
 else
 	VF_OS_LINUX=1
 	VF_OSCFG_READLINK='readlink'
 	VF_OSCFG_SED='sed'
 	VF_OSCFG_SED_EXTPARAM='-r'
 	VF_OSCFG_SED_INLPARAM='-i'
+	VF_OSCFG_STAT_FMTPARAM='-c'
 fi
 
 # Check if we've got a sufficiently advanced version of BASH to actually run the toolchain.
@@ -100,6 +102,7 @@ source $TCPATH/bld/code_compliance/compliance_checks
 for f in $(find $TCPATH/bld/make_functions -type f -name "make*"); do
 	source "$f"
 done
+source "$TCPATH/bld/make_functions/common_make_operations"
 
 # Define the functions used to for code generation.
 for f in $(find $TCPATH/bld/code_generation -type f -name "gen_*"); do

@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+#	Copyright (C) 2015 Aeronavics Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:           common_make_operations
+###
+### Author:         Edwin Hayes
+###
+### Date Created:	19-03-2012
+###
+### Type:           Bash Script
+###
+### Purpose:        Provides functions for common build process operations.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported common make operations.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:           make_filesystem_from_image
+###
+### Inputs/Outputs:	None
+###
+### Purpose:        Builds a filesystem from a prebuilt image.
+###
+###########################################################################################
+
+make_filesystem_from_image()
+{
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache/plat_images
+
+	local FS_ROOT_DIR="fs_root"
+
+	local FS_ARCHIVE=
+
+	# Check to make sure we were given a URL to download the image from.
+	if [ -z "${VF_PLAT_PREBUILT_IMAGE_PATH}" ]; then
+		# Seems to be no URL specified.
+		echo -e "${RED}\tNo image URL configured.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Download the filesystem image if we haven't already.
+
+	# We're going to need to use wget.
+	if [ -z "$(which wget)" ]; then
+		echo -e "${RED}\tUnable to find wget executable.  Make sure you have wget installed.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Else, check if the specified file actually exists.
+	if [ -f "$1/${VF_PLAT_PREBUILT_IMAGE_PATH}" ]; then
+		# A matching file is in the source tree.
+		echo -e "${CYAN}\tFound ${VF_PLAT_PREBUILT_IMAGE_PATH} in the source tree.\n${NO_COLOUR}"
+		FS_ARCHIVE="$1/${VF_PLAT_PREBUILT_IMAGE_PATH}"
+	elif [ -f "$TCPATH/${VF_PLAT_PREBUILT_IMAGE_PATH}" ]; then
+		# A matching file is somewhere else in the sandpit.
+		echo -e "${CYAN}\tFound ${VF_PLAT_PREBUILT_IMAGE_PATH} in the sandpit.\n${NO_COLOUR}"
+		FS_ARCHIVE="$TCPATH/${VF_PLAT_PREBUILT_IMAGE_PATH}"
+	else
+		# We try to see if the path is a URL we can download.
+		if [ -n "$(wget -S --spider ${VF_PLAT_PREBUILT_IMAGE_PATH} 2>&1 | grep "HTTP/1.1 200 OK")" ]; then
+			# The file seems to exist, so we try to download it.
+			echo -e "${CYAN}\tDownloading image from ${VF_PLAT_PREBUILT_IMAGE_PATH}...\n${NO_COLOUR}"
+			WGET_OUT="$(wget -N -P "$GEN_CACHE" ${VF_PLAT_PREBUILT_IMAGE_PATH} 2<&1)"
+
+			# See if the file was already downloaded.
+			if [ -n "$(echo ${WGET_OUT} | grep "Server file no newer than local file")" ]; then
+				# We already seem to have the correct file, so not problem.
+				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o "Server file no newer than local file .*" | cut -d " " -f 8 | tr -d "'" )"
+				FS_ARCHIVE="${FS_ARCHIVE##*/}"
+				#FS_ARCHIVE="${FS_ARCHIVE%?}"
+				echo -e "${CYAN}\tFile ${FS_ARCHIVE} already available.\n${NO_COLOUR}"
+				FS_ARCHIVE="${GEN_CACHE}/${FS_ARCHIVE}"
+			elif [ -n "$(echo ${WGET_OUT} | grep "Not Modified File")" ]; then
+				# We already seem to have the correct file, so not problem.
+				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o "Not Modified File .*" | cut -d " " -f 4 | tr -d "'" )"
+				FS_ARCHIVE="${FS_ARCHIVE##*/}"
+				#FS_ARCHIVE="${FS_ARCHIVE%?}"
+				echo -e "${CYAN}\tFile ${FS_ARCHIVE} already available.\n${NO_COLOUR}"
+				FS_ARCHIVE="${GEN_CACHE}/${FS_ARCHIVE}"
+			else
+				# Else, we actually downloaded it.
+				FS_ARCHIVE="$(echo ${WGET_OUT} | grep -o " - .* saved" | cut -s -d " " -f 3 )"
+				FS_ARCHIVE="${FS_ARCHIVE##*/}"
+				FS_ARCHIVE="${FS_ARCHIVE%?}"
+				echo -e "${CYAN}\tFile ${FS_ARCHIVE} downloaded successfully.\n${NO_COLOUR}"
+				FS_ARCHIVE="${GEN_CACHE}/${FS_ARCHIVE}"
+			fi
+		elif [ -f "${GEN_CACHE}/${VF_PLAT_PREBUILT_IMAGE_PATH##*/}" ]; then
+			# We've already downloaded a file which seems to match.
+			echo -e "${CYAN}\tExisting file ${VF_PLAT_PREBUILT_IMAGE_PATH##*/} seems to be a match.\n${NO_COLOUR}"
+			FS_ARCHIVE="${GEN_CACHE}/${VF_PLAT_PREBUILT_IMAGE_PATH##*/}"
+		fi
+
+		# Check if we actually ended up with a file to use.
+		if [ -z "${FS_ARCHIVE}" ]; then
+			echo -e "${RED}\tCould not locate image ${VF_PLAT_PREBUILT_IMAGE_PATH}.\n${NO_COLOUR}"
+			return 1
+		fi
+		if [ ! -f "${FS_ARCHIVE}" ]; then
+			echo -e "${RED}\tFailed to fetch image ${FS_ARCHIVE}.\n${NO_COLOUR}"
+			return 1
+		fi
+	fi
+
+	# Unpackage the filesystem image to the output folder.
+
+	# Work out what the name of the image file we're going to unpack should be.
+	local FS_FILE=
+	FS_FILE="${FS_ARCHIVE%.*}"
+	if [ "${FS_ARCHIVE##*.}" != "img" ]; then
+		FS_FILE="${FS_FILE##*/}.img"
+	else
+		FS_FILE="${FS_FILE##*/}"
+	fi
+
+	# Check if there is already an unpacked version of the same file in the output folder.
+	if [ -f "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img" ] && [ $(stat ${VF_OSCFG_STAT_FMTPARAM} %Y "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img") -ge  $(stat ${VF_OSCFG_STAT_FMTPARAM} %Y "${FS_ARCHIVE}") ]; then
+		# There is not need to update the existing image.
+		echo -e "${CYAN}\tFilesystem image already up to date.\n${NO_COLOUR}"
+	else
+		# Unzip (or otherwise unarchive) the image.
+		echo -e "${CYAN}\tUnpacking filesystem image into output directory...\n${NO_COLOUR}"
+		if [ "${FS_ARCHIVE##*.}" == "zip" ]; then
+			unzip -u -o ${FS_ARCHIVE} -d $TCPATH/${OUTPUT_DIR}/${COMPONENT}
+		elif [ "${FS_ARCHIVE##*.}" == "xz" ]; then
+			unxz -k -f ${FS_ARCHIVE}
+			mv "${FS_ARCHIVE%.xz}.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}"
+		fi
+
+		# Then rename the unzipped image to the actual name we want.
+		mv "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_FILE}" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		touch "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		echo -e "${CYAN}\n\tFilesystem image written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
+	fi
+
+	# Check if there is a folder which might contain a partial root filesystem to use.
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" ]; then
+		# There is.  We can't add it to the image directly, so we copy it to the output folder, so that it can be added to the SD card when it's flashed.
+		echo -e "${CYAN}\tPacking ${FS_ROOT_DIR} to output directory...\n${NO_COLOUR}"
+		pushd "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" > /dev/null
+		tar cf "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar" *
+		popd > /dev/null
+	else
+		# There isn't one (so we delete the one in the output folder if its there, in case it shouldn't be).
+		rm -rf $TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_ROOT_DIR}
+	fi
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
