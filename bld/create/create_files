@@ -196,7 +196,7 @@ done
 # PROMPT THE USER FOR ANY ADDITIONAL INFORMATION.
 
 # Check if we have been supplied the name of some files to create and that we're not in batch mode.
-if [ -z "${FILENAMES}" ] && [ ! ${BATCHMODE} ]; then
+if [ -z "${FILENAMES% }" ] && [ ! ${BATCHMODE} ]; then
 	# We haven't been given a file name, so we need the user to enter one.
 
 	# We will need to prompt the user for the name of the component to create.
