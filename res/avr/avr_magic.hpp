@@ -47,6 +47,8 @@ void operator delete(void* ptr);
 
 // These are neccesary because avr-libc doesn't actually implement everything that it needs to.  NOTE - They should never actually get called.
 
+// NOTE - These functions do not necessarily actually do anything.  They just satisfy the compiler.
+
 __extension__ typedef int __guard __attribute__((mode (__DI__)));
 
 extern "C" int __cxa_guard_acquire(__guard*);
@@ -55,7 +57,7 @@ extern "C" void __cxa_guard_abort (__guard*);
 
 extern "C" void __cxa_pure_virtual(void); 
 
-extern "C" void atexit(void);
+extern "C" int atexit(void (*callback)(void));
 
 #endif /*__AVR_MAGIC_H__*/
 
