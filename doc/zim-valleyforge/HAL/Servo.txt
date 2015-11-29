@@ -1,0 +1,49 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-11-29T09:01:19+13:00
+
+====== Servo ======
+Created Sunday 29 November 2015
+
+=== Goal ===
+
+[ ] To create a unified programming interface for inputting and outputting RC pwm and ppm signals using timers 
+[ ] Allow use of all of a timer's inputs and outputs when using it for servo functionality
+[ ] Allowing user source code to be portable to supported targets with minimal changes
+
+=== General Abstraction Model ===
+
+The abstraction model uses two lays of abstraction in several modules to achieve the servo functionality. There is one class for each operation Pwm_output_helper, Pwm_input_helper, Ppm_output_helper and Ppm_input_helper each with their own associated private implementation class. All timer operations are made using the Timer Counter HAL library aid portability between platforms.
+
+== Private ==
+Servo uses the singleton pattern and therefore, within the private field, the pointer to the instance of the implementation are stored.
+
+Limiting the users to a designed method of instantiating a Servo operation requires prohibiting undesired methods of constructing and destroying instances. Therefore, methods of instanciating the Servo classes that are undesireable are stored in the private field of the class. This is refered to as poisoning the function calls. This is done so that the Timer used is instanciated properly.
+
+== Public ==
+Provides access to all the functions which the user calls to input and output Servo signals. 
+
+=== Usage ===
+The Servo classes provide the following functionality. Servo PWM output, Servo PWM input, PPM output and PPM input handled by Pwm_output_helper, Pwm_input_helper, Ppm_output_helper and Ppm_input_helper classes respectively.
+
+== Initialisation ==
+To instansiate a Servo operation the contructor must be called with the Tc_number and Tc_oc_channel or Tc_ic_channel, depending on whether the operation is an input or output, which corrisponds the time and channel that are to be used.
+
+== Example ==
+	''Pwm_output_helper pwm3(TC_1, TC_OC_A); // All others follow the same format with the only difference being the class name''
+	
+== Frame length ==
+When outputting a PWM signal the frame length must be longer than the maximum channel value otherwise the output behaviour will be undefined. The same condition must be observed for PPM output but now the frame legnth must be longer than maximum sum of all output channles including the frame seperation time.
+
+==== Implementation Status ====
+
+ValleyForge is a work in progress; some features are not yet complete. Accordingly, the list below summarises the degree to which the HAL's Servo module supports individual targets. The Servo functionality has had all timer operations handled through the Timer Counter HAL this was done to ease portability between platforms.
+
+== Limitations ==
+Currently the Servo operations are limited to 16 bit timers. This is due to alising causing problems with on 8 bit timers due to a full frame not fitting into one cycle of the timer.
+
+The frame length is limited to 32.767ms when operating at 16MHz due to data type sizes and to eliminate aliasing on the output. If a different clock speed is used the formula to use for maximum frame length is 1/(CLK/Clock_Prescale)*(2^16-1) where CLK is the clock speed in Hz.
+
+== AVR ==
+
+	ATmega328p - Native - Implementation complete

@@ -134,7 +134,7 @@ enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF
 /* Servo */
 
 #define SERVO_TC_CLK TC_SRC_INT
-#define SERVO_TC_PRE TC_PRE_8
+#define SERVO_TC_PRE TC_PRE_8 // This devisor must be set such that the timer ticks period is ~500ns
 #define SERVO_PRE_DEVISOR 8
 #define SERVO_OC_MODE TC_OC_NONE
 #define SERVO_SET TC_OC_CHANNEL_MODE_3
