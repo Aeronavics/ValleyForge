@@ -10,35 +10,39 @@ Created Sunday 29 November 2015
 
 === Goal ===
 
-[ ] To create a unified programming interface for using ADCs
-[ ] Allowing user source code to be portable to supported targets with minimal changes
+[ ] To create a unified programming interface for using ADCs.
+[ ] Allowing user source code to be portable accross supported targets with minimal changes.
 
 === General Abstraction Model ===
 
+The main difference in ADC modules between targets are :
 
+1. Number of ADC units.
+2. Number of input and output channels in each ADC unit as well as input types.
+3. Number of analogue to digital conversion channels.
+4. ADC register bit configurations.
+5. Available interrupt options.
+6. Additional functionality blocks, i.e. analogue watchdog, oversampling and multi adc operation.
+
+The ADC module is abstracted into two segments, the user and the implementation. The data stored within the implementations are linked to the user's instance of the ADC unit, creating a singleton pattern. Constructors and destructors are rigidly set and undesired variations of constructing or destructing a instance of ADC module are poisoned. 
+
+=== Class ===
+Contains functions and variables required to interface with the ADC module of the target microcontroller.  
 
 == Private ==
+ADC uses the singleton pattern with only one instance to control all ADC operations on a target.
 
+Limiting the users to a designed method of instantiating a Timer/ Counter unit requires prohibiting undesired methods of constructing and destroying instances. Therefore, methods of instanciating the Timer/ Counter class that are undesireable are stored in the private field of the class. This is refered to as poisoning the function calls.
+
+Data associated with controlling an ADC unit are contained within registers in the target microcontroller. Implementation of the ADC (Adc_imp) contains the links to the registers but are designed to be inaccessible to the user's instance of ADC class.
 
 == Public ==
-
-
-=== Usage ===
-
-
-== Initialisation ==
-
-
-== Example ==
-
+Functions which the user calls to manipulate the ADC unit to the desired behaviour. Each available funtion will be available to review on the Doxygen documentation for the ADC unit. 
 
 ==== Implementation Status ====
 
 ValleyForge is a work in progress; some features are not yet complete. Accordingly, the list below summarises the degree to which the HAL's ADC module supports individual targets.
 
-== Limitations ==
-
-
 == AVR ==
 
-	ATmega328p - Native - Implementation under construction
+	ATmega328p - Native - Implementation complete
