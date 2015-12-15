@@ -68,3 +68,7 @@ TODO: Description of the I2C module and allowable config values
 ===== CAN =====
 This target does not support CAN.
 
+===== ADC =====
+
+TODO: Description of limitations are functionality.
+

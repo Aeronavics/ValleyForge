@@ -73,5 +73,12 @@ TODO: Description of the I2C module and allowable config values
 ===== CAN =====
 This target does not support CAN.
 
+===== ADC =====
+
+TODO: Description of limitations are functionality.
+
+Conversion result is the result bytes in the lower 2 bytes of the uint32_t.
+The context of the interrupt callback is a void pointer to a uint32_t containing the conversion result. 
+
 ===== Fuses =====
 TODO: all

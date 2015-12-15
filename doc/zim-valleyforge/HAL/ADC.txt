@@ -1,0 +1,44 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2015-12-08T11:09:25+13:00
+
+====== ADC HAL MODULE ======
+Created Tuesday 08 December 2015
+
+====== Servo ======
+Created Sunday 29 November 2015
+
+=== Goal ===
+
+[ ] To create a unified programming interface for using ADCs
+[ ] Allowing user source code to be portable to supported targets with minimal changes
+
+=== General Abstraction Model ===
+
+
+
+== Private ==
+
+
+== Public ==
+
+
+=== Usage ===
+
+
+== Initialisation ==
+
+
+== Example ==
+
+
+==== Implementation Status ====
+
+ValleyForge is a work in progress; some features are not yet complete. Accordingly, the list below summarises the degree to which the HAL's ADC module supports individual targets.
+
+== Limitations ==
+
+
+== AVR ==
+
+	ATmega328p - Native - Implementation under construction

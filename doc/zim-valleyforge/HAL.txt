@@ -19,6 +19,7 @@ The HAL modules are documented in the links below, but for complete interface do
 	ADC - Analog to Digital Converter
 	Timer/Counter
 	
+
 ===== Other Info =====
 	[[HAL:Callbacks|Callbacks]] - How the HAL manages callbacks for interrupts and asynchronous communications
 

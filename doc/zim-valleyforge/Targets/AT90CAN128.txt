@@ -42,6 +42,10 @@ TODO: Description of the I2C module and allowable config values
 ===== CAN =====
 TODO: Description of the CAN module and allowable config values
 
+===== ADC =====
+
+TODO: Description of limitations are functionality.
+
 ===== Fuses =====
 The AT90CAN32/64/128 has three Fuse bytes that determine the chip functionality.
 
