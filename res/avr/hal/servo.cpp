@@ -40,9 +40,9 @@
 
 // DEFINE PRIVATE MACROS.
 
-#define MIDPOINT 1500
+#define OUT_OF_BOUNDS 0
 
-#define PPM_PULSE 400
+#define PPM_PULSE 200 // The width of the ppm starting pulse in microseconds
 
 // Define target specific register addresses.
 
@@ -167,6 +167,8 @@ class Ppm_output_helper_imp : public Servo_classes_template
 		uint32_t frame_length;
 		uint16_t positions[MAX_PPM_CHANNELS + 1]; // The +1 is used to store the time remainig in a frame
 		size_t number_channels;
+		uint16_t ppm_pulse_width;
+		bool is_positions_set;
 		bool invert;
 };
 
@@ -263,6 +265,7 @@ class Pwm_output_helper_imp : public Servo_classes_template
 		Servo_state servo_state;
 		uint16_t frame_length;
 		uint16_t position;
+		bool is_position_set;
 		bool invert;
 };
 
@@ -763,7 +766,7 @@ Servo_command_status Ppm_input_helper_imp::initialise(size_t num_channels, uint1
 	// set known position values on all channels
 	for (size_t i = 0; i < number_channels; i++)
 	{
-		positions[i] = MIDPOINT;
+		positions[i] = OUT_OF_BOUNDS;
 	}
 	
 	// associate the channel with the callback interrupt designator
@@ -929,17 +932,19 @@ Servo_command_status Ppm_output_helper_imp::initialise(size_t num_channels, uint
 {
 	// Store settings
 	frame_length = Servo_us_to_counts(frame_len);
+	ppm_pulse_width = Servo_us_to_counts(PPM_PULSE);
 	invert = inv;
 	number_channels = num_channels;
 	
 	// Set all positions to a safe value
 	for (size_t i = 0; i < number_channels; i++)
 	{
-		positions[i] = Servo_us_to_counts(MIDPOINT) - PPM_PULSE;
+		positions[i] = OUT_OF_BOUNDS;
 	}
-	positions[number_channels] = frame_length - Servo_us_to_counts(number_channels * MIDPOINT) - PPM_PULSE; // This calculates the time remainig in a frame
+	positions[number_channels] = frame_length - ppm_pulse_width; // This calculates the time remainig in a frame
 	overflows_required = 0;
 	timer_value_current_event = 0;
+	is_positions_set = false;
 	
 	// Associate the channel with the callback interrupt designator
 	switch (channel)
@@ -1030,8 +1035,8 @@ void Ppm_output_helper_imp::set_position(size_t channel_number, uint16_t positio
 {
 	if (channel_number < number_channels)
 	{
-		positions[number_channels] = positions[number_channels] - positions[channel_number] + Servo_us_to_counts(position) - PPM_PULSE; // adjust the time remaining in the frame for correct frame length
-		positions[channel_number] = Servo_us_to_counts(position) - PPM_PULSE; // the pulse width subtracted here to save calculation time in the handler
+		positions[number_channels] = positions[number_channels] - positions[channel_number] + Servo_us_to_counts(position) - ppm_pulse_width; // adjust the time remaining in the frame for correct frame length
+		positions[channel_number] = Servo_us_to_counts(position) - ppm_pulse_width; // the pulse width subtracted here to save calculation time in the handler
 	}
 }
 
@@ -1040,10 +1045,12 @@ void Ppm_output_helper_imp::set_positions(uint16_t* pos)
 	uint32_t total_channel_time = 0;
 	for (uint8_t i = 0; i < number_channels; i++)
 	{
-		total_channel_time += pos[i]; // count the total time of teh channels
-		positions[i] = Servo_us_to_counts(pos[i]) - PPM_PULSE; // the pulse width subtracted here to save calculation time in the handler
+		total_channel_time += pos[i]; // count the total time of the channels
+		positions[i] = Servo_us_to_counts(pos[i]) - ppm_pulse_width; // the pulse width subtracted here to save calculation time in the handler
 	}
-	positions[number_channels] = frame_length - Servo_us_to_counts(total_channel_time) - PPM_PULSE; // calculate the time remaining in the frame
+	positions[number_channels] = frame_length - Servo_us_to_counts(total_channel_time) - ppm_pulse_width; // calculate the time remaining in the frame
+	
+	is_positions_set = true;
 }
 
 void Ppm_output_helper_imp::callback(Servo_int_type servo_int_type)
@@ -1051,103 +1058,108 @@ void Ppm_output_helper_imp::callback(Servo_int_type servo_int_type)
 	// Only handle the OC interrupt if the number of overflows required to get to the next event have passed
 	static size_t channel_to_send = 0;
 	static uint32_t current_frame_time = 0;
-	if (servo_int_type == compare_int && overflows_required == 0)
+	
+	// Only output ppm signal if the outputs have been set.
+	if (is_positions_set == true)
 	{
-		// Working variables for use inside the switch statement
-		uint16_t counts_to_event = 0;
-		Tc_value tc_value;
-		
-		switch (servo_state)
-			{
-				// Enters here at the start of a pulse
-				case SERVO_LOW:
-					
-					// Calculate the number of counts to advance and the number of overflows required to get there
-					counts_to_event = PPM_PULSE;
-					current_frame_time += counts_to_event;
-					
-					overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
-					timer_value_current_event += counts_to_event;
-					
-					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
-					// 8 bit timer support removed due to errors in operation
-					/*#if defined(__AVR_ATmega328__)
-					if (timer_number == TC_0 || timer_number == TC_2)
-					{
-						timer_value_current_event = timer_value_current_event & 0xFF;
-						tc_value = Tc_value::from_uint8(timer_value_current_event);
-					}
-					else
-					{*/
-						tc_value = Tc_value::from_uint16(timer_value_current_event);
-					/*}
-					#endif*/
-					timer.set_ocR(channel, tc_value);
-					
-					// Set the transition for end of the pulse
-					if (invert)
-						timer.enable_oc_channel(channel, SERVO_SET);
-					else
-						timer.enable_oc_channel(channel, SERVO_CLEAR);
-					
-					servo_state = SERVO_HIGH;
-					break;
-				
-				// Enters here at the end of a pulse
-				case SERVO_HIGH:
-					
-					// Calculate the number of counts to advance and the number of overflows required to get there
-					
-					if (channel_to_send < number_channels)
-					{
-						counts_to_event = positions[channel_to_send];
-						current_frame_time += counts_to_event;
-						channel_to_send++;
-					}
-					else
-					{
-						counts_to_event = positions[number_channels];//frame_length - current_frame_time;
-						current_frame_time = 0;
-						channel_to_send = 0;
-					}
-					
-					overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
-					timer_value_current_event += counts_to_event;
-					
-					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
-					// 8 bit timer support removed due to errors in operation
-					/*#if defined(__AVR_ATmega328__)
-					if (timer_number == TC_0 || timer_number == TC_2)
-					{
-						timer_value_current_event = timer_value_current_event & 0xFF;
-						tc_value = Tc_value::from_uint8(timer_value_current_event);
-					}
-					else
-					{*/
-						tc_value = Tc_value::from_uint16(timer_value_current_event);
-					/*}
-					#endif*/
-					timer.set_ocR(channel, tc_value);
-					
-					// Set the transition for start of the pulse
-					if (invert)
-						timer.enable_oc_channel(channel, SERVO_CLEAR);
-					else
-						timer.enable_oc_channel(channel, SERVO_SET);
-					
-					servo_state = SERVO_LOW;
-					break;
-					
-				default:
-					break;
-			}
-	}
-	else if (servo_int_type == SERVO_OVF)
-	{
-		// Decrement the number of overflows requried if greater than zero
-		if (overflows_required > 0)
+		if (servo_int_type == compare_int && overflows_required == 0)
 		{
-			overflows_required--;
+			// Working variables for use inside the switch statement
+			uint16_t counts_to_event = 0;
+			Tc_value tc_value;
+			
+			switch (servo_state)
+				{
+					// Enters here at the start of a pulse
+					case SERVO_LOW:
+						
+						// Calculate the number of counts to advance and the number of overflows required to get there
+						counts_to_event = ppm_pulse_width;
+						current_frame_time += counts_to_event;
+						
+						overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
+						timer_value_current_event += counts_to_event;
+						
+						// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
+						// 8 bit timer support removed due to errors in operation
+						/*#if defined(__AVR_ATmega328__)
+						if (timer_number == TC_0 || timer_number == TC_2)
+						{
+							timer_value_current_event = timer_value_current_event & 0xFF;
+							tc_value = Tc_value::from_uint8(timer_value_current_event);
+						}
+						else
+						{*/
+							tc_value = Tc_value::from_uint16(timer_value_current_event);
+						/*}
+						#endif*/
+						timer.set_ocR(channel, tc_value);
+						
+						// Set the transition for end of the pulse
+						if (invert)
+							timer.enable_oc_channel(channel, SERVO_SET);
+						else
+							timer.enable_oc_channel(channel, SERVO_CLEAR);
+						
+						servo_state = SERVO_HIGH;
+						break;
+					
+					// Enters here at the end of a pulse
+					case SERVO_HIGH:
+						
+						// Calculate the number of counts to advance and the number of overflows required to get there
+						
+						if (channel_to_send < number_channels)
+						{
+							counts_to_event = positions[channel_to_send];
+							current_frame_time += counts_to_event;
+							channel_to_send++;
+						}
+						else
+						{
+							counts_to_event = positions[number_channels];//frame_length - current_frame_time;
+							current_frame_time = 0;
+							channel_to_send = 0;
+						}
+						
+						overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
+						timer_value_current_event += counts_to_event;
+						
+						// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
+						// 8 bit timer support removed due to errors in operation
+						/*#if defined(__AVR_ATmega328__)
+						if (timer_number == TC_0 || timer_number == TC_2)
+						{
+							timer_value_current_event = timer_value_current_event & 0xFF;
+							tc_value = Tc_value::from_uint8(timer_value_current_event);
+						}
+						else
+						{*/
+							tc_value = Tc_value::from_uint16(timer_value_current_event);
+						/*}
+						#endif*/
+						timer.set_ocR(channel, tc_value);
+						
+						// Set the transition for start of the pulse
+						if (invert)
+							timer.enable_oc_channel(channel, SERVO_CLEAR);
+						else
+							timer.enable_oc_channel(channel, SERVO_SET);
+						
+						servo_state = SERVO_LOW;
+						break;
+						
+					default:
+						break;
+				}
+		}
+		else if (servo_int_type == SERVO_OVF)
+		{
+			// Decrement the number of overflows requried if greater than zero
+			if (overflows_required > 0)
+			{
+				overflows_required--;
+			}
 		}
 	}
 }
@@ -1176,7 +1188,7 @@ Servo_command_status Pwm_input_helper_imp::initialise(bool inv)
 	// set default values
 	overflows = 0;
 	callback_vector = NULL;
-	position = MIDPOINT;
+	position = OUT_OF_BOUNDS;
 	
 	// associate the channel with the callback interrupt designator
 	switch (channel)
@@ -1348,10 +1360,11 @@ Servo_command_status Pwm_output_helper_imp::initialise(uint16_t frame_len, bool 
 	frame_length = Servo_us_to_counts(frame_len);
 	invert = inv;
 	
-	position = MIDPOINT; // set position to a safe value
+	position = OUT_OF_BOUNDS; // set position to a safe value
 	overflows_required = 0;
 	overflows = 0;
 	timer_value_current_event = 0;
+	is_position_set = false;
 	
 	// associate the channel with the callback interrupt designator
 	switch (channel)
@@ -1442,90 +1455,95 @@ Servo_command_status Pwm_output_helper_imp::stop(void)
 void  Pwm_output_helper_imp::set_position(uint16_t pos)
 {
 	position = Servo_us_to_counts(pos);
+	is_position_set = true;
 }
 
 void Pwm_output_helper_imp::callback(Servo_int_type servo_int_type)
 {
-	// Only handle the OC interrupt if the number of overflows required to get to the next event have passed
-	if (servo_int_type == compare_int && overflows >= overflows_required)
+	// Only output pwm signal if a valid input has been set.
+	if (is_position_set == true)
 	{
-		// Working variables for use inside the switch statement
-		overflows = 0;
-		uint16_t counts_to_event = 0;
-		Tc_value tc_value;
-		
-		switch (servo_state)
-			{
-				// Enters here at the start of a pulse
-				case SERVO_LOW:
+		// Only handle the OC interrupt if the number of overflows required to get to the next event have passed
+		if (servo_int_type == compare_int && overflows >= overflows_required)
+		{
+			// Working variables for use inside the switch statement
+			overflows = 0;
+			uint16_t counts_to_event = 0;
+			Tc_value tc_value;
+			
+			switch (servo_state)
+				{
+					// Enters here at the start of a pulse
+					case SERVO_LOW:
+						
+						// Calculate the number of counts to advance and the number of overflows required to get there
+						counts_to_event = position;
+						overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
+						timer_value_current_event += counts_to_event;
+						
+						// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
+						#if defined(__AVR_ATmega328__)
+						if (timer_number == TC_0 || timer_number == TC_2)
+						{
+							timer_value_current_event = ~timer_value_current_event & 0xFF;
+							tc_value = Tc_value::from_uint8(timer_value_current_event);
+						}
+						else
+						{
+							tc_value = Tc_value::from_uint16(timer_value_current_event);
+						}
+						#endif					
+						timer.set_ocR(channel, tc_value);
+						
+						// Set the transition for end of the pulse
+						if (invert)
+							timer.enable_oc_channel(channel, SERVO_SET);
+						else
+							timer.enable_oc_channel(channel, SERVO_CLEAR);
+						
+						servo_state = SERVO_HIGH;
+						break;
 					
-					// Calculate the number of counts to advance and the number of overflows required to get there
-					counts_to_event = position;
-					overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
-					timer_value_current_event += counts_to_event;
-					
-					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
-					#if defined(__AVR_ATmega328__)
-					if (timer_number == TC_0 || timer_number == TC_2)
-					{
-						timer_value_current_event = ~timer_value_current_event & 0xFF;
-						tc_value = Tc_value::from_uint8(timer_value_current_event);
-					}
-					else
-					{
-						tc_value = Tc_value::from_uint16(timer_value_current_event);
-					}
-					#endif					
-					timer.set_ocR(channel, tc_value);
-					
-					// Set the transition for end of the pulse
-					if (invert)
-						timer.enable_oc_channel(channel, SERVO_SET);
-					else
-						timer.enable_oc_channel(channel, SERVO_CLEAR);
-					
-					servo_state = SERVO_HIGH;
-					break;
-				
-				// Enters here at the end of a pulse
-				case SERVO_HIGH:
-					
-					// Calculate the number of counts to advance and the number of overflows required to get there
-					counts_to_event = frame_length - position;
-					overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
-					timer_value_current_event += counts_to_event;
-					
-					// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
-					#if defined(__AVR_ATmega328__)
-					if (timer_number == TC_0 || timer_number == TC_2)
-					{
-						timer_value_current_event = ~timer_value_current_event & 0xFF;
-						tc_value = Tc_value::from_uint8(timer_value_current_event);
-					}
-					else
-					{
-						tc_value = Tc_value::from_uint16(timer_value_current_event);
-					}
-					#endif
-					timer.set_ocR(channel, tc_value);
-					
-					// Set the transition for start of the pulse
-					if (invert)
-						timer.enable_oc_channel(channel, SERVO_CLEAR);
-					else
-						timer.enable_oc_channel(channel, SERVO_SET);
-					
-					servo_state = SERVO_LOW;
-					break;
-					
-				default:
-					break;
-			}
-	}
-	else if (servo_int_type == SERVO_OVF)
-	{
-		// Decrement the number of overflows requried if greater than zero
-		overflows++;
+					// Enters here at the end of a pulse
+					case SERVO_HIGH:
+						
+						// Calculate the number of counts to advance and the number of overflows required to get there
+						counts_to_event = frame_length - position;
+						overflows_required = Servo_num_overflows_required(timer_value_current_event, counts_to_event, timer_number);
+						timer_value_current_event += counts_to_event;
+						
+						// Place the required compare value in the timer register. Tuncation due to smaller int type is taken care of by the overflows counter
+						#if defined(__AVR_ATmega328__)
+						if (timer_number == TC_0 || timer_number == TC_2)
+						{
+							timer_value_current_event = ~timer_value_current_event & 0xFF;
+							tc_value = Tc_value::from_uint8(timer_value_current_event);
+						}
+						else
+						{
+							tc_value = Tc_value::from_uint16(timer_value_current_event);
+						}
+						#endif
+						timer.set_ocR(channel, tc_value);
+						
+						// Set the transition for start of the pulse
+						if (invert)
+							timer.enable_oc_channel(channel, SERVO_CLEAR);
+						else
+							timer.enable_oc_channel(channel, SERVO_SET);
+						
+						servo_state = SERVO_LOW;
+						break;
+						
+					default:
+						break;
+				}
+		}
+		else if (servo_int_type == SERVO_OVF)
+		{
+			// Decrement the number of overflows requried if greater than zero
+			overflows++;
+		}
 	}
 }
 

@@ -115,6 +115,7 @@ class Ppm_input_helper
 		
 		/**
 		 * Stop the ppm output.
+		 * If not started between frames the first result taken will be incorrect.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
@@ -141,14 +142,14 @@ class Ppm_input_helper
 		 *	Get the current position of the given channel in microseconds.
 		 *
 		 * @param size_t The channel of which to get the position of
-		 * @return uint16_t The position of the channel in microseconds.
+		 * @return uint16_t The position of the channel in microseconds. 0 will be returned until a valid input is received.
 		 */
 		uint16_t get_position(size_t channel);
 		
 		/**
 		 * Get the positions of all channels in microseconds.
 		 * 
-		 * @param uint16_t* A pointer to an array which to fill with the positions of all channels.
+		 * @param uint16_t* A pointer to an array which to fill with the positions of all channels. Value of positions will be 0 until valid input has been received.
 		 * @return Nothing.
 		 */
 		void get_positions(uint16_t* positions);
@@ -192,7 +193,8 @@ class Ppm_output_helper
 		/**
 		 * Start the ppm output.
 		 *
-		 * Global interrupts must be enabled for the ppm to output.
+		 * Global interrupts must be enabled for the ppm to output. Also at least one call to set_positions(uint16_t* positions)
+		 * must be made to set a valid output value before the pwm signal will output.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
@@ -265,6 +267,7 @@ class Pwm_input_helper
 		 * Start the pwm input.
 		 *
 		 * Global interrupts must be enabled for the pwm to output.
+		 * If started during the pulse of an pwm input the first reading will be incorrect.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
@@ -299,7 +302,7 @@ class Pwm_input_helper
 		 *	Get the current pulse width of the pwm input signal in microseconds.
 		 *
 		 * @param Nothing.
-		 * @return uint16_t the width of the input pwm pulse in microseconds. 
+		 * @return uint16_t the width of the input pwm pulse in microseconds. 0 will be returned until valid input has been received.
 		 */
 		uint16_t get_position(void);
 		
@@ -344,7 +347,8 @@ class Pwm_output_helper
 		/**
 		 * Start the pwm output.
 		 *
-		 * Global interrupts must be enabled for the pwm to output.
+		 * Global interrupts must be enabled for the pwm to output. Also at least one call to set_position(uint16_t position)
+		 * must be made to set a valid output value before the pwm signal will output.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
