@@ -192,10 +192,10 @@ class Adc
 		 *
 		 * @param	adc_unit        The adc unit to which to send the command.
 		 * @param	conv_channel    The conversion channel of which to set the conversion sequence.
-		 * @param	input_channel   The input channel to use.
+		 * @param	input_channel   A pointer to the input to use. This is a pointer to allow an array of two entries to be used for trgets supporting differential inputs.
 		 * @return	Zero for success, or non-zero for failure.
 		 */
-		Adc_command_status set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel input_channel);
+		Adc_command_status set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel* input_channel);
 		
 		/**
 		 * Allow setting of input mode unipolar or bipolar.

@@ -78,7 +78,7 @@ class Adc_imp
 
 		Adc_command_status set_conv_sequence_and_length(Adc_unit adc_unit, Adc_conv_channel conv_channel, size_t sequence_length, Adc_input_channel** input_channel);
 
-		Adc_command_status set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel input_channel);
+		Adc_command_status set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel* input_channel);
 
 		Adc_command_status set_input_unipolar_bipolar(Adc_unit adc_unit, Adc_input_mode input_mode);
 
@@ -209,7 +209,7 @@ Adc_command_status Adc::set_conv_sequence_and_length(Adc_unit adc_unit, Adc_conv
 	return imp->set_conv_sequence_and_length(adc_unit, conv_channel, sequence_length, input_channel);
 }
 
-Adc_command_status Adc::set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel input_channel)
+Adc_command_status Adc::set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel* input_channel)
 {
 	return imp->set_single_conversion_input(adc_unit, conv_channel, input_channel);
 }
@@ -489,10 +489,10 @@ Adc_command_status Adc_imp::set_conv_sequence_and_length(Adc_unit adc_unit, Adc_
 	return ADC_CFG_FAILED;
 }
 
-Adc_command_status Adc_imp::set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel input_channel)
+Adc_command_status Adc_imp::set_single_conversion_input(Adc_unit adc_unit, Adc_conv_channel conv_channel, Adc_input_channel* input_channel)
 {
-	Adc_input_channel input0[1] = {input_channel};
-	Adc_input_channel* inputs[1] = {input0};
+	// TODO - Test change to taking input channel as a pointer.
+	Adc_input_channel* inputs[1] = {input_channel};
 	Adc_input_channel** input = inputs;
 	set_conv_sequence_and_length(adc_unit, conv_channel, 1, input);
 	
