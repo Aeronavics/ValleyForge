@@ -53,11 +53,11 @@ upload_avrdude()
 		echo -e "${CYAN}Searching for any available AVR-ISP-Mk2 programmers...${NO_COLOUR}"
 
 		# Simply check if there is a USB device attached which sounds like the right thing.
-		if [ -z "lsusb | grep -o 'Atmel Corp. AVR ISP mkII'" ]; then
+		if [ -z "$(lsusb | grep -o 'Atmel Corp. AVR ISP mkII')" ]; then
 			# We didn't find anything, so abort.
 			echo -e "${YELLOW}No suitable AVR-ISP-Mk2 device found.\n${NO_COLOUR}"
-			AVRDUDE_ISPDEVFILE=
-			AVRDUDE_ISPDEVTYPE=
+			unset AVRDUDE_ISPDEVFILE
+			unset AVRDUDE_ISPDEVTYPE
 			return 1
 		fi
 
@@ -82,8 +82,8 @@ upload_avrdude()
 		if [ -z ${ISP_DEVICE_FILES} ]; then
 			# We didn't find any, so abort.
 			echo -e "${YELLOW}No suitable AVR-ISP500 devices found.\n${NO_COLOUR}"
-			AVRDUDE_ISPDEVFILE=
-			AVRDUDE_ISPDEVTYPE=
+			unset AVRDUDE_ISPDEVFILE
+			unset AVRDUDE_ISPDEVTYPE
 			return 1
 
 		# Check to see if we found exactly one suitable device.
@@ -112,11 +112,11 @@ upload_avrdude()
 		echo -e "${CYAN}Searching for any available STK600 programmers...${NO_COLOUR}"
 
 		# Check to see if there is an STK600 listed.
-		if [[ -z `lsusb | grep "Atmel Corp. STK600 development board"` ]]; then
+		if [ -z "$(lsusb | grep -o 'Atmel Corp. STK600 development board')" ]; then
 			# We didn't find an STK600 listed, so abort.
 			echo -e "${YELLOW}No suitable STK600 device found.\n${NO_COLOUR}"
-			AVRDUDE_ISPDEVFILE=
-			AVRDUDE_ISPDEVTYPE=
+			unset AVRDUDE_ISPDEVFILE
+			unset AVRDUDE_ISPDEVTYPE
 			return 1
 		fi
 
@@ -264,17 +264,10 @@ upload_avrdude()
 	fi
 
 	# Check to see if we can find a suitable device to use.
-	if [ -z "${AVRDUDE_ISPDEVFILE}" ]; then
-		# Try looking for an STK600.
-		upload_avrdude_finddevice_stk600
-	fi
-	if [ -z "${AVRDUDE_ISPDEVFIE}" ]; then
-		# Try looking for an AVR ISP Mk2.
-		upload_avrdude_finddevice_avrisp2
-	fi
-	if [ -z "${AVRDUDE_ISPDEVFILE}" ]; then
-		# Try looking for an AVR ISP500.
-		upload_avrdude_finddevice_avrisp500
+	if ! upload_avrdude_finddevice_stk600; then
+		if ! upload_avrdude_finddevice_avrisp2; then
+			upload_avrdude_finddevice_avrisp500
+		fi
 	fi
 	# TODO - Look for other types of programmers.
 	if [ ! -z ${AVRDUDE_ISPDEVFILE} ]; then
