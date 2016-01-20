@@ -43,10 +43,33 @@ echo -e "${CYAN}Imported AVRDUDE based upload-functions.\n${NO_COLOUR}"
 ###											###
 ###########################################################################################
 
-upload_avrdude() 
+upload_avrdude()
 {
 	# PRIVATE INTERNAL FUNCTIONS.
-	
+
+	upload_avrdude_finddevice_avrisp2()
+	{
+		# We look to see if there is anything which might be an AVR ISP Mk2 available.
+		echo -e "${CYAN}Searching for any available AVR-ISP-Mk2 programmers...${NO_COLOUR}"
+
+		# Simply check if there is a USB device attached which sounds like the right thing.
+		if [ -z "lsusb | grep -o 'Atmel Corp. AVR ISP mkII'" ]; then
+			# We didn't find anything, so abort.
+			echo -e "${YELLOW}No suitable AVR-ISP-Mk2 device found.\n${NO_COLOUR}"
+			AVRDUDE_ISPDEVFILE=
+			AVRDUDE_ISPDEVTYPE=
+			return 1
+		fi
+
+		# Else we found one.  The exact details don't matter, because avrdude will find this thing via USB properties rather than by device file.
+		echo -e "${CYAN}Found an AVR-ISP-Mk2 connected via USB.\n${NO_COLOUR}"
+		AVRDUDE_ISPDEVFILE="usb"
+		AVRDUDE_ISPDEVTYPE="avrisp2"
+
+		# All done.
+		return 0
+	}
+
 	upload_avrdude_finddevice_avrisp500()
 	{
 		# We look to see if there is anything that might be an AVR ISP500 available.
@@ -61,6 +84,7 @@ upload_avrdude()
 			echo -e "${YELLOW}No suitable AVR-ISP500 devices found.\n${NO_COLOUR}"
 			AVRDUDE_ISPDEVFILE=
 			AVRDUDE_ISPDEVTYPE=
+			return 1
 
 		# Check to see if we found exactly one suitable device.
 		elif [ `echo ${ISP_DEVICE_FILES} | wc -l` == 1 ]; then
@@ -79,7 +103,7 @@ upload_avrdude()
 		fi
 
 		# All done.
-		return			
+		return 0
 	}
 
 	upload_avrdude_finddevice_stk600()
@@ -93,23 +117,43 @@ upload_avrdude()
 			echo -e "${YELLOW}No suitable STK600 device found.\n${NO_COLOUR}"
 			AVRDUDE_ISPDEVFILE=
 			AVRDUDE_ISPDEVTYPE=
-		else
-			# There is an STK600 connected, so we use that.
-			echo -e "${CYAN}Found an STK600 connected via USB.\n${NO_COLOUR}"
-			AVRDUDE_ISPDEVFILE="usb"
-			AVRDUDE_ISPDEVTYPE="stk600"
+			return 1
 		fi
 
+		# Else we found one.  The exact details don't matter, because avrdude will find this thing via USB properties rather than by device file.
+		echo -e "${CYAN}Found an STK600 connected via USB.\n${NO_COLOUR}"
+		AVRDUDE_ISPDEVFILE="usb"
+		AVRDUDE_ISPDEVTYPE="stk600"
+
 		# All done.
-		return			
+		return 0
 	}
 
 	# FUNCTION PROPER STARTS HERE.
-	
+
 	# DECLARE VARIABLES.
-	
-	AVRDUDE_CONFIG_FILE="$TCPATH/res/avr/avrdude.conf"
-	
+
+	# Because with avrdude version 6 they changed the accepted syntax of the config file a bit, we need to serve the correct file depending on what version is installed.
+	VF_AVRDUDE5_CONFIG_FILE="$TCPATH/res/avr/avrdude5.conf"
+	VF_AVRDUDE6_CONFIG_FILE="$TCPATH/res/avr/avrdude6.conf"
+	if [ -z "$(which avrdude)"  ]; then
+		echo -e "${RED}Unabled to find avrdude executable.  Check you have avrdude installed.\n${NO_COLOUR}"
+		return 1
+	fi
+	VF_AVRDUDE_VERSION=$(avrdude -v 2>&1 | grep -o "Version [0-9]" | grep -o "[0-9]")
+	if [ "$VF_AVRDUDE_VERSION" == "5" ]; then
+		echo -e "${CYAN}Found avrdude version 5.x.x.\n${NO_COLOUR}"
+		AVRDUDE_CONFIG_FILE=$VF_AVRDUDE5_CONFIG_FILE
+	elif [ "$VF_AVRDUDE_VERSION" == "6" ]; then
+		echo -e "${CYAN}Found avrdude version 6.x.x.\n${NO_COLOUR}"
+		AVRDUDE_CONFIG_FILE=$VF_AVRDUDE6_CONFIG_FILE
+	else
+		echo -e "${YELLOW}This version of avrdude may be unsupported.  Only version 5.x.x and 6.x.x are known to be supported.\n${NO_COLOUR}"
+		AVRDUDE_CONFIG_FILE=$VF_AVRDUDE6_CONFIG_FILE
+	fi
+	unset VF_AVRDUDE5_CONFIG_FILE
+	unset VF_AVRDUDE6_CONFIG_FILE
+
 	# Check if we should be uploading a bootloader but aren't.
 	if [ "$BOOTLOADER" -a -z "$UPLOAD_BOOTLOADER" ]; then
 		#  Warn the user that this will erase any existing bootloader.
@@ -146,7 +190,7 @@ upload_avrdude()
 
 		# Set the file to flash to be the combined binary.
 		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_combined.hex"
-	
+
 	elif [ ${UPLOAD_BOOTLOADER} ]; then
 		# Set the file to flash to be the bootloader binary.
 		AVRDUDE_BINARY="$TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.hex"
@@ -157,7 +201,7 @@ upload_avrdude()
 	fi
 
 	# Figure out what the AVRDUDE 'part' setting should be.
-	
+
 	# Check if the component/build configuration set specified this.
 	if [ ! -z ${AVRDUDE_PART} ]; then
 		# The setting was specified.  Check if the user wants to use this.
@@ -165,7 +209,7 @@ upload_avrdude()
 		echo -e -n "${GREEN}Do you wish to use this setting? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they responded YES, then use the setting.  If NO, then we'll need to ask them what to use.
 		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 			# Don't use the setting specified in the component/build configuration set.
@@ -195,7 +239,7 @@ upload_avrdude()
 			fi
 
 			# TODO - Eventually, it might be nice to check if the entered value is legit.
-		
+
 			# Else we use whatever they entered.
 			AVRDUDE_PART=$REPLY
 			break
@@ -211,7 +255,7 @@ upload_avrdude()
 		echo -e -n "${GREEN}Do you wish to use this device? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
 		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 			# Don't use the device specified in the component/build configuration set.
@@ -220,11 +264,15 @@ upload_avrdude()
 	fi
 
 	# Check to see if we can find a suitable device to use.
-	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
+	if [ -z "${AVRDUDE_ISPDEVFILE}" ]; then
 		# Try looking for an STK600.
 		upload_avrdude_finddevice_stk600
 	fi
-	if [ -z ${AVRDUDE_ISPDEVFILE} ]; then
+	if [ -z "${AVRDUDE_ISPDEVFIE}" ]; then
+		# Try looking for an AVR ISP Mk2.
+		upload_avrdude_finddevice_avrisp2
+	fi
+	if [ -z "${AVRDUDE_ISPDEVFILE}" ]; then
 		# Try looking for an AVR ISP500.
 		upload_avrdude_finddevice_avrisp500
 	fi
@@ -235,7 +283,7 @@ upload_avrdude()
 		echo -e -n "${GREEN}Do you wish to use this device? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they responded YES, then use the setting.  If NO, we'll need to try something else.
 		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 			# Don't use the device we found.
@@ -250,9 +298,9 @@ upload_avrdude()
 		while :
 		do
 			# We will need to prompt the user for the value to use.
-			echo -e -n "${GREEN}Enter the device file for the programmer AVRDUDE should use: ${NO_COLOUR}"
+			echo -e -n "${GREEN}Enter the device file for the programmer AVRDUDE should use.  For newer USB programmers, use 'usb' instead: ${NO_COLOUR}"
 			read
-			echo -e "" 
+			echo -e ""
 
 			# Check the user actually entered something.
 			if [ -z "$REPLY" ]; then
@@ -266,7 +314,7 @@ upload_avrdude()
 			fi
 
 			# TODO - Eventually, it might be nice to check if the entered value is legit.
-		
+
 			# Else we use whatever they entered.
 			AVRDUDE_ISPDEVFILE=$REPLY
 			break
@@ -278,7 +326,7 @@ upload_avrdude()
 			# We will need to prompt the user for the value to use.
 			echo -e -n "${GREEN}Enter the programmer type of the programmer at '${AVRDUDE_ISPDEVFILE}': ${NO_COLOUR}"
 			read
-			echo -e "" 
+			echo -e ""
 
 			# Check the user actually entered something.
 			if [ -z "$REPLY" ]; then
@@ -292,12 +340,12 @@ upload_avrdude()
 			fi
 
 			# TODO - Eventually, it might be nice to check if the entered value is legit.
-		
+
 			# Else we use whatever they entered.
 			AVRDUDE_ISPDEVTYPE=$REPLY
 			break
 		done
-	fi	
+	fi
 
 	# TODO - Else, ask the user for any required information such as which node to upload to.
 
@@ -309,7 +357,7 @@ upload_avrdude()
 	# Do something trivial, so that we ask for their password in a tidy fashion.
 	${AVRDUDE_SUDO} ls > /dev/null
 	echo ""
-	
+
 	# Check if we are supposed to be uploading fuse settings.
 	AVRDUDE_LOCK_BEFORE=
 	AVRDUDE_LOCK_DURING=
