@@ -56,28 +56,22 @@
  */
 
 
-#ifndef __I2C_PLATFORM_H__
-#define __I2C_PLATFORM_H__
+#pragma once
 
 // REQUIRED HEADER FILES.
 #include <stdint.h>
 
-# define MAX_SCL_CPU_RATIO     16
+# define MIN_SCL_CPU_RATIO     16
 
-# define READ     1
-# define WRITE     0
+# define READ     0x01
+# define WRITE    0x00
 
 # define TWCR_START       (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
-# define TWCR_DATA_NAK       (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
-# define TWCR_DATA_ACK       (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
-# define TWCR_STOP       (1<<TWEN)|(0<<TWIE)|(1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(1<<TWSTO)|(0<<TWWC)
+# define TWCR_DATA_NAK    (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
+# define TWCR_DATA_ACK    (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
 
 //////////////////////// Insert io.h data here if decided to not use avr/io.h /////////////////////////
 
 /******************************************************************************************************/
-
-// TODO: get addresses on the power management board
-
-#endif /*__I2C_PLATFORM_H__*/
 
 // ALL DONE.

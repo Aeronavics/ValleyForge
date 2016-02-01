@@ -1,4 +1,4 @@
-// Copyright (C) 2011  Unison Networks Ltd
+// Copyright (C) 2016  Aeronavics Ltd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,14 +24,14 @@
  *  This is the header file which matches i2c.cpp.  Implements various functions relating to I2C, transmission
  *  and receiving of messages.
  *
- *  @author			Kevin Gong
+ *  @author			Sam Dirks
  *
  *
- *  @date			1-02-2014
+ *  @date			8-1-2016
  *
  *  @section 		Licence
  *
- * Copyright (C) 2014  Unison Networks Ltd
+ * Copyright (C) 2016  Aeronavics Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,8 +53,7 @@
  */
 
 // Only include this header file once.
-#ifndef __I2C_H__
-#define __I2C_H__
+#pragma once
 
 // INCLUDE REQUIRED HEADER FILES FOR INTERFACE.
 
@@ -66,97 +65,97 @@
 
 #include "hal/hal.hpp"
 #include "hal/target_config.hpp"
+#include "hal/gpio.hpp"
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
-#ifdef __AVR_ATmega2560__
-# define TWI_BUFFER_SIZE 20
-# define I2C_SR   _SFR_MEM8(0xB9)
-#elif defined (__AVR_AT90CAN128__)
-# define TWI_BUFFER_SIZE 20
-# define I2C_SR   _SFR_MEM8(0xB9)
-#elif defined (__AVR_ATmega8__)
-# define TWI_BUFFER_SIZE 20
-# define I2C_SR   _SFR_IO8(0x01)
-#endif
-
-class I2C_imp;
+class I2c_imp;
 
 // DEFINE PUBLIC CLASSES, TYPES AND ENUMERATIONS.
 
-enum CPU_CLK_speed
+#define I2C_BUFFER_SIZE 20
+
+#define CLK_TO_HZ 10000
+
+enum I2c_clk_speed
 {
-  CPU_1MHz = 100,     // No external pull-up required at this bus speed.
-  CPU_8MHz = 800,
-  CPU_16MHz = 1600
+	I2C_10kHz = 1,
+	I2C_100kHz = 10,
+	I2C_400kHz = 40
 };
 
-enum I2C_SCL_speed
+enum I2c_command_status {I2C_CMD_ACK, I2C_CMD_NAK, I2C_CMD_BUSY};
+
+enum I2c_gc_mode {I2C_GC_ENABLED, I2C_GC_DISABLED};
+
+enum I2c_mode
 {
-  I2C_10kHz = 1,     // No external pull-up required at this bus speed.
-  I2C_100kHz = 10,
-  I2C_400kHz = 40
+	I2C_IDLE,                 // The I2C interface is idle
+	I2C_MASTER_TRANSMITTING,  // The I2C interface is transmitting as master
+	I2C_MASTER_RECEIVING,     // The I2C interface is receiving as master
+	I2C_SLAVE_TRANSMITTING,   // The I2C interface is transmitting as slave
+	I2C_SLAVE_RECEIVING,      // The I2C interface is receiving as slave
+	I2C_SLAVE_RECEIVING_GC    // The I2C interface is receiving as slave address as general call
 };
 
-enum I2C_return_status
+enum I2c_pullup_state {I2C_PULLUP_ENABLED, I2C_PULLUP_DISABLED};
+
+enum I2c_address_type {I2C_7BIT_ADDRESS, I2C_10BIT_ADDRESS};
+
+struct I2c_address
 {
-  I2C_SUCCESS = 0x01,
-  I2C_ERROR = 0x00
+	I2c_address_type type;
+
+	union
+	{
+		uint8_t addr_7bit;
+		uint16_t addr_10bit;
+	} address;
+
+	static I2c_address from_7bit(uint8_t addr)
+	{
+		I2c_address _address;
+
+		_address.type = I2C_7BIT_ADDRESS;
+		_address.address.addr_7bit = addr & 0x7F;
+
+		// All done.
+		return _address;
+	}
+
+	static I2c_address from_10bit(uint16_t addr)
+	{
+		I2c_address _address;
+
+		_address.type = I2C_10BIT_ADDRESS;
+		_address.address.addr_10bit = addr & 0x03FF;
+
+		// All done.
+		return _address;
+	}
 };
 
-enum I2C_mode
+enum I2c_event
 {
-  I2C_MT,
-  I2C_MR,
-  I2C_ST,
-  I2C_SR
+	I2C_BUS_ERROR,
+	I2C_ARB_LOST,
+	I2C_MASTER_TX_SLA_NAK,
+	I2C_MASTER_TX_COMPLETE,
+	I2C_MASTER_TX_DATA_NAK,
+	I2C_MASTER_RX_SLA_NAK,
+	I2C_MASTER_RX_COMPLETE,
+	I2C_SLAVE_RX_BUF_FULL,
+	I2C_SLAVE_RX_GC_BUF_FULL,
+	I2C_SLAVE_RX_COMPLETE,
+	I2C_SLAVE_RC_GC_COMPLETE,
+	I2C_SLAVE_TX_COMPLETE,
+	I2C_SLAVE_TX_COMPLETE_OVR
 };
 
-// The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
-// status codes to be displayed is summarised to the right of each definition.
-enum I2C_status_code
+struct I2c_context
 {
-	// Master-specific codes ---------------------------------------------------------------------------------------------------------------------------
-	NO_INFO_TWINT_NOT_SET				= 0xf8,	// Meaning: The TWINT flag is not set, so no relevant information is available
-	BUS_ERROR							= 0x00,	// A bus error has occurred during a Two-wire Serial Bus transfer.
-												// From the data sheet: a bus error occurs
-  TWI_START 							= 0x08,	// A START condition has been transmitted
-	TWI_REP_START 					= 0x10,	// A repeated START condition has been transmitted
-  TWI_ARB_LOST 						= 0x38,	// Arbitration lost in SLA+W OR data bytes (master-transmitter)
-												// OR Arbitration lost in SLA+R or NOT ACK bit (master-receiver)
-
-  // Master Transmitter
-	MT_SLA_ACK 							= 0x18,	// SLA+W has been transmitted. ACK has been received.
-	MT_SLA_NAK 						= 0x20,	// SLA+W has been transmitted. NOT ACK has been received.
-	MT_DATA_ACK 						= 0x28,	// Data byte has been transmitted. ACK has been received.
-	MT_DATA_NAK 						= 0x30,	// Data byte has been transmitted. NOT ACK has been received.
-
-	// Master Receiver
-	MR_SLA_ACK 							= 0x40,	// SLA+R has been transmitted, ACK has been received
-	MR_SLA_NAK 						= 0x48,	// SLA+R has been transmitted; NOT ACK has been received
-	MR_DATA_ACK 						= 0x50,	// Data byte has been received; ACK has been returned
-	MR_DATA_NAK 						= 0x58,	// Data byte has been received; NOT ACK has been returned
-
-	// Slave-specific codes ---------------------------------------------------------------------------------------------------------------------------
-
-	// Slave Receiver
-	SR_SLA_ACK					= 0x60,	//  Own SLA+W has been received; ACK has been returned
-	S_LOST_ARB_1						= 0x68,	//  Arbitration lost in SLA+R/W as master; own SLA+W has been received; ACK has been returned
-	SR_GEN_ACK				= 0x70,	//  General call address has been received; ACK has been returned
-	S_LOST_ARB_2						= 0x78,	//  Arbitration lost in SLA+R/W as master; General call address has been received; ACK has been returned
-	SR_ADR_DATA_ACK			= 0x80,	//  Previously addressed with own SLA+W; data has been received; ACK has been returned
-	SR_ADR_DATA_NAK		= 0x88,	//  Previously addressed with own SLA+W; data has been received; NOT ACK has been returned
-	SR_GEN_DATA_ACK		= 0x90,	//  Previously addressed with general call; data has been received; ACK has been returned
-	SR_GEN_DATA_NAK	= 0x98,	//  Previously addressed with general call; data has been received; NOT ACK has been returned
-	SR_STOP_RESTART				= 0xA0,	//  A STOP condition or repeated START condition has been received while still addressed as slave
-
-	// Slave Transmitter
-	ST_SLA_ACK 							= 0xA8,	//  Own SLA+R has been received; ACK has been returned
-	S_LOST_ARB_3						= 0xB0,	//  Arbitration lost in SLA+R/W as master; own SLA+R has been received; ACK has been returned
-	ST_DATA_ACK 					= 0xB8,	//  Data byte in TWDR has been transmitted; ACK has been received
-	ST_DATA_NAK 				= 0xC0,	//  Data byte in TWDR has been transmitted; NOT ACK has been received
-	ST_DATA_ACK_LAST_BYTE 			= 0xC8, 	//  Last data byte in TWDR has been transmitted (TWEA = “0”); ACK has been received
-
+	I2c_event event;
+	void* context; // context for the event.
 };
 
 /**
@@ -165,104 +164,166 @@ enum I2C_status_code
  * This class implements various functions relating to operating a I2C interface.
  *
  */
-class I2C
+class I2c
 {
 	public:
 
-    // Functions.
+		// Functions.
 
-    /**
-     * Create I2C instance abstracting the specified I2C hardware peripheral.
-     */
-		I2C();
+		/**
+		 * Create I2C instance abstracting the specified I2C hardware peripheral.
+		 */
+		I2c(I2c_number i2c_number);
 
-    /**
-     * Called when I2C instance goes out of scope
-     */
-		~I2C(void);
+		/**
+		 * Called when I2C instance goes out of scope
+		 */
+		~I2c(void);
+		
+		/**
+		 * Initialise the I2C interface. The initialised state has the slave disabled.
+		 *
+		 * @param clk_speed    The I2C clock frequency to use.
+		 * @param slave_adr    The slave address to assign to this interface.
+		 * @param callback     The callback to use to handle completion of I2C operation notifications.
+		 // NOTE - The i2c bus has the clock held low until after the callback returns.
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status initialise(I2c_clk_speed clk_speed, I2c_address slave_addr, Callback callback);
+		
+		/**
+		 * Set the state of the internal pullups.
+		 *
+		 * @param    pullup_state     The state to which to set the pullups.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status set_internal_pullup(I2c_pullup_state pullup_state);
+		
+		/**
+		 * Get the status of the I2C interface.
+		 *
+		 * @return   The status of the I2C interface.
+		 */
+		I2c_mode get_i2c_status(void);
 
-    /**
-     * Enables the I2C/TWI interface by setting the enable bit in the control register. The
-     * CPU frequency must be at least 16x higher than the I2C frequency
-     *
-     * @param    CPU_CLK_speed        The CPU clock speed.
-     * @param    I2C_SCL_speed        I2C frequency.
-     * @param    slave_adr            The device slave address.
-     *
-     * @return   I2C_return_status    Success or Failure response.
-     */
-		I2C_return_status enable(CPU_CLK_speed cpu_speed, I2C_SCL_speed scl_speed, uint8_t slave_adr);
+		/**
+		 * Enable slave operation when the interface is next enters idle state.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status enable_slave(void);
+		
+		/**
+		 * Disable slave operation when the interface is next enters idle state.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status disable_slave(void);
+		
+		/**
+		 * Enable or disable the general call handling with general call mode. On disabling if a general
+		 * call receive is in progress it will be allowed to conclude.
+		 *
+		 * @param    gc_mode The general call mode to use, enable or disable.
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status set_general_call_mode(I2c_gc_mode gc_mode);
+		
+		/**
+		 * The controller waits until the bus is free then becomes the master controller and transmits
+		 * a message to a desired slave controller.
+		 * This is a non blocking function.
+		 *
+		 * @param    slave_adr    The slave to transmit to.
+		 * @param    data         Pointer to the array that contains bytes of message.
+		 * @param    msg_size     Number of bytes to send.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status master_transmit(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
 
-    /**
-     * Disables the I2C/TWI register by un setting the enable bit in the control register.
-     */
-		void disable(void);
+		/**
+		 * The controller waits until the bus is free then becomes the master controller and requests
+		 * data bytes from a slave controller.
+		 * This is a non blocking function.
+		 *
+		 * @param    slave_adr    The slave to receive from.
+		 * @param    data         Pointer to the the array to receive the bytes of message into.
+		 * @param    msg_size     Number of bytes to receive.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status master_receive(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
 
-    /**
-     * Wait for I2C to complete transmission.
-     *
-     */
-    void wait_I2C();
+		/**
+		 * The controller waits until the bus is free then becomes the master transmitter to send bytes 
+		 * to the slave followed by a repeated start becoming the master receiver to receive bytes from
+		 * the slave.
+		 * This is a non blocking function.
+		 *
+		 * @param    slave_adr      The slave to send to and receive from.
+		 * @param    tx_data        Pointer to the the array that contains bytes of message to send.
+		 * @param    tx_msg_size    Number of bytes to send.
+		 * @param    rx_data        Pointer to the the array to receive the bytes of message into.
+		 * @param    rx_msg_size    Number of bytes to receive.
+		 *
+		 * @return Success or Failure response.
+		 */
+		I2c_command_status master_transmit_receive(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size);
+		
+		/**
+		 * As a slave controller store data into a buffer where the data will be
+		 * transmitted on a request from a master controller. Will not overwite 
+		 * the transmit buffer if alreay transmitting as slave.
+		 *
+		 * @param    data                 The data to be stored in the I2C buffer.
+		 * @param    msg_size             Number of bytes to save.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status slave_transmit(uint8_t* data, uint8_t msg_size);
 
-    /**
-     * The controller becomes the master controller and transmits a message to a desired
-     * slave controller, chosen using the slave_adr variable.
-     *
-     * @param    slave_adr            The CPU clock speed.
-     * @param    data                 Pointer to the data address that contains byte of message.
-     * @param    msg_size             Number of bytes to send.
-     *
-     * @return   I2C_return_status    Success or Failure response.
-     */
-		I2C_return_status master_transmit(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
+		/**
+		 * As a slave controller, the I2C receive buffer is checked to see if any data has been
+		 * received. If there is data then it is copied into an array. Will prevent new data from
+		 * being received while the buffer is being read.
+		 *
+		 * @param    data     Location where the data should be stored.
+		 * @param    msg_size The number of bytes received. This is a return value.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status slave_receive(uint8_t* data, uint8_t* msg_size);
 
-    /**
-     * The controller becomes the master controller and requests data bytes from a slave controller.
-     *
-     * @param    slave_adr            The CPU clock speed.
-     * @param    data                 Pointer to the data address that contains byte of message.
-     * @param    msg_size             Number of bytes to send.
-     *
-     * @return   I2C_return_status    Success or Failure response.
-     */
-		I2C_return_status master_receive(uint8_t slave_adr, uint8_t* data, uint8_t msg_size);
-
-    /**
-     * As a slave controller the function stores data into a buffer where the data will be
-     * transmitted on a request from a master controller.
-     *
-     * @param    data                 the data to be stored in the I2C buffer.
-     * @param    msg_size             Number of bytes to save.
-     *
-     * @return   I2C_return_status    Success or Failure response.
-     */
-    I2C_return_status slave_transmit(uint8_t* data, uint8_t msg_size);
-
-    /**
-     * As a slave controller, the I2C receive buffer is checked to see if any data has been
-     * received. If there is data, then it is stored in a given variable.
-     *
-     * @param    data                 Location where the data should be stored.
-     *
-     * @return   I2C_return_status    Success or Failure response.
-     */
-    I2C_return_status slave_receive(uint8_t* data);
-
+		
+		/**
+		 * As a slave controller, the I2C general call receive buffer is checked to see if any data has been
+		 * received. If there is data, then it is stored in an array. Will prevent new data from
+		 * being received while the buffer is being read.
+		 *
+		 * @param    data     Location where the data should be stored.
+		 * @param    msg_size The number of bytes received. This is a return value.
+		 *
+		 * @return   Success or Failure response.
+		 */
+		I2c_command_status slave_receive_general_call(uint8_t* data, uint8_t* msg_size);
 
 	private:
 
 		// Methods.
-
-		I2C(I2C_imp*);
+		
+		I2c(void) = delete;	// Poisoned.
+		I2c(I2c*) = delete;  // Poisoned.
+		I2c(I2c_imp*);
+		I2c operator =(I2c const&) = delete;	// Poisoned.
 
 		// Fields.
 
-		I2C_imp* imp;
+		I2c_imp* imp;
 
 };
 
 // DEFINE PUBLIC STATIC FUNCTION PROTOTYPES.
-
-#endif /*__I2C_H__*/
 
 // ALL DONE.

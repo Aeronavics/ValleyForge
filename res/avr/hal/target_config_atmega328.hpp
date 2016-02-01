@@ -177,5 +177,13 @@ enum Adc_oversampling_mode {ADC_OVERSAMPLING_MODE_NONE};
 enum Adc_oversampling_ratio {ADC_OVERSAMPLING_RATIO_NONE};
 enum Adc_oversampling_shift {ADC_OVERSAMPLING_SHIFT_NONE};
 
+/* I2C */
+
+#define I2C_SDA_PORT    PORT_C
+#define I2C_SDA_PIN     PIN_4
+#define I2C_SCL_PORT    PORT_C
+#define I2C_SCL_PIN     PIN_5
+
+enum I2c_number{I2C_0};
 
 // ALL DONE.
