@@ -84,7 +84,7 @@ enum I2c_clk_speed
 	I2C_400kHz = 40
 };
 
-enum I2c_command_status {I2C_CMD_ACK, I2C_CMD_NAK, I2C_CMD_BUSY};
+enum I2c_command_status {I2C_CMD_ACK, I2C_CMD_NAK, I2C_CMD_BUSY, I2C_CMD_IMMUTABLE};
 
 enum I2c_gc_mode {I2C_GC_ENABLED, I2C_GC_DISABLED};
 

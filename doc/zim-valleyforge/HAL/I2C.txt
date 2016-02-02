@@ -13,9 +13,7 @@ Created Monday 09 February 2015
 [ ] Allowing user source code to be portable to supported targets with minimal changes
 
 === Targets ===
-* AT90CAN128
-* ATmega8
-* ATmega2560
+* ATmega328p
 
 == Private ==
 Instantiated at compile time
@@ -25,117 +23,220 @@ Is a singleton, a single instances manages the configuration of the I2C bus.
 Allocated at run-time by user
 User enables the I2C instance, and enables global interrupts with ''int_on()''
 
-Interactions with the I2C bus is conducted through the I2C instance. All modes of operation for I2C are availble with the exception of a general call function. Any data that is transmitted or received from the I2C bus must be stored in a preordained data variable.
+Interactions with the I2C bus is conducted through the I2C instance. All modes of operation for I2C are available. Any data that is transmitted or received from the I2C bus must be stored in a preordained data variable.
 
 == Hardware ==
-The most common error of implementing an I2C bus is that the user forgets about the pull up on the bus line. From the datasheet the minimum pull-up resistor size should be 1.5kOhms. The pull up resistors used in the Energy management board is 4.7kOhms, which should result in a slower slew rate but still be operational at 100kHz on the SCL line.
+The most common error of implementing an I2C bus is that the user forgets about the pull up on the bus line. For bus capacitance pullup resistor size limits see the  I2C-bus specification and user manual document [[http://www.nxp.com/documents/user_manual/UM10204.pdf|UM10204]] from NXP.
 
 === Usage ===
 
-== Initialisation ==
-Users must instantiate an I2C class and bind the chosen slave address to this instance simultaneously as these addresses will be used to reference the specific controller. I2C allows the user to define an operating frequency by programming the pre-scaler bits and the bit rate register. The most common speeds used in the I2C protocol are 10kHz, 100kHz and 400kHz. To configure the I2C frequency, the CPU frequency and the desired frequency must be passed to the enable function within the I2C instance. TWI protocol states that the CPU frequency must be at least 16x larger than the SCL frequency (I2C frequency). If a value which does not fit this criteria is given, the i2c will not be initialized and a error will be returned.
+== Addressing ==
+Addresses are handled through a dedicated address struct and supports both 7 and 10 bit addresses. The struct has static functions which create and return an instance of the struct with the correct address. All addresses specified must be right aligned.
 
-Lastly, the global interrupts must be enabled. The I2C HAL is driven off the ''TWI interrupt vector'', without the global interrupt enabled the functions within the I2C class will not work.
+== Example ==
+		'''
+		I2c_address address = I2c_address::from_7bit(0x36); // 7 bit address
+		I2c_address address = I2c_address::from_10bit(0x36); // 10 but address
+		'''
+
+
+== Initialisation ==
+Users must instantiate an I2C class using the chosen I2C harware interface. Then the interface can be initialised with SCL speed, slave address to use and callback. The most common SCL speeds used in the I2C protocol, 10kHz, 100kHz and 400kHz, are provided for use. If the clock settings of the system not allow a given I2C SLC speed the initialisation will return an error.
+
+Default initialisation settings set by the initialiser are general call address disabled, slave operation disabled and internal pullups disabled.
+
+Lastly, the global interrupts must be enabled. The I2C HAL is driven off the ''TWI interrupt vector'', without the global interrupts enabled the I2C interface will not transmit or receive data.
 
 == Example ==
 '''
-	I2C i2c_test;
-	i2c_test.enable(CPU_16MHz, I2C_100kHz, 0x02);
+	I2c i2c_test(I2C_0);
+	i2c_test.initialise(I2C_100kHz, I2c_address::from_7bit(0x36), callback);
 	int_on();
 '''
+
+
+== Slave operation ==
+Slave operation of the interface can be enabled or disabled. When disabled the interface will not ACK the slave addess set in the initialiser.
+
+== Example ==
+		'''
+		i2c_test.enable_slave(); // Slave is now enabled
+		
+		i2c_test.disable_slave(); // Slave is not disabled
+		'''
+
+
+
+== General call address ==
+For slave operation acknowledgement of the general call address for slave reveive can be enabled or disabled with a dedicated receive function. 
+
+== Example ==
+		'''
+		i2c_test.set_general_call_mode(I2C_GC_ENABLED); // General call address enabled
+		
+		i2c_test.set_general_call_mode(I2C_GC_DISABLED); // General call address disabled
+		'''
+
+
+== Internal pullups ==
+For an I2C bus with low capacitance the internal pullups may be sufficient for the pull up resistors. In this case they may be enabled.
+
+== Example ==
+	'''
+	i2c_test.set_internal_pullup(I2C_PULLUP_ENABLED); // Internal pullups are enabled
 	
+	i2c_test.set_internal_pullup(I2C_PULLUP_DISABLED); // Internal pullups are disabled
+	'''
+
+
+== Callback ==
+The callback is used to notifty the user of the conclusion of any operations or other events that may require user action.
+
+The context struct is as follows.
+'''
+struct I2c_context
+{
+	I2c_event event;
+	void* context; // context for the event.
+};
+'''
+event is the event that has occured. context is for additional context for the event. This is currently only used for the conclusion of a master receive to indicate the number of bytes received, for this the type is uint8_t*.
+
+== Example ==
+'''
+uint8_t num_received_bytes;
+
+void callback(void* i2c_context)
+{	
+	switch (((I2c_context*)i2c_context)->event)
+	{
+		case I2C_BUS_ERROR:
+		{
+			break;
+		}
+		case I2C_ARB_LOST:
+		{
+			break;
+		}
+		case I2C_MASTER_TX_SLA_NAK:
+		{
+			break;
+		}
+		case I2C_MASTER_TX_COMPLETE:
+		{
+			break;
+		}
+		case I2C_MASTER_TX_DATA_NAK:
+		{
+			break;
+		}
+		case I2C_MASTER_RX_SLA_NAK:
+		{
+			break;
+		}
+		case I2C_MASTER_RX_COMPLETE:
+		{
+			break;
+		}
+		case I2C_SLAVE_RX_BUF_FULL:
+		{
+			num_received_bytes = *((uint8_t*)context));
+			break;
+		}
+		case I2C_SLAVE_RX_GC_BUF_FULL:
+		{
+			num_received_bytes = *((uint8_t*)context));
+			break;
+		}
+		case I2C_SLAVE_RX_COMPLETE:
+		{
+			num_received_bytes = *((uint8_t*)context));
+			break;
+		}
+		case I2C_SLAVE_RC_GC_COMPLETE:
+		{
+			num_received_bytes = *((uint8_t*)context));
+			break;
+		}
+		case I2C_SLAVE_TX_COMPLETE:
+		{
+			break;
+		}
+		case I2C_SLAVE_TX_COMPLETE_OVR:
+		{
+			break;
+		}
+		default:
+		{
+			break; // Should never end up here as all cases should be handled
+		}
+	}
+}
+'''
+
 
 === Operating Modes ===
 
-== Master Transceiver ==
+== Master Transmiter ==
 Master Transceiver mode is where the current microcontroller assumes the master role and transmits data to a specified slave controller. The interaction begins with a variable(s) which the controller desires to send. In the example bellow the data buffer is filled with numbers from 0 to the pre determined ''TWI_BUFFER_SIZE. ''A pointer to this data buffer is created and passed onto the i2c master transmit function. The target slave address and the size of the message must also be sent with the data.
 
-If the master transmit function is called while the i2c bus is busy, the transmit function will poll the controller, waiting for the bus to become available before sending the data. 
+If the master transmit function is called while the interface is already operating as master it will return busy and not transmit any data. Conclusion of the of the transmission is notified through the callback. If arbitration is lost, slave is enabled and then addressed as slave the interface will switch to slave operation. The interface will also notify of the arbitration loss. Data is not sucessfully sent until ''I2C_MASTER_TX_COMPLETE'' has occured.
 
 == Example ==
 '''
 	int i;
-	uint8_t data_buf[TWI_BUFFER_SIZE];
+	uint8_t i2c_data_buf[TWI_BUFFER_SIZE];
 	for (i = 0; i < TWI_BUFFER_SIZE; i++)
 	{
 		data_buf[i] = i;
 	}
-	uint8_t* i2c_data;
-	i2c_data = data_buf;
-	i2c_test.master_transmit(TARGET_SLAVE_ADR, i2c_data, sizeof(data_buf));
+	i2c_test.master_transmit(I2c_address::from_7bit(TARGET_SLAVE_ADR), i2c_data_buf, sizeof(data_buf));
 '''
 
 
 == Master Receiver ==
 Master Receiver mode is where the current microcontroller assumes the master role and requests data from a specified slave controller. A variable must be initialized to store the received data, and passed to the master receive function with a pointer. The slave address and the desired amount of message bytes must also be specified. 
 
-If the master receive function is called while the i2c bus is busy, the receive function will poll the controller, waiting for the bus to become available before requesting for data. 
+If the master receive function is called while the interface is already operating as master it will return busy and not receive any data. Conclusion of the of the receive is notified through the callback. If arbitration is lost, slave is enabled and then addressed as slave the interface will switch to slave operation. The interface will also notify of the arbitration loss. Data is not sucessfully sent until ''I2C_MASTER_TX_COMPLETE'' has occured.
 
 == Example ==
 '''
-	uint8_t data_buf[TWI_BUFFER_SIZE];
-	uint8_t* i2c_data;
-	i2c_data = data_buf;
-	i2c_test.master_receive(TARGET_SLAVE_ADR, i2c_data, sizeof(data_buf));
+	uint8_t i2c_data_buf[TWI_BUFFER_SIZE];
+	i2c_test.master_receive(I2c_address::from_7bit(TARGET_SLAVE_ADR), i2c_data_buf, sizeof(data_buf));
 '''
 
 
-== Slave Transceiver ==
-Slave Transceiver mode is where the current microcontroller assumes the slave role and transmits data to a master requesting data from the controller. Data must be given to the i2c instance which stores that data in a private buffer tethered to the i2c HAL. 
+== Slave Transmitter ==
+Slave Transmitter mode is where the current microcontroller assumes the slave role and transmits data to a master requesting data from the controller. Data must be given to the i2c instance which stores that data in a private buffer tethered to the i2c HAL. 
 
 The slave transmit function will overwrite any previously set data stored. The data will be sent when a master requests for the slave to send the data. 
 
 Slave transmit has the ability to override the Master Recieve call for the number of bytes which are sent. Therefore, if the master request for 5 bytes and there are only 2 bytes of data, the slave will only send the 2 bytes. Also, if there are no data available the communication will be stopped.
  
+If the interface is transmitting as slave when ''slave_transmit'' is called it will return busy and the buffer will not be updated.
 
 == Example ==
 '''
 	int i;
-	uint8_t data_buf[TWI_BUFFER_SIZE];
+	uint8_t i2c_data_buf[TWI_BUFFER_SIZE];
 	for (i = 0; i < TWI_BUFFER_SIZE; i++)
 	{
 		data_buf[i] = i;
 	}
-	uint8_t* i2c_data;
-	i2c_data = data_buf;
-	i2c_test.slave_transmit(i2c_data, sizeof(data_buf));
+	i2c_test.slave_transmit(i2c_data_buf, sizeof(data_buf));
 '''
 
 
-== Slave Receive ==
-Slave Receive mode is where the current microcontroller assumes the slave role and receives data from a master transmitting data to the controller. The slave controller will receive data from the master controller as soon as the i2c instance has been enabled. The function call to slave receive is to check if there are data available in the i2c buffer. If the buffer contains data, that data is copied to the user data storage variable. 
+== Slave Receiver ==
+Slave Receive mode is where the current microcontroller assumes the slave role and receives data from a master transmitting data to the controller. The slave controller will receive data from the master controller as soon as the i2c instance has been initialised and the slave enabled. The function call to slave receive is to check if there is data available in the i2c buffer. If the buffer contains data, that data is copied to the user data storage variable and the number of bytes received copied into a length variable. 
 
 Unlike the other modes, the slave receive function will grab exactly the amount of data that was received in the last tranmission (or the maximum buffer size).
 
 == Example ==
 '''
 	uint8_t data_buf[TWI_BUFFER_SIZE];
-	uint8_t* i2c_data;
-	i2c_data = data_buf;
-	i2c_test.slave_receive(i2c_data);
-'''
-
-
-== Reading the TWI status register ==
-TWI protocol has a useful register called the status register that can be used to see exactacly which state the bus is in. Having this register allows i2c hardware abstraction to be run easily on interrupts. This status register can also be used to debug and problems with the TWI protocol. If communications are not working as they should, check the value of ''I2C_SR ''which should contain a byte value corresponding to the state of the TWI bus. The values can be easily interpreted with the enumeration defined as ''I2C_status_code''. 
-
-== Example ==
-'''
-	uint8_t state = I2C_SR;
-	switch (state)
-	{
-		case NO_INFO_TWINT_NOT_SET:
-		{
-			// error analysis
-		}
-		case BUS_ERROR:
-		{
-			// error analysis
-		}
-		.
-		.
-		.
-	}
+	uint8_t i2c_msg_length;
+	i2c_test.slave_receive(i2c_data, &i2c_msg_length);
 '''
 
 
@@ -144,7 +245,7 @@ All definitions can be found in the ''i2c.cpp  i2c.hpp  i2c_platform.hpp  ''file
 
 '''
 TWI_BUFFER_SIZE		20 (this is an arbitrary number)
-MAX_SCL_CPU_RATIO	16
+MIN_SCL_CPU_RATIO	16
 I2C_SR			TWSR (value of TWSR)
 '''
 

@@ -1017,6 +1017,9 @@ ISR(TWI_vect)
 		}
 		case S_LOST_ARB_1:
 		{
+			i2c_context.event = I2C_ARB_LOST;
+			i2c_callback((void*)&i2c_context);
+			
 			// Addressed as slave start receiving data.
 			i2c_buf_index = 0;
 			i2c_interface.slave_active = true;
@@ -1051,6 +1054,9 @@ ISR(TWI_vect)
 		}
 		case S_LOST_ARB_2:
 		{
+			i2c_context.event = I2C_ARB_LOST;
+			i2c_callback((void*)&i2c_context);
+			
 			// Addressed as slave general call start receiving data.
 			i2c_buf_index = 0;
 			i2c_interface.slave_active = true;
@@ -1069,8 +1075,10 @@ ISR(TWI_vect)
 		case SR_ADR_DATA_ACK:
 		{
 			// Nack on filling the buffer or buffer is being read.
-			if (i2c_buf_index > I2C_BUFFER_SIZE - 1) // Must preemtively know the next byte is the last to fit in the buffer.
+			if (i2c_buf_index >= I2C_BUFFER_SIZE - 2) // Must preemtively know the next byte is the last to fit in the buffer.
 			{
+				i2c_interface.sr_buf[i2c_buf_index++] = TWDR;
+				i2c_interface.sr_msg_size++;
 				TWCR = TWCR_DATA_NAK;
 			}
 			else
@@ -1084,8 +1092,13 @@ ISR(TWI_vect)
 		}
 		case SR_ADR_DATA_NAK:
 		{
+			i2c_interface.sr_buf[i2c_buf_index] = TWDR;
+			i2c_interface.sr_msg_size;
+			
 			i2c_interface.current_mode = I2C_IDLE;
 			i2c_context.event = I2C_SLAVE_RX_BUF_FULL;
+			i2c_interface.slave_active = false;
+			i2c_context.context = (void*)&i2c_buf_index;
 			i2c_callback((void*)&i2c_context);
 			
 			// Receive buffer has overflowed or buffer is being read.
@@ -1110,8 +1123,10 @@ ISR(TWI_vect)
 		case SR_GEN_DATA_ACK:
 		{
 			// Nack on filling the buffer or buffer is being read.
-			if (i2c_buf_index > I2C_BUFFER_SIZE - 1) // Must preemtively know the next byte is the last to fit in the buffer.
+			if (i2c_buf_index >= I2C_BUFFER_SIZE - 2) // Must preemtively know the next byte is the last to fit in the buffer.
 			{
+				i2c_interface.sr_gc_buf[i2c_buf_index++] = TWDR;
+				i2c_interface.sr_gc_msg_size++;
 				TWCR = TWCR_DATA_NAK;
 			}
 			else
@@ -1125,9 +1140,13 @@ ISR(TWI_vect)
 		}
 		case SR_GEN_DATA_NAK:
 		{
+			i2c_interface.sr_gc_buf[i2c_buf_index++] = TWDR;
+			i2c_interface.sr_gc_msg_size++;
+			
 			i2c_interface.current_mode = I2C_IDLE;
 			i2c_context.event = I2C_SLAVE_RX_GC_BUF_FULL;
 			i2c_interface.slave_active = false;
+			i2c_context.context = (void*)&i2c_buf_index;
 			i2c_callback((void*)&i2c_context);
 			
 			// Receive buffer has overflowed or buffer is being read.
@@ -1216,6 +1235,9 @@ ISR(TWI_vect)
 		}
 		case S_LOST_ARB_3:
 		{
+			i2c_context.event = I2C_ARB_LOST;
+			i2c_callback((void*)&i2c_context);
+			
 			// Addressed as slave to transmit bytes
 			i2c_buf_index = 0;
 
