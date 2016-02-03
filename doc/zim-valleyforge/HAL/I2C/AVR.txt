@@ -1,0 +1,12 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2016-02-04T10:43:57+13:00
+
+====== AVR Module Usage Notes ======
+Created Thursday 04 February 2016
+
+All AVR processors use the same I2C hardware and are identical in use.
+
+===== Missed start problem =====
+There is a bug in the I2C hardware that causes the hardware to miss a start condition when processing a stop as slave receiver if operated in a multimaster setup. If the I2C interface is also being used as master and a master operation is waiting to start it will send a start condition when able. If a preceding start condition has been missed and the bus is in use by another master the start will be transmit in an illegal position causing a bus error and potentially causing the bus to lockup. To prevent this ensure that there is a delay of at least 15us between the stop being transmitted to the AVR slave on the bus and the next start.
+

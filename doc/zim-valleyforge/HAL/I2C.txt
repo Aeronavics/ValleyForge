@@ -252,10 +252,8 @@ I2C_SR			TWSR (value of TWSR)
 
 ==== Implementation Status ====
 
-	Incomplete general call functionality.
-	No arbitration lost functionality.
-
+	ATmega328P - Implementation complete.
 	ATmega2560  - Implementation complete.
-	AT90CAN128  - Implementation completed.
+	AT90CAN128  - Implementation complete.
 	ATmega64M1/C1 - TWI not available, (use LIN)
 	
