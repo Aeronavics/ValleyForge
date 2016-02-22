@@ -63,7 +63,12 @@
 #include "hal/tc_platform.hpp"
 
 // Include the gpio functionality for tying pins with PWM and input capture.
-//#include "hal/gpio.hpp"
+#include "hal/gpio.hpp"
+//IO_pin_address address({PORT_D, PIN_6});
+//Gpio_pin testpin(address);
+
+// DEFINE PRIVATE MACROS.
+#define MAX_PPM_CHANNELS 12
 
 // FORWARD DEFINE PRIVATE PROTOTYPES
 
@@ -82,20 +87,71 @@ class Ppm_input_helper
 {
 	public:
 		// Functions
-		Ppm_input_helper(Tc_number tc_number);
-		
-		~Ppm_input_helper(void);
+		/**
+		 * Create Ppm_input_helper instance that provides ppm input functionality on a timer input capture pin.
+		 *
+		 * @param Tc_number The timer which to use to output the ppm signal.
+		 * @param Tc_ic_channel The input capture channel to use for the ppm signal.
+		 */
+		Ppm_input_helper(Tc_number tc_number, Tc_ic_channel tc_ic_channel);
 	
-		Servo_command_status initialise(Tc_ic_channel tc_ic_channel, size_t number_channels, uint16_t frame_seperation_blank_time, bool invert);
+		/**
+		 * Initialise the timer system for ppm input.
+		 * 
+		 * @param size_t The number of channels in the ppm input stream. This must be less than or equal too MAX_PPM_CHANNELS defined above.
+		 * @param bool Input an inverted ppm signal, _-_-__ normal, -_-_-- inverted.
+		 */
+		Servo_command_status initialise(size_t number_channels, uint16_t min_frame_seperation_time, bool invert);
 		
+		/**
+		 * Start the ppm input.
+		 *
+		 * Global interrupts must be enabled for the ppm to be input.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status start(void);
 		
+		/**
+		 * Stop the ppm output.
+		 * If not started between frames the first result taken will be incorrect.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status stop(void);
 		
+		/**
+		 * Register a callback that is called when ever a new ppm frame is received.
+		 *
+		 * @param Callback The callback will be called with a void pointer to a uint16_t array containing the values of each of the channels in microseconds, the length of the array is the number of channles passed into the initialise function.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status register_callback(Callback callback);
 		
+		/**
+		 * Remove link to the callback so that it is no longer called.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
+		Servo_command_status remove_callback(void);
+		
+		/**
+		 *	Get the current position of the given channel in microseconds.
+		 *
+		 * @param size_t The channel of which to get the position of
+		 * @return uint16_t The position of the channel in microseconds. 0 will be returned until a valid input is received.
+		 */
 		uint16_t get_position(size_t channel);
 		
+		/**
+		 * Get the positions of all channels in microseconds.
+		 * 
+		 * @param uint16_t* A pointer to an array which to fill with the positions of all channels. Value of positions will be 0 until valid input has been received.
+		 * @return Nothing.
+		 */
 		void get_positions(uint16_t* positions);
 	
 		// Fields
@@ -117,18 +173,58 @@ class Ppm_output_helper
 {
 	public:
 		// Functions
-		Ppm_output_helper(Tc_number tc_number);
+		/**
+		 * Create Ppm_output_helper instance that provides ppm output functionality on a timer output pin.
+		 *
+		 * @param Tc_number The timer which to use to output the ppm signal.
+		 * @param Tc_oc_channel The output channel to use for the ppm signal.
+		 */
+		Ppm_output_helper(Tc_number tc_number, Tc_oc_channel tc_oc_channel);
 		
-		~Ppm_output_helper(void);
+		/**
+		 * Initialise the timer system for ppm output.
+		 * 
+		 * @param size_t The number of channels to send in the output ppm stream.
+		 * @param uint16_t The length of the ppm frame in microseconds.
+		 * @param bool Output an inverted ppm signal, _-_-__ normal, -_-_-- inverted.
+		 */
+		Servo_command_status initialise(size_t number_channels, uint16_t frame_length, bool invert);
 		
-		Servo_command_status initialise(Tc_oc_channel tc_oc_channel, size_t number_channels, uint16_t frame_length, bool invert);
-		
+		/**
+		 * Start the ppm output.
+		 *
+		 * Global interrupts must be enabled for the ppm to output. Also at least one call to set_positions(uint16_t* positions)
+		 * must be made to set a valid output value before the pwm signal will output.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status start();
 		
+		
+		/**
+		 * Stop the ppm output.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
 		Servo_command_status stop();
 		
+		/**
+		 * Set the position of one channel of the ppm output.
+		 *
+		 * @param size_t The channel number of the channel to set the position of.
+		 * @param uint16_t The position in microseconds to set the channel to.
+		 * @return Nothing.
+		 */
 		void set_position(size_t channel, uint16_t position);
 		
+		/**
+		 * Set the positiond of all channels of the ppm output.
+		 *
+		 * @param uint16_t* A pointer to an array containing positions in microseconds for all channels.
+		 * @return Nothing.
+		 */
 		void set_positions(uint16_t* positions);
 		
 		// Fields
@@ -171,6 +267,7 @@ class Pwm_input_helper
 		 * Start the pwm input.
 		 *
 		 * Global interrupts must be enabled for the pwm to output.
+		 * If started during the pulse of an pwm input the first reading will be incorrect.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
@@ -194,10 +291,18 @@ class Pwm_input_helper
 		Servo_command_status register_callback(Callback callback);
 		
 		/**
+		 * Remove link to the callback so that it is no longer called.
+		 *
+		 * @param Nothing.
+		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.
+		 */
+		Servo_command_status remove_callback(void);
+		
+		/**
 		 *	Get the current pulse width of the pwm input signal in microseconds.
 		 *
 		 * @param Nothing.
-		 * @return uint16_t the width of the input pwm pulse in microseconds. 
+		 * @return uint16_t the width of the input pwm pulse in microseconds. 0 will be returned until valid input has been received.
 		 */
 		uint16_t get_position(void);
 		
@@ -242,7 +347,8 @@ class Pwm_output_helper
 		/**
 		 * Start the pwm output.
 		 *
-		 * Global interrupts must be enabled for the pwm to output.
+		 * Global interrupts must be enabled for the pwm to output. Also at least one call to set_position(uint16_t position)
+		 * must be made to set a valid output value before the pwm signal will output.
 		 *
 		 * @param Nothing.
 		 * @return SERVO_CMD_ACK if successful or SERVO_CMD_NAK if unsuccessful.

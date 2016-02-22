@@ -134,7 +134,7 @@ enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF
 /* Servo */
 
 #define SERVO_TC_CLK TC_SRC_INT
-#define SERVO_TC_PRE TC_PRE_8
+#define SERVO_TC_PRE TC_PRE_8 // This devisor must be set such that the timer ticks period is ~500ns
 #define SERVO_PRE_DEVISOR 8
 #define SERVO_OC_MODE TC_OC_NONE
 #define SERVO_SET TC_OC_CHANNEL_MODE_3
@@ -148,5 +148,34 @@ enum Tc_int_vect {TIMER0_OVF_int, TIMER0_COMPA_int, TIMER0_COMPB_int, TIMER1_OVF
 enum Servo_state {SERVO_LOW, SERVO_HIGH};
 enum Servo_int_type {SERVO_OC_A, SERVO_OC_B, SERVO_IC_A, SERVO_OVF};
 static const uint8_t Timer_size[] = {8, 16, 8};
+
+/* ADC */
+
+enum Adc_clock_src_pre {ADC_SRC_INT_PRE_2, ADC_SRC_INT_PRE_4, ADC_SRC_INT_PRE_8, ADC_SRC_INT_PRE_16, ADC_SRC_INT_PRE_32, ADC_SRC_INT_PRE_64, ADC_SRC_INT_PRE_128};
+enum Adc_speed_mode {ADC_SPEED_MODE_NORMAL};
+enum Adc_auxiliary_supply {ADC_AUXILIARY_SUPPLY_NONE};
+enum Adc_multi_adc_mode {ADC_MULTI_ADC_MODE_NONE};
+enum Adc_multi_adc_dma_mode {ADC_MULTI_ADC_DMA_MODE_NONE};
+enum Adc_unit {ADC_UNIT_0};
+enum Adc_conv_channel {ADC_CONV_CHANNEL_REGULAR};
+enum Adc_input_channel {ADC_INPUT_CHANNEL_0 = 0x00, ADC_INPUT_CHANNEL_1 = 0x01, ADC_INPUT_CHANNEL_2 = 0x02, ADC_INPUT_CHANNEL_3 = 0x03, ADC_INPUT_CHANNEL_4 = 0x04, ADC_INPUT_CHANNEL_5 = 0x05, ADC_INPUT_CHANNEL_6 = 0x06, ADC_INPUT_CHANNEL_7 = 0x07, ADC_INPUT_CHANNEL_8 = 0x08, ADC_INPUT_CHANNEL_1_1V = 0x0E, ADC_INPUT_CHANNEL_0V = 0x0F};
+enum Adc_input_mode {ADC_INPUT_MODE_NONE};
+enum Adc_conversion_status {ADC_CONVERSION_COMPLETE, ADC_CONVERSION_NOT_COMPLETE};
+enum Adc_data_alignment {ADC_DATA_RIGHT_ALIGNED, ADC_DATA_LEFT_ALIGNED};
+enum Adc_resolution {ADC_RESOLUTION_NONE};
+enum Adc_operating_mode {ADC_OPERATING_MODE_MANUAL, ADC_OPERATING_MODE_TRIGGERED};
+enum Adc_sampling_time {ADC_SAMPLING_TIME_NONE};
+enum Adc_reference_source {ADC_REFERENCE_SOURCE_AREF, ADC_REFERENCE_SOURCE_AVCC_CAP, ADC_REFERENCE_SOURCE_1_1V_CAP};
+enum Adc_interrupt_source {ADC_INTERRUPT_SOURCE_CONVERSION_COMPLETE};
+enum Adc_trigger_source  {ADC_TRIGGER_SOURCE_FR = 0x00, ADC_TRIGGER_SOURCE_ACOMP = 0x01, ADC_TRIGGER_SOURCE_EXTI0 = 0x02, ADC_TRIGGER_SOURCE_TC0OCA = 0x03, ADC_TRIGGER_SOURCE_TC0OVF = 0x04, ADC_TRIGGER_SOURCE_TC1OCB = 0x05, ADC_TRIGGER_SOURCE_TC1OVF = 0x06, ADC_TRIGGER_SOURCE_TC1ICA = 0x07};
+enum Adc_trigger_edge {ADC_TRIGGER_EDGE_RISING};
+enum Adc_watchdog {ADC_WATCHDOG_NONE};
+enum Adc_watchdog_mode {ADC_WATCHDOG_MODE_NONE};
+enum Adc_watchdog_channel {ADC_WATCHDOG_CHANNEL_NONE};
+enum Adc_dma_mode {ADC_DMA_MODE_NONE};
+enum Adc_oversampling_mode {ADC_OVERSAMPLING_MODE_NONE};
+enum Adc_oversampling_ratio {ADC_OVERSAMPLING_RATIO_NONE};
+enum Adc_oversampling_shift {ADC_OVERSAMPLING_SHIFT_NONE};
+
 
 // ALL DONE.

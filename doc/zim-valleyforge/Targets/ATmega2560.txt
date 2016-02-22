@@ -45,6 +45,10 @@ TODO: Description of the I2C module and allowable config values
 ===== CAN =====
 This target does not support CAN.
 
+===== ADC =====
+
+TODO: Description of limitations are functionality.
+
 ===== Fuses =====
 The ATmega2560 has three Fuse bytes that determine the chip functionality.
 

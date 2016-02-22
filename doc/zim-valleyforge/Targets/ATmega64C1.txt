@@ -44,6 +44,11 @@ This target does not support I2C/TWI
 ===== CAN =====
 TODO: Description of the CAN module and allowable config values
 
+===== ADC =====
+Differential input amplifiers are not supported by the HAL. If they are to be used configuration must be hard coded.
+
+TODO: Description of further limitations are functionality.
+
 ===== Fuses =====
 The ATmega16M1/32M1/64M1/32C1/64C1 has three Fuse bytes that determine the chip functionality.
 

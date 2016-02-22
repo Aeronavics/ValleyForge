@@ -46,6 +46,8 @@
 	#define EEPROM_END_ADDRESS	0x07FF
 #elif defined(__AVR_AT90CAN128__)
 	#define EEPROM_END_ADDRESS	0x0FFF
+#elif defined (__AVR_ATmega328__)
+	#define EEPROM_END_ADDRESS  0x03FF
 #else
 	#error "EEPROM address limits not configured."
 #endif

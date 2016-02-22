@@ -179,6 +179,7 @@ The order of allocation of non-static data members, separated by an access-speci
 
 	**2.3.28** **Clearly separate platform-specific from portable code.**
 
+
 ===== Structures =====
 
 	**2.3.29 Do not write the default **//public//** keyword for structures and do not use **//protected//** or **//private//** sections.**
