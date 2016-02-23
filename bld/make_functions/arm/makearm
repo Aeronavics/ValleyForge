@@ -118,53 +118,14 @@ makearm_linux()
 		LFLAGS="-T linker_script.x $LFLAGS"
 	fi
 
-	# Because we are cross compiling, we need to make sure pkg_config is looking to link to libraries on our target.
-	export PKG_CONFIG_SYSROOT_DIR=${VF_CROSS_COMPILE_SYSROOT}
-	export PKG_CONFIG_DIR=
-	export PKG_CONFIG_LIBDIR=$(eval echo ${VF_PKG_CONFIG_LIBDIRS})
-
 	# Update the flags in case they still contain some unevaluated variables.
 	CFLAGS=$(eval echo $CFLAGS)
 	PFLAGS=$(eval echo $PFLAGS)
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 
-	# Resolve system header and library references.
-	if [ -n "${VF_LIB_DEPS}" ]; then 
-		# Iterate over each unique library name.
-		echo -e "${CYAN}Detecting include details for required system libraries:\n${NO_COLOUR}"
-		local LIB_NAME
-		for LIB_NAME in $(echo ${VF_LIB_DEPS} | xargs -n1 | sort -u | xargs); do
-			# Try to resolve include (header) flags for this library.
-			local LIB_H_FLAGS=$(pkg-config --cflags ${LIB_NAME} 2>&1)
-			if [ -n "$(echo ${LIB_H_FLAGS} | grep "No package")" ]; then
-				# Something went wrong.
-				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
-				continue
-			fi
-			echo -e "${CYAN}\t${LIB_NAME}: Include Flags: ${LIB_H_FLAGS}"
-			CFLAGS+=" ${LIB_H_FLAGS}"
-			PFLAGS+=" ${LIB_H_FLAGS}"
-			AFLAGS+=" ${LIB_H_FLAGS}"
-
-			# Try to resolve library (linker) flags for this library.
-			local LIB_L_FLAGS=$(pkg-config --libs ${LIB_NAME})
-			if [ -n "$(echo ${LIB_L_FLAGS} | grep "No package")" ]; then
-				# Something went wrong.
-				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
-				continue
-			fi
-			echo -e "${CYAN}\t${LIB_NAME}: Library Flags: ${LIB_L_FLAGS}"
-			LFLAGS+=" ${LIB_L_FLAGS}"
-		done
-		echo ""
-	fi
-
-	# Restore pkg_config to normal operation.
-	unset PKG_CONFIG_SYSROOT_DIR
-	unset PKG_CONFIG_DIR
-	unset PKG_CONFIG_LIBDIR
-	unset PKG_CONFIG_DEBUG_SPEW
+	# Update flags to allow for system library dependencies.
+	generate_include_library_flags
 
 	# Native targets might require multiple application executables, which which case we need to iterate over each of them.
 

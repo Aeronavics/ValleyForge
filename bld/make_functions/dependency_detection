@@ -65,6 +65,13 @@ find_source_dependencies()
 
 	# Find the source files required to build the application.
 	echo -e "${CYAN}\tDetecting source dependencies for ${TARGET_FILE}...\n${NO_COLOUR}"
+
+	if [ ${VF_DEBUG} ]; then
+		echo -e "Using: ${C_COMPILER} ${CFLAGS} -MM ***"
+		echo -e "Using: ${P_COMPILER} ${PFLAGS} -MM ***"
+		echo -e "Using: ${ASSEMBLER} ${AFLAGS} -MM ***"
+	fi
+
 	if ! find_source_dependencies_recursive ${TARGET_FILE}; then
 		# Something went wrong.
 		echo -e "${RED}\tUnable to calculate source dependencies for ${TARGET_FILE}.\n${NO_COLOUR}"
@@ -572,6 +579,75 @@ generate_component_dependencies()
 
 	# All done.
 	return 0
+}
+
+######################################## FUNCTION ####################################################
+###
+### Name:			generate_include_library_flags
+###
+### Inputs:			1. The directory containing the file which is being examined for dependencies.
+###					2. The name of the file which is being examined for dependencies.
+###
+### Outputs:        Returns zero for success, non-zero for failure.
+###
+### Purpose:		Updates the compiler flag variables (CFLAGS, PFLAGS, AFLAGS) to include required
+###                 header file paths and library linking flags to support whatever system libraries
+###                 the component is going to link against.
+###
+######################################################################################################
+generate_include_library_flags()
+{
+	# Check if we are cross compiling.
+	if [ -n "${VF_CROSS_COMPILE_SYSROOT}" ]; then
+		# Because we are cross compiling, we need to make sure pkg_config is looking to link to libraries on our target.
+		export PKG_CONFIG_SYSROOT_DIR=${VF_CROSS_COMPILE_SYSROOT}
+		export PKG_CONFIG_DIR=
+		export PKG_CONFIG_LIBDIR=$(eval echo ${VF_PKG_CONFIG_LIBDIRS})
+		if [ ${VF_DEBUG} ]; then
+			echo -e "${BOLD_WHITE}PKG CONFIG LIBDIRS: ${NO_COLOUR}$(eval echo ${VF_PKG_CONFIG_LIBDIRS})\n${NO_COLOUR}"
+		fi
+	fi
+
+	# Resolve system header and library references.
+	if [ -n "${VF_LIB_DEPS}" ]; then 
+		# Iterate over each unique library name.
+		echo -e "${CYAN}Detecting include details for required system libraries:\n${NO_COLOUR}"
+		local LIB_NAME
+		for LIB_NAME in $(echo ${VF_LIB_DEPS} | xargs -n1 | sort -u | xargs); do
+			# Try to resolve include (header) flags for this library.
+			local LIB_H_FLAGS=$(pkg-config --cflags ${LIB_NAME} 2>&1)
+			if [ -n "$(echo ${LIB_H_FLAGS} | grep "No package '${LIB_NAME}' found")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			elif [ -n "$(echo ${LIB_H_FLAGS} | grep "required by '${LIB_NAME}', not found")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find dependency.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Include Flags: ${LIB_H_FLAGS}"
+			CFLAGS+=" ${LIB_H_FLAGS}"
+			PFLAGS+=" ${LIB_H_FLAGS}"
+			AFLAGS+=" ${LIB_H_FLAGS}"
+
+			# Try to resolve library (linker) flags for this library.
+			local LIB_L_FLAGS=$(pkg-config --libs ${LIB_NAME})
+			if [ -n "$(echo ${LIB_L_FLAGS} | grep "No package")" ]; then
+				# Something went wrong.
+				echo -e "${RED}\t${LIB_NAME}: Could not find package.${NO_COLOUR}"
+				continue
+			fi
+			echo -e "${CYAN}\t${LIB_NAME}: Library Flags: ${LIB_L_FLAGS}"
+			LFLAGS+=" ${LIB_L_FLAGS}"
+		done
+		echo ""
+	fi
+
+	# Restore pkg_config to normal operation.
+	unset PKG_CONFIG_SYSROOT_DIR
+	unset PKG_CONFIG_DIR
+	unset PKG_CONFIG_LIBDIR
+	unset PKG_CONFIG_DEBUG_SPEW	
 }
 
 # ALL DONE.

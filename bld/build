@@ -455,6 +455,7 @@ Parameters:
 
 Options:
 	-h --help			Show this message.
+	-d --debug          Enable debug output.
 	-a --all			Build all components.
 	-c --check			Run code compliance checks before building each component.
 	-r --retain			Retain temporary files at completion of script.
@@ -525,11 +526,12 @@ NOHAL=
 NOAPP=
 POSTPACK=
 VF_EN_COMPLIANCE_CHECKS=
+VF_DEBUG=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/} 
-SHORTOPTS="harbfpcn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,name:"
+SHORTOPTS="harbdfpcn:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,debug,name:"
 
 # Use 'getopt' to parse the command line options.
 if [ VF_OS_DARWIN ]; then
@@ -576,6 +578,10 @@ while true; do
 			# Specify the name of the component to build.
 			shift
 			NAME="$NAME$1 " # NOTE - The space is intentional!
+			;;
+		-d|--debug)
+			# Enable debug output.
+			VF_DEBUG=1
 			;;
 		--nohal)
 			# Select 'not using HAL'.

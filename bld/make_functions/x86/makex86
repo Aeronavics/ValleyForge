@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#	Copyright (C) 2012 Unison Networks Ltd
+#	Copyright (C) 2015 Aeronavics Ltd
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -17,34 +17,88 @@
 
 ###########################################################################################################################
 ###
-### Name:		make_native
+### Name:           makex86
 ###
-### Author:		Edwin Hayes
+### Author:         Edwin Hayes
 ###
-### Date Created:	19-03-2012
+### Date Created:   19-03-2012
 ###
-### Type:		Bash Script
+### Type:           Bash Script
 ###
-### Purpose:		Provides functions which makes components natively (i.e. NOT cross-compiled).
+### Purpose:        Provides functions which makes x86 type components.
 ###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
-echo -e "${CYAN}Imported native make-functions.\n${NO_COLOUR}"
+echo -e "${CYAN}Imported x86 make-functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
 ###
-### Name:		makenative
+### Name:		makex86_linux
 ###
 ### Inputs/Outputs:	None
 ###
-### Purpose:		Copies native makefile into tmp directory, edits it, and uses
-### 			    it to compile the files that are already there.
+### Purpose:    Copies x86 makefile into tmp directory, edits it, and uses it
+###             to compile the files that are already there.  This compiles a
+###             component which will run a Linux type platform.
 ###
 ###########################################################################################
 
-makenative()
+makex86_linux()
 {
+	# See if the user wants to use a different sysroot for the compilation.
+
+	# NOTE - We ask this before the standard precompile stuff, so that once they answer, the reset of the process is non-interactive.
+
+	# Check if the component/build configuration set specified this.
+	if [ ! -z ${VF_CROSS_COMPILE_SYSROOT} ]; then
+		# The setting was specified.  Check if the user wants to use this.
+		echo -e "${CYAN}The configuration for component $COMPONENT specifies to use '${BOLD_CYAN}${VF_CROSS_COMPILE_SYSROOT}${CYAN}' as the sysroot directory for compilation.${NO_COLOUR}"
+		echo -e -n "${GREEN}Do you wish to use this setting? (Y/N) ${NO_COLOUR}"
+		read -n 1
+		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+			
+		# If they responded YES, then use the setting.  If NO, then we'll need to ask them what to use.
+		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+			unset VF_CROSS_COMPILE_SYSROOT
+		fi
+	fi
+
+	# Check if the sysroot setting has been chosen yet.
+	if [ -z ${VF_CROSS_COMPILE_SYSROOT} ]; then
+		# Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+
+		while :
+		do
+			# We will need to prompt the user for the value to use.
+			echo -e -n "${GREEN}Enter the path to the sysroot to use when cross-compiling (this will be something like '/media/username/sd_root'): ${NO_COLOUR}"
+			read
+			echo -e "" 
+
+			# Check the user actually entered something.
+			if [ -z "$REPLY" ]; then
+				# We'll just prompt again.
+				continue
+
+			# Check if the user actually just wants to exit without building anything.
+			elif [ "$REPLY" == "exit" ]; then
+				# Exit the script.
+				return 1
+			fi
+
+			# Test if the entered value is actually a real directory.
+			if [ ! -d "$REPLY" ]; then
+				# The specified directory does not exist, so we abort.
+				echo -e "${RED}Directory $REPLY does not exist.  Aborting...\n${NO_COLOUR}"
+				return 1
+			fi
+			
+			# Else we use whatever they entered.
+			VF_CROSS_COMPILE_SYSROOT="$REPLY"
+			break
+		done
+	fi
+
 	# Perform the standard precompile routine.
 	if ! generic_precompile; then
 		# There isn't anything to do.
@@ -90,6 +144,7 @@ makenative()
 		# Update the working makefile with the appropriate values for this executable.	
 		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(CC *= *)BUILD_INSERTS_C_COMPILER_HERE(\\s.*)?^\1$C_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(PC *= *)BUILD_INSERTS_P_COMPILER_HERE(\\s.*)?^\1$P_COMPILER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
+		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(AS *= *)BUILD_INSERTS_ASSEMBLER_HERE(\\s.*)?^\1$ASSEMBLER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(LD *= *)BUILD_INSERTS_LINKER_HERE(\\s.*)?^\1$LINKER\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(OBJCOPY *= *)BUILD_INSERTS_OBJCOPY_HERE(\\s.*)?^\1$OBJCOPY\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
 		${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(OBJDUMP *= *)BUILD_INSERTS_OBJDUMP_HERE(\\s.*)?^\1$OBJDUMP\2^" $TCPATH/$TMP_SRC_DIR/$COMPONENT/Makefile
@@ -103,7 +158,7 @@ makenative()
 
 		# Generate the Make.deps dependency file.    
 		pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | sed "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
+		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | ${VF_OSCFG_SED} "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
 		generate_component_dependencies . ${PARENT_SOURCE_FILE}
 		popd >/dev/null
 
@@ -120,7 +175,7 @@ makenative()
 			return 1
 		fi
 		echo -e ""
-	
+
 		# The compilation worked, so now just copy across the output binaries into the appropriate format.
 		mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
 		if [[ ${EXECUTABLE} = *\/* ]]; then
@@ -136,7 +191,9 @@ makenative()
 		fi
 		echo -e ""
 
-		# TODO - Print out the size of the generated file.	
+		# Print out details of the size of the generated hex file.
+		echo -e "${WHITE}Output file size details:\n${NO_COLOUR}"
+		$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/$COMPONENT/$EXECUTABLE
 	done
 
 	# All done.
@@ -144,3 +201,4 @@ makenative()
 	return 0
 }
 
+# ALL DONE.
