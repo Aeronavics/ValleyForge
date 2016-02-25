@@ -429,8 +429,8 @@ Adc_command_status Adc_imp::disable(Adc_unit adc_unit)
 
 Adc_command_status Adc_imp::initialise(Adc_unit adc_unit)
 {
-	// Clear each of the configureation registers to reset defaults. No special handling is required.
-	ADCSRA = 0x00;
+	// Clear each of the configureation registers to reset defaults. Clock settings are left  untouched.
+	ADCSRA = ADCSRA & 0x07;
 	ADCSRB = 0x00;
 	ADMUX = 0x00;
 	

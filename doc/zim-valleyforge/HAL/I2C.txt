@@ -13,7 +13,9 @@ Created Monday 09 February 2015
 [ ] Allowing user source code to be portable to supported targets with minimal changes
 
 === Targets ===
-* ATmega328p
+* ATmega328P
+* ATmega2560
+* AT90CAN128
 
 == Private ==
 Instantiated at compile time
@@ -253,7 +255,7 @@ I2C_SR			TWSR (value of TWSR)
 ==== Implementation Status ====
 
 	ATmega328P - Implementation complete.
-	ATmega2560  - Implementation complete.
-	AT90CAN128  - Implementation complete.
+	ATmega2560  - Implementation complete. Requires defintions to be set in the target configuration. 
+	AT90CAN128  - Implementation complete. Requires defintions to be set in the target configuration. 
 	ATmega64M1/C1 - TWI not available, (use LIN)
 	
