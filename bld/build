@@ -534,7 +534,7 @@ SHORTOPTS="harbdfpcn:"
 LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,debug,name:"
 
 # Use 'getopt' to parse the command line options.
-if [ VF_OS_DARWIN ]; then
+if [ $VF_OS_DARWIN ]; then
 	ARGS=$(getopt $SHORTOPTS "$*")
 else
 	ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@")
