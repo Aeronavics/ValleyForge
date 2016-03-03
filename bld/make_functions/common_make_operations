@@ -46,8 +46,6 @@ make_filesystem_from_image()
 {
 	local GEN_CACHE=${TCPATH}/tmp/gen_cache/plat_images
 
-	local FS_ROOT_DIR="fs_root"
-
 	local FS_ARCHIVE=
 
 	# Check to make sure we were given a URL to download the image from.
@@ -152,9 +150,30 @@ make_filesystem_from_image()
 		echo -e "${CYAN}\n\tFilesystem image written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
 	fi
 
+	# In addition to the image, there might also be a partial filesystem included as part of the component.
+	make_partial_filesystem
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
+### Name:           make_partial_filesystem
+###
+### Inputs/Outputs:	None
+###
+### Purpose:        Builds an archive containing a partial rootfs image.
+###
+###########################################################################################
+
+make_partial_filesystem()
+{
+	local FS_ROOT_DIR="fs_root"
+
 	# Check if there is a folder which might contain a partial root filesystem to use.
 	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" ]; then
-		# There is.  We can't add it to the image directly, so we copy it to the output folder, so that it can be added to the SD card when it's flashed.
+		# There is.  We can't add it to the image directly, so we copy it to the output folder, so that it can be added to the target when its being loaded.
 		echo -e "${CYAN}\tPacking ${FS_ROOT_DIR} to output directory...\n${NO_COLOUR}"
 		pushd "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}" > /dev/null
 		tar cf "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_filesystem.tar" *
