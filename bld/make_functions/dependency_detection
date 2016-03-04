@@ -598,13 +598,15 @@ generate_component_dependencies()
 generate_include_library_flags()
 {
 	# Check if we are cross compiling.
-	if [ -n "${VF_CROSS_COMPILE_SYSROOT}" ]; then
-		# Because we are cross compiling, we need to make sure pkg_config is looking to link to libraries on our target.
-		export PKG_CONFIG_SYSROOT_DIR=${VF_CROSS_COMPILE_SYSROOT}
-		export PKG_CONFIG_DIR=
-		export PKG_CONFIG_LIBDIR=$(eval echo ${VF_PKG_CONFIG_LIBDIRS})
-		if [ ${VF_DEBUG} ]; then
-			echo -e "${BOLD_WHITE}PKG CONFIG LIBDIRS: ${NO_COLOUR}$(eval echo ${VF_PKG_CONFIG_LIBDIRS})\n${NO_COLOUR}"
+	if [ ! "${TARGET}" == "Native" ]; then
+		if [ -n "${VF_CROSS_COMPILE_SYSROOT}" ]; then
+			# Because we are cross compiling, we need to make sure pkg_config is looking to link to libraries on our target.
+			export PKG_CONFIG_SYSROOT_DIR=${VF_CROSS_COMPILE_SYSROOT}
+			export PKG_CONFIG_DIR=
+			export PKG_CONFIG_LIBDIR=$(eval echo ${VF_PKG_CONFIG_LIBDIRS})
+			if [ ${VF_DEBUG} ]; then
+				echo -e "${BOLD_WHITE}PKG CONFIG LIBDIRS: ${NO_COLOUR}$(eval echo ${VF_PKG_CONFIG_LIBDIRS})\n${NO_COLOUR}"
+			fi
 		fi
 	fi
 
