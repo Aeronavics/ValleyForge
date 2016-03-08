@@ -129,8 +129,10 @@ makepixhawk_armcortex()
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware >/dev/null
-	make distclean
-	make archives CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
+	make clean
+	# For some reason, the first build fails, but a subsequent build is successful.
+	# TODO - Figure out why the build fails.
+	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 	popd >/dev/null
 
@@ -153,7 +155,7 @@ makepixhawk_armcortex()
 
 	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
 	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
@@ -201,7 +203,7 @@ makepixhawk_configure_apps()
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
 	APP_STACKSIZE_ARRAY=($APP_STACKSIZES)
 	APP_LOOP_MAX=$((${#APP_EXECUTABLES_ARRAY[@]}-1))
-	
+
 	for APP_INDEX in $(seq 0 $APP_LOOP_MAX)
 	do
 		# Iterate over each of the executables and assign default configuration values to anything that isn't already assigned a value.
@@ -362,7 +364,7 @@ makepixhawk_bootloader()
 
 	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
 	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
-	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf	
+	$SIZE --format=SysV --totals $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
