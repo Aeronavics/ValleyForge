@@ -49,7 +49,7 @@ upload_pixhawk()
 
 	# Determine the serial ports for the uploader script to examine.
 	if [[ "${OSTYPE}" == "linux-gnu" ]]; then
-		BOOTLOADER_SERIAL_PORTS="/dev/serial/by-id/usb-3D_Robotics*"	
+		BOOTLOADER_SERIAL_PORTS="/dev/serial/by-id/usb-3D_Robotics*"
 	elif [[ "${OSTYPE}" == "darwin"* ]]; then
 		BOOTLOADER_SERIAL_PORTS="/dev/tty.usbmodemPX*,/dev/tty.usbmodem*"
 	else
@@ -92,14 +92,14 @@ upload_pixhawk()
 	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 		# Abort the upload.
 		echo -e "${YELLOW}Skipping upload of component $COMPONENT.\n${NO_COLOUR}"
-	
+
 	# Check if we should actually upload anything.
 	elif [ ! ${NO_UPLOAD} ]; then
 		# Actually upload the component to the selected target.
 		echo -e "${CYAN}Uploading files for component $COMPONENT via Pixhawk Bootloader.\n${NO_COLOUR}"
 
 		pushd ${TCPATH}/res/vendor/pixhawk/Tools >/dev/null
-		python -u ./px_uploader.py --port ${BOOTLOADER_SERIAL_PORTS} ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4
+		python -u ./px_uploader.py --port "${BOOTLOADER_SERIAL_PORTS}" "${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4"
 		popd >/dev/null
 
 		# Check the return value from OpenOCD, to determine if an error occurred during compilation.

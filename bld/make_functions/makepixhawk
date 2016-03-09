@@ -134,7 +134,6 @@ makepixhawk_armcortex()
 	# TODO - Figure out why the build fails.
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
-	exit 0
 	popd >/dev/null
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
@@ -148,11 +147,11 @@ makepixhawk_armcortex()
 
 	# The compilation worked, so now just copy across the output binaries.
 	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
 	# Also copy the ELF across, in case we also want that.
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
 	# Also copy the .px4 across, in case we're using the bootloader to upload code.
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/Build/${TARGET_PIXHAWK_DEVICE}.build/firmware.px4 $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.px4
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/nuttx-px4fmu-v2-default.px4 $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.px4
 
 	# Print out details of the size of the generated ELF file (we do ELF instead of HEX since that yields more information).
 	echo -e "${WHITE}Output file size details:${NO_COLOUR}"
