@@ -16,7 +16,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ###########################################################################################################################
-###	
+###
 ### Name:		create_component
 ###
 ### Author:		Zac Frank
@@ -120,7 +120,7 @@ choose_target()
 {
 	# List the possible build configurations.
 	BCONFS=`declare -F | grep -o -e "declare -f bconf_.*" | grep -o -e "bconf_.*"`
-	
+
 	# Check that something was actually returned here.
 	if [ -z "$BCONFS" ]; then
 		# Something is terribly wrong here.
@@ -180,7 +180,7 @@ choose_platform()
 {
 	# List the possible build configurations.
 	BCONFS=`declare -F | grep -o -e "declare -f bconf_.*" | grep -o -e "bconf_.*"`
-	
+
 	# Check that something was actually returned here.
 	if [ -z "$BCONFS" ]; then
 		# Something is terribly wrong here.
@@ -193,7 +193,7 @@ choose_platform()
 		# Check if this configuration is specific to our chosen target.
 		if [ "$NEW_TARGET" == `echo $BCONF | cut -d '_' -f 2` ]; then
 			# This configuration matches the current target.
-	
+
 			# Extract the name of the platform from the configuration and add it to a list of possible platforms.
 			PLATFORMS="`echo $BCONF | cut -d '_' -f 3` $PLATFORMS"
 		fi
@@ -246,13 +246,13 @@ choose_bootloader()
 {
 	# List the possible bootloader configurations.
 	BLOADCONFS=`declare -F | grep -o -e "declare -f bload_.*" | grep -o -e "bload_.*"`
-	
+
 	# Iterate through the possible bootloader configurations
 	for BLOADCONF in $BLOADCONFS; do
 		# Check if this configuration is specific to our chosen target.
 		if [ "$NEW_TARGET" == `echo $BLOADCONF | cut -d '_' -f 2` ]; then
 			# This configuration matches the current target.
-	
+
 			# Extract the name of the bootloader from the configuration and add it to a list of possible bootloaders.
 			BOOTLOADERS="`echo $BLOADCONF | cut -d '_' -f 3` $BOOTLOADERS"
 		fi
@@ -332,8 +332,8 @@ choose_executables() {
 			if [ -n "${EXECUTABLES}" ]; then
 				echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Currently you DO.) (Y/N) ${NO_COLOUR}"
 			else
-				echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Currently you DON'T.) (Y/N) ${NO_COLOUR}"				
-			fi				
+				echo -e -n "${GREEN}This configuration supports multiple executables.  Do you wish to have multiple executable files? (Currently you DON'T.) (Y/N) ${NO_COLOUR}"
+			fi
 		fi
 		read -n 1
 		echo -e "\n" # Note - this is because the read command won't put a newline after it reads a character.
@@ -350,6 +350,15 @@ choose_executables() {
 				echo -e -n "\n" # Note - this is because the read command won't put a newline after it reads a character.
 
 				EXECUTABLES="$REPLY"
+
+				for EXECUTABLE in ${EXECUTABLES}; do
+					if [[ "${EXECUTABLE}" =~ [^A-Za-z0-9_] || "${EXECUTABLE:0:1}" =~ [0-9] ]]; then
+						echo -e "${RED}Invalid executable name: ${EXECUTABLE}. Only characters in range A-Z, a-z, 0-9 and _ are permitted."
+						echo -e "${RED}Executable name cannot start with a number.\n"
+						exit 1
+					fi
+				done
+
 				# Update the config file with the executable files.
 				push_key ${CONFIG_FILE} "EXECUTABLES" "\"${EXECUTABLES}\""
 				break
@@ -396,7 +405,7 @@ generate_code_config_time()
 		else
 			# The function is legit, so actually run the function.
 			$f $1
-		fi		
+		fi
 	done
 	# Check if any of the code generation functions in the list were invalid.
 	if [ ${GENERATE_FUNCTION_INVALID} ]; then
@@ -419,7 +428,7 @@ run_bconf_specific_config()
 		echo -e "${RED}No suitable build configuration found.  Cannot perform target specific configuration.\n${NO_COLOUR}"
 		return 1
 	fi
-	
+
 	# There is a matching build configuration, so load it.
 	echo -e "${CYAN}Loading build configuration ($BCONF)...\n${NO_COLOUR}"
 	$BCONF
@@ -444,7 +453,7 @@ run_bconf_specific_config()
 		# Run the target specific build configuration script.
 		source $TCPATH/$TARGET_SPECIFIC_CONFIG
 	fi
-	
+
 	# Check if a platform specific configuration script was detailed in the build configuration.
 	if [ -z $PLATFORM_SPECIFIC_CONFIG ]; then
 		# No specific configuration script was specified.
@@ -526,7 +535,7 @@ load_component_config()
 	# Check if a specific config file to use was specified.
 	if [ -z "$1" ]; then
 		# If no specific file was specified, we just use the default location.
-		FILE="$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg"			
+		FILE="$TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg"
 	elif [ -r $1 ]; then
 		# Else, if a specific config file was specified, and actually exists, we use that.
 		FILE=$1
@@ -543,8 +552,8 @@ load_component_config()
 	else
 		# Extract relevant configuration information from the configuration file.
 		echo -e "${CYAN}Loading component configuration file...\n${NO_COLOUR}"
-		source "$FILE" 
-	fi	
+		source "$FILE"
+	fi
 
 	# All done.
 	return 0
@@ -586,7 +595,7 @@ NEW_PLATFORM=
 NEW_BOOTLOADER=
 
 # Define variables required for 'getopt' to work.
-PROGNAME=${0##*/} 
+PROGNAME=${0##*/}
 SHORTOPTS="hbc:s:t:p:l:"
 LONGOPTS="help,batch,component:,subsystem:,target:,platform:,loader:"
 
@@ -668,7 +677,7 @@ if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 		# We will need to prompt the user for the name of the component to create.
 		echo -e -n "${GREEN}Enter a name for the component to be created: (No spaces) ${NO_COLOUR}"
 		read
-		echo -e "" 
+		echo -e ""
 
 		# Check the user actually entered something.
 		if [ -z "$REPLY" ]; then
@@ -709,14 +718,14 @@ if [ -z $COMPONENT ] && [ ! $BATCHMODE ]; then
 
 		# Check if the name contains a slash, and hence will be nested.
 		elif [[ $REPLY == */* ]]; then
-			# The name contains a slash, so just check that the user knows are trying to create a nested directory.	
+			# The name contains a slash, so just check that the user knows are trying to create a nested directory.
 			echo -e "${YELLOW}The name '$REPLY' creates a nested source folder structure."
 			COMPONENT=$REPLY
 
 			# Ask if the user wants is sure that is what they want.
 			echo -e -n "${GREEN}Do you wish to create a nested component directory? (Y/N) ${NO_COLOUR}"
 			read -n 1
-			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.	
+			echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
 
 			# If they responded YES, then we move on.
 			if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -939,4 +948,3 @@ fi
 # All done.
 echo -e "${CYAN}All done.\n${NO_COLOUR}"
 exit 0
-
