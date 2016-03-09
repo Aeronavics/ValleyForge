@@ -134,6 +134,7 @@ makepixhawk_armcortex()
 	# TODO - Figure out why the build fails.
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
+	exit 0
 	popd >/dev/null
 
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
@@ -198,6 +199,10 @@ makepixhawk_configure_apps()
 	local APP_LOOP_MAX
 	local EXECUTABLE
 	local MAIN_FILE
+	local CMAKE_FILE_STRING
+
+  # Prepare the string for including the new applications in the build.
+	CMAKE_FILE_STRING="\t#\n\t# Custom Application Modules\n\t#\n"
 
 	# EXECUTABLES, APP_PRIORITIES and APP_STACKSIZES are provided in the .cfg file in the same way as the executable names.
 	APP_EXECUTABLES_ARRAY=($EXECUTABLES)
@@ -252,21 +257,32 @@ makepixhawk_configure_apps()
 
 		shopt -u extglob
 
-		# Create are fill the necessary parts of the module.mk file.
-		echo -e "MODULE_COMMAND = ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
-		# Pixhawk doesn't seem to discriminate between assembly and c/cpp files at this stage.
-		echo -e "SRCS = ${MAIN_FILE} ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
-		echo -e "MODULE_STACKSIZE = ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		# Create and fill the necessary parts of the CMakeLists.txt file.
+		echo -e "px4_add_module(" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  MODULE modules__${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  MAIN ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  STACK ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  COMPILE_FLAGS"
+		echo -e "  SRCS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "    ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  DEPENDS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "    platforms__common" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "  )" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "# vim: set noet ft=cmake fenc=utf-8 ff=unix" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 
-		# The following parameters are included for completeness, and possible future use.
-		echo -e "INCLUDE_DIRS += " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
-		echo -e "MAXOPTIMIZATION = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
-		echo -e "EXTRACXXFLAGS = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
-		echo -e "EXTRACFLAGS = " >> $1/Firmware/src/modules/$EXECUTABLE/module.mk
+		# Include the new application in the cmake build.
+		CMAKE_FILE_STRING="${CMAKE_FILE_STRING}\tmodules/${EXECUTABLE}"
 
-		# Include the new application in the list of Pixhawk modules.
-		echo -e "MODULES += modules/${EXECUTABLE}" >> $1/Firmware/makefiles/config_${TARGET_PIXHAWK_DEVICE}.mk
 	done
+
+	# Update the cmake build file.
+	# Note that the delimiter for sed has been updated to '%'. File names or module names with '%' will fail.
+	if [[ ${CMAKE_FILE_STRING} == *"%"* ]]; then
+		echo -e "${RED}Module name contains % character. Module processing failed."
+		return 1
+	fi
+	sed -i "s%set(config_module_list%set(config_module_list\n${CMAKE_FILE_STRING}\n%" "$1/Firmware/cmake/configs/nuttx_px4fmu-v2_default.cmake"
 
 	# All done.
 	return 0
