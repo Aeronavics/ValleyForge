@@ -74,7 +74,7 @@ unpack_avr32c()
 {
 	# Check if the AVR32 compiler has been uncompressed already.
 	if [ ! -d $TCPATH/res/avr32/avr32comp ]; then
-		# We need to uncompress the compiler before we continue.		
+		# We need to uncompress the compiler before we continue.
 		echo -e "${CYAN}Uncompressing the AVR32 compiler and libraries...\n${NO_COLOUR}"
 		tar -C $TCPATH/res/avr32 -xf  $TCPATH/res/avr32/avr32comp.tar
 	else
@@ -165,7 +165,7 @@ unpack_embeddedarmc()
 			echo -e "${CYAN}Downloading embedded ARM compiler source...\n${NO_COLOUR}"
 			wget -nc -O "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi-src.tar.bz2" "https://launchpad.net/gcc-arm-embedded/4.7/4.7-2013-q1-update/+download/gcc-arm-none-eabi-4_7-2013q1-20130313-src.tar.bz2"
 			echo ""
-			
+
 			# Unpack the source.
 			echo -e "${CYAN}Unpacking the source...\n${NO_COLOUR}"
 			rm -rf "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi"
@@ -174,7 +174,7 @@ unpack_embeddedarmc()
 			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/src" >/dev/null
 				# NOTE - We test if this command works at the moment, because if it doesn't, then bad things happen in the next line.
 			if [ ${PWD} == "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/src" ]; then
-				# We are in the newly created directly, which contains futher source files to unpack.				
+				# We are in the newly created directly, which contains futher source files to unpack.
 				find -name '*.tar.*' | xargs -I% tar -xf %
 				popd >/dev/null
 			else
@@ -199,7 +199,7 @@ unpack_embeddedarmc()
 			# Build the dependencies for the embedded ARM toolchain.
 			echo -e "${CYAN}Building embedded ARM toolchain dependencies...\n${NO_COLOUR}"
 			pushd "${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi" >/dev/null
-			${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-prerequisites.sh --skip_mingw32		
+			${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/build-prerequisites.sh --skip_mingw32
 			# Check if building the dependencies worked.
 			if [ $? != 0 ]; then
 				# Something went wrong.
@@ -223,7 +223,7 @@ unpack_embeddedarmc()
 			fi
 			popd >/dev/null
 			echo ""
-		
+
 			# We should be all good to go now.
 			echo -e "${CYAN}Embedded ARM compiler available.\n${NO_COLOUR}"
 		fi
@@ -289,12 +289,12 @@ unpack_arduinoc()
 		echo -e "${CYAN}Downloading Arduino IDE release...\n${NO_COLOUR}"
 		wget -nc -O "${TMP_COMPILER_DIR}/arduino/arduino.tgz" "${DOWNLOAD_URL}"
 		echo ""
-			
+
 		# Unpack the release.
 		echo -e "${CYAN}Unpacking the release...\n${NO_COLOUR}"
 		tar -xzf "${TMP_COMPILER_DIR}/arduino/arduino.tgz" -C "${TMP_COMPILER_DIR}/arduino/"
 		mv "${TMP_COMPILER_DIR}/arduino/arduino-1.5.8" "${TMP_COMPILER_DIR}/arduino/arduino-dist"
-			
+
 		# We should be all good to go now.
 		echo -e "${CYAN}Arduino compiler available.\n${NO_COLOUR}"
 	fi
@@ -362,7 +362,7 @@ unpack_uploader()
 	cp "$TCPATH/res/common/uploader/Makefile" "$TCPATH/tmp/tmp_compiler/uploader"
 	cp "$TCPATH/res/common/can_messages.h" "$TCPATH/tmp/tmp_compiler/uploader"
 	make -C $TCPATH/tmp/tmp_compiler/uploader all
-	
+
 	# NOTE - Don't put anything in here; we need the return value from 'make' below.
 
 	# Check the return value from make, to determine if an error occurred during compilation.
@@ -372,6 +372,72 @@ unpack_uploader()
 		return 1
 	fi
 	echo -e ""
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###																						###
+### NAME:			unpack_cmake														###
+###																						###
+### Inputs/Outputs:	None.																###
+###																						###
+### Purpose:		Checks if CMake is available for use, and if not, sets it up		###
+###						ready to go.													###
+###																						###
+###########################################################################################
+
+unpack_cmake()
+{
+	# Check to see if lm4flash is already available.
+
+	# TODO Determine whether a valid version has already been installed by the user.
+
+	# Check if there is a cached copy of the tool.
+	if [ -f "${TMP_COMPILER_DIR}/cmake/bin/cmake" ]; then
+		# We don't need to do anything, since the tool is already ready to go.
+		echo -e "${CYAN}CMake (already) available.\n${NO_COLOUR}"
+	else
+		# The tool isn't ready, so we need to unpack it.
+		mkdir "${TMP_COMPILER_DIR}/cmake"
+		pushd "${TMP_COMPILER_DIR}/cmake" >/dev/null
+
+		# We'll need the vendor source for the tool, which we can build it from.
+		wget "https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.sh"
+
+		# Check if that worked.
+		if [ ! -f "${TMP_COMPILER_DIR}/cmake/cmake-3.3.2-Linux-x86_64.sh" ]; then
+			# Something went wrong.
+			echo -e "${RED}Unable to fetch CMake source.\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# Make the cmake script executable.
+		chmod +x cmake-3.3.2-Linux-x86_64.sh
+
+		# Build the CMake software.  This might take a while.
+		echo -e "${CYAN}Building CMake...\n${NO_COLOUR}"
+		bash ./cmake-3.3.2-Linux-x86_64.sh --prefix="${TMP_COMPILER_DIR}/cmake" --exclude-subdir
+
+		# Check if making worked.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}ERROR - Failed to build lm4flash: the 'make' stage failed.\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# We should be all good to go now.
+		echo -e "${CYAN}\nCMake available.\n${NO_COLOUR}"
+
+		popd >/dev/null
+
+	fi
+
+	# Add CMake to the $PATH for this terminal window.
+	export PATH=${TMP_COMPILER_DIR}/cmake/bin:$PATH
+
+	# TODO - Test the now the required executables actually exist.
 
 	# All done.
 	return 0
@@ -398,6 +464,7 @@ pack_allc()
 	pack_arduinoc
 	pack_nativec
 	pack_uploader
+	pack_cmake
 }
 
 ######################################## FUNCTION #########################################
@@ -415,7 +482,7 @@ pack_avrc()
 	# For now, this doesn't do anything.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -433,14 +500,14 @@ pack_avr32c()
 {
 	# Check if the AVR32 compiler has been uncompressed already.
 	if [ -d $TCPATH/res/avr32/avr32comp ]; then
-		# We just delete the uncompressed copy of the compiler.		
+		# We just delete the uncompressed copy of the compiler.
 		echo -e "${CYAN}Cleaning up AVR32 compiler...\n${NO_COLOUR}"
 		rm -Rf $TCPATH/res/avr32/avr32comp
     	fi
 		# Else, the compiler is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -458,7 +525,7 @@ pack_armc()
 	# For now, this doesn't do anything.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -483,7 +550,7 @@ pack_embeddedarmc()
 		# Else, the compiler is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -508,7 +575,7 @@ pack_arduinoc()
 		# Else, the compiler is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -526,7 +593,7 @@ pack_nativec()
 	# For now, this doesn't do anything.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -544,12 +611,37 @@ pack_uploader()
 {
 	# Check if the uploader has been compiled already.
 	if [ -d $TCPATH/res/common/uploader/bin ]; then
-		# We just delete the binary.		
+		# We just delete the binary.
 		echo -e "${CYAN}Cleaning up uploader...\n${NO_COLOUR}"
 		rm -Rf $TCPATH/res/common/uploader/bin
     	fi
 		# Else, the uploader is already packed.
 
 	# All done.
-	return	
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_cmake							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if CMake was previously unpacked, and if it was, then	###
+###			packs it up again.						###
+###											###
+###########################################################################################
+
+pack_cmake()
+{
+	# Check if CMake exists in the compiler cache directory.
+	if [ -d "$TMP_COMPILER_DIR/cmake" ]; then
+		# We just delete the cached directory.
+		echo -e "${CYAN}Cleaning up CMake...\n${NO_COLOUR}"
+		rm -Rf "$TMP_COMPILER_DIR/cmake"
+  fi
+		# Else, the tool is already packed.
+
+	# All done.
+	return
 }

@@ -99,6 +99,9 @@ makepixhawk_armcortex()
 	# Set up the native compiler.
 	unpack_embeddedarmc
 
+	# Set up CMake.
+	unpack_cmake
+
 	# Update the flags in case they still contain some unevaluated variables.
 	CFLAGS=$(eval echo $CFLAGS)
 	PFLAGS=$(eval echo $PFLAGS)
@@ -148,8 +151,8 @@ makepixhawk_armcortex()
 	# The compilation worked, so now just copy across the output binaries.
 	mkdir -p $TCPATH/$OUTPUT_DIR/$COMPONENT
 	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.bin $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.bin
-	# Also copy the ELF across, in case we also want that.
-	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.elf $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
+	# Also copy the ELF across, in case we also want that. Note that the compiled ELF file lacks the appropriate file suffix.
+	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.elf
 	# Also copy the .px4 across, in case we're using the bootloader to upload code.
 	cp $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/nuttx-px4fmu-v2-default.px4 $TCPATH/$OUTPUT_DIR/${COMPONENT}/${COMPONENT_NAME}.px4
 
@@ -159,6 +162,7 @@ makepixhawk_armcortex()
 
 	# All done.
 	echo -e "${BOLD_WHITE}Build successful.  Output files written to $OUTPUT_DIR/$COMPONENT.\n${NO_COLOUR}"
+
 	return 0
 }
 
