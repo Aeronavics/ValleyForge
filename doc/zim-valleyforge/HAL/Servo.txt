@@ -24,16 +24,44 @@ Limiting the users to a designed method of instantiating a Servo operation requi
 Provides access to all the functions which the user calls to input and output Servo signals. 
 
 === Usage ===
-The Servo classes provide the following functionality. Servo PWM output, Servo PWM input, PPM output and PPM input handled by Pwm_output_helper, Pwm_input_helper, Ppm_output_helper and Ppm_input_helper classes respectively.
+The Servo classes provide the following functionality. Servo PWM output, Servo PWM input, PPM output and PPM input handled by Pwm_output_helper, Pwm_input_helper, Ppm_output_helper and Ppm_input_helper classes respectively. These classes rely on global interrupts to be enabled to function as they use timer interrupts.
 
 == Initialisation ==
-To instansiate a Servo operation the contructor must be called with the Tc_number and Tc_oc_channel or Tc_ic_channel, depending on whether the operation is an input or output, which corrisponds the time and channel that are to be used.
+To instansiate a Servo operation the contructor must be called with the Tc_number and Tc_oc_channel or Tc_ic_channel, depending on whether the operation is an input or output, which corrisponds the time and channel that are to be used. They must then be initialised with appropriate values before operation can be started.
 
 == Example ==
-	''Pwm_output_helper pwm3(TC_1, TC_OC_A); // All others follow the same format with the only difference being the class name''
+	'''
+	// PWM Output
+	Pwm_output_helper pwm_out(TC_1, TC_OC_A);
+	pwm_out.initialise(frame_length, false); // Sets the frame length and whether to invert output.
 	
+	// PWM Input
+	Pwm_input_helper pwm_in(TC_1, TC_IC_A);
+	pwm_in.initialise(false); // Only need to know whether the input is inverted.
+	
+	// PPM Output
+	Ppm_output_helper ppm_out(TC_1, TC_OC_A);
+	ppm_out.initialise(4, frame_length, true);
+	
+	// PPM Input
+	Ppm_input_helper ppm_in(TC_1, TC_IC_A);
+	ppm_in.initialise(6, frame_seperation_time, false);
+	'''
+
+
+	
+
 == Frame length ==
 When outputting a PWM signal the frame length must be longer than the maximum channel value otherwise the output behaviour will be undefined. The same condition must be observed for PPM output but now the frame legnth must be longer than maximum sum of all output channles including the frame seperation time.
+
+== State at startup ==
+The library has special handling at startup to prevent invalid invalid outputs to be sent or inputs to be read. For the output the classes they will not output a signal until all a value has been set for all channels to be output. Likewise for the inputs the return value will be 0 until an input is recieved to clearly indicate that the current input value is not valid.
+
+== Callbacks ==
+The input casses support callbacks which provide an asyncronous way of notifying the user of new input values.
+
+== Get and set input and output values ==
+There are get and set functions to get and set the input and output values respectively. For the PPM classes the values can be set and read inividually or all at once.
 
 ==== Implementation Status ====
 
@@ -42,7 +70,7 @@ ValleyForge is a work in progress; some features are not yet complete. According
 == Limitations ==
 Currently the Servo operations are limited to 16 bit timers. This is due to alising causing problems with on 8 bit timers due to a full frame not fitting into one cycle of the timer.
 
-The frame length is limited to 32.767ms when operating at 16MHz due to data type sizes and to eliminate aliasing on the output. If a different clock speed is used the formula to use for maximum frame length is 1/(CLK/Clock_Prescale)*(2^16-1) where CLK is the clock speed in Hz.
+The frame length is limited to 2^16 multiplied by the period of a timer tick. This timer tick period is configured with the clock settings selected to use for the Servo Library in the target configuration header.
 
 == AVR ==
 
