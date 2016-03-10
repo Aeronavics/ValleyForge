@@ -142,7 +142,7 @@ makepixhawk_armcortex()
 	# Check if any output files were created. If not the build failed.
 	# Normally we would use the return value from make, but because CMake is called inside the Makefile it seems that
 	# make replaces a non-zero return of CMake with 0.
-	if [ ! -a "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.bin" ]; then
+	if [ ! -e "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.bin" ]; then
 		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
 		return 1
 	fi
