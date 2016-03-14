@@ -390,48 +390,52 @@ unpack_uploader()
 
 unpack_cmake()
 {
-	# Check to see if lm4flash is already available.
-
-	# TODO Determine whether a valid version has already been installed by the user.
-
 	# Check if there is a cached copy of the tool.
 	if [ -f "${TMP_COMPILER_DIR}/cmake/bin/cmake" ]; then
 		# We don't need to do anything, since the tool is already ready to go.
 		echo -e "${CYAN}CMake (already) available.\n${NO_COLOUR}"
 	else
-		# The tool isn't ready, so we need to unpack it.
-		mkdir "${TMP_COMPILER_DIR}/cmake"
-		pushd "${TMP_COMPILER_DIR}/cmake" >/dev/null
+		# Check if there is already a version of CMake installed on the host.
+		if [ -n "$(which cmake)" ]; then
+			# CMake is already here somewhere, so we just want to link to the binary.
+			echo -e "${CYAN}Linking to an existing CMake install...\n${NO_COLOUR}"
+			mkdir -p "${TMP_COMPILER_DIR}/cmake/bin"
+			ln -s "$(which cmake)" "${TMP_COMPILER_DIR}/cmake/bin/cmake"
+		else
+			# The tool isn't ready, so we need to unpack it.
+			echo -e "${CYAN}No install of CMake found; toolchain will download and build CMake itself...\n${NO_COLOUR}"
+			mkdir "${TMP_COMPILER_DIR}/cmake"
+			pushd "${TMP_COMPILER_DIR}/cmake" >/dev/null
 
-		# We'll need the vendor source for the tool, which we can build it from.
-		wget "https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.sh"
+			# We'll need the vendor source for the tool, which we can build it from.
+			wget "https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.sh"
 
-		# Check if that worked.
-		if [ ! -f "${TMP_COMPILER_DIR}/cmake/cmake-3.3.2-Linux-x86_64.sh" ]; then
-			# Something went wrong.
-			echo -e "${RED}Unable to fetch CMake source.\n${NO_COLOUR}"
-			return 1
+			# Check if that worked.
+			if [ ! -f "${TMP_COMPILER_DIR}/cmake/cmake-3.3.2-Linux-x86_64.sh" ]; then
+				# Something went wrong.
+				echo -e "${RED}Unable to fetch CMake source.\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# Make the cmake script executable.
+			chmod +x cmake-3.3.2-Linux-x86_64.sh
+
+			# Build the CMake software.  This might take a while.
+			echo -e "${CYAN}Building CMake...\n${NO_COLOUR}"
+			bash ./cmake-3.3.2-Linux-x86_64.sh --prefix="${TMP_COMPILER_DIR}/cmake" --exclude-subdir
+
+			# Check if making worked.
+			if [ $? != 0 ]; then
+				# Something went wrong.
+				echo -e "\n${RED}ERROR - Failed to build lm4flash: the 'make' stage failed.\n${NO_COLOUR}"
+				return 1
+			fi
+
+			# We should be all good to go now.
+			echo -e "${CYAN}\nCMake available.\n${NO_COLOUR}"
+
+			popd >/dev/null
 		fi
-
-		# Make the cmake script executable.
-		chmod +x cmake-3.3.2-Linux-x86_64.sh
-
-		# Build the CMake software.  This might take a while.
-		echo -e "${CYAN}Building CMake...\n${NO_COLOUR}"
-		bash ./cmake-3.3.2-Linux-x86_64.sh --prefix="${TMP_COMPILER_DIR}/cmake" --exclude-subdir
-
-		# Check if making worked.
-		if [ $? != 0 ]; then
-			# Something went wrong.
-			echo -e "\n${RED}ERROR - Failed to build lm4flash: the 'make' stage failed.\n${NO_COLOUR}"
-			return 1
-		fi
-
-		# We should be all good to go now.
-		echo -e "${CYAN}\nCMake available.\n${NO_COLOUR}"
-
-		popd >/dev/null
-
 	fi
 
 	# Add CMake to the $PATH for this terminal window.
