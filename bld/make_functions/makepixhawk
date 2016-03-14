@@ -73,8 +73,8 @@ makepixhawk_armcortex()
 		echo -e "${YELLOW}System is not properly configured for a Pixhawk build.\n${NO_COLOUR}"
 
 		# Prompt the user.
-		echo -ne "${GREEN}Would you like to automatically configure the build environment now?\n${NO_COLOUR}"
-		echo -e "${GREEN}NOTE: This process requires elevated priviledges. You will be prompted for a sudo-capable password.\n${NO_COLOUR}"
+		echo -e "${YELLOW}Configuring the build environment requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+		echo -ne "${GREEN}Would you like to automatically configure the build environment now?${NO_COLOUR}"
 
 		# Read a single character input and select the appropriate response.
 		read -s -n 1
@@ -126,7 +126,9 @@ makepixhawk_armcortex()
 
 		# Copy our own ROMFS contents in with the default.
 	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc" ]; then
-		cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/ROMFS/px4fmu_common"
+		if [ -n "$(ls $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc)" ]; then
+			cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/${FS_ROOT_DIR}/etc/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/ROMFS/px4fmu_common"
+		fi
 	fi
 
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
@@ -204,7 +206,7 @@ makepixhawk_configure_apps()
 	local MAIN_FILE
 	local CMAKE_FILE_STRING
 
-  # Prepare the string for including the new applications in the build.
+	# Prepare the string for including the new applications in the build.
 	CMAKE_FILE_STRING="\t#\n\t# Custom Application Modules\n\t#\n"
 
 	# EXECUTABLES, APP_PRIORITIES and APP_STACKSIZES are provided in the .cfg file in the same way as the executable names.
@@ -253,10 +255,10 @@ makepixhawk_configure_apps()
 		# Copy the Pixhawk application files to the new application directory.
 		shopt -s extglob
 		for SRC in $SRC_STRING; do
-			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -i cp "{}" $1/Firmware/src/modules/$EXECUTABLE
+			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -I {} cp "{}" $1/Firmware/src/modules/$EXECUTABLE
 		done
 		# NOTE: "${MAIN_FILE%.*}.*" ensures that the .c/.cpp and .h file are both copied.
-		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -i cp "{}" $1/Firmware/src/modules/$EXECUTABLE
+		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -I {} cp "{}" $1/Firmware/src/modules/$EXECUTABLE
 
 		shopt -u extglob
 
@@ -265,7 +267,7 @@ makepixhawk_configure_apps()
 		echo -e "  MODULE modules__${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  MAIN ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  STACK ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "  COMPILE_FLAGS"
+#		echo -e "  COMPILE_FLAGS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  SRCS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
@@ -285,7 +287,7 @@ makepixhawk_configure_apps()
 		echo -e "${RED}Module name contains % character. Module processing failed."
 		return 1
 	fi
-	sed -i "s%set(config_module_list%set(config_module_list\n${CMAKE_FILE_STRING}\n%" "$1/Firmware/cmake/configs/nuttx_px4fmu-v2_default.cmake"
+	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s%set(config_module_list%set(config_module_list\n${CMAKE_FILE_STRING}\n%" "$1/Firmware/cmake/configs/nuttx_px4fmu-v2_default.cmake"
 
 	# All done.
 	return 0

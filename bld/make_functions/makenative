@@ -103,7 +103,7 @@ makenative()
 
 		# Generate the Make.deps dependency file.    
 		pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT >/dev/null
-		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | sed "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
+		local PARENT_SOURCE_FILE=$(find . -name ${EXECUTABLE##*/}.cpp -o -name ${EXECUTABLE##*/}.c -o -name ${EXECUTABLE##*/}.s | ${VF_OSCFG_SED} "s^[.]/^^g" | grep -E "^${EXECUTABLE}[.](cpp|c|s)")
 		generate_component_dependencies . ${PARENT_SOURCE_FILE}
 		popd >/dev/null
 
