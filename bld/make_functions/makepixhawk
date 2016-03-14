@@ -262,6 +262,8 @@ makepixhawk_configure_apps()
 		shopt -u extglob
 
 		# Create and fill the necessary parts of the CMakeLists.txt file.
+		echo -e 'include_directories(${CMAKE_BINARY_DIR}/${BOARD}/NuttX/apps)' >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt	# NOTE - Single quotes.
+		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "px4_add_module(" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  MODULE modules__${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  MAIN ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
@@ -273,6 +275,7 @@ makepixhawk_configure_apps()
 		echo -e "  DEPENDS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    platforms__common" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  )" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt		
 		echo -e "# vim: set noet ft=cmake fenc=utf-8 ff=unix" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 
 		# Include the new application in the cmake build.
