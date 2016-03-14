@@ -141,11 +141,10 @@ makepixhawk_armcortex()
 	make ${TARGET_PIXHAWK_DEVICE} CROSSDEV=${TMP_COMPILER_DIR}/embeddedarm/gcc-arm-none-eabi/install-native/bin/arm-none-eabi-
 	popd >/dev/null
 
-	# NOTE - Don't put anything in here; we need the return value from 'make' below.
-
-	# Check the return value from make, to determine if an error occurred during compilation.
-	if [ $? != 0 ]; then
-		# Something went wrong.
+	# Check if any output files were created. If not the build failed.
+	# Normally we would use the return value from make, but because CMake is called inside the Makefile it seems that
+	# make replaces a non-zero return of CMake with 0.
+	if [ ! -e "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/build_px4fmu-v2_default/src/firmware/nuttx/firmware_nuttx.bin" ]; then
 		echo -e "\n${RED}Compilation error.  Failed to build component $COMPONENT.\n${NO_COLOUR}"
 		return 1
 	fi
