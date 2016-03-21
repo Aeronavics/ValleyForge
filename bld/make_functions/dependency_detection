@@ -36,17 +36,18 @@
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		SRC_STRING: The list of all source files that the examined file depends on.
+### Outputs:		SRC_STRING: The list of all source and header files that the examined file depends on.
 ###					ASRCS:		The list of assembly source files that the examined file depends on.
 ###					CSRCS:		The list of C source files that the examined file depends on.
-###					PSRCS:		The list of C source files that the examined file depends on.
+###					PSRCS:		The list of CPP source files that the examined file depends on.
+###					HSRCS:		The list of header files that the examined file depends on.
 ###
-### Purpose:		Finds the list of .c/.cpp/.s source files that are depended on by
+### Purpose:		Finds the list of .c/.cpp/.s/.h/.hpp/.hs source files that are depended on by
 ###					a given file.
 ###
 ######################################################################################################
 
-find_source_dependencies() 
+find_source_dependencies()
 {
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
@@ -56,6 +57,7 @@ find_source_dependencies()
 	ASRCS=
 	CSRCS=
 	PSRCS=
+	HSRCS=
 
 	# A flag we use to indicate if some source files don't meet our dependency detection specifications (but we can still guess our way through).
 	local VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=
@@ -84,14 +86,16 @@ find_source_dependencies()
 	# Sort the object files and remove any duplicate entries. tr is used to turn the space-delimited list into a newline delimited list for sort, before converting it back again.
 	SRC_STRING=$(echo "$SRC_STRING" | tr " " "\n" | sort -u | tr "\n" " ")
 
-	# Split up the assembly and C/CPP files
+	# Split up the assembly, C/CPP and header files
 	for SRC in $SRC_STRING; do
-		if [[ ${SRC} == *.s ]]; then
+		if [[ ${SRC} == *\.s ]]; then
 			ASRCS="$SRC $ASRCS"
-		elif [[ ${SRC} == *.c ]]; then
+		elif [[ ${SRC} == *\.c ]]; then
 			CSRCS="$SRC $CSRCS"
-		elif [[ ${SRC} == *.cpp ]]; then
+		elif [[ ${SRC} == *\.cpp ]]; then
 			PSRCS="$SRC $PSRCS"
+		elif [[ ${SRC} == *\.h* ]]; then
+			HSRCS="$SRC $HSRCS"
 		fi
 	done
 
@@ -99,6 +103,7 @@ find_source_dependencies()
 	ASRC="$(echo "$ASRCS" | ${VF_OSCFG_SED} 's/^ *//')"
 	CSRCS="$(echo "$CSRCS" | ${VF_OSCFG_SED} 's/^ *//')"
 	PSRCS="$(echo "$PSRCS" | ${VF_OSCFG_SED} 's/^ *//')"
+	HSRCS="$(echo "$HSRCS" | ${VF_OSCFG_SED} 's/^ *//')"
 	SRC_STRING="$(echo "$SRC_STRING" | ${VF_OSCFG_SED} 's/^ *//')"
 
 	# Print out the dependencies that we found.
@@ -110,6 +115,9 @@ find_source_dependencies()
 	fi
 	if [ -n "${ASRCS}" ]; then
 		echo -e "${CYAN}\tAssembly source dependencies detected:\n\t${NO_COLOUR}${ASRCS}\n${NO_COLOUR}"
+	fi
+	if [ -n "${HSRCS}" ]; then
+		echo -e "${CYAN}\tHeader source dependencies detected:\n\t${NO_COLOUR}${HSRCS}\n${NO_COLOUR}"
 	fi
 
 	# Leave the folder containing the source.
@@ -195,6 +203,15 @@ find_source_dependencies_recursive()
 			#fi
 			#rm "${TARGET_BASENAME}.d"
 			;;
+		"h")
+			# Do nothing, since header files don't require a dependency list.
+			;;
+		"hpp")
+			# Do nothing, since header files don't require a dependency list.
+			;;
+		"hs")
+			# Do nothing, since header files don't require a dependency list.
+			;;
 		*)
 			echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
 			return 1
@@ -242,6 +259,12 @@ find_source_dependencies_recursive()
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
+				else
+					# There is no associated .c file, but we still need to keep track of the .h file.
+					SRC_FILE=${WORD}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi
 
 				if [ -e ${WORD%.*}.cpp ]; then
@@ -261,11 +284,23 @@ find_source_dependencies_recursive()
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
+				else
+					# There is no associated .cpp file, but we still need to keep track of the .hpp file.
+					SRC_FILE=${WORD}
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
 				fi
 				;;
 			"hs")
 				if [ -e ${WORD%.*}.s ]; then
 					SRC_FILE="${WORD%.*}.s"
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
+				else
+					# There is no associated .s file, but we still need to keep track of the .hs file.
+					SRC_FILE=${WORD}
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
@@ -292,7 +327,7 @@ find_source_dependencies_recursive()
 ###
 ######################################################################################################
 
-find_object_dependencies() 
+find_object_dependencies()
 {
 	# Push into the folder containing the source.
 	pushd "$1" >/dev/null
@@ -354,7 +389,7 @@ find_object_dependencies()
 ###
 ### Outputs:		Writes the source dependencies to $2.sd
 ###
-### Purpose:		Writes the list of object dependencies to a .(c|cpp).sd file. Each source file 
+### Purpose:		Writes the list of object dependencies to a .(c|cpp).sd file. Each source file
 ###					on its own line.
 ###
 ######################################################################################################
@@ -430,7 +465,7 @@ list_object_dependencies()
 ### Inputs:			1. The directory containing the file which is being examined for dependencies.
 ###					2. The name of the file which is being examined for dependencies.
 ###
-### Outputs:		Writes the list of library dependencies to $2.lld 
+### Outputs:		Writes the list of library dependencies to $2.lld
 ###					(with the original suffix removed).
 ###
 ### Purpose:		Writes the list of library dependencies to a .lld file. Each library file name
@@ -465,7 +500,7 @@ list_library_dependencies()
 ###
 ######################################################################################################
 
-generate_component_dependencies() 
+generate_component_dependencies()
 {
 	add_dependencies()
 	{
@@ -611,7 +646,7 @@ generate_include_library_flags()
 	fi
 
 	# Resolve system header and library references.
-	if [ -n "${VF_LIB_DEPS}" ]; then 
+	if [ -n "${VF_LIB_DEPS}" ]; then
 		# Iterate over each unique library name.
 		echo -e "${CYAN}Detecting include details for required system libraries:\n${NO_COLOUR}"
 		local LIB_NAME
@@ -649,7 +684,7 @@ generate_include_library_flags()
 	unset PKG_CONFIG_SYSROOT_DIR
 	unset PKG_CONFIG_DIR
 	unset PKG_CONFIG_LIBDIR
-	unset PKG_CONFIG_DEBUG_SPEW	
+	unset PKG_CONFIG_DEBUG_SPEW
 }
 
 # ALL DONE.
