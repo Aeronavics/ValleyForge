@@ -182,11 +182,11 @@ find_source_dependencies_recursive()
 	case ${TARGET_FILE##*.} in
 		"c")
 			# Use C compiler to detect the local header dependencies.
-			DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM ${TARGET_FILE})
+			DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM -nostdinc ${TARGET_FILE})
 			;;
 		"cpp")
 			# Use CPP compiler to detect the local header dependencies.
-			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM ${TARGET_FILE})
+			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM -nostdinc -nostdinc++ ${TARGET_FILE})
 			;;
 		"s")
 			# Use assembler to detect the local header dependencies.
