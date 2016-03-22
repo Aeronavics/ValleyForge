@@ -256,7 +256,7 @@ makepixhawk_configure_apps()
 		for SRC in $SRC_STRING; do
 			find $1 -maxdepth 1 -iname "${SRC%.*}.*" | xargs -I {} cp "{}" $1/Firmware/src/modules/$EXECUTABLE
 		done
-		# NOTE: "${MAIN_FILE%.*}.*" ensures that the .c/.cpp and .h file are both copied.
+		# NOTE: "${MAIN_FILE%.*}.*" ensures that the .c/.cpp and .h files are copied.
 		find $1 -maxdepth 1 -iname "${MAIN_FILE%.*}.*" | xargs -I {} cp "{}" $1/Firmware/src/modules/$EXECUTABLE
 
 		shopt -u extglob
@@ -268,14 +268,21 @@ makepixhawk_configure_apps()
 		echo -e "  MODULE modules__${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  MAIN ${EXECUTABLE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  STACK ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-#		echo -e "  COMPILE_FLAGS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		if [ ! -z "${CFLAGS}" ]; then
+			echo -e "  COMPILE_FLAGS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+			echo -e "${CFLAGS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		fi
+		if [ ! -z "${LFAGS}" ]; then
+			echo -e "  LINK_FLAGS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+			echo -e "${LFLAGS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		fi
 		echo -e "  SRCS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  DEPENDS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    platforms__common" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  )" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt		
+		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "# vim: set noet ft=cmake fenc=utf-8 ff=unix" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 
 		# Include the new application in the cmake build.
