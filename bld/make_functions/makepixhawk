@@ -272,6 +272,7 @@ makepixhawk_configure_apps()
 		echo -e "  STACK ${APP_STACKSIZE_ARRAY[$APP_INDEX]}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		if [ ! -z "${CFLAGS}" ]; then
 			echo -e "  COMPILE_FLAGS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+			echo -e '${MODULE_CFLAGS}' >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt  # NOTE - Single quotes.
 			echo -e "${CFLAGS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		fi
 		if [ ! -z "${LFAGS}" ]; then
@@ -279,16 +280,24 @@ makepixhawk_configure_apps()
 			echo -e "${LFLAGS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		fi
 		echo -e "  SRCS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "    ${SRC_STRING}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.
+		if [ ! -z "${CSRCS}" ]; then
+			echo -e "    ${CSRCS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		fi
+		if [ ! -z "${PSRCS}" ]; then
+			echo -e "    ${PSRCS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		fi
 		echo -e "  DEPENDS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "    platforms__common" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "  )" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "# vim: set noet ft=cmake fenc=utf-8 ff=unix" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+		echo -e "# vim: set noet ft=cmake fenc=utf-8 ff=unix :" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 
 		# Include the new application in the cmake build.
-		CMAKE_FILE_STRING="${CMAKE_FILE_STRING}\tmodules/${EXECUTABLE}"
+		# Only add it if you're not overwritting an existing application.
+		if [ -z "$(grep "modules/${EXECUTABLE}" "$1/Firmware/cmake/configs/nuttx_px4fmu-v2_default.cmake")" ]; then
+			CMAKE_FILE_STRING="${CMAKE_FILE_STRING}\tmodules/${EXECUTABLE}"
+		fi
 
 	done
 
