@@ -268,20 +268,18 @@ find_source_dependencies_recursive()
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
-				else
-					# There is no associated .c file, but we still need to keep track of the .h file.
-					SRC_FILE=${WORD}
-					if ! add_dependency_recursive ${SRC_FILE}; then
-						return 1
-					fi
-				fi
-
-				if [ -e ${WORD%.*}.cpp ]; then
+				elif [ -e ${WORD%.*}.cpp ]; then
 					if [ -z "${VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE}" ]; then
 						echo -e "${YELLOW}\tC Header file (${WORD}) matches a CPP source file.  This is VF non-compliant. (Subsequent warnings will be suppressed.)${NO_COLOUR}"
 						VF_WARN_ONCE_DEPENDENCY_DETECTION_COMPLIANCE=1
 					fi
 					SRC_FILE="${WORD%.*}.cpp"
+					if ! add_dependency_recursive ${SRC_FILE}; then
+						return 1
+					fi
+				else
+					# There is no associated .cpp file, but we still need to keep track of the .h file.
+					SRC_FILE=${WORD}
 					if ! add_dependency_recursive ${SRC_FILE}; then
 						return 1
 					fi
