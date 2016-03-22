@@ -178,6 +178,12 @@ find_source_dependencies_recursive()
 	TARGET_BASENAME=${TARGET_FILE%.*}
 	TARGET_BASENAME=${TARGET_BASENAME##*/}
 
+	# Temporarily comment out any #error directives, since we aren't looking for errors, just dependencies.
+	# Any actual errors will be picked up during the compilation stage.
+	# This stops #ifndef, #error issues when the definition being searched for is defined in a system directory.
+	# As these are not searched for at the dependency detection stage.
+	sed -i s^'#error '^'//TEMP_COMMENT#error '^g ${TARGET_FILE}
+
 	# Detecting header dependencies is different for various source types, because you need to use the correct flags.
 	case ${TARGET_FILE##*.} in
 		"c")
@@ -223,6 +229,9 @@ find_source_dependencies_recursive()
 		echo -e "\n${RED}\tUnable to detect dependencies for broken source file: ${TARGET_FILE}.\n${NO_COLOUR}"
 		return 1
 	fi
+
+	# Revert back to the original text for the #error directives.
+	sed -i s^'//TEMP_COMMENT#error '^'#error '^g ${TARGET_FILE}
 
 	# Insert a line break after the target, so that each actual dependency is on its own line.
 	DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g" | ${VF_OSCFG_SED} "s^ ^ \\\\\n^g" | ${VF_OSCFG_SED} "/^[\\ ]*$/d")
