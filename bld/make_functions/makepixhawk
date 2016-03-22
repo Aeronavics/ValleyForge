@@ -261,6 +261,8 @@ makepixhawk_configure_apps()
 
 		shopt -u extglob
 
+		# Delete an existing CMakeLists.txt file if one is present.
+		rm -f $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		# Create and fill the necessary parts of the CMakeLists.txt file.
 		echo -e 'include_directories(${CMAKE_BINARY_DIR}/${BOARD}/NuttX/apps)' >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt	# NOTE - Single quotes.
 		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
