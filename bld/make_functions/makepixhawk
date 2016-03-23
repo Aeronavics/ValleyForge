@@ -263,6 +263,7 @@ makepixhawk_configure_apps()
 
 		# Delete an existing CMakeLists.txt file if one is present.
 		rm -f $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
+
 		# Create and fill the necessary parts of the CMakeLists.txt file.
 		echo -e 'include_directories(${CMAKE_BINARY_DIR}/${BOARD}/NuttX/apps)' >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt	# NOTE - Single quotes.
 		echo -e "" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
@@ -280,7 +281,7 @@ makepixhawk_configure_apps()
 			echo -e "${LFLAGS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		fi
 		echo -e "  SRCS" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
-		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.
+		echo -e "    ${MAIN_FILE}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		if [ ! -z "${CSRCS}" ]; then
 			echo -e "    ${CSRCS}" >> $1/Firmware/src/modules/$EXECUTABLE/CMakeLists.txt
 		fi
