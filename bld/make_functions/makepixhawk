@@ -131,6 +131,11 @@ makepixhawk_armcortex()
 		fi
 	fi
 
+	# Copy any new MAVLink message definitions into the PX4 Firmware.
+	if [ -d "$TCPATH/$TMP_SRC_DIR/$COMPONENT/mavlink" ]; then
+		cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/mavlink/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/mavlink/include/mavlink/v1.0"
+	fi
+
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware >/dev/null
