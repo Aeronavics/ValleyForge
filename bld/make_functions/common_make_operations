@@ -57,12 +57,6 @@ make_filesystem_from_image()
 
 	# Download the filesystem image if we haven't already.
 
-	# We're going to need to use wget.
-	if [ -z "$(which wget)" ]; then
-		echo -e "${RED}\tUnable to find wget executable.  Make sure you have wget installed.\n${NO_COLOUR}"
-		return 1
-	fi
-
 	# Else, check if the specified file actually exists.
 	if [ -f "$1/${VF_PLAT_PREBUILT_IMAGE_PATH}" ]; then
 		# A matching file is in the source tree.
@@ -73,6 +67,12 @@ make_filesystem_from_image()
 		echo -e "${CYAN}\tFound ${VF_PLAT_PREBUILT_IMAGE_PATH} in the sandpit.\n${NO_COLOUR}"
 		FS_ARCHIVE="$TCPATH/${VF_PLAT_PREBUILT_IMAGE_PATH}"
 	else
+		# We're going to need to use wget.
+		if [ -z "$(which wget)" ]; then
+			echo -e "${RED}\tUnable to find wget executable.  Make sure you have wget installed.\n${NO_COLOUR}"
+			return 1
+		fi
+
 		# We try to see if the path is a URL we can download.
 		if [ -n "$(wget -S --spider ${VF_PLAT_PREBUILT_IMAGE_PATH} 2>&1 | grep "HTTP/1.1 200 OK")" ]; then
 			# The file seems to exist, so we try to download it.
@@ -82,14 +82,14 @@ make_filesystem_from_image()
 			# See if the file was already downloaded.
 			if [ -n "$(echo ${WGET_OUT} | grep "Server file no newer than local file")" ]; then
 				# We already seem to have the correct file, so not problem.
-				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o "Server file no newer than local file .*" | cut -d " " -f 8 | tr -d "'" )"
+				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o 'Server file no newer than local file .*' | iconv -f utf-8 -t ascii//translit | cut -d " " -f 8 | tr -d "'" )"
 				FS_ARCHIVE="${FS_ARCHIVE##*/}"
 				#FS_ARCHIVE="${FS_ARCHIVE%?}"
 				echo -e "${CYAN}\tFile ${FS_ARCHIVE} already available.\n${NO_COLOUR}"
 				FS_ARCHIVE="${GEN_CACHE}/${FS_ARCHIVE}"
 			elif [ -n "$(echo ${WGET_OUT} | grep "Not Modified File")" ]; then
 				# We already seem to have the correct file, so not problem.
-				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o "Not Modified File .*" | cut -d " " -f 4 | tr -d "'" )"
+				FS_ARCHIVE="$( echo ${WGET_OUT} | grep -o 'Not Modified File .*' | iconv -f utf-8 -t ascii//translit |  cut -d " " -f 4 | tr -d "'" )"
 				FS_ARCHIVE="${FS_ARCHIVE##*/}"
 				#FS_ARCHIVE="${FS_ARCHIVE%?}"
 				echo -e "${CYAN}\tFile ${FS_ARCHIVE} already available.\n${NO_COLOUR}"
@@ -124,7 +124,7 @@ make_filesystem_from_image()
 	# Work out what the name of the image file we're going to unpack should be.
 	local FS_FILE=
 	FS_FILE="${FS_ARCHIVE%.*}"
-	if [ "${FS_ARCHIVE##*.}" != "img" ]; then
+	if [ "${FS_FILE##*.}" != "img" ]; then
 		FS_FILE="${FS_FILE##*/}.img"
 	else
 		FS_FILE="${FS_FILE##*/}"
@@ -141,12 +141,15 @@ make_filesystem_from_image()
 			unzip -u -o ${FS_ARCHIVE} -d $TCPATH/${OUTPUT_DIR}/${COMPONENT}
 		elif [ "${FS_ARCHIVE##*.}" == "xz" ]; then
 			unxz -k -f ${FS_ARCHIVE}
-			mv "${FS_ARCHIVE%.xz}.img" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}"
+			mv "${GEN_CACHE}/${FS_FILE}" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}"
 		fi
 
 		# Then rename the unzipped image to the actual name we want.
 		mv "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${FS_FILE}" "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
-		touch "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		if [ -f "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img" ]; then
+			# Update the modification time for this file.
+			touch "$TCPATH/${OUTPUT_DIR}/${COMPONENT}/${COMPONENT_NAME}_image.img"
+		fi
 		echo -e "${CYAN}\n\tFilesystem image written to ${OUTPUT_DIR}/${COMPONENT}.\n${NO_COLOUR}"
 	fi
 
