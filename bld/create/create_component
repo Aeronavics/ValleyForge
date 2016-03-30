@@ -352,7 +352,7 @@ choose_executables() {
 				EXECUTABLES="$REPLY"
 
 				for EXECUTABLE in ${EXECUTABLES}; do
-					if [[ "${EXECUTABLE}" =~ [^A-Za-z0-9_] || "${EXECUTABLE:0:1}" =~ [0-9] ]]; then
+					if [[ "${EXECUTABLE}" =~ [^A-Za-z0-9_/] || "${EXECUTABLE:0:1}" =~ [0-9] ]]; then
 						echo -e "${RED}Invalid executable name: ${EXECUTABLE}. Only characters in range A-Z, a-z, 0-9 and _ are permitted."
 						echo -e "${RED}Executable name cannot start with a number.\n"
 						exit 1
