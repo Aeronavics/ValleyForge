@@ -53,6 +53,26 @@ upload_sdcard()
 	local SD_FILESYSTEM=
 	local SD_BOOTLOADER=
 
+	# Check if we are using udisks or udisks2 (or some other user-space disk mounting utility), since the utility binaries are different.
+	local UDISKS_MOUNT=
+	local UDISKS_UNMOUNT=
+	if [ -n "$(which udisks)" ]; then
+		# udisks seems to be installed.
+		echo -e "${CYAN}Found udisks utility.\n${NO_COLOUR}"
+		UDISKS_MOUNT="udisks --mount"
+		UDISKS_UNMOUNT="udisks --unmount"
+	elif [ -n "$(which udisksctl)" ]; then
+		# udisks2 seems to be installed.
+		echo -e "${CYAN}Found udisks2 utility.\n${NO_COLOUR}"
+		UDISKS_MOUNT="udisksctl mount -b"
+		UDISKS_UNMOUNT="udisksctl unmount -b"
+	fi
+	if [ -z "${UDISKS_MOUNT}" ]; then
+		# No userspace disk utility found, so we can't continue.
+		echo -e "${RED}No user-space disk utility (udisks or udisks2) found.\n${NO_COLOUR}"
+		return 1
+	fi
+
 	# Check if we are supposed to be loading an entire filesystem.
 	if [ $UPLOAD_FILESYSTEM ]; then
 		# Check if an image file is available in the toolchain output folder.
@@ -84,7 +104,7 @@ upload_sdcard()
 
 		# Check if we actually found something to write, since if not, that would be a problem.
 		if [ -z "${SD_IMAGE}" ] && [ -z "${SD_FILESYSTEM}" ]; then
-			# No suitable files to write were present.		
+			# No suitable files to write were present.
 			echo -e "${RED}Could not find root file-system for component $COMPONENT.  Aborting...\n${NO_COLOUR}"
 			return 1
 		fi
@@ -121,7 +141,7 @@ upload_sdcard()
 		echo -e -n "${GREEN}Do you wish to flash the image file (generally slow), as well as the filesystem archive? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they didn't respond YES, then note that down.
 		if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 			# Forget about the image file.
@@ -133,7 +153,7 @@ upload_sdcard()
 		echo -e -n "${GREEN}Do you wish to reformat the SD card prior to writing to it? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they responded YES, then note that down.
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			# Set the reformatting flag.
@@ -151,7 +171,7 @@ upload_sdcard()
 		# We will need to prompt the user for the value to use.
 		echo -e -n "${GREEN}Enter the device filename for the SD card to write to (this will be something like 'sdc'): ${NO_COLOUR}"
 		read
-		echo -e "" 
+		echo -e ""
 
 		# Check the user actually entered something.
 		if [ -z "$REPLY" ]; then
@@ -170,7 +190,7 @@ upload_sdcard()
 			echo -e "${RED}Device file /dev/$REPLY does not exist.  Aborting...\n${NO_COLOUR}"
 			return 1
 		fi
-		
+
 		# Else we use whatever they entered.
 		SD_DEVICE_FILE="$REPLY"
 		break
@@ -186,7 +206,7 @@ upload_sdcard()
 	echo -e -n "${BOLD_GREEN}Are you sure you wish to upload component $COMPONENT to SD card at '${SD_DEVICE_FILE}'? (Y/N) ${NO_COLOUR}"
 	read -n 1
 	echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 	# If they responded YES, then upload the component.  If NO, then skip this component.
 	if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 		# Abort the upload.
@@ -200,7 +220,7 @@ upload_sdcard()
 		# Make sure the card is not mounted.
 		echo -e "${WHITE}Unmounting existing partitions...\n${NO_COLOUR}"
 		for F in $(mount | grep "/dev/${SD_DEVICE_FILE}" | cut -d " " -s -f 1); do
-			udisks --unmount $F
+			${UDISKS_UNMOUNT} $F
 		done
 
 		# First, if we are going to write an image, we do that.
@@ -267,13 +287,13 @@ upload_sdcard()
 				echo ,${SD_BOOT_PARTITION_CYLINDERS},0x0C,*
 				echo ,,,-
 			} | sudo sfdisk -D -H $SD_HEADS -S $SD_SECTORS -C $SD_CYLINDERS /dev/${SD_DEVICE_FILE}
-			
+
 			# Create the boot filesystem on the boot partition.
 			echo -e "${WHITE}Creating filesystem on boot partition...\n${NO_COLOUR}"
 			if [ ! -b /dev/${SD_DEVICE_FILE}1 ]; then
 				# Something went wrong during formatting.
 				echo -e "${RED}Could not locate block device for boot partition.  Aborting...\n${NO_COLOUR}"
-				return 1		
+				return 1
 			fi
 			sudo mkfs.vfat -F 32 -n "sd_boot" /dev/${SD_DEVICE_FILE}1 &>/dev/null
 			if [ $? -ne "0" ]; then
@@ -287,7 +307,7 @@ upload_sdcard()
 			if [ ! -b /dev/${SD_DEVICE_FILE}2 ]; then
 				# Something went wrong during formatting.
 				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
-				return 1		
+				return 1
 			fi
 			sudo mke2fs -j -L "sd_root" /dev/${SD_DEVICE_FILE}2 &>/dev/null
 			if [ $? -ne "0" ]; then
@@ -315,7 +335,7 @@ upload_sdcard()
 			# There is a second partition, so we assume the root partition is the second one.
 			SD_DEVICE_FILE_ROOTPART="/dev/${SD_DEVICE_FILE}p2"
 		fi
-		
+
 		# If there wasn't a second partition, then the first partition must be root.  (Since this means the SD card is probably not bootable, it's a misnomer to call it the root partion, it's more likely just user data, but nomatter.)
 		if [ -z "${SD_DEVICE_FILE_ROOTPART}" ]; then
 			if [ -b "/dev/${SD_DEVICE_FILE}1" ]; then
@@ -342,7 +362,7 @@ upload_sdcard()
 				# If we can't find the first partion when we know there is a second, then something bad has happened.
 				echo -e "${RED}Unable to detect partions on SD card.\n${NO_COLOUR}"
 				return 1
-			fi			
+			fi
 		fi
 
 		# See if we need to copy on the bootloader files.
@@ -356,16 +376,16 @@ upload_sdcard()
 			# Mount the first partition.
 			echo -e "${WHITE}Mounting the boot partition...\n${NO_COLOUR}"
 			if [ -n "${SD_DEVICE_FILE_BOOTPART}" ]; then
-				udisks --mount ${SD_DEVICE_FILE_BOOTPART} &>/dev/null
+				${UDISKS_MOUNT} ${SD_DEVICE_FILE_BOOTPART} &>/dev/null
 				if [ $? -ne "0" ]; then
 					# Something went wrong mounting the partition.
 					echo -e "${RED}Could not mount the boot partition.\n${NO_COLOUR}"
 					return 1
 				fi
-			else			
+			else
 				# Something isn't right.
 				echo -e "${RED}Could not locate block device for boot partition.\n${NO_COLOUR}"
-				return 1		
+				return 1
 			fi
 
 			# Work out where the partition is now mounted.
@@ -374,10 +394,10 @@ upload_sdcard()
 				# A match mount entry wasn't there, so something went wrong.
 				echo -e "${RED}Could not find mount location for boot partition.  Aborting...\n${NO_COLOUR}"
 				return 1
-			fi 
+			fi
 
-			# TODO - Check there is enough available space.			
-			
+			# TODO - Check there is enough available space.
+
 			# Copy the files onto the sd_boot partition.
 			echo -e "${WHITE}Copying bootloader files onto the boot partition...\n${NO_COLOUR}"
 			cp $TCPATH/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader_MLO ${SD_MOUNT}/MLO
@@ -390,7 +410,7 @@ upload_sdcard()
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the boot partition...\n${NO_COLOUR}"
-			udisks --unmount ${SD_DEVICE_FILE_BOOTPART} > /dev/null
+			${UDISKS_UNMOUNT} ${SD_DEVICE_FILE_BOOTPART} > /dev/null
 			if [ $? -ne "0" ]; then
 				# Something went wrong unmounting the partition.
 				echo -e "${RED}Could not unmount the boot partition.  Aborting...\n${NO_COLOUR}"
@@ -403,16 +423,16 @@ upload_sdcard()
 			# Mount the root partition.
 			echo -e "${WHITE}Mounting the root partition...\n${NO_COLOUR}"
 			if [ -n "${SD_DEVICE_FILE_ROOTPART}" ]; then
-				udisks --mount ${SD_DEVICE_FILE_ROOTPART} &>/dev/null
+				${UDISKS_MOUNT} ${SD_DEVICE_FILE_ROOTPART} &>/dev/null
 				if [ $? -ne "0" ]; then
 					# Something went wrong mounting the partition.
 					echo -e "${RED}Could not mount the root partition.  Aborting...\n${NO_COLOUR}"
 					return 1
 				fi
-			else			
+			else
 				# Something isn't right.
 				echo -e "${RED}Could not locate block device for root partition.  Aborting...\n${NO_COLOUR}"
-				return 1		
+				return 1
 			fi
 
 			# Work out where the partition is now mounted.
@@ -435,8 +455,8 @@ upload_sdcard()
 			echo -e "${WHITE}Flushing cached data...\n${NO_COLOUR}"
 			sync
 			echo -e "${WHITE}Unmounting the root partition...\n${NO_COLOUR}"
-			udisks --unmount ${SD_DEVICE_FILE_ROOTPART} > /dev/null
-			if [ $? -ne "0" ]; then		
+			${UDISKS_UNMOUNT} ${SD_DEVICE_FILE_ROOTPART} > /dev/null
+			if [ $? -ne "0" ]; then
 				# Something went wrong unmounting the partition.
 				echo -e "${RED}Could not unmount the root partition.  Aborting...\n${NO_COLOUR}"
 				return 1s
