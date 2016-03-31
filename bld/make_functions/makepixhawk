@@ -136,6 +136,9 @@ makepixhawk_armcortex()
 		cp -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT/mavlink/* "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/mavlink/include/mavlink/v1.0"
 	fi
 
+	# Update any existing apps that rely on MAVLink to use the correct definitions.
+	find "$TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware/src/modules/" -type f -exec sed -i "s^#include <v1.0/common/mavlink.h>^#include <v1.0/${MAVLINK_DEFS%.*}/mavlink.h>^g" {} +
+
 	# Actually make the component. CROSSDEV is defined here to point at the ValleyForge ARM toolchain executables.
 	echo -e "${CYAN}Making component $COMPONENT ...\n${NO_COLOUR}"
 	pushd $TCPATH/$TMP_SRC_DIR/$COMPONENT/Firmware >/dev/null
