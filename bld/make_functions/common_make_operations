@@ -34,6 +34,84 @@ echo -e "${CYAN}Imported common make operations.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
 ###
+### Name:           configure_crosscompile_sysroot
+###
+### Inputs:         None
+###
+### Outputs:        Returns zero for success, non-zero for failure.
+###
+### Purpose:        Sets VF_CROSS_COMPILE_SYSROOT appropriatly, to allow performing cross
+###                 compilation for a Linux target.
+###
+###########################################################################################
+
+configure_crosscompile_sysroot()
+{
+       # See if the user wants to use a different sysroot for the compilation.
+
+        # NOTE - We ask this before the standard precompile stuff, so that once they answer, the rest of the process is non-interactive.
+
+        # Check if the component/build configuration set specified this.
+        if [ ! -z "${VF_CROSS_COMPILE_SYSROOT}" ]; then
+                # The setting was specified, probably because it was listed in the component config file.  Check if the user wants to use this.
+                echo -e "${CYAN}The configuration for component $COMPONENT specifies to use '${BOLD_CYAN}${VF_CROSS_COMPILE_SYSROOT}${CYAN}' as the sysroot directory for compilation.\n${NO_COLOUR}"
+                echo -e -n "${GREEN}Do you wish to use this setting? (Y/N) ${NO_COLOUR}"
+                read -n 1
+                echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
+
+                # If they responded YES, then use the setting.  If NO, then we'll need to ask them what to use.
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                        unset VF_CROSS_COMPILE_SYSROOT
+                fi
+        fi
+
+       # Check if the sysroot setting has been chosen yet.
+        if [ -z ${VF_CROSS_COMPILE_SYSROOT} ]; then
+                # Since the user might be a moron and keep entering invalid names, we loop until a suitable name is entered.
+
+                while :
+                do
+                        # We will need to prompt the user for the value to use.
+                        echo -e -n "${GREEN}Enter the path to the sysroot to use when cross-compiling (this will be something like '/media/username/sd_root'): ${NO_COLOUR}"
+                        read
+                        echo -e "" 
+
+                        # Check the user actually entered something.
+                        if [ -z "$REPLY" ]; then
+                                # We'll just prompt again.
+                                continue
+
+                        # Check if the user actually just wants to exit without building anything.
+                        elif [ "$REPLY" == "exit" ]; then
+                                # Exit the script.
+                                return 1
+                        fi
+
+                        # Test if the entered value is actually a real directory.
+                        if [ ! -d "$REPLY" ]; then
+                                # The specified directory does not exist, so we abort.
+                                echo -e "${RED}Directory $REPLY does not exist.  Aborting...\n${NO_COLOUR}"
+                                return 1
+                        fi
+
+                        # Else we use whatever they entered.
+                        VF_CROSS_COMPILE_SYSROOT="$REPLY"
+                        break
+                done
+        fi
+
+        # Check if the sysroot setting seems sane.
+        if [ ! -d "${VF_CROSS_COMPILE_SYSROOT}/bin" ]; then
+                echo -e "${RED}Sysroot ${VF_CROSS_COMPILE_SYSROOT} doesn't contain 'bin'.  This isn't a real sysroot!\n${NO_COLOUR}"
+                return 1
+        fi
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###
 ### Name:           make_filesystem_from_image
 ###
 ### Inputs/Outputs:	None
