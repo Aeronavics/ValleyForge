@@ -152,12 +152,12 @@ get_suitable_libs()
 
 		# Extract relevant configuration information from the configuration file.
 		BUILDS=$(grep -v "#" $TCPATH/$LIB_SOURCE_PATH/$LIBRARY/$LIBRARY_NAME.cfg | grep "^BUILDS" | cut -d '=' -f2)
-		
+
 		# Check if it is suitable for the current build configuration.
 		if [ ! -z $(echo $BUILDS | grep -w -o "$BCONF") ]; then
 			# The current build configuration is listed in the configuration as suitable, so use this library.
 			echo -e "${CYAN}Importing library $LIBRARY.\n${NO_COLOUR}"
-			
+
 			# Copy all the files across from the library directory.
 			mkdir -p $OUTPATH/${LIBRARY}
 			cp -rf $TCPATH/$LIB_SOURCE_PATH/$LIBRARY $OUTPATH
@@ -427,7 +427,7 @@ generate_code()
 		else
 			# The function is legit, so actually run the function.
 			$f $1
-		fi		
+		fi
 	done
 	# Check if any of the code generation functions in the list were invalid.
 	if [ ${GENERATE_FUNCTION_INVALID} ]; then
@@ -471,7 +471,7 @@ EOF
 }
 
 # Tidy up all of the temporary files from building the component.
-tidy_up() 
+tidy_up()
 {
 	# Now we are done with the actual work, we just have to tidy up.
 	echo -e "${BOLD_CYAN}Tidying up...\n${NO_COLOUR}"
@@ -529,7 +529,7 @@ VF_EN_COMPLIANCE_CHECKS=
 VF_DEBUG=
 
 # Define variables required for 'getopt' to work.
-PROGNAME=${0##*/} 
+PROGNAME=${0##*/}
 SHORTOPTS="harbdfpcn:"
 LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,debug,name:"
 
@@ -691,11 +691,11 @@ do
 		echo -e -n "${GREEN}Do you wish to create the missing configuration file now? (Y/N) ${NO_COLOUR}"
 		read -n 1
 		echo -e "\n" # NOTE - This is because the read command won't put a newline after it reads a character.
-		
+
 		# If they responded YES, then rebuild the configuration file.  If NO, then skip this component.
 		if [[ $REPLY =~ ^[Yy]$ ]]; then
 			# Rebuild the configuration file.
-			
+
 			# Call the 'component_create' script: it will handle rebuilding the configuration file.
 			bash $TCPATH/bld/create/create_component --component $COMPONENT
 
@@ -712,7 +712,7 @@ do
 	fi
 
 	# Extract relevant configuration information from the configuration file.
-	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 	# Reset any variables which may have been set by a previous component.
 	source $TCPATH/bld/common/clear_bconf_vars
@@ -734,7 +734,7 @@ do
 			echo -e "${RED}Build configuration incomplete.  Skipping component $COMPONENT.\n${NO_COLOUR}"
 			continue
 		fi
-	
+
 		# Check that the make function specified by the build configuration actually exists.
 		if [ `declare -f | grep "$MAKEFUNCTION" | wc -l` == 0 ]; then
 			# The specified make function doesn't exist, so skip this component and move on.
@@ -747,7 +747,7 @@ do
 	fi
 
 	# Extract relevant configuration information from the configuration file, again.  This allow component specific configurations.
-	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg 
+	source $TCPATH/src/$COMPONENT/$COMPONENT_NAME.cfg
 
 	# Make sure there aren't any old files in the spot we are about to put new files.
 	rm -rf $TCPATH/$TMP_SRC_DIR/$COMPONENT
@@ -789,6 +789,35 @@ do
 		done
 	fi
 
+	# Check if there are any other files in the source folder which need to be copied across.
+	if [ -z "${RESOURCE_FILES}" ]; then
+		# There aren't any resources files to copy over.
+		echo -e "${CYAN}No resource files to copy.\n${NO_COLOUR}"
+	else
+		# There are some resources files to copy over to the output directory.
+		echo -e "${CYAN}Copying resource files to output:${NO_COLOUR}"
+
+		# Make sure there is somewhere to put the files.
+		mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
+
+		# Copy each of the files across.
+		for FILE in ${RESOURCE_FILES}; do
+			if [ -f "${TCPATH}/src/${COMPONENT}/${FILE}" ]; then
+				cp -f ${TCPATH}/src/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				echo -e "${CYAN}\t${FILE} from src/${COMPONENT}.${NO_COLOUR}"
+
+			elif [ -f "${TCPATH}/var/${COMPONENT}/${FILE}" ]; then
+				cp -f ${TCPATH}/var/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				echo -e "${CYAN}\t${FILE} from var/${COMPONENT}.${NO_COLOUR}"
+
+			else
+				# The file seems to be missing.
+				echo -e "${YELLOW}\tUnable to find resouce file: ${FILE}.${NO_COLOUR}"
+			fi
+		done
+		echo ""
+	fi
+
 	# Check that we haven't been asked to skip building the application code.
 	if [ $NOAPP ]; then
 		# Else, we're deliberately not compiling the application code for the component.
@@ -803,7 +832,7 @@ do
 
 		# Check if there wasn't actually anything to build.
 		if [ $NOCODE ]; then
-			# There wasn't anything to build, so we just carry on.									
+			# There wasn't anything to build, so we just carry on.
 			echo -e "${YELLOW}Skipped application build for component $COMPONENT: nothing to build.\n${NO_COLOUR}"
 			unset NOCODE
 
@@ -819,12 +848,12 @@ do
 
 		# Now, we build the filesystem for the component.
 		echo -e "${BOLD_CYAN}Building filesystem for ${COMPONENT}...\n${NO_COLOUR}"
-	
+
 		# Check that the make function specified by the bootloader configuration actually exists.
 		if [ `declare -f | grep "$FSFUNCTION" | wc -l` == 0 ]; then
 			# The specified make function doesn't exist, so skip this and move on.
 			echo -e "${RED}Build configuration specifies an invalid filesystem make function.  Skipping creating filesystem for component $COMPONENT.\n${NO_COLOUR}"
-		else		
+		else
 			# Actually run the appropriate make function for this build configuration.
 			$FSFUNCTION
 			REPLY=$?
@@ -848,7 +877,7 @@ do
 
 		# Now, we build the bootloader code for the component.
 		echo -e "${BOLD_CYAN}Building bootloader for ${COMPONENT}...\n${NO_COLOUR}"
-		
+
 		# First, we need to read the configuration information for this component.
 		echo -e "${CYAN}Loading bootloader configuration...\n${NO_COLOUR}"
 
@@ -872,7 +901,7 @@ do
 				echo -e "${RED}Bootloader configuration incomplete.  Skipping bootloader for component $COMPONENT.\n${NO_COLOUR}"
 				continue
 			fi
-	
+
 			# Check that the make function specified by the bootloader configuration actually exists.
 			if [ `declare -f | grep "$MAKEFUNCTION" | wc -l` == 0 ]; then
 				# The specified make function doesn't exist, so skip this and move on.
@@ -893,7 +922,7 @@ do
 
 		# Check if there wasn't actually anything to build.
 		if [ $NOCODE ]; then
-			# There wasn't anything to build, so we just carry on.									
+			# There wasn't anything to build, so we just carry on.
 			echo -e "${YELLOW}Skipped bootloader build for component $COMPONENT.\n${NO_COLOUR}"
 			NOCODE=
 
@@ -901,35 +930,6 @@ do
 		elif [ $REPLY != 0 ]; then
 			echo -e "${RED}Bootloader code build failed.\n${NO_COLOUR}"
 		fi
-	fi
-
-	# Check if there are any other files in the source folder which need to be copied across.
-	if [ -z "${RESOURCE_FILES}" ]; then
-		# There aren't any resources files to copy over.
-		echo -e "${CYAN}No resource files to copy.\n${NO_COLOUR}"
-	else
-		# There are some resources files to copy over to the output directory.
-		echo -e "${CYAN}Copying resource files to output:${NO_COLOUR}"
-		
-		# Make sure there is somewhere to put the files.
-		mkdir -p ${TCPATH}/$OUTPUT_DIR/${COMPONENT}
-		
-		# Copy each of the files across.
-		for FILE in ${RESOURCE_FILES}; do
-			if [ -f "${TCPATH}/src/${COMPONENT}/${FILE}" ]; then
-				cp ${TCPATH}/src/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
-				echo -e "${CYAN}\t${FILE} from src/${COMPONENT}.${NO_COLOUR}"
-
-			elif [ -f "${TCPATH}/var/${COMPONENT}/${FILE}" ]; then
-				cp ${TCPATH}/var/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
-				echo -e "${CYAN}\t${FILE} from var/${COMPONENT}.${NO_COLOUR}"
-
-			else
-				# The file seems to be missing.
-				echo -e "${YELLOW}\tUnable to find resouce file: ${FILE}.${NO_COLOUR}"
-			fi
-		done
-		echo ""
 	fi
 done
 

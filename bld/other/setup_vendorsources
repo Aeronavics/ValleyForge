@@ -81,7 +81,7 @@ unpack_mavlink()
 {
 	# Check if the MAVlink repository has been downloaded already.
 	if [ ! -d ${VENDOR_MAVLINK_LOCAL} ]; then
-		# We need to clone the repository before we can use it.		
+		# We need to clone the repository before we can use it.
 		echo -e "${CYAN}\tDownloading the MAVlink vendor source...\n${NO_COLOUR}"
 		git clone --depth=1 ${VENDOR_MAVLINK_REMOTE} ${VENDOR_MAVLINK_LOCAL}
 		echo -e ""
@@ -240,7 +240,7 @@ unpack_pixhawk()
 	echo -e "${CYAN}\tUpdating the Pixhawk submodules.\n${NO_COLOUR}"
 	pushd "$VENDOR_PIXHAWK_LOCAL" >/dev/null
 	git submodule init
-	git submodule update
+	git submodule update --init --recursive
 	popd >/dev/null
 
 	# TODO - Test that now the required files actually exist.
@@ -348,7 +348,7 @@ unpack_vendor_stlink()
 
 	# Check if the STLink repository has been downloaded already.
 	if [ ! -d ${VENDOR_STLINK_LOCAL} ]; then
-		# We need to clone the repository before we can use it.		
+		# We need to clone the repository before we can use it.
 		echo -e "${CYAN}\tDownloading the STLink vendor source...\n${NO_COLOUR}"
 		git clone --depth=1 ${VENDOR_STLINK_REMOTE} ${VENDOR_STLINK_LOCAL}
 		echo -e ""
@@ -403,7 +403,7 @@ unpack_vendor_astyle()
 		# The newly unpacked directory will have some unhelpful nesting, so we flatten that.
 		pushd "${VENDOR_ASTYLE_LOCAL}/astyle/build/gcc" >/dev/null
 		make
-		
+
 		# NOTE - Don't put anything in here; we need the return value from 'make' below.
 
 		# Check if making worked.
@@ -417,7 +417,7 @@ unpack_vendor_astyle()
 	else
 		# The source has already been downloaded.
 		echo -e "${CYAN}\tAstyle available...\n${NO_COLOUR}"
-    
+
 		# TODO - Maybe should check if the files are up to date.
     fi
 
@@ -455,7 +455,7 @@ unpack_vendor_uncrustify()
 
 		pushd ${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify* >/dev/null
 		${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify*/configure
-		
+
 		# Check if configuring worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -467,7 +467,7 @@ unpack_vendor_uncrustify()
 		make
 
 		# NOTE - Don't put anything in here; we need the return value from 'make' below.
-	
+
 		# Check if making worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -520,7 +520,7 @@ unpack_vendor_pcregrep()
 
 		pushd ${VENDOR_PCREGREP_LOCAL}/pcre-8.35 >/dev/null
 		${VENDOR_PCREGREP_LOCAL}/pcre-8.35/configure
-		
+
 		# Check if configuring worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -531,8 +531,8 @@ unpack_vendor_pcregrep()
 		# Then we make.
 		make
 
-		# NOTE - Don't put anything in here; we need the return value from 'make' below.		
-	
+		# NOTE - Don't put anything in here; we need the return value from 'make' below.
+
 		# Check if making worked.
 		if [ $? != 0 ]; then
 			# Something went wrong.
@@ -596,14 +596,14 @@ pack_mavlink()
 {
 	# Check if the MAVlink repository has been downloaded already.
 	if [ -d ${VENDOR_MAVLINK_LOCAL} ]; then
-		# We just delete the downloaded clone of the repository.		
+		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up MAVlink vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_MAVLINK_LOCAL}
     	fi
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -621,14 +621,14 @@ pack_freertos()
 {
 	# Check if the FreeRTOS repository has been downloaded already.
 	if [ -d ${VENDOR_FREERTOS_LOCAL} ]; then
-		# We just delete the downloaded clone of the repository.		
+		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up FreeRTOS vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_FREERTOS_LOCAL}
     	fi
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -671,14 +671,14 @@ pack_vendor_lm4tools()
 {
 	# Check if the lm4tools repository has been downloaded already.
 	if [ -d ${VENDOR_LM4TOOLS_LOCAL} ]; then
-		# We just delete the downloaded clone of the repository.		
+		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up lm4tools vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_LM4TOOLS_LOCAL}
     	fi
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -696,14 +696,14 @@ pack_vendor_stlink()
 {
 	# Check if the STLink repository has been downloaded already.
 	if [ -d ${VENDOR_STLINK_LOCAL} ]; then
-		# We just delete the downloaded clone of the repository.		
+		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up STLink vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_STLINK_LOCAL}
     	fi
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -721,7 +721,7 @@ pack_vendor_astyle()
 {
 	# Check if astyle source has been downloaded already.
 	if [ -d ${VENDOR_ASTYLE_LOCAL} ]; then
-		# We just delete the downloaded tar file and source files of astyle.		
+		# We just delete the downloaded tar file and source files of astyle.
 		echo -e "${CYAN}\tCleaning up Astyle source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_ASTYLE_LOCAL}/astyle
 		rm ${TMP_CACHE}/astyle_vendor.tar.gz
@@ -729,7 +729,7 @@ pack_vendor_astyle()
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -747,7 +747,7 @@ pack_vendor_uncrustify()
 {
 	# Check if uncrustify source has been downloaded already.
 	if [ -d ${VENDOR_UNCRUSTIFY_LOCAL} ]; then
-		# We just delete the downloaded tar file and source files of uncrustify.		
+		# We just delete the downloaded tar file and source files of uncrustify.
 		echo -e "${CYAN}\tCleaning up Uncrustify source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_UNCRUSTIFY_LOCAL}/uncrustify*
 		rm ${TMP_CACHE}/uncrustify_vendor.tar.gz
@@ -755,7 +755,7 @@ pack_vendor_uncrustify()
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 ######################################## FUNCTION #########################################
@@ -773,7 +773,7 @@ pack_vendor_pcregrep()
 {
 	# Check if pcregrep has been downloaded already.
 	if [ -d ${VENDOR_PCREGREP_LOCAL} ]; then
-		# We just delete the downloaded tar file and source files of pcregrep.		
+		# We just delete the downloaded tar file and source files of pcregrep.
 		echo -e "${CYAN}\tCleaning up pcregrep source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_PCREGREP_LOCAL}/pcre-8.35
 		rm ${TMP_CACHE}/pcregrep_vendor.tar.gz
@@ -781,7 +781,7 @@ pack_vendor_pcregrep()
 		# Else, the source is already packed.
 
 	# All done.
-	return	
+	return
 }
 
 # ALL DONE.
