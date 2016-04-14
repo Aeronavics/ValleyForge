@@ -48,7 +48,7 @@ all: ./mavlink
 
 # TARGETS.
 
-./mavlink: $(wildcard $(dir $(MAVLINK_DEFINITIONS))*.xml) $(wildcard $(MAVLINK_SANDPIT)/*)
+./mavlink: $(wildcard $(dir $(MAVLINK_DEFINITIONS))*.xml) $(wildcard $(MAVLINK_SANDPIT)/*) $(wildcard $(MAVLINK_SANDPIT)/**/*)
 	@rm -rf $@
 	@mkdir $@
 	@python $(MAVLINK_GENERATOR) --lang=C --output=$@ $(MAVLINK_DEFINITIONS) --wire-protocol=1.0
