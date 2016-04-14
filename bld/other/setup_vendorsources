@@ -66,6 +66,78 @@ VENDOR_UNCRUSTIFY_REMOTE="http://sourceforge.net/projects/uncrustify/files/lates
 VENDOR_PCREGREP_LOCAL=${TCPATH}/res/vendor
 VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
 
+###########################################################################################
+###                                                                                     ###
+### NAME:              fetch_git_repository                                             ###
+###                                                                                     ###
+### Inputs:            $1 - Path to local sandpit.                                      ###
+###                    $2 - Path (URL) to remote.                                       ###
+###                    $3 - Identifier of branch or commit to checkout.  Else HEAD.     ###
+###                                                                                     ###
+### Outputs:           Zero for success, non-zero for failure.                          ###
+###                                                                                     ###
+### Purpose:           Checks out a Git repository, or if the repository has already    ###
+###                    been checkout up, updates it to the specified commit.            ###
+###                                                                                     ###
+###########################################################################################
+
+fetch_git_repository()
+{
+	# Alias the parameters for convenience.
+	local GIT_LOCAL=$1
+	local GIT_REMOTE=$2
+	local GIT_BRANCH=$3
+
+	# Check if the repository has been downloaded already
+	if [ ! -d ${GIT_LOCAL} ]; then
+		# We need to download the repository before we can use it
+		echo -e "${CYAN}\tDownloading repository from ${GIT_REMOTE}...\n${NO_COLOUR}"
+		git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
+		echo -e ""
+
+		# TODO - Check this actually worked.
+	else
+		# Check if the directory is not actually a git repository, which would indicate something bad.
+		if [ ! -d ${GIT_LOCAL}/.git ]; then
+			# The directory isn't a git repository, so something is very wrong.
+			echo -e "${RED}The directory ${GIT_LOCAL} is not a git repository. Cannot fetch Git repository.\n${NO_COLOUR}"
+			return 1
+		else
+			# The repository already exists, so just need to make sure it is up to date.
+			echo -e "${CYAN}\tUpdating repository...\n${NO_COLOUR}"
+			pushd ${GIT_LOCAL} >/dev/null
+			git fetch --all
+			echo -e ""
+			popd >/dev/null
+
+			# TODO - Check this actually worked.
+		fi
+	fi
+
+	# Check out the specified branch/commit.
+	if [ -n "${GIT_BRANCH}" ]; then
+		GIT_BRANCH="origin/HEAD"
+	fi
+	pushd ${GIT_LOCAL} >/dev/null
+	git checkout --detach $3
+	echo -e ""
+	popd >/dev/null
+
+	# TODO - Check this actually worked.
+
+	# Update any git submodules
+	echo -e "${CYAN}\tUpdating Git submodules...\n${NO_COLOUR}"
+	pushd $GIT_LOCAL >/dev/null
+	git submodule init
+	git submodule update --init --recursive
+	popd >/dev/null
+
+	# TODO - Check this actually worked.
+
+	# All done.
+	return 0
+}
+
 ######################################## FUNCTION #########################################
 ###											###
 ### NAME:		unpack_mavlink							###
@@ -79,27 +151,8 @@ VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3
 
 unpack_mavlink()
 {
-	# Check if the MAVlink repository has been downloaded already.
-	if [ ! -d ${VENDOR_MAVLINK_LOCAL} ]; then
-		# We need to clone the repository before we can use it.
-		echo -e "${CYAN}\tDownloading the MAVlink vendor source...\n${NO_COLOUR}"
-		git clone --depth=1 ${VENDOR_MAVLINK_REMOTE} ${VENDOR_MAVLINK_LOCAL}
-		echo -e ""
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_MAVLINK_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_MAVLINK_LOCAL} is not a git repository.  Cannot unpack MAVlink source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the MAVlink vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_MAVLINK_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
-    	fi
+	# Fetch the mavlink git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_MAVLINK_LOCAL}" "${VENDOR_MAVLINK_REMOTE}" ${VF_VENDOR_MAVLINK_COMMITID-"origin/HEAD"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -161,128 +214,60 @@ unpack_freertos()
 
 unpack_nuttx()
 {
-	# Check if the NuttX source has been downloaded already
-	if [ ! -d ${VENDOR_NUTTX_LOCAL} ]; then
-		# We need to download the source before we can use it
-		echo -e "${CYAN}\tDownloading the NuttX vendor source...\n${NO_COLOUR}"
-		git clone --depth=1 ${VENDOR_NUTTX_REMOTE} ${VENDOR_NUTTX_LOCAL}
-		echo -e ""
+	# Fetch the NuttX git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_NUTTX_LOCAL}" "${VENDOR_NUTTX_REMOTE}" ${VF_VENDOR_NUTTX_COMMITID-"origin/HEAD"}
 
-		# Check for the existence of the key subfolders in the NuttX source. If they're missing, we can be confident that the download failed.
-		if [ ! -d ${VENDOR_NUTTX_LOCAL}/nuttx ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/apps ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/misc ]; then
-			echo -e "${RED}Unable to download the NuttX vendor source.\n${NO_COLOUR}"
-			return 1
-		fi
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_NUTTX_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_NUTTX_LOCAL} is not a git repository. Cannot unpack NuttX source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the NuttX vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_NUTTX_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
+	# Check for the existence of the key subfolders in the NuttX source. If they're missing, we can be confident that the download failed.
+	if [ ! -d ${VENDOR_NUTTX_LOCAL}/nuttx ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/apps ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/misc ]; then
+		echo -e "${RED}Unable to download the NuttX vendor source.\n${NO_COLOUR}"
+		return 1
 	fi
-
-	# TODO - Test that now the required files actually exist.
 
 	# All done.
 	return 0
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:		unpack_pixhawk															###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the Pixhawk vendor source is available for use, and		###
-###			if not, sets it up ready to go.												###
-###																						###
+###											###
+### NAME:		unpack_pixhawk							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the Pixhawk vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
 ###########################################################################################
 
 unpack_pixhawk()
 {
-	# Check if the Pixhawk source has been downloaded already
-	if [ ! -d ${VENDOR_PIXHAWK_LOCAL} ]; then
-		# We need to download the source before we can use it
-		echo -e "${CYAN}\tDownloading the Pixhawk vendor source...\n${NO_COLOUR}"
-		git clone ${VENDOR_PIXHAWK_REMOTE} ${VENDOR_PIXHAWK_LOCAL}
-		echo -e ""
+	# Fetch the Pixhawk git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_PIXHAWK_LOCAL}" "${VENDOR_PIXHAWK_REMOTE}" ${VF_VENDOR_PIXHAWK_COMMITID-"origin/HEAD"}
 
-		# Check for the existence of some folders from the Pixhawk source. If they're missing, we can be confident that the download failed.
-		if [ ! -d ${VENDOR_PIXHAWK_LOCAL}/NuttX ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/src ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/makefiles ]; then
-			echo -e "${RED}Unable to download the Pixhawk vendor source.\n${NO_COLOUR}"
-			return 1
-		fi
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_PIXHAWK_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_PIXHAWK_LOCAL} is not a git repository. Cannot unpack Pixhawk source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the Pixhawk vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_PIXHAWK_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
+	# Check for the existence of some folders from the Pixhawk source. If they're missing, we can be confident that the download failed.
+	if [ ! -d ${VENDOR_PIXHAWK_LOCAL}/NuttX ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/src ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/makefiles ]; then
+		echo -e "${RED}Unable to download the Pixhawk vendor source.\n${NO_COLOUR}"
+		return 1
 	fi
-
-	# Update the git submodules
-	echo -e "${CYAN}\tUpdating the Pixhawk submodules.\n${NO_COLOUR}"
-	pushd "$VENDOR_PIXHAWK_LOCAL" >/dev/null
-	git submodule init
-	git submodule update --init --recursive
-	popd >/dev/null
-
-	# TODO - Test that now the required files actually exist.
 
 	# All done.
 	return 0
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:		unpack_pixhawk_bootloader												###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the Pixhawk bootlaoder vendor source is available for 	###
-###			use, and if not, sets it up ready to go.									###
-###																						###
+###                                                                                     ###
+### NAME:		unpack_pixhawk_bootloader                                       ###
+###                                                                                     ###
+### Inputs/Outputs:	None.                                                           ###
+###                                                                                     ###
+### Purpose:		Checks if the Pixhawk bootloader vendor source is available for ###
+###			use, and if not, sets it up ready to go.                        ###
+###                                                                                     ###
 ###########################################################################################
 
 unpack_pixhawk_bootloader()
 {
-	# Check if the Pixhawk source has been downloaded already
-	if [ ! -d ${VENDOR_PIXHAWK_BOOTLOADER_LOCAL} ]; then
-		# We need to download the source before we can use it
-		echo -e "${CYAN}\tDownloading the Pixhawk vendor source...\n${NO_COLOUR}"
-		git clone ${VENDOR_PIXHAWK_BOOTLOADER_REMOTE} ${VENDOR_PIXHAWK_BOOTLOADER_LOCAL}
-		echo -e ""
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_PIXHAWK_BOOTLOADER_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_PIXHAWK_BOOTLOADER_LOCAL} is not a git repository. Cannot unpack Pixhawk source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the Pixhawk vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_PIXHAWK_BOOTLOADER_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
-	fi
+	# Fetch the Pixhawk bootloader git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_PIXHAWK_BOOTLOADER_LOCAL}" "${VENDOR_PIXHAWK_BOOTLOADER_REMOTE}" ${VF_VENDOR_PIXHAWKBL_COMMITID-"origin/HEAD"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -291,39 +276,20 @@ unpack_pixhawk_bootloader()
 }
 
 ######################################## FUNCTION #########################################
-###																						###
-### NAME:		unpack_lm4tools															###
-###																						###
-### Inputs/Outputs:	None.																###
-###																						###
-### Purpose:		Checks if the lm4tools vendor source is available for use, and		###
-###			if not, sets it up ready to go.												###
-###																						###
+###                                                                                     ###
+### NAME:		unpack_lm4tools                                                 ###
+###                                                                                     ###
+### Inputs/Outputs:	None.                                                           ###
+###                                                                                     ###
+### Purpose:		Checks if the lm4tools vendor source is available for use, and	###
+###			if not, sets it up ready to go.                                 ###
+###                                                                                     ###
 ###########################################################################################
 
 unpack_lm4tools()
 {
-	# Check if the lm4tools source has been downloaded already
-	if [ ! -d ${VENDOR_LM4TOOLS_LOCAL} ]; then
-		# We need to download the source before we can use it
-		echo -e "${CYAN}\tDownloading the lm4tools vendor source...\n${NO_COLOUR}"
-		git clone --depth=1 ${VENDOR_LM4TOOLS_REMOTE} ${VENDOR_LM4TOOLS_LOCAL}
-		echo -e ""
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_LM4TOOLS_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_LM4TOOLS_LOCAL} is not a git repository. Cannot unpack lm4tools source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the lm4tools vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_LM4TOOLS_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
-	fi
+	# Fetch the lm4tools git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_LM4TOOLS_LOCAL}" "${VENDOR_LM4TOOLS_REMOTE}" ${VF_VENDOR_LM4TOOLS_COMMITID-"origin/HEAD"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -344,29 +310,8 @@ unpack_lm4tools()
 
 unpack_vendor_stlink()
 {
-	# TODO - This.
-
-	# Check if the STLink repository has been downloaded already.
-	if [ ! -d ${VENDOR_STLINK_LOCAL} ]; then
-		# We need to clone the repository before we can use it.
-		echo -e "${CYAN}\tDownloading the STLink vendor source...\n${NO_COLOUR}"
-		git clone --depth=1 ${VENDOR_STLINK_REMOTE} ${VENDOR_STLINK_LOCAL}
-		echo -e ""
-	else
-		# Check if the directory is not actually a git repository, which would indicate something bad.
-		if [ ! -d ${VENDOR_STLINK_LOCAL}/.git ]; then
-			# The directory isn't a git repository, so something is very wrong.
-			echo -e "${RED}The directory ${VENDOR_STLINK_LOCAL} is not a git repository.  Cannot unpack STLink source.\n${NO_COLOUR}"
-			return 1
-		else
-			# The repository already exists, so just need to make sure it is up to date.
-			echo -e "${CYAN}\tUpdating the STLink vendor source...\n${NO_COLOUR}"
-			pushd ${VENDOR_STLINK_LOCAL} >/dev/null
-			git pull
-			echo -e ""
-			popd >/dev/null
-		fi
-    	fi
+	# Fetch the stlink git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_STLINK_LOCAL}" "${VENDOR_STLINK_REMOTE}" ${VF_VENDOR_STLINK_COMMITID-"origin/HEAD"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -376,7 +321,7 @@ unpack_vendor_stlink()
 
 ######################################## FUNCTION #########################################
 ###
-### NAME:			unpack_vendor_astyle
+### Name:               unpack_vendor_astyle
 ###
 ### Inputs/Outputs:	None.
 ###

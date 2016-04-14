@@ -317,7 +317,6 @@ generic_precompile()
 	if ! check_source; then
 		# Seems there is nothing to do.
 		NOCODE=1
-		#return 1
 	fi
 
 	# Fetch any user library files which might be required.
