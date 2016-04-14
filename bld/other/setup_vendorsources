@@ -115,11 +115,11 @@ fetch_git_repository()
 	fi
 
 	# Check out the specified branch/commit.
-	if [ -n "${GIT_BRANCH}" ]; then
-		GIT_BRANCH="origin/HEAD"
+	if [ -z "${GIT_BRANCH}" ]; then
+		GIT_BRANCH="origin/master"
 	fi
 	pushd ${GIT_LOCAL} >/dev/null
-	git checkout --detach $3
+	git checkout --detach ${GIT_BRANCH}
 	echo -e ""
 	popd >/dev/null
 
@@ -152,7 +152,7 @@ fetch_git_repository()
 unpack_mavlink()
 {
 	# Fetch the mavlink git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_MAVLINK_LOCAL}" "${VENDOR_MAVLINK_REMOTE}" ${VF_VENDOR_MAVLINK_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_MAVLINK_LOCAL}" "${VENDOR_MAVLINK_REMOTE}" ${VF_VENDOR_MAVLINK_COMMITID-"origin/master"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -215,7 +215,7 @@ unpack_freertos()
 unpack_nuttx()
 {
 	# Fetch the NuttX git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_NUTTX_LOCAL}" "${VENDOR_NUTTX_REMOTE}" ${VF_VENDOR_NUTTX_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_NUTTX_LOCAL}" "${VENDOR_NUTTX_REMOTE}" ${VF_VENDOR_NUTTX_COMMITID-"origin/master"}
 
 	# Check for the existence of the key subfolders in the NuttX source. If they're missing, we can be confident that the download failed.
 	if [ ! -d ${VENDOR_NUTTX_LOCAL}/nuttx ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/apps ] && [ ! -d ${VENDOR_NUTTX_LOCAL}/misc ]; then
@@ -241,7 +241,7 @@ unpack_nuttx()
 unpack_pixhawk()
 {
 	# Fetch the Pixhawk git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_PIXHAWK_LOCAL}" "${VENDOR_PIXHAWK_REMOTE}" ${VF_VENDOR_PIXHAWK_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_PIXHAWK_LOCAL}" "${VENDOR_PIXHAWK_REMOTE}" ${VF_VENDOR_PIXHAWK_COMMITID-"origin/master"}
 
 	# Check for the existence of some folders from the Pixhawk source. If they're missing, we can be confident that the download failed.
 	if [ ! -d ${VENDOR_PIXHAWK_LOCAL}/NuttX ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/src ] && [ ! -d ${VENDOR_PIXHAWK_LOCAL}/makefiles ]; then
@@ -267,7 +267,7 @@ unpack_pixhawk()
 unpack_pixhawk_bootloader()
 {
 	# Fetch the Pixhawk bootloader git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_PIXHAWK_BOOTLOADER_LOCAL}" "${VENDOR_PIXHAWK_BOOTLOADER_REMOTE}" ${VF_VENDOR_PIXHAWKBL_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_PIXHAWK_BOOTLOADER_LOCAL}" "${VENDOR_PIXHAWK_BOOTLOADER_REMOTE}" ${VF_VENDOR_PIXHAWKBL_COMMITID-"origin/master"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -289,7 +289,7 @@ unpack_pixhawk_bootloader()
 unpack_lm4tools()
 {
 	# Fetch the lm4tools git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_LM4TOOLS_LOCAL}" "${VENDOR_LM4TOOLS_REMOTE}" ${VF_VENDOR_LM4TOOLS_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_LM4TOOLS_LOCAL}" "${VENDOR_LM4TOOLS_REMOTE}" ${VF_VENDOR_LM4TOOLS_COMMITID-"origin/master"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -311,7 +311,7 @@ unpack_lm4tools()
 unpack_vendor_stlink()
 {
 	# Fetch the stlink git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_STLINK_LOCAL}" "${VENDOR_STLINK_REMOTE}" ${VF_VENDOR_STLINK_COMMITID-"origin/HEAD"}
+	fetch_git_repository "${VENDOR_STLINK_LOCAL}" "${VENDOR_STLINK_REMOTE}" ${VF_VENDOR_STLINK_COMMITID-"origin/master"}
 
 	# TODO - Test that now the required files actually exist.
 
