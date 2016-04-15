@@ -64,6 +64,13 @@ gen_mavlink()
 	fi
 	echo -e "${CYAN}Generating MAVlink protocol code...\n${NO_COLOUR}"
 
+	# Unpack the MAVlink source.
+	unpack_mavlink
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the MAVlink source, so we'll have to abort.
+		return 1
+	fi
+
 	# Check if a mavlink definitions file to use has been specified.
 	if [ -z "${MAVLINK_DEFS}" ]; then
 		# No mavlink definitions file was specified.
@@ -79,16 +86,13 @@ gen_mavlink()
 		# A matching XML is in the common definitions folder.
 		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the common definitions folder.\n${NO_COLOUR}"
 		DEFINITIONS=${DEFINITIONS}/${MAVLINK_DEFS}
+	elif [ -f "${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/${MAVLINK_DEFS}" ]; then
+		# A matching XML is in the original MAVlink vendor source.
+		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the official MAVlink message definitions folder.\n${NO_COLOUR}"
+		DEFINITIONS="${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/${MAVLINK_DEFS}"
 	else
 		# The XML is nowhere to be found.
 		echo -e "${RED}\tCouldn't find the MAVlink definitions file ${MAVLINK_DEFS}.\n${NO_COLOUR}"
-		return 1
-	fi
-
-	# Unpack the MAVlink source.
-	unpack_mavlink
-	if [ $? -ne 0 ]; then
-		# We couldn't unpack the MAVlink source, so we'll have to abort.
 		return 1
 	fi
 
