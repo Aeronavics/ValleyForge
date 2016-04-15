@@ -178,25 +178,23 @@ find_source_dependencies_recursive()
 	TARGET_BASENAME=${TARGET_FILE%.*}
 	TARGET_BASENAME=${TARGET_BASENAME##*/}
 
-	# Temporarily comment out any #error directives, since we aren't looking for errors, just dependencies.
-	# Any actual errors will be picked up during the compilation stage.
-	# This stops #ifndef, #error issues when the definition being searched for is defined in a system directory.
-	# As these are not searched for at the dependency detection stage.
-	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s^'#error '^'//TEMP_COMMENT#error '^g" ${TARGET_FILE}
+	# Read in the content of the target file, but comment out any #error directives, since we aren't looking for errors, just dependencies.  Any actual errors will be picked up during the compilation stage.
+	# This stops #ifndef, #error issues when the definition being searched for is defined in a system directory, as these are not searched for at the dependency detection stage.
+	local TARGET_CONTENT="$(cat < ${TARGET_FILE} | ${VF_OSCFG_SED} 's^#error ^//TEMP_COMMENT#error ^g')"
 
 	# Detecting header dependencies is different for various source types, because you need to use the correct flags.
 	case ${TARGET_FILE##*.} in
 		"c")
 			# Use C compiler to detect the local header dependencies.
-			DEPENDENCIES=$(${C_COMPILER} ${CFLAGS} -MM -nostdinc ${TARGET_FILE})
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${C_COMPILER} ${CFLAGS} -x c - -MM -nostdinc )
 			;;
 		"cpp")
 			# Use CPP compiler to detect the local header dependencies.
-			DEPENDENCIES=$(${P_COMPILER} ${PFLAGS} -MM -nostdinc -nostdinc++ ${TARGET_FILE})
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${P_COMPILER} ${PFLAGS} -x c++ - -MM -nostdinc -nostdinc++ )
 			;;
 		"s")
 			# Use assembler to detect the local header dependencies.
-			DEPENDENCIES=$(${ASSEMBLER} ${AFLAGS} -MM ${TARGET_FILE})
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -x assembler-with-cpp - -MM )
 
 			# TODO - Probably need to handle both gcc and as options, in case some targets want to call the assembler directly.
 
@@ -230,20 +228,20 @@ find_source_dependencies_recursive()
 		return 1
 	fi
 
-	# Revert back to the original text for the #error directives.
-	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s^'//TEMP_COMMENT#error '^'#error '^g" ${TARGET_FILE}
-
 	# Insert a line break after the target, so that each actual dependency is on its own line.
 	DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} "s^\(.*:\)\(.*\)^\1 \\\\ \n\2^g" | ${VF_OSCFG_SED} "s^ ^ \\\\\n^g" | ${VF_OSCFG_SED} "/^[\\ ]*$/d")
 
 	# Remove dependencies which share the target's basename, so that it doesn't depend on itself.
 	DEPENDENCIES=$(echo "${DEPENDENCIES}" | ${VF_OSCFG_SED} "\^${TARGET_FILE%.*}\.\S*^d")
 
-	# Add each dependency to the list and search of any dependencies of its own.
+	# Add each dependency to the list and search for any dependencies of its own.
 
 	# Iterate over each .h/.hpp/.hs file that is a dependency.
 	for WORD in $DEPENDENCIES; do
-		# Obviously, skip the first line, which contains the target.
+		# Obviously, skip the first line, which contains the target (or just a dash, if GCC is reading from standard input, which currently is what we do above).
+		if [ "${WORD}" == "-:" ]; then
+			continue
+		fi
 		if [ "${WORD}" == "${TARGET_BASENAME}.o:" ]; then
 			continue
 		fi
