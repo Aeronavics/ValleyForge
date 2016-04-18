@@ -39,6 +39,9 @@ MAVLINK_SANDPIT=BUILD_INSERTS_MAVLINK_SANDPIT_HERE
 
 # FUNCTIONS.
 
+# Make does not offer a recursive wildcard function, so we create one.
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
 # PSEUDO-TARGETS
 
 # All the pseudo-targets are phony: they don't correspond with real files.
@@ -48,7 +51,7 @@ all: ./mavlink
 
 # TARGETS.
 
-./mavlink: $(wildcard $(dir $(MAVLINK_DEFINITIONS))*.xml) $(wildcard $(MAVLINK_SANDPIT)/*) $(wildcard $(MAVLINK_SANDPIT)/**/*)
+./mavlink: $(call rwildcard,$(MAVLINK_SANDPIT)/,*)
 	@rm -rf $@
 	@mkdir $@
 	@python $(MAVLINK_GENERATOR) --lang=C --output=$@ $(MAVLINK_DEFINITIONS) --wire-protocol=1.0

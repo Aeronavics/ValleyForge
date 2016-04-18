@@ -49,8 +49,10 @@ gen_mavlink()
 {
 	# DEFINE CONSTANTS.
 
-	GEN_CACHE=${TCPATH}/tmp/gen_cache
-	DEFINITIONS=${TCPATH}/var/mavlink
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache
+	local DEFINITIONS=${TCPATH}/var/mavlink
+
+	local MAVLINK_DEFS_FOLDER="message_definitions/v1.0"
 
 	# PRIVATE INTERNAL FUNCTIONS.
 
@@ -81,15 +83,17 @@ gen_mavlink()
 	if [ -f "$1/mavlink/${MAVLINK_DEFS}" ]; then
 		# A matching XML is in the mavlink folder in the source tree.
 		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the source tree.\n${NO_COLOUR}"
-		DEFINITIONS="$1/mavlink/${MAVLINK_DEFS}"
+		cp -f "$1/mavlink/${MAVLINK_DEFS}" "${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}"
+		DEFINITIONS="${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}"
 	elif [ -f "${DEFINITIONS}/${MAVLINK_DEFS}" ]; then
 		# A matching XML is in the common definitions folder.
 		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the common definitions folder.\n${NO_COLOUR}"
-		DEFINITIONS=${DEFINITIONS}/${MAVLINK_DEFS}
-	elif [ -f "${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/${MAVLINK_DEFS}" ]; then
+		cp -f "${DEFINITIONS}/${MAVLINK_DEFS}" "${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}"
+		DEFINITIONS="${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}"
+	elif [ -f "${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}" ]; then
 		# A matching XML is in the original MAVlink vendor source.
 		echo -e "${CYAN}\tFound ${MAVLINK_DEFS} in the official MAVlink message definitions folder.\n${NO_COLOUR}"
-		DEFINITIONS="${VENDOR_MAVLINK_LOCAL}/message_definitions/v1.0/${MAVLINK_DEFS}"
+		DEFINITIONS="${VENDOR_MAVLINK_LOCAL}/${MAVLINK_DEFS_FOLDER}/${MAVLINK_DEFS}"
 	else
 		# The XML is nowhere to be found.
 		echo -e "${RED}\tCouldn't find the MAVlink definitions file ${MAVLINK_DEFS}.\n${NO_COLOUR}"
