@@ -249,7 +249,7 @@ makepixhawk_configure_apps()
 		echo -e "${CYAN}\t\tBuilding Pixhawk application code for: ${EXECUTABLE}.\n${NO_COLOUR}"
 
 		# Create a directory for the application inside Firmware/src/modules.
-		mkdir $1/Firmware/src/modules/$EXECUTABLE
+		mkdir -p $1/Firmware/src/modules/$EXECUTABLE
 
 		if ! find_source_dependencies $1 $(ls $1 | grep ${MAIN_FILE}); then
 			# Something went wrong.
