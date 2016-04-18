@@ -117,7 +117,7 @@ find_source_dependencies()
 		echo -e "${CYAN}\tAssembly source dependencies detected:\n\t${NO_COLOUR}${ASRCS}\n${NO_COLOUR}"
 	fi
 	if [ -n "${HSRCS}" ]; then
-		echo -e "${CYAN}\tHeader source dependencies detected:\n\t${NO_COLOUR}${HSRCS}\n${NO_COLOUR}"
+		echo -e "${CYAN}\tHeader dependencies detected:\n\t${NO_COLOUR}${HSRCS}\n${NO_COLOUR}"
 	fi
 
 	# Leave the folder containing the source.
@@ -177,24 +177,31 @@ find_source_dependencies_recursive()
 	# Find the basename of examined file by removing any directory or filetype components.
 	TARGET_BASENAME=${TARGET_FILE%.*}
 	TARGET_BASENAME=${TARGET_BASENAME##*/}
+	TARGET_DIRECTORY=${TARGET_FILE%/*}
 
 	# Read in the content of the target file, but comment out any #error directives, since we aren't looking for errors, just dependencies.  Any actual errors will be picked up during the compilation stage.
-	# This stops #ifndef, #error issues when the definition being searched for is defined in a system directory, as these are not searched for at the dependency detection stage.
 	local TARGET_CONTENT="$(cat < ${TARGET_FILE} | ${VF_OSCFG_SED} 's^#error ^//TEMP_COMMENT#error ^g')"
+
+	# NOTE - This stops #ifndef, #error issues when the definition being searched for is defined in a system directory, as these are not searched for at the dependency detection stage.
+	
+	# NOTE - This also causes GCC to be unable to find files in the same directory as the target, so we manually include this directory when we call GCC.
+	
+	# Prepend the content with a #line directive, so that GCC knows what file it's compiling (so errors are traceable).
+	TARGET_CONTENT="#line 1 \"${TARGET_FILE}\"\n${TARGET_CONTENT}"
 
 	# Detecting header dependencies is different for various source types, because you need to use the correct flags.
 	case ${TARGET_FILE##*.} in
 		"c")
 			# Use C compiler to detect the local header dependencies.
-			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${C_COMPILER} ${CFLAGS} -x c - -MM -nostdinc )
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${C_COMPILER} ${CFLAGS} -I ${TARGET_DIRECTORY} -x c - -MM -nostdinc )
 			;;
 		"cpp")
 			# Use CPP compiler to detect the local header dependencies.
-			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${P_COMPILER} ${PFLAGS} -x c++ - -MM -nostdinc -nostdinc++ )
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${P_COMPILER} ${PFLAGS} -I ${TARGET_DIRECTORY} -x c++ - -MM -nostdinc -nostdinc++ )
 			;;
 		"s")
 			# Use assembler to detect the local header dependencies.
-			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -x assembler-with-cpp - -MM )
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -I ${TARGET_DIRECTORY} -x assembler-with-cpp - -MM )
 
 			# TODO - Probably need to handle both gcc and as options, in case some targets want to call the assembler directly.
 
@@ -254,11 +261,24 @@ find_source_dependencies_recursive()
 		# Check if the header itself actually exists.
 		if [ ! -e ${WORD} ]; then
 			# The header doesn't exist.  That seems a bit concerning.
-			echo -e "${YELLOW}\tCannot find header: ${WORD}.  Build will probably fail.${NO_COLOUR}"
+			echo -e "${YELLOW}\tCannot find file: ${WORD}.  Build will probably fail.${NO_COLOUR}"
 			continue
 		fi
 
-		# Then, check if a respective source file exists and if so, add it SRC_STRING.  If necessary, then recurse its own dependencies.
+		# TODO - The below probably fails miserably for native builds.
+
+		# Check if the header looks like a system header.
+		if [ -n "${VF_CROSS_COMPILE_SYSROOT}" ]; then
+			if (echo "${WORD}" | grep -e "${VF_CROSS_COMPILE_SYSROOT}/.*" >/dev/null); then
+				# This looks like a system header, so we won't recurse into it: we assume system libraries don't need compiling!
+				if [ ${VF_DEBUG} ]; then
+					echo -e "${YELLOW}\t${WORD} is a system file, we'll ignore it.${NO_COLOUR}"
+				fi
+				continue
+			fi
+		fi
+
+		# Then, check if a respective source file exists and if so, add it to SRC_STRING.  If necessary, then recurse its own dependencies.
 		case ${WORD##*.} in
 			"h")
 				if [ -e ${WORD%.*}.c ]; then
@@ -358,7 +378,7 @@ find_object_dependencies()
 	fi
 
 	# Convert the source file names into object file names.
-	for SRC in $SRC_STRING; do
+	for SRC in ${ASRCS} ${CSRCS} ${PSRCS}; do
 		OBJ_STRING="${SRC%.*}.o $OBJ_STRING"
 	done
 
@@ -562,7 +582,7 @@ generate_component_dependencies()
 	echo -e "# Object File Dependencies.\n" >> Make.deps
 
 	# Use the -MM flag to generate a rule describing the dependencies of each source file for make.
-	for SRC in $SRC_STRING; do
+	for SRC in $ASRCS $CSRCS $PSRCS; do
 		# Alias the source file, for consistency with the detect source deps function.
 		local TARGET_FILE=${SRC}
 		local TARGET_BASENAME
