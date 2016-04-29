@@ -106,7 +106,7 @@ fetch_git_repository()
 			# The repository already exists, so just need to make sure it is up to date.
 			echo -e "${CYAN}\tUpdating repository...\n${NO_COLOUR}"
 			pushd ${GIT_LOCAL} >/dev/null
-			git fetch --all
+			git fetch --all --tags
 			echo -e ""
 			popd >/dev/null
 
@@ -116,10 +116,11 @@ fetch_git_repository()
 
 	# Check out the specified branch/commit.
 	if [ -z "${GIT_BRANCH}" ]; then
-		GIT_BRANCH="origin/master"
+		GIT_BRANCH="master"
 	fi
 	pushd ${GIT_LOCAL} >/dev/null
-	git checkout --detach ${GIT_BRANCH}
+	git checkout ${GIT_BRANCH}
+	git checkout --detach
 	echo -e ""
 	popd >/dev/null
 
