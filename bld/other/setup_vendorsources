@@ -93,6 +93,7 @@ fetch_git_repository()
 		# We need to download the repository before we can use it
 		echo -e "${CYAN}\tDownloading repository from ${GIT_REMOTE}...\n${NO_COLOUR}"
 		git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
+		git fetch origin +refs/heads/*:refs/remotes/origin/*
 		echo -e ""
 
 		# TODO - Check this actually worked.
@@ -106,7 +107,7 @@ fetch_git_repository()
 			# The repository already exists, so just need to make sure it is up to date.
 			echo -e "${CYAN}\tUpdating repository...\n${NO_COLOUR}"
 			pushd ${GIT_LOCAL} >/dev/null
-			git fetch --all --tags
+			git fetch origin +refs/heads/*:refs/remotes/origin/*
 			echo -e ""
 			popd >/dev/null
 
@@ -116,21 +117,28 @@ fetch_git_repository()
 
 	# Check out the specified branch/commit.
 	if [ -z "${GIT_BRANCH}" ]; then
-		GIT_BRANCH="master"
+		GIT_BRANCH="origin/master"
 	fi
 	pushd ${GIT_LOCAL} >/dev/null
 	git checkout ${GIT_BRANCH}
-	git checkout --detach
+	local SUCCESS=$?
 	echo -e ""
 	popd >/dev/null
 
-	# TODO - Check this actually worked.
+	# Check this actually worked.
+	if [ "${SUCCESS}" == "0" ]; then
+		echo -e "${CYAN}\tChecked out: ${GIT_BRANCH}.\n${NO_COLOUR}"
+	else
+		echo -e "${RED}\tFailed to check out: ${GIT_BRANCH}.\n${NO_COLOUR}"
+		return 1
+	fi
 
 	# Update any git submodules
 	echo -e "${CYAN}\tUpdating Git submodules...\n${NO_COLOUR}"
 	pushd $GIT_LOCAL >/dev/null
 	git submodule init
 	git submodule update --init --recursive
+	echo -e ""
 	popd >/dev/null
 
 	# TODO - Check this actually worked.
