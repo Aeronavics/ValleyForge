@@ -79,7 +79,17 @@ upload_pixhawk()
 		fi
 
 		unpack_pixhawk_bootloader
+	fi
 
+	# We will need root privileges.  Warn the user in advance.
+	echo -e "${YELLOW}Programming using the PX4 uploading tool requires elevated privileges.  You will be prompted for a sudo capable password.\n${NO_COLOUR}"
+	PX4_SUDO="sudo"
+	# Do something trivial, so that we ask for their password in a tidy fashion.
+	${PX4_SUDO} ls > /dev/null
+	echo ""
+
+	# If required, try to upload the bootloader first.
+	if [ ${UPLOAD_BOOTLOADER} ]; then
 		upload_pixhawk_bootloader
 	fi
 
@@ -99,7 +109,7 @@ upload_pixhawk()
 		echo -e "${CYAN}Uploading files for component $COMPONENT via Pixhawk Bootloader.\n${NO_COLOUR}"
 
 		pushd ${TCPATH}/res/vendor/pixhawk/Tools >/dev/null
-		python -u ./px_uploader.py --port "${BOOTLOADER_SERIAL_PORTS}" "${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4"
+		${PX4_SUDO} python -u ./px_uploader.py --port "${BOOTLOADER_SERIAL_PORTS}" "${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}.px4"
 		popd >/dev/null
 
 		# Check the return value from OpenOCD, to determine if an error occurred during compilation.
@@ -150,7 +160,7 @@ upload_pixhawk_bootloader()
 		echo -e "${CYAN}Uploading Pixhawk Bootloader for component $COMPONENT via Dfu-util.\n${NO_COLOUR}"
 
 		pushd ${TCPATH}/res/vendor/pixhawk_bootloader/tools >/dev/null
-		openocd --search ./ -f ${JTAG_INTERFACE} -f stm32f4x.cfg -c init -c "reset halt" -c "flash write_image erase ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin 0x08000000" -c "reset run" -c shutdown
+		${PX4_SUDO} openocd --search ./ -f ${JTAG_INTERFACE} -f stm32f4x.cfg -c init -c "reset halt" -c "flash write_image erase ${TCPATH}/bin/${COMPONENT}/${COMPONENT_NAME}_bootloader.bin 0x08000000" -c "reset run" -c shutdown
 		popd >/dev/null
 
 		# Check the return value from OpenOCD, to determine if an error occurred during compilation.
