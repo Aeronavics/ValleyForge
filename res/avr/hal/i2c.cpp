@@ -304,7 +304,9 @@ I2c_command_status I2c_imp::initialise(I2c_clk_speed clk_speed, I2c_address slav
 		return I2C_CMD_NAK; // AVR only supports 7 bit addresses
 	}
     TWAR = (slave_addr.address.addr_7bit << 1);
-    TWAMR = 0x00; // no address mask.
+    #ifndef __AVR_AT90CAN128__
+	TWAMR = 0x00; // no address mask.
+	#endif
 	i2c_interface.own_addr = slave_addr;
 
 	i2c_callback = callback;

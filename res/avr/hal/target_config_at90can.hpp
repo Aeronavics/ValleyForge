@@ -178,6 +178,13 @@ enum Usart_channel {USART_0, USART_1};
 #define USE_USART0 USART_0
 #define USE_USART1 USART_1
 
+/* I2C */
+enum I2c_number{I2C_0};
+#define I2C_SCL_PORT    PORT_D
+#define I2C_SDA_PORT    PORT_D
+#define I2C_SCL_PIN     PIN_0
+#define I2C_SDA_PIN     PIN_1
+
 /* SPI */
 
 // Port addresses for GPIO pins required for SPI
