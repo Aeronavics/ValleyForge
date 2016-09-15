@@ -185,12 +185,12 @@ class Usart
 		// Methods.
 		
 		/**
-		 * Binds the interface with a USART hardware peripheral
+		 * Creates an instance bound with a USART hardware peripheral.
 		 */
-		static Usart bind(Usart_channel channel);
+		Usart(Usart_channel channel);
 		
 		/**
-		 * Called when USART instance goes out of scope
+		 * Called when USART instance goes out of scope.
 		 */
 		~Usart(void);
 
@@ -413,13 +413,11 @@ class Usart
 
 		// Methods.
 		
-		Usart(void);	// Poisoned.
+		Usart(void) = delete;	// Poisoned.
 
-		Usart(Usart*);	// Poisoned.
+		Usart(Usart*) = delete;	// Poisoned.
 
-		Usart(Usart_imp*);
-
-		Usart operator =(Usart const&);	// Poisoned.
+		Usart operator =(Usart const&) = delete;	// Poisoned.
 
 		// Fields.
 

@@ -201,7 +201,7 @@ find_source_dependencies_recursive()
 			;;
 		"s")
 			# Use assembler to detect the local header dependencies.
-			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -I ${TARGET_DIRECTORY} -x assembler-with-cpp - -MM )
+			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -I ${TARGET_DIRECTORY} - -MM )
 
 			# TODO - Probably need to handle both gcc and as options, in case some targets want to call the assembler directly.
 

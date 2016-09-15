@@ -160,10 +160,11 @@ class Tc_imp
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-// /* Array of user ISRs for timer interrupts. */
+// Array of user ISRs for timer interrupts.
 void (*timerInterrupts[NUM_TIMER_INTERRUPTS])(void) = {NULL};
 
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
+
 Tc_command_status start_8bit_timers (Tc_number tc_number, Tc_rate rate, Tc_registerTable table)
 {
 	// NOTE - TCCR_B_ADDRESS for the AT90CAN128 points to the address of TCCR_A_ADDRESS
