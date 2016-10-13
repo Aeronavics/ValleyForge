@@ -186,7 +186,7 @@ class I2c_imp
 
 // DECLARE PRIVATE GLOBAL VARIABLES.
 
-I2c_interface i2c_interface; // One need one global instance of global interface information as there is only 1 I2C interface on target avr processors.
+static I2c_interface i2c_interface; // One need one global instance of global interface information as there is only 1 I2C interface on target avr processors.
 
 Callback i2c_callback; // The callback to allow I2C to notify the user program of events.
 
