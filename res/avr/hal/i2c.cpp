@@ -290,7 +290,7 @@ I2c_command_status I2c_imp::initialise(I2c_clk_speed clk_speed, I2c_address slav
 	TWCR &= (~(1<<TWEN)); // Ensure interface is disabled before configuring
 	
 	// Set the clock rate
-	if (F_CPU / (clk_speed * CLK_TO_HZ) >= MIN_SCL_CPU_RATIO)
+	if (F_CPU / ((uint32_t)clk_speed * (uint32_t)CLK_TO_HZ) <= MIN_SCL_CPU_RATIO)
 	{
 		return I2C_CMD_NAK; // CPU clock rate is too low for SCL frequency
 	}

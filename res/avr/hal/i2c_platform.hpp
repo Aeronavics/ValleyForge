@@ -69,7 +69,7 @@
 # define TWCR_START       (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(0<<TWEA)|(1<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
 # define TWCR_DATA_NAK    (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(0<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
 # define TWCR_DATA_ACK    (1<<TWEN)|(1<<TWIE)|(1<<TWINT)|(1<<TWEA)|(0<<TWSTA)|(0<<TWSTO)|(0<<TWWC)
-
+#define  TWCR_DATA_TRANSMIT ((1<<TWINT) || (1<<TWEN))
 //////////////////////// Insert io.h data here if decided to not use avr/io.h /////////////////////////
 
 /******************************************************************************************************/
