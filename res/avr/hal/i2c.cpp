@@ -41,13 +41,18 @@
 #include <avr_magic/avr_magic.hpp>
 #include <avr/interrupt.h>
 #include "i2c_platform.hpp"
+#include <util/delay.h>
 
 // DEFINE PRIVATE MACROS.
 
 #define MINIMUM_MASTER_RECEIVE_LENGTH 1
 
 // DEFINE PRIVATE TYPES AND STRUCTS.
-
+volatile uint8_t i2c_buf_index;
+volatile I2c_context i2c_context;
+volatile uint8_t TWCR_tmp;
+volatile bool tx_blocking_complete; 
+volatile bool rx_blocking_complete; //used as a way of blocking the operation untill the expected data is received.
 // The following status codes can be found in TWSR (the status register), depending on certain conditions. The condition required for each of these
 // status codes to be displayed is summarised to the right of each definition.
 enum I2c_status_code
@@ -161,10 +166,12 @@ class I2c_imp
 		I2c_command_status set_general_call_mode(I2c_gc_mode gc_mode);
 
 		I2c_command_status master_transmit(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
+		I2c_command_status master_transmit_blocking(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
 		
 		I2c_command_status master_receive(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
 		
 		I2c_command_status master_transmit_receive(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size);
+		I2c_command_status master_transmit_receive_blocking(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size);
 
 		I2c_command_status slave_transmit(uint8_t* data, uint8_t msg_size);
 		
@@ -248,6 +255,10 @@ I2c_command_status I2c::master_transmit(I2c_address slave_addr, uint8_t* data, u
 {
 	return imp->master_transmit(slave_addr, data, msg_size);
 }
+I2c_command_status I2c::master_transmit_blocking(I2c_address slave_addr, uint8_t* data, uint8_t msg_size)
+{
+	return imp->master_transmit_blocking(slave_addr, data, msg_size);
+}
 
 I2c_command_status I2c::master_receive(I2c_address slave_addr, uint8_t* data, uint8_t msg_size)
 {
@@ -257,6 +268,11 @@ I2c_command_status I2c::master_receive(I2c_address slave_addr, uint8_t* data, ui
 I2c_command_status I2c::master_transmit_receive(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size)
 {
 	return imp->master_transmit_receive(slave_addr, tx_data, tx_msg_size, rx_data, rx_msg_size);
+}
+
+I2c_command_status I2c::master_transmit_receive_blocking(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size)
+{
+	return imp->master_transmit_receive_blocking(slave_addr, tx_data, tx_msg_size, rx_data, rx_msg_size);
 }
 
 I2c_command_status I2c::slave_transmit(uint8_t* data, uint8_t msg_size)
@@ -496,6 +512,26 @@ I2c_command_status I2c_imp::master_transmit(I2c_address slave_addr, uint8_t* dat
 	return I2C_CMD_ACK;
 }
 
+I2c_command_status I2c_imp::master_transmit_blocking(I2c_address slave_addr, uint8_t* data, uint8_t msg_size){
+	tx_blocking_complete = false;	
+	I2c_command_status status;
+	do
+	{
+		status =  master_transmit(slave_addr, data, msg_size);
+	}
+	while (I2C_CMD_BUSY == status);
+	uint8_t i =0;
+	while(!tx_blocking_complete){
+		/*i++;
+		if(i > 100)
+ 			break;
+		_delay_us(10);*/
+		
+	}
+	return status;
+}
+
+
 I2c_command_status I2c_imp::master_receive(I2c_address slave_addr, uint8_t* data, uint8_t msg_size)
 {
 	if (i2c_interface.master_active)
@@ -600,7 +636,26 @@ I2c_command_status I2c_imp::master_transmit_receive(I2c_address slave_addr, uint
 	
 	return I2C_CMD_ACK;
 }
+I2c_command_status I2c_imp::master_transmit_receive_blocking(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size)
+{
+	rx_blocking_complete = false;
+	I2c_command_status t;
+	do{
+		t = master_transmit_receive(slave_addr, tx_data, tx_msg_size, rx_data, rx_msg_size);
+	}
+	while(t == I2C_CMD_BUSY);//wait for the line to be free, then transmit
+	//wait for the received bits to be, well, received todo: add error states in here too
+	uint32_t i = 0;
+	while(!rx_blocking_complete){
+		/*i++;
+		if(i > 100)
+ 			break;
+		_delay_us(10);*/
+	}
 
+	return t;
+	
+}
 I2c_command_status I2c_imp::slave_transmit(uint8_t* data, uint8_t msg_size)
 {
 	// Prevent data from being transmit while the buffer is being changed
@@ -680,9 +735,7 @@ I2c_command_status I2c_imp::slave_receive_general_call(uint8_t* data, uint8_t* m
 //
 /////////////////////////////  Interrupt Vectors  /////////////////////////////
 
-volatile uint8_t i2c_buf_index;
-volatile I2c_context i2c_context;
-volatile uint8_t TWCR_tmp;
+
 
 ISR(TWI_vect)
 {
@@ -716,6 +769,8 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
+			rx_blocking_complete = true;
 			break;
 		}
 		case TWI_START:
@@ -803,6 +858,8 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
+			rx_blocking_complete = true;
 			break;
 		}
 		/////////////////////// Master Transmitter statuses ///////////////////////
@@ -828,6 +885,7 @@ ISR(TWI_vect)
 				TWCR_tmp |= (1<<TWSTO);
 				TWCR_tmp |= (1<<TWINT);
 				TWCR = TWCR_tmp;
+				tx_blocking_complete = true;
 			}
 			else
 			{
@@ -855,6 +913,7 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
 			break;
 		}
 		case MT_DATA_ACK:
@@ -891,6 +950,7 @@ ISR(TWI_vect)
 					TWCR_tmp |= (1<<TWSTO);
 					TWCR_tmp |= (1<<TWINT);
 					TWCR = TWCR_tmp;
+					tx_blocking_complete = true;
 				}
 			}
 			break;
@@ -915,6 +975,7 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
 			break;
 		}
 		/////////////////////// Master Receiver statuses ///////////////////////
@@ -923,7 +984,7 @@ ISR(TWI_vect)
 			// NOTE - Due to harware limitations it is not possible to make a 0 byte read.
 			switch (i2c_interface.mr_msg_size)
 			{
-				case 1:
+				case 1: //WHY WAS THIS 1?!~?!?!
 				{
 					TWCR = TWCR_DATA_NAK;
 					break;
@@ -955,6 +1016,7 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			rx_blocking_complete = true;
 			break;
 		}
 		case MR_DATA_ACK:
@@ -997,6 +1059,7 @@ ISR(TWI_vect)
 			TWCR_tmp |= (1<<TWSTO);
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			rx_blocking_complete = true;
 			break;
 		}
 		/////////////////////// Slave Receiver ///////////////////////
@@ -1168,6 +1231,8 @@ ISR(TWI_vect)
 			}
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
+			rx_blocking_complete = true;
 			break;
 		}
 		case SR_STOP_RESTART:
@@ -1202,6 +1267,8 @@ ISR(TWI_vect)
 			}
 			TWCR_tmp |= (1<<TWINT);
 			TWCR = TWCR_tmp;
+			tx_blocking_complete = true;
+			rx_blocking_complete = true;
 			break;
 		}
 		/////////////////////// Slave Transmitter ///////////////////////
