@@ -522,10 +522,10 @@ I2c_command_status I2c_imp::master_transmit_blocking(I2c_address slave_addr, uin
 	while (I2C_CMD_BUSY == status);
 	uint8_t i =0;
 	while(!tx_blocking_complete){
-		/*i++;
+		i++;
 		if(i > 100)
  			break;
-		_delay_us(10);*/
+		_delay_us(10);
 		
 	}
 	return status;
@@ -647,10 +647,10 @@ I2c_command_status I2c_imp::master_transmit_receive_blocking(I2c_address slave_a
 	//wait for the received bits to be, well, received todo: add error states in here too
 	uint32_t i = 0;
 	while(!rx_blocking_complete){
-		/*i++;
+		i++;
 		if(i > 100)
  			break;
-		_delay_us(10);*/
+		_delay_us(10);
 	}
 
 	return t;
