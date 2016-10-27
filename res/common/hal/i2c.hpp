@@ -242,6 +242,7 @@ class I2c
 		 * @return   Success or Failure response.
 		 */
 		I2c_command_status master_transmit(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
+		I2c_command_status master_transmit_blocking(I2c_address slave_addr, uint8_t* data, uint8_t msg_size);
 
 		/**
 		 * The controller waits until the bus is free then becomes the master controller and requests
@@ -271,6 +272,7 @@ class I2c
 		 * @return Success or Failure response.
 		 */
 		I2c_command_status master_transmit_receive(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size);
+		I2c_command_status master_transmit_receive_blocking(I2c_address slave_addr, uint8_t* tx_data, uint8_t tx_msg_size, uint8_t* rx_data, uint8_t rx_msg_size);
 		
 		/**
 		 * As a slave controller store data into a buffer where the data will be

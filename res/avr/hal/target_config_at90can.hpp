@@ -54,14 +54,17 @@
 
 enum Watchdog_timeout
 {
-	WDTO_15MS,
-	WDTO_30MS,
-	WDTO_60MS,
-	WDTO_120MS,
-	WDTO_250MS,
-	WDTO_500MS,
-	WDTO_1S,
-	WDTO_2S
+	WDTO_15MS = 0,
+	WDTO_30MS = 1,
+	WDTO_60MS = 2,
+	WDTO_120MS = 3,
+	WDTO_250MS = 4,
+	WDTO_500MS = 5,
+	WDTO_1S = 6,
+	WDTO_2S = 7,
+	WDTO_4S = 8,
+ 	WDTO_8S = 9,
+
 };
 
 /* GPIO */
