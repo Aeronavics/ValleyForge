@@ -764,10 +764,12 @@ do
 		# Iterate over the list of source files to import.
 		local SRC_IMPORT_FILE=
 		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
+			echo "$SRC_IMPORT_FILE"
+			
 			# Split the line into source and target.
-			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
-			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
-
+			SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
+			SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+			echo "$SRC_IMPORT_DESTINATION"
 			# Check if the target exists.
 			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
 				# The file was missing, so we skip this file.

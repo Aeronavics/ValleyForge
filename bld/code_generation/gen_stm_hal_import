@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+#	Copyright (C) 2013 Unison Networks Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_avrmagic											###
+###															###
+### Author:		Edwin Hayes											###
+###															###
+### Date Created:	29-01-2013											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides functions and definitions which generate improve C++ support on AVR targets, since the	###
+###			existing implementation of avr-gcc does not completely implement all C++ functionality.		###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported STM HAL import functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_avrmagic							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates files which improve C++ support for AVR targets.	###
+###			This is trivial, because all this involves is copying across	###
+###			the required files to the output directory.			###
+###											###
+###########################################################################################
+
+gen_stm_hal_import()
+{
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Let the user know what is going on.
+	echo -e "${CYAN}Generating 'STM32 HAL' library...\n${NO_COLOUR}"
+
+	# Copy across the required files.
+	mkdir -p $1/Legacy
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/* $1/
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/* $1/Legacy
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Src/* $1/
+
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Device/ST/STM32F1xx/Include/* $1/
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Include/* $1/
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
