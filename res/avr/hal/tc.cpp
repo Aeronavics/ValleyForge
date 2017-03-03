@@ -665,7 +665,7 @@ Tc_command_status enable_oc_16bit(Tc_oc_mode mode, Tc_registerTable table)
 		}
 		case TC_OC_MODE_14 : // Fast PWM, WGM2:0 = 14, TOP = ICRn
 		{
-      *table.TCCR_A_ADDRESS &= (1 << WGM0_BIT);
+      			*table.TCCR_A_ADDRESS &= (1 << WGM0_BIT);
 			*table.TCCR_B_ADDRESS |= ((1 << WGM3_BIT) | (1 << WGM2_BIT));
 			*table.TCCR_A_ADDRESS |= (1 << WGM1_BIT);
 
@@ -1606,24 +1606,39 @@ Tc_command_status Tc_imp::enable_oc(Tc_oc_mode mode)
 Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel_mode mode)
 {
 	// TODO -	Requires testing.
-  Gpio_pin pins(pin_address[channel].address);
-  if (pins.set_mode(GPIO_OUTPUT_PP) == GPIO_ERROR)
-  {
-    return TC_CMD_NAK;
-  }
+	 Gpio_pin pins(pin_address[channel].address);
+	 if (pins.set_mode(GPIO_OUTPUT_PP) == GPIO_ERROR)
+	 {
+	    return TC_CMD_NAK;
+	 }	 
+
 
 	#ifdef __AVR_AT90CAN128__
+	//timer 0 and 2 are 8 bit timers, and thus are set differently
+	bool is_16_bit = !(timer_number == TC_0 || timer_number == TC_2);
+
 	switch (mode)
 	{
+
+		/*
+			COMn<A,B,C>1, COMn<A,B,C>0, Description
+			00, Normal port operation, OCnA/OCnB/OCnC disconnected.
+			01, Toggle OCnA/OCnB/OCnC on Compare Match.
+			10, Clear OCnA/OCnB/OCnC on Compare Match (Set output to low level).
+			11, Set OCnA/OCnB/OCnC on Compare Match (Set output to high level).
+		*/
 		case TC_OC_CHANNEL_MODE_0 : // Normal Port Operation mode (Pins disconnected)
 		{
-      *imp_register_table.TIMSK_ADDRESS = 0x00; // make sure all interrupts are disabled
+     // *imp_register_table.TIMSK_ADDRESS = 0x00; // make sure all interrupts are disabled. When do we enable this?!
 
-			if (timer_number != TC_0 || timer_number != TC_2)
+			if (is_16_bit)
 			{
-				*imp_register_table.TCCR_A_ADDRESS &= (~(1 << ( COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) & ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+				//split into two steps for readability
+				*imp_register_table.TCCR_A_ADDRESS &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*imp_register_table.TCCR_A_ADDRESS &= ~( 1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+
 			}
-			else if (timer_number == TC_0 || timer_number == TC_2)
+			else
 			{
 				if (channel != TC_OC_A)
 				{
@@ -1635,12 +1650,12 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 		}
 		case TC_OC_CHANNEL_MODE_1 :
 		{
-			if (timer_number != TC_0 || timer_number != TC_2)
+			if (is_16_bit)
 			{
 				*imp_register_table.TCCR_A_ADDRESS &= ~( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
-				*imp_register_table.TCCR_A_ADDRESS |= (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*imp_register_table.TCCR_A_ADDRESS |= ( 1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
 			}
-			else if (timer_number == TC_0 || timer_number == TC_2)
+			else
 			{
 				if (channel != TC_OC_A)
 				{
@@ -1654,12 +1669,12 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 		}
 		case TC_OC_CHANNEL_MODE_2 :
 		{
-			if (timer_number != TC_0 || timer_number != TC_2)
+			if (is_16_bit)
 			{
-				*imp_register_table.TCCR_A_ADDRESS |= (1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
-				*imp_register_table.TCCR_A_ADDRESS &= ~(1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*imp_register_table.TCCR_A_ADDRESS |= ( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*imp_register_table.TCCR_A_ADDRESS &= ~( 1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
 			}
-			else if (timer_number == TC_0 || timer_number == TC_2)
+			else
 			{
 				if (channel != TC_OC_A)
 				{
@@ -1672,11 +1687,13 @@ Tc_command_status Tc_imp::enable_oc_channel(Tc_oc_channel channel, Tc_oc_channel
 		}
 		case TC_OC_CHANNEL_MODE_3 :
 		{
-			if (timer_number != TC_0 || timer_number != TC_2)
+			if (is_16_bit)
 			{
-				*imp_register_table.TCCR_A_ADDRESS |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
+				*imp_register_table.TCCR_A_ADDRESS |= ( 1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				*imp_register_table.TCCR_A_ADDRESS |= ( 1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel));
+				//*imp_register_table.TCCR_A_ADDRESS |= ((1 << (COMA1_BIT - COM_BIT_OFFSET * (int8_t)channel)) | (1 << (COMA0_BIT - COM_BIT_OFFSET * (int8_t)channel)));
 			}
-			else if (timer_number == TC_0 || timer_number == TC_2)
+			else
 			{
 				if (channel != TC_OC_A)
 				{
@@ -2826,12 +2843,12 @@ if (timerInterrupts[TIMER2_COMP_int])
    if (timerInterrupts[TIMER3_CAPT_int])
      timerInterrupts[TIMER3_CAPT_int]();
  }
-
+/*
  ISR(TIMER3_COMPA_vect)
  {
    if (timerInterrupts[TIMER3_COMPA_int])
      timerInterrupts[TIMER3_COMPA_int]();
- }
+ }*/
 
  ISR(TIMER3_COMPB_vect)
  {
