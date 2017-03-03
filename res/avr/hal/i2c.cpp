@@ -515,12 +515,17 @@ I2c_command_status I2c_imp::master_transmit(I2c_address slave_addr, uint8_t* dat
 I2c_command_status I2c_imp::master_transmit_blocking(I2c_address slave_addr, uint8_t* data, uint8_t msg_size){
 	tx_blocking_complete = false;	
 	I2c_command_status status;
+	uint8_t i =0;
 	do
 	{
 		status =  master_transmit(slave_addr, data, msg_size);
+		i++;
+		if(i > 100) //if it is still not free - just ignore it and return.
+ 			return I2C_CMD_BUSY;
+		_delay_us(10);
 	}
 	while (I2C_CMD_BUSY == status);
-	uint8_t i =0;
+	i =0;
 	while(!tx_blocking_complete){
 		i++;
 		if(i > 100)
@@ -640,12 +645,17 @@ I2c_command_status I2c_imp::master_transmit_receive_blocking(I2c_address slave_a
 {
 	rx_blocking_complete = false;
 	I2c_command_status t;
+	uint32_t i = 0;
 	do{
 		t = master_transmit_receive(slave_addr, tx_data, tx_msg_size, rx_data, rx_msg_size);
+		i++;
+		if(i > 100) //if it is still not free - just ignore it and return.
+ 			return I2C_CMD_BUSY;
+		_delay_us(10);
 	}
 	while(t == I2C_CMD_BUSY);//wait for the line to be free, then transmit
 	//wait for the received bits to be, well, received todo: add error states in here too
-	uint32_t i = 0;
+	i = 0;
 	while(!rx_blocking_complete){
 		i++;
 		if(i > 100)
