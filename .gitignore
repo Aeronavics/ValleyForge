@@ -1,10 +1,12 @@
-bin/*
+bin
 
-tmp/*
+tmp
 
-src/*
+src
 
-lib/*
+lib
+
+var
 
 var/config.cfg
 var/mavlink.xml
