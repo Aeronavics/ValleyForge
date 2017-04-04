@@ -67,7 +67,11 @@ gen_stm_hal_import()
 	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/* $1/Legacy
 	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Src/* $1/
 
-	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Device/ST/STM32F1xx/Include/* $1/
+	if [ ! -d "$1/hal_init" ]; then
+		mkdir -p $1/hal_init
+	fi
+
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Device/ST/STM32F1xx/Include/* $1/hal_init
 	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Include/* $1/
 
 	# All done.
