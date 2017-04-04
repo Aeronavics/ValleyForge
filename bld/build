@@ -765,7 +765,7 @@ do
 		SRC_IMPORT_FILE=
 		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
 			echo "$SRC_IMPORT_FILE"
-			
+
 			# Split the line into source and target.
 			SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
 			SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')

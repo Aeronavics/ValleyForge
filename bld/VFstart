@@ -162,7 +162,7 @@ EOF
 BLOCKMODE=
 
 # Define variables required for 'getopt' to work.
-PROGNAME=${0##*/} 
+PROGNAME=${0##*/}
 SHORTOPTS="hb"
 LONGOPTS="help,block"
 
@@ -227,7 +227,7 @@ do
 
 			# Prompt the user.
 			echo -ne  "${GREEN}Do you want to run the setup process now (or be reminded later)? (Y/N or L) ${NO_COLOUR}"
-	
+
 			# Read a single character input from the user and select the appropriate response.
 			read -s -n 1
 			echo -e "\n" # NOTE - This is required since read won't add a newline after reading a single character.
