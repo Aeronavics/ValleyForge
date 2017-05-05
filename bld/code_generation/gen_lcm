@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+#	Copyright (C) 2017 Aeronavics Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###
+### Name:		gen_lcm
+###
+### Author:		Edwin Hayes
+###
+### Date Created:	05-05-2017
+###
+### Type:		Bash Script
+###
+### Purpose:		Provides functions which generate code providing LCM message definitions.
+###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported LCM code generation functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###
+### Name:		gen_lcm
+###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.
+###
+### Purpose:		Generates files which implement message definitions for the LCM
+###			interprocess communications system.
+###
+###########################################################################################
+
+gen_lcm()
+{
+	# DEFINE CONSTANTS.
+
+	local GEN_CACHE=${TCPATH}/tmp/gen_cache
+	local COMMON_DEFINITIONS=${TCPATH}/var/lcm
+
+	local OUTPUT_DEFS_FOLDER="lcm"
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+	echo -e "${CYAN}Generating LCM message definitions...\n${NO_COLOUR}"
+
+	# Check that the LCM library is actually installed on this machine.
+	if [ -z "$(which lcm-gen)" ]; then
+		# The generator is missing, probably because the library isn't installed.
+		echo -e "${RED}Couldn't find lcm-gen: is the LCM library installed on the host?\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Check if at least one LCM definitions file to use has been specified.
+	if [ -z "${VF_GEN_LCM_DEFINITIONFILES}" ]; then
+		# No mavlink definitions file was specified.
+		echo -e "${YELLOW}\tNo LCM definitions files were specified; nothing to generate.\n${NO_COLOUR}"
+		return 0
+	fi
+
+	# Iterate over each definition file listed.
+	mkdir "$1/${OUTPUT_DEFS_FOLDER}"
+	for DEFINITIONFILE in ${VF_GEN_LCM_DEFINITIONFILES}; do
+		# Check if the specified file actually exists.
+		local LCMFILE=""
+
+		# First, check within the component source tree itself.
+		if [ -f "$1/${DEFINITIONFILE}" ]; then
+			echo -e "${CYAN}\tFound ${DEFINITIONFILE} in the source tree.\n${NO_COLOUR}"
+			LCMFILE="$1/${DEFINITIONFILE}"
+		elif [ -f "${COMMON_DEFINITIONS}/${DEFINITIONFILE}" ]; then
+			echo -e "${CYAN}\tFound ${DEFINITIONFILE} in the common definitions folder.\n${NO_COLOUR}"
+			LCMFILE="${COMMON_DEFINITIONS}/${DEFINITIONFILE}"
+		else
+			echo -e "${RED}\tCouldn't find the LCM definitions file: ${DEFINITIONFILE}\n${NO_COLOUR}"
+			return 1
+		fi
+
+		# Run the LCM code generator.
+		echo -e "${CYAN}\tGenerating messages: ${DEFINITIONFILE}\n${NO_COLOUR}"
+		lcm-gen --lazy --c --c-cpath="$1/${OUTPUT_DEFS_FOLDER}" --c-hpath="$1/${OUTPUT_DEFS_FOLDER}" --cinclude="${OUTPUT_DEFS_FOLDER}"\
+                               --cpp --cpp-hpath="$1/${OUTPUT_DEFS_FOLDER}" --cpp-include="${OUTPUT_DEFS_FOLDER}"\
+                               --python --ppath="$1/${OUTPUT_DEFS_FOLDER}" "${LCMFILE}"
+
+		# NOTE - Dont put anything in here; we need the return value from lcm-gen below.
+
+		# Check if we actually generated some code.
+		if [ $? != 0 ]; then
+			# Something went wrong.
+			echo -e "\n${RED}\tLCM code generation for ${DEFINITIONFILE} failed.\n${NO_COLOUR}"
+			return 1
+		fi
+	done
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
