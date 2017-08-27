@@ -130,7 +130,7 @@ get_suitable_libs()
 	fi
 
 	# Work out what libraries there are.
-	local VF_LIBRARIES=`find $TCPATH/${LIB_SOURCE_PATH} -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
+	local VF_LIBRARIES=`find $TCPATH/${LIB_SOURCE_PATH}/ -name '*.cfg' | sed "s/.*\/${LIB_SOURCE_PATH}\///g" | grep -e "\([^/]*\)/\1.cfg" | sed "s/\/[^/]*\.cfg//g"`
 	local VF_LIBRARY_COUNT=`echo ${VF_LIBRARIES} | wc -w | xargs`
 
 	# Check if there are actually any libraries.
@@ -762,12 +762,14 @@ do
 		echo -e "${CYAN}Importing external source file resources...\n${NO_COLOUR}"
 
 		# Iterate over the list of source files to import.
-		local SRC_IMPORT_FILE=
+		SRC_IMPORT_FILE=
 		for SRC_IMPORT_FILE in ${SRC_IMPORT_FILES}; do
-			# Split the line into source and target.
-			local SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
-			local SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+			echo "$SRC_IMPORT_FILE"
 
+			# Split the line into source and target.
+			SRC_IMPORT_TARGET=$(echo $SRC_IMPORT_FILE | cut -f 1 -d ':')
+			SRC_IMPORT_DESTINATION=$(echo $SRC_IMPORT_FILE | grep ":" | cut -f 2 -d ':')
+			echo "$SRC_IMPORT_DESTINATION"
 			# Check if the target exists.
 			if [ ! -f ${TCPATH}/${SRC_IMPORT_TARGET} ]; then
 				# The file was missing, so we skip this file.
