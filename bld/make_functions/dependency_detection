@@ -201,7 +201,7 @@ find_source_dependencies_recursive()
 			;;
 		"s")
 			# Use assembler to detect the local header dependencies.
-			DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -I ${TARGET_DIRECTORY} - -MM )
+			#DEPENDENCIES=$(echo "${TARGET_CONTENT}" | ${ASSEMBLER} ${AFLAGS} -I ${TARGET_DIRECTORY} - -MM )
 
 			# TODO - Probably need to handle both gcc and as options, in case some targets want to call the assembler directly.
 
@@ -467,13 +467,11 @@ list_object_dependencies()
 
 	# Remove the output file if it already exists.
 	rm -f "${2%.*}.ld"
-
 	if ! find_object_dependencies . $2; then
 		# Something went wrong.
 		echo -e "${RED}\tUnable to calculate object dependencies for ${2}.\n${NO_COLOUR}"
 		return 1
 	fi
-
 	echo "OBJS =${OBJ_STRING}" > "${2%.*}.ld"
 
 	# Leave the folder containing the source.
@@ -586,7 +584,6 @@ generate_component_dependencies()
 		# Alias the source file, for consistency with the detect source deps function.
 		local TARGET_FILE=${SRC}
 		local TARGET_BASENAME
-
 		# Find the basename of examined file by removing any directory or filetype components.
 		TARGET_BASENAME=${TARGET_FILE%.*}
 		TARGET_BASENAME=${TARGET_BASENAME##*/}
@@ -605,7 +602,7 @@ generate_component_dependencies()
 				;;
 			"s")
 				# Use assembler to detect the local header dependencies.
-				DEPENDENCIES=$(${ASSEMBLER} ${AFLAGS} -MM ${TARGET_FILE})
+				#DEPENDENCIES=$(${ASSEMBLER} ${AFLAGS} -MM ${TARGET_FILE})
 
 				# TODO - As above, some targets might want to use the assembler rather than just calling the compiler.
 
@@ -618,7 +615,7 @@ generate_component_dependencies()
 				#DEPENDENCIES=$(cat "${TARGET_BASENAME}.d")
 				#rm "${TARGET_BASENAME}.d"
 
-				add_dependencies ${DEPENDENCIES}
+				#add_dependencies ${DEPENDENCIES}
 				;;
 			*)
 				echo -e "${RED}\tUnable to detect dependencies for unsupported source file: ${TARGET_FILE}."
