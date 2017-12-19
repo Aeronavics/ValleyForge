@@ -90,8 +90,44 @@ bool Sbus::Decode_sbus(uint8_t * buffer, uint8_t buffer_data_size, Sbus_data * c
 			//all gravy, lets return
 	return true;
 }
-void Sbus::Encode_sbus(uint16_t* channel_data, uint8_t channel_data_size, uint8_t * sbus_data, uint8_t sbus_data_size){
-	return;
+bool Sbus::Encode_sbus(uint16_t * channel_data, uint8_t channel_data_size, uint8_t * sbus_out_data, uint8_t sbus_data_size)
+{
+	//sbus_data_size should be 25. This is manditory
+	if(sbus_data_size != 25 && channel_data_size != 18){
+		return false;
+	}
+	sbus_out_data[0] = 0x0F; 
+
+	// 16 channels of 11 bit data
+  	sbus_out_data[1] = (uint8_t)  ((channel_data[0]  & 0x07FF));
+  	sbus_out_data[2] = (uint8_t)  ((channel_data[0]  & 0x07FF)>>8 |  (channel_data[1] & 0x07FF)<<3);
+  	sbus_out_data[3] = (uint8_t)  ((channel_data[1]  & 0x07FF)>>5 |  (channel_data[2] & 0x07FF)<<6);
+  	sbus_out_data[4] = (uint8_t)  ((channel_data[2]  & 0x07FF)>>2);
+  	sbus_out_data[5] = (uint8_t)  ((channel_data[2]  & 0x07FF)>>10 | (channel_data[3] & 0x07FF)<<1);
+  	sbus_out_data[6] = (uint8_t)  ((channel_data[3]  & 0x07FF)>>7 |  (channel_data[4] & 0x07FF)<<4);
+  	sbus_out_data[7] = (uint8_t)  ((channel_data[4]  & 0x07FF)>>4 |  (channel_data[5] & 0x07FF)<<7);
+  	sbus_out_data[8] = (uint8_t)  ((channel_data[5]  & 0x07FF)>>1);
+  	sbus_out_data[9] = (uint8_t)  ((channel_data[5]  & 0x07FF)>>9 |  (channel_data[6] & 0x07FF)<<2);
+  	sbus_out_data[10] = (uint8_t) ((channel_data[6]  & 0x07FF)>>6 |  (channel_data[7] & 0x07FF)<<5);
+  	sbus_out_data[11] = (uint8_t) ((channel_data[7]  & 0x07FF)>>3);
+  	sbus_out_data[12] = (uint8_t) ((channel_data[8]  & 0x07FF));
+  	sbus_out_data[13] = (uint8_t) ((channel_data[8]  & 0x07FF)>>8 |  (channel_data[9] & 0x07FF)<<3);
+  	sbus_out_data[14] = (uint8_t) ((channel_data[9]  & 0x07FF)>>5 |  (channel_data[10] & 0x07FF)<<6);  
+  	sbus_out_data[15] = (uint8_t) ((channel_data[10] & 0x07FF)>>2);
+  	sbus_out_data[16] = (uint8_t) ((channel_data[10] & 0x07FF)>>10 | (channel_data[11] & 0x07FF)<<1);
+  	sbus_out_data[17] = (uint8_t) ((channel_data[11] & 0x07FF)>>7 |  (channel_data[12] & 0x07FF)<<4);
+  	sbus_out_data[18] = (uint8_t) ((channel_data[12] & 0x07FF)>>4 |  (channel_data[13] & 0x07FF)<<7);
+  	sbus_out_data[19] = (uint8_t) ((channel_data[13] & 0x07FF)>>1);
+  	sbus_out_data[20] = (uint8_t) ((channel_data[13] & 0x07FF)>>9 |  (channel_data[14] & 0x07FF)<<2);
+  	sbus_out_data[21] = (uint8_t) ((channel_data[14] & 0x07FF)>>6 |  (channel_data[15] & 0x07FF)<<5);
+  	sbus_out_data[22] = (uint8_t) ((channel_data[15] & 0x07FF)>>3);
+
+  	// flags
+	sbus_out_data[23] = 0x00; //? no digital channels? TODO: Fix this
+
+	// footer
+	sbus_out_data[24] = 0x00;
+	return true;
 }
 // IMPLEMENT PRIVATE STATIC FUNCTIONS.
 
