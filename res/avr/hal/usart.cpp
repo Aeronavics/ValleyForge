@@ -40,7 +40,11 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include <hal/spi.hpp>
+// Optionally include UART SPI functionality: we don't always include this because it blows out the code size.
+#if defined(USE_SPI_USART)
+	#include <hal/spi.hpp>
+#endif
+
 #include "hal/hal.hpp"
 #include "hal/gpio.hpp"
 #include "hal/target_config_avr.hpp"
@@ -58,7 +62,9 @@
 
 // FORWARD DEFINE PRIVATE PROTOTYPES.
 
- class Usartspi_imp;
+#if defined(USE_SPI_USART)
+class Usartspi_imp;
+#endif
 
 // DEFINE PRIVATE CLASSES, TYPES AND ENUMERATIONS.
 
@@ -88,7 +94,9 @@ enum Usart_async_mode { ASYNC_BUFFER, ASYNC_STRING };
  */
 class Usart_imp
 {
+	#if defined(USE_SPI_USART)
 	friend class Usartspi_imp;
+	#endif
 
 	public:
 
@@ -183,7 +191,7 @@ class Usart_imp
 			void *cb_p;
 		} async_rx;
 
-	protected:  
+	protected:
 
 		// Fields
 
@@ -209,7 +217,7 @@ class Usart_imp
 
 		#ifdef USE_SPI_USART
 		bool mspim_inuse(void);
-		#endif		
+		#endif
 };
 
 /**
@@ -362,7 +370,6 @@ static Lin_imp usart_lin_imp = Lin_imp(
 #endif
 
 // DEFINE PRIVATE STATIC FUNCTION PROTOTYPES.
-
 
 // IMPLEMENT PUBLIC CLASS FUNCTIONS (METHODS).
 
@@ -554,8 +561,8 @@ void Usart::usart_clear_errors()
 // Usart_imp method implementation.
 
 Usart_imp::Usart_imp(Usart_channel channel, Usart_pins pins, Usart_registers registers)
-	: channel(channel), 
-	  pins(pins), 
+	: channel(channel),
+	  pins(pins),
 	  registers(registers)
 {
 	// Reset state machines
@@ -572,7 +579,7 @@ Usart_imp::~Usart_imp(void)
 	return;
 }
 
-#ifdef USE_SPI_USART
+#if defined(USE_SPI_USART)
 bool Usart_imp::mspim_inuse(void)
 {
 	// Check if the peripheral is currently configured for MSPIM mode
@@ -628,10 +635,9 @@ Usart_config_status Usart_imp::configure(Usart_setup_mode mode, uint32_t baud_ra
 {
 	Usart_config_status result = USART_CFG_FAILED;
 
-	// Check that the USART is not being used by the SPI module
-	#ifdef USE_SPI_USART
-	if (mspim_inuse())
-		return USART_CFG_FAILED;
+	// Check that the USART is not being used by the SPI module.
+	#if defined(USE_SPI_USART)
+	if (mspim_inuse()) return USART_CFG_FAILED;
 	#endif
 
 	// Disable tx/rx before configuring
@@ -1478,9 +1484,9 @@ void Lin_imp::set_udrie(bool enabled)
 
 // IMPLEMENT INTERRUPT SERVICE ROUTINES.
 
-/** 
+/**
  * Declare the ISR handlers.
- * 
+ *
  * Each USART interrupt type is tied to a relevant interrupt vector. These are associated
  * with the user ISRs which are contained within the specific USART implementation.
  *

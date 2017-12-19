@@ -128,6 +128,7 @@ unset OPENOCD_COMMAND_FILE
 	# Code generation keys (common).
 unset CODE_GENERATORS
 unset CODE_GENERATORS_CONFIG_TIME
+unset VF_GEN_MAVLINK_AVRPROGMEM
 
 	# Bootloader specific keys (common).
 unset BLOAD_NAME
