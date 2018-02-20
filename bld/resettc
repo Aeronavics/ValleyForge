@@ -69,11 +69,8 @@ unset VF_REQUIRED_ITEM
 unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
-VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+VF_SCRIPTPATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
-unset VF_SCRIPTPATH
-unset VF_SCRIPT
 
 # DEFINE CONSTANTS.
 
