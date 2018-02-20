@@ -66,6 +66,9 @@ VENDOR_UNCRUSTIFY_REMOTE="http://sourceforge.net/projects/uncrustify/files/lates
 VENDOR_PCREGREP_LOCAL=${TCPATH}/res/vendor
 VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
 
+VENDOR_LIBUAVCAN_LOCAL=${TCPATH}/res/vendor/libuavcan
+VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
+
 ###########################################################################################
 ###                                                                                     ###
 ### NAME:              fetch_git_repository                                             ###
@@ -731,6 +734,53 @@ pack_vendor_pcregrep()
 		echo -e "${CYAN}\tCleaning up pcregrep source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_PCREGREP_LOCAL}/pcre-8.35
 		rm ${TMP_CACHE}/pcregrep_vendor.tar.gz
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_libuavcan						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_libuavcan()
+{
+	# Fetch the libuavcan git repository and make sure it's up to date.
+	fetch_git_repository "${VENDOR_LIBUAVCAN_LOCAL}" "${VENDOR_LIBUAVCAN_REMOTE}" HEAD
+
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_libuavcan							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_libuavcan()
+{
+	# Check if the libuavcan repository has been downloaded already.
+	if [ -d ${VENDOR_LIBUAVCAN_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.
+		echo -e "${CYAN}\tCleaning up libuavcan vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_LIBUAVCAN_LOCAL}
     	fi
 		# Else, the source is already packed.
 
