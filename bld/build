@@ -354,6 +354,11 @@ generic_precompile()
 		echo -e "${YELLOW}Not running code compliance checks.\n${NO_COLOUR}"
 	fi
 
+	# If there are some makefile rules going to be manually added, put up a note so that if there is weird behavior, the user is reminded to check that's not where it is coming from.
+	if [ -n "find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name '*include.mk'" ]; then
+		echo -e "${YELLOW}Project contains at least one makfile inclusion (*include.mk); build behavior may be altered by included files.\n${NO_COLOUR}"
+	fi
+
 	# All done.
 	return 0
 }
