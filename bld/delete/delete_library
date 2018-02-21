@@ -42,23 +42,8 @@ else
 fi
 
 # Determine what the absolute path to the root of the toolchain is.
-if [ $VF_OS_DARWIN ]; then
-	# We depend on GNU Readlink being installed to work properly, since OSX's default readlink doesn't work.
-	if [ -z "$(which greadlink)" ]; then
-		# GNU Readlink isn't installed.
-		echo -e "\033[0;31mGNU compatible Readlink isn't installed.  Install using Homebrew: brew install coreutils.\n"
-		exit 1
-	fi
-	# We should be good to give this a go.
-	VF_SCRIPT=$(greadlink -f $0)
-else
-	# The default version of readlink should be fine.
-	VF_SCRIPT=$(readlink -f $0)
-fi
-VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+VF_SCRIPTPATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TCPATH=$(echo $VF_SCRIPTPATH | sed 's/\/bld.*//')
-unset VF_SCRIPTPATH
-unset VF_SCRIPT
 
 # DEFINE CONSTANTS.
 

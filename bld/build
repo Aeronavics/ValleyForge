@@ -70,11 +70,8 @@ unset VF_REQUIRED_ITEM
 unset VF_REQUIRED
 
 # Determine what the absolute path to the root of the toolchain is.
-VF_SCRIPT=$(${VF_OSCFG_READLINK} -f $0)
-VF_SCRIPTPATH=$(dirname $VF_SCRIPT)
+VF_SCRIPTPATH=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
 TCPATH=$(echo $VF_SCRIPTPATH | ${VF_OSCFG_SED} 's/\/bld.*//')
-unset VF_SCRIPTPATH
-unset VF_SCRIPT
 
 # Define file names.
 
@@ -355,6 +352,11 @@ generic_precompile()
 	else
 		# We're skipping all the code compliance checks.
 		echo -e "${YELLOW}Not running code compliance checks.\n${NO_COLOUR}"
+	fi
+
+	# If there are some makefile rules going to be manually added, put up a note so that if there is weird behavior, the user is reminded to check that's not where it is coming from.
+	if [ -n "find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name '*include.mk'" ]; then
+		echo -e "${YELLOW}Project contains at least one makfile inclusion (*include.mk); build behavior may be altered by included files.\n${NO_COLOUR}"
 	fi
 
 	# All done.

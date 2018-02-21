@@ -54,7 +54,8 @@ all: ./mavlink
 ./mavlink: $(call rwildcard,$(MAVLINK_SANDPIT)/,*)
 	@rm -rf $@
 	@mkdir $@
-	@python $(MAVLINK_GENERATOR) --lang=C --output=$@ $(MAVLINK_DEFINITIONS) --wire-protocol=2.0
+	@python $(MAVLINK_GENERATOR) --lang=C --output=$@ $(MAVLINK_DEFINITIONS) --wire-protocol=1.0
+	@python $(MAVLINK_GENERATOR) --lang=Python --output=$@ $(MAVLINK_DEFINITIONS) --wire-protocol=1.0
 
 # DEPENDENCY TARGETS.
 

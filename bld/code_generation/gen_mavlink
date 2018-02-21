@@ -100,6 +100,12 @@ gen_mavlink()
 		return 1
 	fi
 
+	# If enabled, we slightly modify the MAVlink source files to ensure that the message CRCs (which take up a lot of space) go into program memory instead.
+	if [ -n "${VF_GEN_MAVLINK_AVRPROGMEM}" ]; then
+		echo -e "${CYAN}\tUsing AVR PROGMEM compressed MAVlink variant.\n${NO_COLOUR}"
+		cp ${TCPATH}/res/avr/mavlink_helpers.h ${VENDOR_MAVLINK_LOCAL}/pymavlink/generator/C/include_v1.0/mavlink_helpers.h
+	fi
+
 	# Copy the relevant makefile into the cache.
 	echo -e "${CYAN}\tConstructing makefile for generating MAVlink code...\n${NO_COLOUR}"
 	mkdir -p ${GEN_CACHE}
