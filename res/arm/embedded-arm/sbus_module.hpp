@@ -95,7 +95,7 @@ class Sbus
 		 * @param size of said sbus data array. Will always be 2x channel_data_size
 		 * @return	nothing
 		 */
-		static bool Encode_sbus(uint16_t * channel_data, uint8_t channel_data_size, uint8_t * sbus_out_data, uint8_t sbus_data_size);
+		static bool Encode_sbus(SBUS_data_t * channel_data, uint8_t channel_data_size, uint8_t * sbus_out_data, uint8_t sbus_data_size);
 
 		Sbus(void);
 		~Sbus(void);
