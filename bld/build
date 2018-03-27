@@ -356,7 +356,7 @@ generic_precompile()
 
 	# If there are some makefile rules going to be manually added, put up a note so that if there is weird behavior, the user is reminded to check that's not where it is coming from.
 	if [ -n "find $TCPATH/$TMP_SRC_DIR/$COMPONENT -name '*include.mk'" ]; then
-		echo -e "${YELLOW}Project contains at least one makfile inclusion (*include.mk); build behavior may be altered by included files.\n${NO_COLOUR}"
+		echo -e "${YELLOW}Project contains at least one makefile inclusion (*include.mk); build behavior may be altered by included files.\n${NO_COLOUR}"
 	fi
 
 	# All done.
@@ -379,17 +379,17 @@ preprocess_code()
 	if [ -n "${PREPROCESSOR_MASK}" ]; then
 		echo -e "${YELLOW}\tNot preprocessing some files according to mask: ${PREPROCESSOR_MASK}\n${NO_COLOUR}"
 		for PREPROCESSOR_MASK_WORD in ${PREPROCESSOR_MASK}; do
-			PREPROCESSOR_MASK_STRING+=" -wholename $1/${PREPROCESSOR_MASK_WORD} -prune -o"
+			PREPROCESSOR_MASK_STRING+=" -wholename $1/$(echo "${PREPROCESSOR_MASK_WORD}" | xargs) -prune -o"
 		done
 	fi
 
 	# Preprocess any appropriate files.
-	for FILE in $(find $1 ${PREPROCESSOR_MASK_STRING} -name "*.h" -print \
+	for FILE in $(set -f ; find $1 ${PREPROCESSOR_MASK_STRING} -name "*.h" -print \
 							-o -name "*.hpp" -print \
 							-o -name "*.hs" -print \
 							-o -name "*.c" -print \
 							-o -name "*.cpp" -print \
-							-o -name "*.s" -print); do
+							-o -name "*.s" -print ; set +f); do
 		# Preprocess this header file.
 		echo -e "${CYAN}\tPreprocessing file ${FILE##*/}...${NO_COLOUR}"
 		preprocess_general $FILE
