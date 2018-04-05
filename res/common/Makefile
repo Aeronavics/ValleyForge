@@ -37,6 +37,8 @@ COMPONENT=BUILD_INSERTS_COMPONENT_HERE
 EXECUTABLE=BUILD_INSERTS_EXECUTABLE_HERE
 LOOSE_OBJECTS=BUILD_INSERTS_LOOSE_OBJECTS_HERE
 
+# TODO - Why is this loose objects variable here?  It never gets populated with anything, since loose objects are handled at the dependency detection stage.
+
 # Executables.
 CC=BUILD_INSERTS_C_COMPILER_HERE # The C compiler to use.
 PC=BUILD_INSERTS_P_COMPILER_HERE # The C++ compiler to use.
