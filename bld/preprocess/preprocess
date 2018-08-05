@@ -82,7 +82,6 @@ preprocess_template()
 	local NAME=${1##*/}
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
-
 	# Hence determine what some other fields should become.
 	if [ "$EXT" == "c" ]; then
 		CEXT="c"
@@ -210,6 +209,11 @@ preprocess_general()
 	local NAME=${NAME%.*}
 	local EXT=${1##*.}
 
+	#get the latest version of the git commit and use this to populate our firmware version
+	local COMMIT_VERSION=$(git --git-dir $TCPATH/.git log -1 --abbrev-commit --pretty=format:%h)
+        #prepend a hex identifier so our code does not do anything weird
+        COMMIT_VERSION="0x"$COMMIT_VERSION
+
 	# Hence determine what some other fields should become.
 	if [ "$EXT" == "c" ]; then
 		CEXT="c"
@@ -255,6 +259,7 @@ preprocess_general()
 
 	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s^<<<TC_INSERTS_BOOTLOADER_TRAMPOLINE_TABLE_BASE_ADDRESS_HERE>>>^$BOOTLOADER_TRAMPOLINE_ADDRESS^g" $1
 	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s^<<<TC_INSERTS_SHARED_FUNCTION_TABLE_BASE_ADDRESS_HERE>>>^$SHARED_FUNCTIONS_ADDRESS^g" $1
+	${VF_OSCFG_SED} ${VF_OSCFG_SED_INLPARAM} "s^<<<TC_INSERTS_COMMIT_HASH_HERE>>>^$COMMIT_VERSION^g" $1
 
 	# 	There are also upper-case versions of some of those same macros.
 
