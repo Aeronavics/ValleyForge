@@ -102,7 +102,7 @@ done
 source "$TCPATH/bld/make_functions/common_make_operations"
 
 # Define the functions used to for code generation.
-for f in $(find $TCPATH/bld/code_generation -type f -name "gen_*"); do
+for f in $(find $TCPATH/bld/code_generation -type f -regextype posix-extended -regex ".*/gen_[^.]+" ); do
 	source "$f"
 done
 

@@ -45,7 +45,7 @@ echo -e "${CYAN}Imported libuavcan code generation functions.\n${NO_COLOUR}"
 gen_libuavcan()
 {
 	# DEFINE CONSTANTS.
-	
+
 	# PRIVATE INTERNAL FUNCTIONS.
 
 	# FUNCTION PROPER STARTS HERE.
@@ -63,12 +63,25 @@ gen_libuavcan()
 	# Unpack the libuavcan source.
 	unpack_libuavcan
 	if [ $? -ne 0 ]; then
-		# We couldn't unpack the libuavcan source, so we'll have to abort.
+		# We could not unpack the libuavcan source, so we will have to abort.
 		return 1
 	fi
-	
-	# Copy across the required files.
+
+	# Copy across the required source files.
 	cp -R ${TCPATH}/res/vendor/libuavcan $1
+
+	# Copy across the required makefile inclusion to adapt the build process to handle the UAVCAN library.
+	if [[ "${BCONF}" == "bconf_STM32F1*_BareMetal" ]]; then
+		# Looks like the target is an STM32, which we (and UAVCAN) support.
+		cp ${TCPATH}/bld/code_generation/gen_libuavcan.uavcan_stm32_include.mk $1/uavcan_stm32_include.mk
+	elif [[ "${BCONF}" == "bconf_Native_Linux" ]]; then
+		# Looks like the target is native Linux, which we (and UAVCAN) support.
+		cp ${TCPATH}/bld/code_generation/gen_libuavcan.uavcan_linux_include.mk $1/uavcan_linux_include.mk
+	else
+		# We don't know which makefile inclusion to use for this target, so we have to abort.
+		echo -e "${RED}No makefile inclusion available for UAVCAN in build configuration: ${BCONF_NAME}\n${NO_COLOUR}"
+		return 1
+	fi
 
 	# All done.
 	return 0
