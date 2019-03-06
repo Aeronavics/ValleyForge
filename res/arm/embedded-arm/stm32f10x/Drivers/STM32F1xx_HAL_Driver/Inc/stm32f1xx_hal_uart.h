@@ -2,8 +2,6 @@
   ******************************************************************************
   * @file    stm32f1xx_hal_uart.h
   * @author  MCD Application Team
-  * @version V1.1.1
-  * @date    12-May-2017
   * @brief   Header file of UART HAL module.
   ******************************************************************************
   * @attention
@@ -652,7 +650,6 @@ HAL_StatusTypeDef HAL_UART_AbortTransmit_IT(UART_HandleTypeDef *huart);
 HAL_StatusTypeDef HAL_UART_AbortReceive_IT(UART_HandleTypeDef *huart);
 
 void HAL_UART_IRQHandler(UART_HandleTypeDef *huart);
-void HAL_UART_RxIdleCallback(UART_HandleTypeDef *huart);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);

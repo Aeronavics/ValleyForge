@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
 #	Copyright (C) 2018 Aeronavics Ltd
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -17,24 +17,24 @@
 
 ###########################################################################################################################
 ###															###
-### Name:		gen_libuavcan											###
+### Name:		gen_libcanard											###
 ###															###
-### Author:		Jonathan Wang											###
+### Author:		Anton Slooten											###
 ###															###
-### Date Created:	05-01-2018											###
+### Date Created:	26-02-2019											###
 ###															###
 ### Type:		Bash Script											###
 ###															###
-### Purpose:		Provides library functions to communicate over uavcan from a C/C++ application.		###
+### Purpose:		Provides library functions to communicate over uavcan from a C/C++ application.                 ###
 ###															###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
-echo -e "${CYAN}Imported libuavcan code generation functions.\n${NO_COLOUR}"
+echo -e "${CYAN}Imported libcanard code generation functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		gen_libuavcan							###
+### Name:		gen_libcanard							###
 ###											###
 ### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
 ###											###
@@ -42,7 +42,7 @@ echo -e "${CYAN}Imported libuavcan code generation functions.\n${NO_COLOUR}"
 ###											###
 ###########################################################################################
 
-gen_libuavcan()
+gen_libcanard()
 {
 	# DEFINE CONSTANTS.
 	
@@ -58,17 +58,17 @@ gen_libuavcan()
 	fi
 
 	# Let the user know what is going on.
-	echo -e "${CYAN}Generating 'libuavcan' library...\n${NO_COLOUR}"
+	echo -e "${CYAN}Generating 'libcanard' library...\n${NO_COLOUR}"
 
-	# Unpack the libuavcan source.
-	unpack_libuavcan
+	# Unpack the libcanard source.
+	unpack_libcanard
 	if [ $? -ne 0 ]; then
 		# We couldn't unpack the libuavcan source, so we'll have to abort.
 		return 1
 	fi
 	
 	# Copy across the required files.
-	cp -R ${TCPATH}/res/vendor/libuavcan $1
+	cp -R ${TMP_CACHE}libcanard $1
 
 	# All done.
 	return 0

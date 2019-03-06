@@ -2,10 +2,8 @@
   ******************************************************************************
   * @file    stm32f1xx_hal_uart.c
   * @author  MCD Application Team
-  * @version V1.1.1
-  * @date    12-May-2017
   * @brief   UART HAL module driver.
-  *          This file provides firmware functions to manage the following 
+  *          This file provides firmware functions to manage the following
   *          functionalities of the Universal Asynchronous Receiver Transmitter (UART) peripheral:
   *           + Initialization and de-initialization functions
   *           + IO operation functions
@@ -1673,12 +1671,6 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
     UART_EndTransmit_IT(huart);
     return;
   }
-  /*the RX is in Idle mode*/
-  if(((isrflags & USART_SR_IDLE) != RESET) && ((cr1its & USART_CR1_IDLEIE) != RESET))
-  {
-    __HAL_UART_CLEAR_IDLEFLAG(huart);
-    HAL_UART_RxIdleCallback(huart);
-  }
 }
 
 /**
@@ -1754,21 +1746,6 @@ __weak void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
   /* NOTE: This function Should not be modified, when the callback is needed,
            the HAL_UART_ErrorCallback could be implemented in the user file
    */ 
-}
-
-/**
-  * @brief  Rx idle callback.
-  * @param  huart: Pointer to a UART_HandleTypeDef structure that contains
-  *                the configuration information for the specified UART module.
-  * @retval None
-  */
- __weak void HAL_UART_RxIdleCallback(UART_HandleTypeDef *huart)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_UART_RxIdleCallback can be implemented in the user file
-   */
 }
 
 /**

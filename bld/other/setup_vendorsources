@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
 #	Copyright (C) 2012 Unison Networks Ltd
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -33,41 +34,42 @@
 ###															###
 ###########################################################################################################################
 
-TMP_CACHE=${TCPATH}/tmp
-
 # Define the local and remote locations of the vendor sources.
-VENDOR_MAVLINK_LOCAL=${TCPATH}/res/vendor/mavlink
+VENDOR_MAVLINK_LOCAL=${TMP_CACHE}mavlink
 VENDOR_MAVLINK_REMOTE="https://github.com/mavlink/mavlink.git"
 
-VENDOR_FREERTOS_LOCAL=${TCPATH}/res/vendor/freertos
+VENDOR_FREERTOS_LOCAL=${TMP_CACHE}freertos
 VENDOR_FREERTOS_REMOTE="http://sourceforge.net/projects/freertos/files/latest/download?source=files"
 
-VENDOR_NUTTX_LOCAL=${TCPATH}/res/vendor/nuttx
+VENDOR_NUTTX_LOCAL=${TMP_CACHE}nuttx
 VENDOR_NUTTX_REMOTE="git://git.code.sf.net/p/nuttx/git"
 
-VENDOR_PIXHAWK_LOCAL=${TCPATH}/res/vendor/pixhawk
+VENDOR_PIXHAWK_LOCAL=${TMP_CACHE}pixhawk
 VENDOR_PIXHAWK_REMOTE="https://github.com/PX4/Firmware.git"
 
-VENDOR_PIXHAWK_BOOTLOADER_LOCAL=${TCPATH}/res/vendor/pixhawk_bootloader
+VENDOR_PIXHAWK_BOOTLOADER_LOCAL=${TMP_CACHE}pixhawk_bootloader
 VENDOR_PIXHAWK_BOOTLOADER_REMOTE="https://github.com/PX4/Bootloader.git"
 
-VENDOR_LM4TOOLS_LOCAL=${TCPATH}/res/vendor/lm4tools
+VENDOR_LM4TOOLS_LOCAL=${TMP_CACHE}lm4tools
 VENDOR_LM4TOOLS_REMOTE="https://github.com/utzig/lm4tools.git"
 
-VENDOR_STLINK_LOCAL=${TCPATH}/res/vendor/stlink
+VENDOR_STLINK_LOCAL=${TMP_CACHE}stlink
 VENDOR_STLINK_REMOTE="https://github.com/texane/stlink.git"
 
-VENDOR_ASTYLE_LOCAL=${TCPATH}/res/vendor
+VENDOR_ASTYLE_LOCAL=${TMP_CACHE}
 VENDOR_ASTYLE_REMOTE="http://sourceforge.net/projects/astyle/files/latest/download?source=files"
 
-VENDOR_UNCRUSTIFY_LOCAL=${TCPATH}/res/vendor
+VENDOR_UNCRUSTIFY_LOCAL=${TMP_CACHE}
 VENDOR_UNCRUSTIFY_REMOTE="http://sourceforge.net/projects/uncrustify/files/latest/download?source=files"
 
-VENDOR_PCREGREP_LOCAL=${TCPATH}/res/vendor
+VENDOR_PCREGREP_LOCAL=${TMP_CACHE}
 VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
 
-VENDOR_LIBUAVCAN_LOCAL=${TCPATH}/res/vendor/libuavcan
+VENDOR_LIBUAVCAN_LOCAL=${TMP_CACHE}libuavcan
 VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
+
+VENDOR_LIBCANARD_LOCAL=${TMP_CACHE}libcanard
+VENDOR_LIBCANARD_REMOTE="https://github.com/UAVCAN/libcanard.git"
 
 ###########################################################################################
 ###                                                                                     ###
@@ -775,6 +777,53 @@ unpack_libuavcan()
 ###########################################################################################
 
 pack_libuavcan()
+{
+	# Check if the libuavcan repository has been downloaded already.
+	if [ -d ${VENDOR_LIBUAVCAN_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.
+		echo -e "${CYAN}\tCleaning up libuavcan vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_LIBUAVCAN_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return
+}
+
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_libcanard						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_libcanard()
+{
+	# Fetch the libcanard git repository and make sure it's up to date.
+        fetch_git_repository "${VENDOR_LIBCANARD_LOCAL}" "${VENDOR_LIBCANARD_REMOTE}" HEAD
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_libcanard							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_libcanard()
 {
 	# Check if the libuavcan repository has been downloaded already.
 	if [ -d ${VENDOR_LIBUAVCAN_LOCAL} ]; then
