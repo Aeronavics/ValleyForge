@@ -17,24 +17,24 @@ TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
 
 ###########################################################################################################################
 ###															###
-### Name:		gen_libcanard											###
+### Name:		libuavcan_stm32											###
 ###															###
 ### Author:		Anton Slooten											###
 ###															###
-### Date Created:	26-02-2019											###
+### Date Created:	29-03-2019											###
 ###															###
 ### Type:		Bash Script											###
 ###															###
-### Purpose:		Provides library functions to communicate over uavcan from a C/C++ application.                 ###
+### Purpose:		Provides library functions to communicate over uavcan from a C/C++ application.		###
 ###															###
 ###########################################################################################################################
 
 # Indicate the file was imported successfully.
-echo -e "${CYAN}Imported libcanard code generation functions.\n${NO_COLOUR}"
+echo -e "${CYAN}Imported libuavcan_stm32 code generation functions.\n${NO_COLOUR}"
 
 ######################################## FUNCTION #########################################
 ###											###
-### Name:		gen_libcanard							###
+### Name:		libuavcan_stm32							###
 ###											###
 ### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
 ###											###
@@ -42,10 +42,10 @@ echo -e "${CYAN}Imported libcanard code generation functions.\n${NO_COLOUR}"
 ###											###
 ###########################################################################################
 
-gen_libcanard()
+gen_libuavcan_stm32()
 {
 	# DEFINE CONSTANTS.
-	
+
 	# PRIVATE INTERNAL FUNCTIONS.
 
 	# FUNCTION PROPER STARTS HERE.
@@ -58,17 +58,18 @@ gen_libcanard()
 	fi
 
 	# Let the user know what is going on.
-	echo -e "${CYAN}Generating 'libcanard' library...\n${NO_COLOUR}"
+	echo -e "${CYAN}Generating 'libuavcan_stm32' library...\n${NO_COLOUR}"
 
-	# Unpack the libcanard source.
-	unpack_libcanard
+	# Unpack the libuavcan source.
+	unpack_libuavcan_stm32
+        # unpack_libcanard
 	if [ $? -ne 0 ]; then
 		# We couldn't unpack the libuavcan source, so we'll have to abort.
 		return 1
 	fi
-	
+
 	# Copy across the required files.
-	cp -R ${TMP_CACHE}libcanard $1
+	cp -R ${TMP_CACHE}libuavcan_stm32 $1
 
 	# All done.
 	return 0

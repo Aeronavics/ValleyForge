@@ -71,6 +71,9 @@ VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
 VENDOR_LIBCANARD_LOCAL=${TMP_CACHE}libcanard
 VENDOR_LIBCANARD_REMOTE="https://github.com/UAVCAN/libcanard.git"
 
+VENDOR_LIBUAVCANSTM32_LOCAL=${TMP_CACHE}libuavcan_stm32
+VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/UAVCAN/libuavcan_stm32.git"
+
 ###########################################################################################
 ###                                                                                     ###
 ### NAME:              fetch_git_repository                                             ###
@@ -97,7 +100,9 @@ fetch_git_repository()
 	if [ ! -d ${GIT_LOCAL} ]; then
 		# We need to download the repository before we can use it
 		echo -e "${CYAN}\tDownloading repository from ${GIT_REMOTE}...\n${NO_COLOUR}"
-		git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
+	  git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
+
+
 		git fetch origin +refs/heads/*:refs/remotes/origin/*
 		echo -e ""
 
@@ -757,7 +762,7 @@ pack_vendor_pcregrep()
 unpack_libuavcan()
 {
 	# Fetch the libuavcan git repository and make sure it's up to date.
-	fetch_git_repository "${VENDOR_LIBUAVCAN_LOCAL}" "${VENDOR_LIBUAVCAN_REMOTE}" HEAD
+	fetch_git_repository "${VENDOR_LIBUAVCAN_LOCAL}" "${VENDOR_LIBUAVCAN_REMOTE}" ${VF_VENDOR_LIBUAVCAN_BRANCH-"origin/master"}
 
 	# TODO - Test that now the required files actually exist.
 
@@ -826,10 +831,56 @@ unpack_libcanard()
 pack_libcanard()
 {
 	# Check if the libuavcan repository has been downloaded already.
-	if [ -d ${VENDOR_LIBUAVCAN_LOCAL} ]; then
+	if [ -d ${VENDOR_LIBCANARD_LOCAL} ]; then
 		# We just delete the downloaded clone of the repository.
-		echo -e "${CYAN}\tCleaning up libuavcan vendor source...\n${NO_COLOUR}"
-		rm -Rf ${VENDOR_LIBUAVCAN_LOCAL}
+		echo -e "${CYAN}\tCleaning up libcanard vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_LIBCANARD_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_libcanard						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_libuavcan_stm32()
+{
+	# Fetch the libcanard git repository and make sure it's up to date.
+        fetch_git_repository "${VENDOR_LIBUAVCANSTM32_LOCAL}" "${VENDOR_LIBUAVCANSTM32_REMOTE}" HEAD
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_libcanard							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the libuavcan vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_libuavcan_stm32()
+{
+	# Check if the libuavcan repository has been downloaded already.
+	if [ -d ${VENDOR_LIBUAVCANSTM32_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.
+		echo -e "${CYAN}\tCleaning up libuavcan_stm32 vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_LIBUAVCANSTM32_LOCAL}
     	fi
 		# Else, the source is already packed.
 
