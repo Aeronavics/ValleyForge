@@ -66,13 +66,16 @@ VENDOR_PCREGREP_LOCAL=${TMP_CACHE}
 VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3_8.35.orig.tar.gz"
 
 VENDOR_LIBUAVCAN_LOCAL=${TMP_CACHE}libuavcan
-VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
+# VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
+VENDOR_LIBUAVCAN_REMOTE="https://github.com/Aeronavics/libuavcan.git"
+
 
 VENDOR_LIBCANARD_LOCAL=${TMP_CACHE}libcanard
 VENDOR_LIBCANARD_REMOTE="https://github.com/UAVCAN/libcanard.git"
 
 VENDOR_LIBUAVCANSTM32_LOCAL=${TMP_CACHE}libuavcan_stm32
-VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/UAVCAN/libuavcan_stm32.git"
+# VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/UAVCAN/libuavcan_stm32.git"
+VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/Aeronavics/libuavcan_stm32.git"
 
 ###########################################################################################
 ###                                                                                     ###
