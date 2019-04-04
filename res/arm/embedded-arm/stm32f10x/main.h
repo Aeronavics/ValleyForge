@@ -6,5 +6,7 @@
 //As we do not use main.h, this is soly included to provide the required includes.
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_rcc.h"
+//#include "stm32f1xx_hal_conf.h"
 
 void SystemClock_Config(void);
+void Error_Handler(void);
