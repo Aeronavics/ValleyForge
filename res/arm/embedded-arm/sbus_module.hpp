@@ -57,7 +57,7 @@ typedef struct SBUS_Channels_t  {
         int16_t channel17;
         int16_t channel18;
 } SBUS_Channels;
-enum Sbus_frame_status{SBUS_SIGNAL_UNSET, SBUS_SIGNAL_OK, SBUS_SIGNAL_LOST, SBUS_SIGNAL_FAILSAFE};
+enum Sbus_frame_status{SBUS_SIGNAL_UNSET, SBUS_SIGNAL_OK, SBUS_SIGNAL_LOST, SBUS_SIGNAL_FAILSAFE, SBUS_SIGNAL_FAILSAFE_AND_LOST};
 
 typedef struct SBUS_data_t {
 	Sbus_frame_status frame_status;

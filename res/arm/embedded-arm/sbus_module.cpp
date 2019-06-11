@@ -52,62 +52,96 @@ Sbus::~Sbus(void)
 
 bool Sbus::Decode_sbus(uint8_t * buffer, uint8_t buffer_data_size, Sbus_data * channel_data)
 {
-    for (uint8_t counter = 0; counter < CHANNELS; counter++)
-    {
-        //reset the channel data to prevent stale data lingering. somehow
-        channel_data->data[counter] = 0;
-    }
+
+    //flag to tell us late if we actually want to decode this.
+    bool decode_frame = true;
     //check start and stop bits.
-    if (buffer[0] != 0x0F || !(buffer[24] != 0x00 || buffer[24] != 0b00100000 || buffer[24] != 0b00101000 || buffer[24] != 0b00100100))
+    //There appears to be multiple end bytes available pending on the module.
+    if (buffer[0] != 0x0F || !(buffer[24] == 0x00 || buffer[24] == 0b00100000 || buffer[24] == 0b00101000 || buffer[24] == 0b00100100))
     {
-        return false; //the first byte was not correct. Therefore we cannot assume the rest is OK
-    }
-    /**
-     * Buffer 1 seems to have interesting behavior, this might be some telemetry that we do not know about
-     * if data0 is 0x7c and data 1 is 0x00, then it is almost certainly an issue,
-     * so lets just ignore it
-     */
-    uint16_t data_1, data_2;
-    data_1 = ((buffer[1] | ((uint16_t) buffer[2]) << 8) & 0x07FF);
-    data_2 = ((buffer[2] >> 3 | ((uint16_t) buffer[3]) << 5) & 0x07FF);
-
-    if ((data_1 == 0x7C) && (data_2 == 0x00))
-    {
-        return false;
-    }
-
-    channel_data->data[0] = data_1;
-    channel_data->data[1] = data_2;
-    channel_data->data[2] = ((buffer[3] >> 6 | ((uint16_t) buffer[4]) << 2 | ((uint16_t) buffer[5]) << 10) & 0x07FF);
-    channel_data->data[3] = ((buffer[5] >> 1 | ((uint16_t) buffer[6]) << 7) & 0x07FF);
-    channel_data->data[4] = ((buffer[6] >> 4 | ((uint16_t) buffer[7]) << 4) & 0x07FF);
-    channel_data->data[5] = ((buffer[7] >> 7 | ((uint16_t) buffer[8]) << 1 | ((uint16_t) buffer[9]) << 9) & 0x07FF);
-    channel_data->data[6] = ((buffer[9] >> 2 | ((uint16_t) buffer[10]) << 6) & 0x07FF);
-    channel_data->data[7] = ((buffer[10] >> 5 | ((uint16_t) buffer[11]) << 3) & 0x07FF);
-    channel_data->data[8] = ((buffer[12] | ((uint16_t) buffer[13]) << 8) & 0x07FF);
-    channel_data->data[9] = ((buffer[13] >> 3 | ((uint16_t) buffer[14]) << 5) & 0x07FF);
-    channel_data->data[10] = ((buffer[14] >> 6 | ((uint16_t) buffer[15]) << 2 | ((uint16_t) buffer[16]) << 10) & 0x07FF);
-    channel_data->data[11] = ((buffer[16] >> 1 | ((uint16_t) buffer[17]) << 7) & 0x07FF);
-    channel_data->data[12] = ((buffer[17] >> 4 | ((uint16_t) buffer[18]) << 4) & 0x07FF);
-    channel_data->data[13] = ((buffer[18] >> 7 | ((uint16_t) buffer[19]) << 1 | ((uint16_t) buffer[20]) << 9) & 0x07FF);
-    channel_data->data[14] = ((buffer[20] >> 2 | ((uint16_t) buffer[21]) << 6) & 0x07FF);
-    channel_data->data[15] = ((buffer[21] >> 5 | ((uint16_t) buffer[22]) << 3) & 0x07FF);
-    //map more data
-    channel_data->channels.channel17 = (buffer[23] & (1 << 0)) != 0;
-    channel_data->channels.channel18 = (buffer[23] & (1 << 1)) != 0;
-    //pull out statuses from the sbus signal
-    if ((buffer[23] & (1 << 2)) != 0)
-    {
-        channel_data->frame_status = SBUS_SIGNAL_LOST;
-    }
-    else if ((buffer[23] & (1 << 3)))
-    {
-        channel_data->frame_status = SBUS_SIGNAL_FAILSAFE;
+        //Our data is incomplete or the frame does not check out. The data cannot be assumed to be correct
+        decode_frame = false;
     }
     else
-        channel_data->frame_status = SBUS_SIGNAL_OK;
-    //all gravy, lets return
+    {
+        //our start and stop bit checkout. Let us check the status of the signal
 
+        /**
+         * Buffer 1 seems to have interesting behavior, this might be some telemetry that we do not know about
+         * if data0 is 0x7c and data 1 is 0x00, then it is almost certainly an issue,
+         * so lets just ignore it
+         */
+        uint16_t data_1, data_2;
+        data_1 = ((buffer[1] | ((uint16_t) buffer[2]) << 8) & 0x07FF);
+        data_2 = ((buffer[2] >> 3 | ((uint16_t) buffer[3]) << 5) & 0x07FF);
+
+        if ((data_1 == 0x7C) && (data_2 == 0x00))
+        {
+            decode_frame = false;
+        }
+
+        /**
+         * Here we actually look at the signal and see if we are actually going to use this data.
+         */
+        bool sig_lost = ((buffer[23] & (1 << 2)) != 0);
+        bool failsafe = ((buffer[23] & (1 << 3)) != 0);
+
+        //pull out statuses from the sbus signal
+        if (sig_lost && !failsafe)
+        {
+            //this is the only where we are not sure what our data is
+            //Therefore if this is the case, for the love of something divine, DO NOT OUTPUT THIS VALUE
+            channel_data->frame_status = SBUS_SIGNAL_LOST;
+            //return false so we do not overwrite old data.
+            decode_frame = false;
+        }
+        else if (!sig_lost && failsafe)
+        {
+            //we are in failsafe, but have regained our signal
+            channel_data->frame_status = SBUS_SIGNAL_FAILSAFE;
+        }
+        else if (sig_lost && failsafe)
+        {
+            //there is no signal, and we are in failsafe.
+            channel_data->frame_status = SBUS_SIGNAL_FAILSAFE_AND_LOST;
+        }
+        else
+        {
+            //we are currently fine.
+            channel_data->frame_status = SBUS_SIGNAL_OK;
+        }
+
+        //check whether or not we are going to decode this frame.
+        if (decode_frame)
+        {
+            for (uint8_t counter = 0; counter < CHANNELS; counter++)
+            {
+                //reset the channel data to prevent stale data lingering. somehow
+                channel_data->data[counter] = 0;
+            }
+
+
+            channel_data->data[0] = data_1;
+            channel_data->data[1] = data_2;
+            channel_data->data[2] = ((buffer[3] >> 6 | ((uint16_t) buffer[4]) << 2 | ((uint16_t) buffer[5]) << 10) & 0x07FF);
+            channel_data->data[3] = ((buffer[5] >> 1 | ((uint16_t) buffer[6]) << 7) & 0x07FF);
+            channel_data->data[4] = ((buffer[6] >> 4 | ((uint16_t) buffer[7]) << 4) & 0x07FF);
+            channel_data->data[5] = ((buffer[7] >> 7 | ((uint16_t) buffer[8]) << 1 | ((uint16_t) buffer[9]) << 9) & 0x07FF);
+            channel_data->data[6] = ((buffer[9] >> 2 | ((uint16_t) buffer[10]) << 6) & 0x07FF);
+            channel_data->data[7] = ((buffer[10] >> 5 | ((uint16_t) buffer[11]) << 3) & 0x07FF);
+            channel_data->data[8] = ((buffer[12] | ((uint16_t) buffer[13]) << 8) & 0x07FF);
+            channel_data->data[9] = ((buffer[13] >> 3 | ((uint16_t) buffer[14]) << 5) & 0x07FF);
+            channel_data->data[10] = ((buffer[14] >> 6 | ((uint16_t) buffer[15]) << 2 | ((uint16_t) buffer[16]) << 10) & 0x07FF);
+            channel_data->data[11] = ((buffer[16] >> 1 | ((uint16_t) buffer[17]) << 7) & 0x07FF);
+            channel_data->data[12] = ((buffer[17] >> 4 | ((uint16_t) buffer[18]) << 4) & 0x07FF);
+            channel_data->data[13] = ((buffer[18] >> 7 | ((uint16_t) buffer[19]) << 1 | ((uint16_t) buffer[20]) << 9) & 0x07FF);
+            channel_data->data[14] = ((buffer[20] >> 2 | ((uint16_t) buffer[21]) << 6) & 0x07FF);
+            channel_data->data[15] = ((buffer[21] >> 5 | ((uint16_t) buffer[22]) << 3) & 0x07FF);
+            //map more data
+            channel_data->channels.channel17 = (buffer[23] & (1 << 0)) != 0;
+            channel_data->channels.channel18 = (buffer[23] & (1 << 1)) != 0;
+        }
+    }
     /**
      * Clear the buffer so that we can be sure no old data is coming through.
      */
@@ -115,7 +149,7 @@ bool Sbus::Decode_sbus(uint8_t * buffer, uint8_t buffer_data_size, Sbus_data * c
     {
         buffer[i] = 0;
     }
-    return true;
+    return decode_frame;
 }
 
 bool Sbus::Encode_sbus(SBUS_data_t * channel_data, uint8_t channel_data_size, uint8_t * sbus_out_data, uint8_t sbus_data_size)
