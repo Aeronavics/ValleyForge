@@ -77,6 +77,9 @@ VENDOR_LIBUAVCANSTM32_LOCAL=${TMP_CACHE}libuavcan_stm32
 # VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/UAVCAN/libuavcan_stm32.git"
 VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/Aeronavics/libuavcan_stm32.git"
 
+VENDOR_UAVCAN_DSDL_LOCAL=${TMP_CACHE}dsdl
+VENDOR_UAVCAN_DSDL_REMOTE="https://github.com/UAVCAN/public_regulated_data_types.git"
+
 ###########################################################################################
 ###                                                                                     ###
 ### NAME:              fetch_git_repository                                             ###
@@ -813,7 +816,7 @@ pack_libuavcan()
 unpack_libcanard()
 {
 	# Fetch the libcanard git repository and make sure it's up to date.
-        fetch_git_repository "${VENDOR_LIBCANARD_LOCAL}" "${VENDOR_LIBCANARD_REMOTE}" HEAD
+        fetch_git_repository "${VENDOR_LIBCANARD_LOCAL}" "${VENDOR_LIBCANARD_REMOTE}" ${VF_VENDOR_LIBCANARD_BRANCH-"origin/master"}
 	# TODO - Test that now the required files actually exist.
 
 	# All done.
@@ -884,6 +887,52 @@ pack_libuavcan_stm32()
 		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up libuavcan_stm32 vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_LIBUAVCANSTM32_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_uavcan_dsdl						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the dsdl vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_uavcan_dsdl()
+{
+	# Fetch the libcanard git repository and make sure it's up to date.
+        fetch_git_repository "${VENDOR_UAVCAN_DSDL_LOCAL}" "${VENDOR_UAVCAN_DSDL_REMOTE}" ${VF_VENDOR_DSDL_BRANCH-"origin/master"}
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_uavcan_dsdl							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the pack_uavcan_dsdl vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_uavcan_dsdl()
+{
+	# Check if the libuavcan repository has been downloaded already.
+	if [ -d ${VENDOR_UAVCAN_DSDL_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.
+		echo -e "${CYAN}\tCleaning up uavcan_dsdl vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_UAVCAN_DSDL_LOCAL}
     	fi
 		# Else, the source is already packed.
 
