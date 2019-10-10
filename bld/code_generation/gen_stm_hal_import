@@ -62,17 +62,18 @@ gen_stm_hal_import()
 	echo -e "${CYAN}Generating 'STM32 HAL' library...\n${NO_COLOUR}"
 
 	# Copy across the required files.
-	mkdir -p $1/Legacy
-	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/* $1/
-	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/* $1/Legacy
-	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Src/* $1/
+	mkdir -p $1/stm32_hal
+	mkdir -p $1/stm32_hal/Legacy
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/* $1/stm32_hal
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/* $1/stm32_hal/Legacy
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/STM32F1xx_HAL_Driver/Src/* $1/stm32_hal
 
 	if [ ! -d "$1/hal_init" ]; then
 		mkdir -p $1/hal_init
 	fi
 
 	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Device/ST/STM32F1xx/Include/* $1/hal_init
-	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Include/* $1/
+	cp -R ${TCPATH}/res/arm/embedded-arm/stm32f10x/Drivers/CMSIS/Include/* $1/stm32_hal
 
 	#copy the required startup files
 	\cp -Rf ${TCPATH}/res/arm/embedded-arm/stm32f10x/startup.hs $1
@@ -89,6 +90,12 @@ gen_stm_hal_import()
 	#therefore we have a fake main that just has the includes and is, well, included
 	\cp -Rf ${TCPATH}/res/arm/embedded-arm/stm32f10x/main.h $1
 	\cp -Rf ${TCPATH}/res/arm/embedded-arm/stm32f10x/main.c $1
+
+ #Remove the imported files from being preprocessed.
+	PREPROCESSOR_MASK+=" stm32_hal Inc Src hal_init startup"
+ #add the relevant includes
+	CFLAGS+=" -Istm32_hal"
+	PFLAGS+=" -Istm32_hal"
 
 	# All done.
 	return 0

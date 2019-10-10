@@ -45,7 +45,7 @@ echo -e "${CYAN}Imported libcanard code generation functions.\n${NO_COLOUR}"
 gen_libcanard()
 {
 	# DEFINE CONSTANTS.
-	
+
 	# PRIVATE INTERNAL FUNCTIONS.
 
 	# FUNCTION PROPER STARTS HERE.
@@ -66,9 +66,27 @@ gen_libcanard()
 		# We couldn't unpack the libuavcan source, so we'll have to abort.
 		return 1
 	fi
-	
+
 	# Copy across the required files.
 	cp -R ${TMP_CACHE}libcanard $1
+
+	#if the dsdl folder exists, then let us greate the definitions.
+		if [[ -d ${1}/dsdl ]]; then
+			echo "Generating dsdlc"
+			python3 ${1}"/libcanard/dsdl_compiler/libcanard_dsdlc" --outdir ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
+			find ${1}"/dsdlc_generated/" -name "*.c" -execdir perl-rename "s/.*_//" -f {} \;
+			chmod 777 -R $1"/dsdlc_generated/"
+		fi
+ # We do not care about preprocessing These generated files, as they will never have anything preprocessable in them.
+
+	PREPROCESSOR_MASK+=" dsdlc_generated libcanard"
+	#add the relevant include directories.
+	CFLAGS+=" -Idsdlc_generated -Ilibcanard -Ilibcanard/drivers/stm32 "
+	PFLAGS+=" -Idsdlc_generated -Ilibcanard -Ilibcanard/drivers/stm32 "
+
+ #Enable the default libcanard functions.
+	PFLAGS+=" -DLIBCANARD_ENABLED"
+	CFLAGS+=" -DLIBCANARD_ENABLED"
 
 	# All done.
 	return 0

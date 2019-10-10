@@ -71,6 +71,15 @@ gen_uavcan_dsdl()
 	# Copy across the required files.
 	cp -R ${TMP_CACHE}dsdl $1
 
+	#if the libcanard directory exists, then let us actually compile this
+	if [[ -d ${1}/libcanard ]]; then
+		echo "Generating dsdlc"
+		python3 ${1}"/libcanard/dsdl_compiler/libcanard_dsdlc" --outdir ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
+		find ${1}"/dsdlc_generated/" -name "*.c" -execdir perl-rename "s/.*_//" -f {} \;
+		chmod 777 -R $1"/dsdlc_generated/"
+	fi
+	#remove dsdl from being preprocessed
+  PREPROCESSOR_MASK+=" dsdl"
 	# All done.
 	return 0
 }

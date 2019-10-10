@@ -135,6 +135,9 @@ gen_mavlink()
 	echo -e "${CYAN}\tCopying across generated MAVlink files...\n${NO_COLOUR}"
 	cp -rf ${GEN_CACHE}/mavlink $1/mavlink
 
+ #remove mavlink from being preprocessed.
+	PREPROCESSOR_MASK+=" mavlink"
+
 	# All done.
 	return 0
 }
