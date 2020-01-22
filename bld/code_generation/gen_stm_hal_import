@@ -92,7 +92,7 @@ gen_stm_hal_import()
 	\cp -Rf ${TCPATH}/res/arm/embedded-arm/stm32f10x/main.c $1
 
  #Remove the imported files from being preprocessed.
-	PREPROCESSOR_MASK+=" stm32_hal Inc Src hal_init startup"
+	PREPROCESSOR_MASK+=" stm32_hal Inc Src hal_init startup Drivers"
  #add the relevant includes
 	CFLAGS+=" -Istm32_hal"
 	PFLAGS+=" -Istm32_hal"
