@@ -69,6 +69,15 @@ VENDOR_PCREGREP_REMOTE="http://archive.ubuntu.com/ubuntu/pool/main/p/pcre3/pcre3
 VENDOR_LIBUAVCAN_LOCAL=${TCPATH}/res/vendor/libuavcan
 VENDOR_LIBUAVCAN_REMOTE="https://github.com/UAVCAN/libuavcan.git"
 
+VENDOR_SPINNAKER_LOCAL=${TCPATH}/res/vendor/spinnaker
+VENDOR_SPINNAKER_REMOTE="https://services.aeronavics.com/nexus/repository/gstreamer-android-qgroundcontrol/gstreamer/spinnaker.tar.gz"
+
+VENDOR_LIVE555_LOCAL=${TCPATH}/res/vendor/live555
+VENDOR_LIVE555_REMOTE="http://www.live555.com/liveMedia/public/live.2020.04.12.tar.gz"
+
+VENDOR_LIBVA_LOCAL=${TCPATH}/res/vendor/libva
+VENDOR_LIBVA_REMOTE="https://github.com/intel/libva.git"
+
 ###########################################################################################
 ###                                                                                     ###
 ### NAME:              fetch_git_repository                                             ###
@@ -786,6 +795,215 @@ pack_libuavcan()
 
 	# All done.
 	return
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               unpack_spinnaker                                                ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the spinnaker vendor source is available for use, and ###
+###                     if not, sets it up ready to go.                                 ###
+###                                                                                     ###
+###########################################################################################
+
+unpack_spinnaker()
+{ 
+	# Check if live555 has been downloaded already.
+        if [ ! -d ${VENDOR_SPINNAKER_LOCAL}/spinnaker ]; then
+		# Install dependencies
+		apt-get install libavcodec57 libavformat57 libswscale4 libswresample2 libavutil55 libusb-1.0-0 libgtkmm-2.4-dev
+                # We need to download and unpack the source before we can use it.
+                echo -e "${CYAN}\tDownloading spinnaker...\n${NO_COLOUR}"
+                wget -O ${TMP_CACHE}/spinnaker.tar.gz ${VENDOR_SPINNAKER_REMOTE}
+                tar -xzf ${TMP_CACHE}/spinnaker.tar.gz -C ${VENDOR_SPINNAKER_LOCAL}
+                if [ $? -ne 0 ]; then
+                        # We couldn't unzip the file, so something went wrong, and we abort.
+                        echo -e "\n${RED}ERROR - Failed to extract live555.tar.gz\n${NO_COLOUR}"
+                        return 1
+                fi
+                echo -e ""
+
+                pushd ${VENDOR_SPINNAKER_LOCAL}/spinnaker >/dev/null
+		${VENDOR_SPINNAKER_LOCAL}/spinnaker/install_spinnaker.sh
+
+                # Check if install worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to install spinnaker: the 'install_spinnaker' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+                popd >/dev/null
+
+                # Probably need a new line to keep things tidy.
+                echo ""
+        else
+                # The source has already been downloaded.
+                echo -e "${CYAN}\tspinnaker available...\n${NO_COLOUR}"
+
+        fi
+
+        # All done.
+        return 0
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               pack_spinnaker                                                  ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the spinnaker vendor source was previously unpacked,  ###
+###                     and if it was, then packs it back up again.                     ###
+###                                                                                     ###
+###########################################################################################
+
+pack_spinnaker()
+{
+        # Check if the repository has been downloaded already.
+	if [ -d ${VENDOR_SPINNAKER_LOCAL} ]; then
+                # We just delete the downloaded clone of the repository.
+                echo -e "${CYAN}\tCleaning up spinnaker vendor source...\n${NO_COLOUR}"
+                rm -Rf ${VENDOR_SPINNAKER_LOCAL}
+        fi
+                # Else, the source is already packed.
+	
+        # All done.
+        return
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               unpack_live555                                                  ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the live555 vendor source is available for use, and   ###
+###                     if not, sets it up ready to go.                                 ###
+###                                                                                     ###
+###########################################################################################
+
+unpack_live555()
+{        
+	# Check if live555 has been downloaded already.
+        if [ ! -d ${VENDOR_LIVE555_LOCAL}/live555 ]; then
+                # We need to download and unpack the source before we can use it.
+                echo -e "${CYAN}\tDownloading live555...\n${NO_COLOUR}"
+                wget -O ${TMP_CACHE}/live555.tar.gz ${VENDOR_LIVE555_REMOTE}
+                tar -xzf ${TMP_CACHE}/live555.tar.gz -C ${VENDOR_LIVE555_LOCAL}
+                if [ $? -ne 0 ]; then
+                        # We couldn't unzip the file, so something went wrong, and we abort.
+                        echo -e "\n${RED}ERROR - Failed to extract live555.tar.gz\n${NO_COLOUR}"
+                        return 1
+                fi
+                echo -e ""
+
+                pushd ${VENDOR_LIVE555_LOCAL}/live555 >/dev/null
+                ${VENDOR_LIVE555_LOCAL}/live555/genMakefiles linux
+
+                # Check if configuring worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to build live555: the 'genMakefiles' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+                # Then we make.
+                make
+
+                # NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+                # Check if making worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to build live555: the 'make' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+                popd >/dev/null
+
+                # Probably need a new line to keep things tidy.
+                echo ""
+        else
+                # The source has already been downloaded.
+                echo -e "${CYAN}\tlive555 available...\n${NO_COLOUR}"
+ 
+	fi
+
+        # All done.
+        return 0
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               pack_live555                                                    ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the live555 vendor source was previously unpacked,    ###
+###                     and if it was, then packs it back up again.                     ###
+###                                                                                     ###
+###########################################################################################
+
+pack_live555()
+{
+        # Check if the repository has been downloaded already.
+        if [ -d ${VENDOR_LIVE555_LOCAL} ]; then
+                # We just delete the downloaded clone of the repository.
+                echo -e "${CYAN}\tCleaning up live555 vendor source...\n${NO_COLOUR}"
+                rm -Rf ${VENDOR_LIVE555_LOCAL}
+        fi
+                # Else, the source is already packed.
+
+        # All done.
+        return
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               unpack_libva                                                    ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the libva vendor source is available for use, and     ###
+###                     if not, sets it up ready to go.                                 ###
+###                                                                                     ###
+###########################################################################################
+
+unpack_libva()
+{        
+	# Fetch the libuavcan git repository and make sure it's up to date.
+        fetch_git_repository "${VENDOR_LIBVA_LOCAL}" "${VENDOR_LIBVA_REMOTE}" HEAD
+
+        # All done.
+        return 0
+}
+
+######################################## FUNCTION #########################################
+###                                                                                     ###
+### NAME:               pack_libva                                                      ###
+###                                                                                     ###
+### Inputs/Outputs:     None.                                                           ###
+###                                                                                     ###
+### Purpose:            Checks if the libva vendor source was previously unpacked,      ###
+###                     and if it was, then packs it back up again.                     ###
+###                                                                                     ###
+###########################################################################################
+
+pack_libva()
+{
+        # Check if the repository has been downloaded already.
+        if [ -d ${VENDOR_LIBVA_LOCAL} ]; then
+                # We just delete the downloaded clone of the repository.
+                echo -e "${CYAN}\tCleaning up libva vendor source...\n${NO_COLOUR}"
+                rm -Rf ${VENDOR_LIBVA_LOCAL}
+        fi
+                # Else, the source is already packed.
+
+        # All done.
+        return
 }
 
 # ALL DONE.
