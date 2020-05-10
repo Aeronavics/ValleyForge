@@ -75,8 +75,8 @@ VENDOR_SPINNAKER_REMOTE="https://services.aeronavics.com/nexus/repository/gstrea
 VENDOR_LIVE555_LOCAL=${TCPATH}/res/vendor/live555
 VENDOR_LIVE555_REMOTE="http://www.live555.com/liveMedia/public/live.2020.04.12.tar.gz"
 
-VENDOR_LIBVA_LOCAL=${TCPATH}/res/vendor/libva
-VENDOR_LIBVA_REMOTE="https://github.com/intel/libva.git"
+VENDOR_LIBAV_LOCAL=${TCPATH}/res/vendor/libav
+VENDOR_LIBAV_REMOTE="https://libav.org/releases/libav-12.3.tar.gz"
 
 ###########################################################################################
 ###                                                                                     ###
@@ -820,7 +820,7 @@ unpack_spinnaker()
                 tar -xzf ${TMP_CACHE}/spinnaker.tar.gz -C ${VENDOR_SPINNAKER_LOCAL}
                 if [ $? -ne 0 ]; then
                         # We couldn't unzip the file, so something went wrong, and we abort.
-                        echo -e "\n${RED}ERROR - Failed to extract live555.tar.gz\n${NO_COLOUR}"
+                        echo -e "\n${RED}ERROR - Failed to extract spinnaker.tar.gz\n${NO_COLOUR}"
                         return 1
                 fi
                 echo -e ""
@@ -963,19 +963,74 @@ pack_live555()
 
 ######################################## FUNCTION #########################################
 ###                                                                                     ###
-### NAME:               unpack_libva                                                    ###
+### NAME:               unpack_libav                                                    ###
 ###                                                                                     ###
 ### Inputs/Outputs:     None.                                                           ###
 ###                                                                                     ###
-### Purpose:            Checks if the libva vendor source is available for use, and     ###
+### Purpose:            Checks if the libav vendor source is available for use, and     ###
 ###                     if not, sets it up ready to go.                                 ###
 ###                                                                                     ###
 ###########################################################################################
 
-unpack_libva()
+unpack_libav()
 {        
-	# Fetch the libuavcan git repository and make sure it's up to date.
-        fetch_git_repository "${VENDOR_LIBVA_LOCAL}" "${VENDOR_LIBVA_REMOTE}" HEAD
+		# Check if live555 has been downloaded already.
+        if [ ! -d ${VENDOR_LIBAV_LOCAL}/libav ]; then
+                # We need to download and unpack the source before we can use it.
+                echo -e "${CYAN}\tDownloading libav...\n${NO_COLOUR}"
+                wget -O ${TMP_CACHE}/libav.tar.gz ${VENDOR_LIBAV_REMOTE}
+                tar -xzf ${TMP_CACHE}/libav.tar.gz -C ${VENDOR_LIBAV_LOCAL}
+                if [ $? -ne 0 ]; then
+                        # We couldn't unzip the file, so something went wrong, and we abort.
+                        echo -e "\n${RED}ERROR - Failed to extract libav.tar.gz\n${NO_COLOUR}"
+                        return 1
+                fi
+                echo -e ""
+
+                pushd ${VENDOR_LIBAV_LOCAL}/libav >/dev/null
+                ${VENDOR_LIBAV_LOCAL}/libav/configure
+
+                # Check if configuring worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to build libav: the 'configure' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+                # Then we make.
+                make
+
+                # NOTE - Don't put anything in here; we need the return value from 'make' below.
+
+                # Check if making worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to build libav: the 'make' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+
+                # Then we make install.
+                make install
+
+                # NOTE - Don't put anything in here; we need the return value from 'make install' below.
+
+                # Check if installing worked.
+                if [ $? != 0 ]; then
+                        # Something went wrong.
+                        echo -e "\n${RED}ERROR - Failed to build libav: the 'make install' stage failed.\n${NO_COLOUR}"
+                        popd >/dev/null
+                        return 1
+                fi
+                popd >/dev/null
+
+                # Probably need a new line to keep things tidy.
+                echo ""
+        else
+                # The source has already been downloaded.
+                echo -e "${CYAN}\tlibav available...\n${NO_COLOUR}"
+ 
+	fi
 
         # All done.
         return 0
@@ -983,22 +1038,22 @@ unpack_libva()
 
 ######################################## FUNCTION #########################################
 ###                                                                                     ###
-### NAME:               pack_libva                                                      ###
+### NAME:               pack_libav                                                      ###
 ###                                                                                     ###
 ### Inputs/Outputs:     None.                                                           ###
 ###                                                                                     ###
-### Purpose:            Checks if the libva vendor source was previously unpacked,      ###
+### Purpose:            Checks if the libav vendor source was previously unpacked,      ###
 ###                     and if it was, then packs it back up again.                     ###
 ###                                                                                     ###
 ###########################################################################################
 
-pack_libva()
+pack_libav()
 {
         # Check if the repository has been downloaded already.
-        if [ -d ${VENDOR_LIBVA_LOCAL} ]; then
+        if [ -d ${VENDOR_LIBAV_LOCAL} ]; then
                 # We just delete the downloaded clone of the repository.
-                echo -e "${CYAN}\tCleaning up libva vendor source...\n${NO_COLOUR}"
-                rm -Rf ${VENDOR_LIBVA_LOCAL}
+                echo -e "${CYAN}\tCleaning up libav vendor source...\n${NO_COLOUR}"
+                rm -Rf ${VENDOR_LIBAV_LOCAL}
         fi
                 # Else, the source is already packed.
 
