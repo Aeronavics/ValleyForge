@@ -812,6 +812,11 @@ do
 			elif [ -f "${TCPATH}/var/${COMPONENT}/${FILE}" ]; then
 				cp -f ${TCPATH}/var/${COMPONENT}/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
 				echo -e "${CYAN}\t${FILE} from var/${COMPONENT}.${NO_COLOUR}"
+			
+			elif [ -d "${TCPATH}/lib/${FILE}" ]; then
+				mkdir -p ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				cp -r ${TCPATH}/lib/${FILE} ${TCPATH}/${OUTPUT_DIR}/${COMPONENT}/${FILE}
+				echo -e "${CYAN}\t${FILE} from lib/.${NO_COLOUR}"
 
 			else
 				# The file seems to be missing.
@@ -844,6 +849,8 @@ do
 			echo -e "${RED}Application code build failed.\n${NO_COLOUR}"
 		fi
 	fi
+
+	
 
 	# Check if we should also make the corresponding filesystem for this component.
 	if [ "$BUILD_FILESYSTEM" -a "$FSFUNCTION" ]; then
