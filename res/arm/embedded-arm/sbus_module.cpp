@@ -185,9 +185,42 @@ bool Sbus::Encode_sbus(SBUS_data_t * channel_data, uint8_t channel_data_size, ui
     sbus_out_data[21] = (uint8_t) ((channel_data->data[14] & 0x07FF) >> 6 | (channel_data->data[15] & 0x07FF) << 5);
     sbus_out_data[22] = (uint8_t) ((channel_data->data[15] & 0x07FF) >> 3);
 
-    // flags
-    sbus_out_data[23] = 0x00; //? no digital channels? TODO: Fix this
-
+    sbus_out_data[23] = 0x00;
+    //here we encode the sbus signals back into the stream.
+    bool sig_lost = false, failsafe = false;
+    //put the statuses back into the signal
+    if (channel_data->frame_status == SBUS_SIGNAL_LOST)
+    {
+        sig_lost = true;
+        failsafe = false;
+    }
+    else if (channel_data->frame_status == SBUS_SIGNAL_FAILSAFE)
+    {
+        sig_lost = false;
+        failsafe = true;
+    }
+    else if (channel_data->frame_status == SBUS_SIGNAL_FAILSAFE_AND_LOST)
+    {
+        //there is no signal, and we are in failsafe.
+        sig_lost = true;
+        failsafe = true;
+    }
+    if(sig_lost)
+    {
+        sbus_out_data[23] |= (1 << 2);
+    }
+    else
+    {
+        sbus_out_data[23] &= ~(1 << 2);
+    }
+    if(failsafe)
+    {
+        sbus_out_data[23] |= (1 << 3);
+    }
+    else
+    {
+        sbus_out_data[23] &= ~(1 << 3);
+    }
     // footer
     sbus_out_data[24] = 0x00;
     return true;
