@@ -35,7 +35,7 @@ TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
 ###########################################################################################################################
 
 # Define the local and remote locations of the vendor sources.
-VENDOR_MAVLINK_LOCAL=${TMP_CACHE}mavlink
+VENDOR_MAVLINK_LOCAL=${TCPATH}/res/vendor/mavlink
 VENDOR_MAVLINK_REMOTE="https://github.com/Aeronavics/mavlink.git"
 
 VENDOR_FREERTOS_LOCAL=${TMP_CACHE}freertos

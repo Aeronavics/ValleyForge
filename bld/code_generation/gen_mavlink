@@ -109,7 +109,7 @@ gen_mavlink()
 	# Copy the relevant makefile into the cache.
 	echo -e "${CYAN}\tConstructing makefile for generating MAVlink code...\n${NO_COLOUR}"
 	mkdir -p ${GEN_CACHE}
-	cp -f ${TCPATH}/bld/code_generation/Makefile_mavlink ${GEN_CACHE}
+	cp -f ${TCPATH}/bld/code_generation/gen_mavlink.makefile ${GEN_CACHE}/Makefile_mavlink
 
 	# Update the working makefile with the appropriate values for this component.
 	${VF_OSCFG_SED} ${VF_OSCFG_SED_EXTPARAM} ${VF_OSCFG_SED_INLPARAM} "s^(MAVLINK_GENERATOR *= *)BUILD_INSERTS_MAVLINK_GENERATOR_HERE(\\s.*)?^\1${VENDOR_MAVLINK_LOCAL}/pymavlink/tools/mavgen.py\2^" ${GEN_CACHE}/Makefile_mavlink
