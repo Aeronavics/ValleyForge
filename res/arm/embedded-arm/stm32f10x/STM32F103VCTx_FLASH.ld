@@ -42,10 +42,9 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
     RAM (xrw)           : ORIGIN = 0x20000100,  LENGTH = 48K-256
-    FLASH (rx)          : ORIGIN = 0x0800C800,  LENGTH = 200K /*Application*/
-    BOOTLOADER (r)      : ORIGIN = 0x08000000,  LENGTH = 40K /*Application*/
-    EEPROM (rw)         : ORIGIN = 0x0800A000,  LENGTH = 10K
-    APPDESC (rw)        : ORIGIN = 0x0800C600,  LENGTH = 512
+    FLASH (rx)          : ORIGIN = 0x08006800,  LENGTH = 200K /*Application*/
+    BOOTLOADER (r)      : ORIGIN = 0x08000000,  LENGTH = 16K /*Bootloader application 16896 Allowed */
+    EEPROM (rw)         : ORIGIN = 0x08004000,  LENGTH = 10K /*EEprom 8192 bytes allowed Shortening to 8K for convenience */
 }
 PROVIDE(bootloader_info_location = 0x20000000);
 /* Define output sections */
