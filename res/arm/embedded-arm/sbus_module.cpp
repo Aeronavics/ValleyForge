@@ -99,6 +99,7 @@ bool Sbus::Decode_sbus(uint8_t * buffer, uint8_t buffer_data_size, Sbus_data * c
         {
             //we are in failsafe, but have regained our signal
             channel_data->frame_status = SBUS_SIGNAL_FAILSAFE;
+            decode_frame = false;
         }
         else if (sig_lost && failsafe)
         {
