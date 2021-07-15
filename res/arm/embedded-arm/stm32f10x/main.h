@@ -13,6 +13,11 @@
 #include "stm32f1xx_hal_rcc.h"
 //#include "stm32f1xx_hal_conf.h"
 
+#ifdef USE_FULL_LL_DRIVER
+    #include "stm32f1xx_ll_gpio.h"
+    #include "stm32f1xx_ll_bus.h"
+#endif
+
 void SystemClock_Config(void);
 void Error_Handler(void);
 
