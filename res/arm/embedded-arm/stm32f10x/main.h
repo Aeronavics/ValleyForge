@@ -18,6 +18,8 @@
     #include "stm32f1xx_ll_bus.h"
 #endif
 
+
+
 /// @brief  Possible STM32 system reset causes
 typedef enum reset_cause_e
 {
