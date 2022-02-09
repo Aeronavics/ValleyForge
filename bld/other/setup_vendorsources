@@ -106,11 +106,12 @@ fetch_git_repository()
 	if [ ! -d ${GIT_LOCAL} ]; then
 		# We need to download the repository before we can use it
 		echo -e "${CYAN}\tDownloading repository from ${GIT_REMOTE}...\n${NO_COLOUR}"
-	  git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
+		git clone --depth=1 ${GIT_REMOTE} ${GIT_LOCAL}
 
-
+		pushd ${GIT_LOCAL} >/dev/null
 		git fetch origin +refs/heads/*:refs/remotes/origin/*
 		echo -e ""
+		popd >/dev/null
 
 		# TODO - Check this actually worked.
 	else
