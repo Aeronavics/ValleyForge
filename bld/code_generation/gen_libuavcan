@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
+TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor
 #	Copyright (C) 2018 Aeronavics Ltd
 #
 #	This program is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ gen_libuavcan()
 	fi
 
 	# Copy across the required source files.
-	cp -R ${TMP_CACHE}/res/vendor/libuavcan $1
+	cp -R ${TMP_CACHE}/libuavcan $1
 
 	# Copy across the required makefile inclusion to adapt the build process to handle the UAVCAN library.
 	if [[ "${BCONF}" == "bconf_STM32F1*_BareMetal" ]]; then
