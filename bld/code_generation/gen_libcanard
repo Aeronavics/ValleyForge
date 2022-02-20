@@ -74,9 +74,9 @@ gen_libcanard()
 
 	#if the dsdl folder exists, then let us greate the definitions.
 		if [[ -d ${1}/dsdl ]]; then
-			echo "Generating dsdlc"
+			echo "Generating dsdlc";
 
-			echo "help"
+			echo "help";
 
 			python3 ${1}"/libcanard/dsdl_compiler/libcanard_dsdlc" --outdir ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
 			find ${1}"/dsdlc_generated/" -name "*.c" -execdir rename "s/.*_//" -f {} \;
