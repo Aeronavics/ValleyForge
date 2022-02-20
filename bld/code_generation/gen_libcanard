@@ -76,8 +76,8 @@ gen_libcanard()
 		if [[ -d ${1}/dsdl ]]; then
 			echo "Generating dsdlc"
 
-			ls ${1}
-			
+			echo ${1}
+
 			python3 ${1}"/libcanard/dsdl_compiler/libcanard_dsdlc" --outdir ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
 			find ${1}"/dsdlc_generated/" -name "*.c" -execdir rename "s/.*_//" -f {} \;
 			chmod 777 -R $1"/dsdlc_generated/"
