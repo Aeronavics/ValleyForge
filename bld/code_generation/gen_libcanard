@@ -70,6 +70,8 @@ gen_libcanard()
 	# Copy across the required files.
 	cp -R ${TMP_CACHE}libcanard $1
 
+	echo $1
+
 	#if the dsdl folder exists, then let us greate the definitions.
 		if [[ -d ${1}/dsdl ]]; then
 			echo "Generating dsdlc"
