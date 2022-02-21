@@ -51,9 +51,6 @@ gen_libuavcan()
 	# FUNCTION PROPER STARTS HERE.
 
 	# Check if the specified location is actually legit.
-
-	echo -e "${RED}$1\n${NO_COLOUR}"
-
 	if [ ! -d $1 ]; then
 		# The specified location is not a directory.
 		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
