@@ -138,9 +138,10 @@ bool Sbus::Decode_sbus(uint8_t * buffer, uint8_t buffer_data_size, Sbus_data * c
             channel_data->data[13] = ((buffer[18] >> 7 | ((uint16_t) buffer[19]) << 1 | ((uint16_t) buffer[20]) << 9) & 0x07FF);
             channel_data->data[14] = ((buffer[20] >> 2 | ((uint16_t) buffer[21]) << 6) & 0x07FF);
             channel_data->data[15] = ((buffer[21] >> 5 | ((uint16_t) buffer[22]) << 3) & 0x07FF);
-            //map more data
-            channel_data->channels.channel17 = (buffer[23] & (1 << 0)) != 0;
-            channel_data->channels.channel18 = (buffer[23] & (1 << 1)) != 0;
+            //map binary channels.
+            //this is handled later on in code to extrapolate out to min and max.
+            channel_data->channels.channel17 = (buffer[23] & (1 << 0)) == 0 ? 0 : 1;
+            channel_data->channels.channel18 = (buffer[23] & (1 << 1)) == 0 ? 0 : 1;
         }
     }
     /**
@@ -185,8 +186,32 @@ bool Sbus::Encode_sbus(SBUS_data_t * channel_data, uint8_t channel_data_size, ui
     sbus_out_data[20] = (uint8_t) ((channel_data->data[13] & 0x07FF) >> 9 | (channel_data->data[14] & 0x07FF) << 2);
     sbus_out_data[21] = (uint8_t) ((channel_data->data[14] & 0x07FF) >> 6 | (channel_data->data[15] & 0x07FF) << 5);
     sbus_out_data[22] = (uint8_t) ((channel_data->data[15] & 0x07FF) >> 3);
-
+    
     sbus_out_data[23] = 0x00;
+
+    //check to see if the digital channel we are trying to send is above the center point
+    if(channel_data->channels.channel17 > 1024)
+    {
+        //if so, set the dig bit high.
+        sbus_out_data[23] |= (1 << 0);
+    }
+    else
+    {
+        //if not, set the dig bit low
+        sbus_out_data[23] &= ~(1 << 0);
+    }
+    if(channel_data->channels.channel18 > 1024)
+    {
+        //if so, set the dig bit high.
+        sbus_out_data[23] |= (1 << 1);
+    }
+    else
+    {
+        //if not, set the dig bit low
+        sbus_out_data[23] &= ~(1 << 1);
+    }
+
+    
     //here we encode the sbus signals back into the stream.
     bool sig_lost = false, failsafe = false;
     //put the statuses back into the signal
