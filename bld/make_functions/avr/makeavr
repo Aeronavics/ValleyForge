@@ -247,7 +247,6 @@ makeavr_bootloader()
 	else
 	    echo -e "${CYAN}Adding CFLAGS $1\n${NO_COLOUR}"
 		CFLAGS+=" $1"
-		echo -e "$CFLAGS"
 	fi
 
 	if [ -z "$2" ]; then
