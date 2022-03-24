@@ -466,6 +466,10 @@ Options:
 	-p --postpack			Pack up the compilers used after the build (takes longer next time).
 	   --nohal			Do not compile using the HAL (mostly for debugging).
 	   --noapp			Do not compile any application code (build filesystem/bootloader separately).
+	   --cflag			Add a CFLAG to the build 
+	   --pflag			Add a PFLAG to the build
+	   --aflag			Add a AFLAG to the build
+	   --lflag			Add a LFLAG to the build
 EOF
 	# All done.
 	return
@@ -528,11 +532,15 @@ NOAPP=
 POSTPACK=
 VF_EN_COMPLIANCE_CHECKS=
 VF_DEBUG=
+ADDCFLAGS=
+ADDPFLAGS=
+ADDAFLAGS=
+ADDLFLAGS=
 
 # Define variables required for 'getopt' to work.
 PROGNAME=${0##*/}
 SHORTOPTS="harbdfpcn:"
-LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,debug,name:"
+LONGOPTS="help,all,retain,bootloader,filesystem,postpack,check,nohal,noapp,debug,name:,cflag:,pflag:,aflag:,lflag:"
 
 # Use 'getopt' to parse the command line options.
 if [ $VF_OS_DARWIN ]; then
@@ -591,6 +599,26 @@ while true; do
 		--noapp)
 			# Select 'not building application code'.
 			NOAPP=1
+			;;
+		--cflag)
+			# Additional CFLAGS to build with
+			shift
+			ADDCFLAGS="$ADDCFLAGS$1 "
+			;;
+		--pflag)
+			# Additional CFLAGS to build with
+			shift
+			ADDPFLAGS="$ADDPFLAGS$1 "
+			;;
+		--aflag)
+			# Additional CFLAGS to build with
+			shift
+			ADDAFLAGS="$ADDAFLAGS$1 "
+			;;
+		--lflag)
+			# Additional CFLAGS to build with
+			shift
+			ADDLFLAGS="$ADDLFLAGS$1 "
 			;;
 		--)
 			# We're done parsing options.  Anything else must be parameters.
@@ -835,7 +863,7 @@ do
 		echo -e "${BOLD_CYAN}Making application code for ${COMPONENT}...\n${NO_COLOUR}"
 
 		# Actually run the appropriate make function for this build configuration.
-		$MAKEFUNCTION
+		$MAKEFUNCTION "$ADDCFLAGS" "$ADDPFLAGS" "$ADDAFLAGS" "$ADDLFLAGS"
 		REPLY=$?
 
 		# Check if there wasn't actually anything to build.

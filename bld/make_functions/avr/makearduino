@@ -373,6 +373,35 @@ makearduino()
 	AFLAGS=$(eval echo $AFLAGS)
 	LFLAGS=$(eval echo $LFLAGS)
 
+	if [ -z "$1" ]; then
+	    echo -e "${CYAN}No additional CFLAGS\n${NO_COLOUR}"
+	else
+	    echo -e "${CYAN}Adding CFLAGS $1\n${NO_COLOUR}"
+		CFLAGS+=" $1"
+		echo -e "$CFLAGS"
+	fi
+
+	if [ -z "$2" ]; then
+	    echo -e "${CYAN}No additional PFLAGS\n${NO_COLOUR}"
+	else
+	    echo -e "${CYAN}Adding PFLAGS $2\n${NO_COLOUR}"
+		PFLAGS+=" $2"
+	fi
+
+	if [ -z "$3" ]; then
+	    echo -e "${CYAN}No additional AFLAGS\n${NO_COLOUR}"
+	else
+	    echo -e "${CYAN}Adding AFLAGS $3\n${NO_COLOUR}"
+		AFLAGS+=" $3"
+	fi
+
+	if [ -z "$4" ]; then
+	    echo -e "${CYAN}No additional LFLAGS\n${NO_COLOUR}"
+	else
+	    echo -e "${CYAN}Adding LFLAGS $4\n${NO_COLOUR}"
+		LFLAGS+=" $4"
+	fi
+
 	# Arduino targets only support a single application executable, defined by the CPP we created.
 	EXECUTABLE=${ARDUINO_CPP_FILE%.*}
 
