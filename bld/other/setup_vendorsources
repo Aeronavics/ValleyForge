@@ -71,14 +71,14 @@ VENDOR_LIBUAVCAN_REMOTE="https://github.com/Aeronavics/libuavcan.git"
 
 
 VENDOR_LIBCANARD_LOCAL=${TMP_CACHE}libcanard
-VENDOR_LIBCANARD_REMOTE="https://github.com/UAVCAN/libcanard.git"
+VENDOR_LIBCANARD_REMOTE="https://github.com/Aeronavics/libcanard.git"
 
 VENDOR_LIBUAVCANSTM32_LOCAL=${TMP_CACHE}libuavcan_stm32
 # VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/UAVCAN/libuavcan_stm32.git"
 VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/Aeronavics/libuavcan_stm32.git"
 
 VENDOR_UAVCAN_DSDL_LOCAL=${TMP_CACHE}dsdl
-VENDOR_UAVCAN_DSDL_REMOTE="https://github.com/UAVCAN/public_regulated_data_types.git"
+VENDOR_UAVCAN_DSDL_REMOTE="https://github.com/Aeronavics/DSDL.git"
 
 ###########################################################################################
 ###                                                                                     ###
@@ -153,8 +153,7 @@ fetch_git_repository()
 	# Update any git submodules
 	echo -e "${CYAN}\tUpdating Git submodules...\n${NO_COLOUR}"
 	pushd $GIT_LOCAL >/dev/null
-	git submodule init
-	git submodule update --init --recursive
+	git submodule update --init --recursive --force
 	echo -e ""
 	popd >/dev/null
 
