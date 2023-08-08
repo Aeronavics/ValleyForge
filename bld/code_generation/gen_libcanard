@@ -72,19 +72,28 @@ gen_libcanard()
 	# Copy across the required files.
 	cp -R ${TMP_CACHE}libcanard $1
 
-	#if the dsdl folder exists, then let us greate the definitions.
-		if [[ -d ${1}/dsdl ]]; then
-			echo "Generating dsdlc"
-			python3 ${1}"/libcanard/dsdl_compiler/libcanard_dsdlc" --outdir ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
-			find ${1}"/dsdlc_generated/" -name "*.c" -execdir rename "s/.*_//" -f {} \;
-			chmod 777 -R $1"/dsdlc_generated/"
-		fi
- # We do not care about preprocessing These generated files, as they will never have anything preprocessable in them.
+	# Get DSDL 
+	unpack_uavcan_dsdl
+	cp -R ${TMP_CACHE}dsdl $1
 
-	PREPROCESSOR_MASK+=" dsdlc_generated libcanard"
+	# Get DSDL Code Generator
+	unpack_uavcan_dsdl_code_gen
+	cp -R ${TMP_CACHE}dronecan_dsdlc $1
+
+	echo "Generating dsdlc"
+
+	# Run DSDL code generator and only generate uavcan messages
+	python3 ${1}"/dronecan_dsdlc/dronecan_dsdlc.py" -O ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan"
+	
+	# Copy src files to header folder
+	cp -a ${1}"/dsdlc_generated/src/." ${1}"/dsdlc_generated/include/"
+
+	echo ${1}"/dsdlc_generated"
+
+	PREPROCESSOR_MASK+=" dsdl dsdlc_generated libcanard"
 	#add the relevant include directories.
-	CFLAGS+=" -Idsdlc_generated -Ilibcanard -Ilibcanard/drivers/stm32 "
-	PFLAGS+=" -Idsdlc_generated -Ilibcanard -Ilibcanard/drivers/stm32 "
+	CFLAGS+=" -Idsdlc_generated/include -Ilibcanard -Ilibcanard/drivers/stm32"
+	PFLAGS+=" -Idsdlc_generated/include -Ilibcanard -Ilibcanard/drivers/stm32"
 
  #Enable the default libcanard functions.
 	PFLAGS+=" -DLIBCANARD_ENABLED"
