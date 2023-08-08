@@ -80,6 +80,9 @@ VENDOR_LIBUAVCANSTM32_REMOTE="https://github.com/Aeronavics/libuavcan_stm32.git"
 VENDOR_UAVCAN_DSDL_LOCAL=${TMP_CACHE}dsdl
 VENDOR_UAVCAN_DSDL_REMOTE="https://github.com/Aeronavics/DSDL.git"
 
+VENDOR_UAVCAN_DSDL_CODE_GEN_LOCAL=${TMP_CACHE}dronecan_dsdlc
+VENDOR_UAVCAN_DSDL_CODE_GEN_REMOTE="https://github.com/Aeronavics/dronecan_dsdlc.git"
+
 ###########################################################################################
 ###                                                                                     ###
 ### NAME:              fetch_git_repository                                             ###
@@ -933,6 +936,52 @@ pack_uavcan_dsdl()
 		# We just delete the downloaded clone of the repository.
 		echo -e "${CYAN}\tCleaning up uavcan_dsdl vendor source...\n${NO_COLOUR}"
 		rm -Rf ${VENDOR_UAVCAN_DSDL_LOCAL}
+    	fi
+		# Else, the source is already packed.
+
+	# All done.
+	return
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		unpack_uavcan_dsdl_code_gen						###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the dsdl code generator vendor source is available for use, and	###
+###			if not, sets it up ready to go.					###
+###											###
+###########################################################################################
+
+unpack_uavcan_dsdl_code_gen()
+{
+	# Fetch the libcanard git repository and make sure it's up to date.
+        fetch_git_repository "${VENDOR_UAVCAN_DSDL_CODE_GEN_LOCAL}" "${VENDOR_UAVCAN_DSDL_CODE_GEN_REMOTE}" ${VF_VENDOR_DSDL_GEN_BRANCH-"origin/master"}
+	# TODO - Test that now the required files actually exist.
+
+	# All done.
+	return 0
+}
+
+######################################## FUNCTION #########################################
+###											###
+### NAME:		pack_uavcan_dsdl							###
+###											###
+### Inputs/Outputs:	None.								###
+###											###
+### Purpose:		Checks if the pack_uavcan_dsdl vendor source was previously unpacked,	###
+###			and if it was, then packs it back up again.			###
+###											###
+###########################################################################################
+
+pack_uavcan_dsdl_code_gen()
+{
+	# Check if the libuavcan repository has been downloaded already.
+	if [ -d ${VENDOR_UAVCAN_DSDL_CODE_GEN_LOCAL} ]; then
+		# We just delete the downloaded clone of the repository.
+		echo -e "${CYAN}\tCleaning up uavcan_dsdl vendor source...\n${NO_COLOUR}"
+		rm -Rf ${VENDOR_UAVCAN_DSDL_CODE_GEN_LOCAL}
     	fi
 		# Else, the source is already packed.
 
