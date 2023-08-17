@@ -70,15 +70,15 @@ gen_libcanard()
 	
 
 	# Copy across the required files.
-	cp -R ${TMP_CACHE}libcanard $1
+	rsync -a ${TMP_CACHE}libcanard $1
 
 	# Get DSDL 
 	unpack_uavcan_dsdl
-	cp -R ${TMP_CACHE}dsdl $1
+	rsync -a ${TMP_CACHE}dsdl $1
 
 	# Get DSDL Code Generator
 	unpack_uavcan_dsdl_code_gen
-	cp -R ${TMP_CACHE}dronecan_dsdlc $1
+	rsync -a ${TMP_CACHE}dronecan_dsdlc $1
 
 	echo "Generating dsdlc"
 
