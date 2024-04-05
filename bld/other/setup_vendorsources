@@ -83,7 +83,7 @@ VENDOR_UAVCAN_DSDL_REMOTE="https://github.com/Aeronavics/DSDL.git"
 VENDOR_UAVCAN_DSDL_CODE_GEN_LOCAL=${TMP_CACHE}dronecan_dsdlc
 VENDOR_UAVCAN_DSDL_CODE_GEN_REMOTE="https://github.com/Aeronavics/dronecan_dsdlc.git"
 
-VENDOR_JSON_LOCAL=${TMP_CACHE}nlohmann
+VENDOR_JSON_LOCAL=${TMP_CACHE}json
 VENDOR_JSON_REMOTE="https://github.com/nlohmann/json.git"
 
 ###########################################################################################
