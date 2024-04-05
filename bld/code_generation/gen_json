@@ -58,7 +58,7 @@ gen_json()
 	fi
 
 	# Let the user know what is going on.
-	echo -e "${CYAN}Generating 'standard DSDL' library...\n${NO_COLOUR}"
+	echo -e "${CYAN}Generating json library...\n${NO_COLOUR}"
 
 	# Unpack the libuavcan source.
 	unpack_json
@@ -69,7 +69,7 @@ gen_json()
 	fi
 
 	# Copy across the required files.
-	cp -R ${TMP_CACHE}nlohmann $1
+	cp -R ${TMP_CACHE}nlohmann/single_include/nlohmann $1
 
 	# All done.
 	return 0
