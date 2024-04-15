@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+TMP_CACHE=${TCPATH}/tmp/gen_cache/vendor/
+#	Copyright (C) 2018 Aeronavics Ltd
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+###########################################################################################################################
+###															###
+### Name:		gen_libuavcan											###
+###															###
+### Author:		Jonathan Wang											###
+###															###
+### Date Created:	05-01-2018											###
+###															###
+### Type:		Bash Script											###
+###															###
+### Purpose:		Provides library functions to communicate over uavcan from a C/C++ application.		###
+###															###
+###########################################################################################################################
+
+# Indicate the file was imported successfully.
+echo -e "${CYAN}Imported json functions.\n${NO_COLOUR}"
+
+######################################## FUNCTION #########################################
+###											###
+### Name:		gen_libuavcan							###
+###											###
+### Inputs/Outputs:	Takes the path to the source location where to generate code.	###
+###											###
+### Purpose:		Generates library functions to communicate over uavcan from a C/C++ application.			###
+###											###
+###########################################################################################
+
+gen_json()
+{
+	# DEFINE CONSTANTS.
+
+	# PRIVATE INTERNAL FUNCTIONS.
+
+	# FUNCTION PROPER STARTS HERE.
+
+	# Check if the specified location is actually legit.
+	if [ ! -d $1 ]; then
+		# The specified location is not a directory.
+		echo -e "${RED}Invalid source location for code generation.\n${NO_COLOUR}"
+		return 1
+	fi
+
+	# Let the user know what is going on.
+	echo -e "${CYAN}Generating json library...\n${NO_COLOUR}"
+
+	# Unpack the libuavcan source.
+	unpack_json
+        # unpack_libcanard
+	if [ $? -ne 0 ]; then
+		# We couldn't unpack the json source, so we'll have to abort.
+		return 1
+	fi
+
+	# Copy across the required files.
+	cp -R ${TMP_CACHE}json/single_include/nlohmann $1
+
+	# All done.
+	return 0
+}
+
+# ALL DONE.
