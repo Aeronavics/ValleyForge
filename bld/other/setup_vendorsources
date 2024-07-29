@@ -140,7 +140,7 @@ fetch_git_repository()
 		GIT_BRANCH="origin/master"
 	fi
 	pushd ${GIT_LOCAL} >/dev/null
-	git checkout ${GIT_BRANCH}
+	git checkout -f ${GIT_BRANCH}
 	local SUCCESS=$?
 	echo -e ""
 	popd >/dev/null
