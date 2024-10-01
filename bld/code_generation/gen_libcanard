@@ -83,7 +83,7 @@ gen_libcanard()
 	echo "Generating dsdlc"
 
 	# Run DSDL code generator and only generate uavcan and aeronavics messages
-	python3 ${1}"/dronecan_dsdlc/dronecan_dsdlc.py" -O ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan" ${1}"/dsdl/com"
+	python3 ${1}"/dronecan_dsdlc/dronecan_dsdlc.py" -O ${1}"/dsdlc_generated" ${1}"/dsdl/uavcan" ${1}"/dsdl/com" ${1}"/dsdl/ardupilot"
 	
 	# Copy src files to header folder
 	cp -a ${1}"/dsdlc_generated/src/." ${1}"/dsdlc_generated/include/"
